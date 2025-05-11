@@ -307,7 +307,14 @@ function fetchAndUpdateCharts(forceReset) {
       if (error.name === 'AbortError') {
         console.warn("La requête message-types a été interrompue car elle prenait trop de temps");
       } else {
-        console.error("Erreur lors de la récupération des types de messages:", error);
+        // Gestion silencieuse des erreurs - les erreurs de réseau peuvent être temporaires
+        console.warn("Message-types temporairement indisponible, nouvelle tentative au prochain rafraîchissement");
+        
+        // Mettre à jour avec des données par défaut pour éviter les graphiques vides
+        if (charts.messageTypes) {
+          // Utiliser un jeu de données par défaut minimal
+          updateMessageTypesChart([{message_type: "Chargement...", count: 0}]);
+        }
       }
     });
   
