@@ -167,7 +167,8 @@ function initializeAllCharts() {
     try {
       fetchAndUpdateCharts();
     } catch (e) {
-      console.error("Erreur lors de la récupération des données:", e);
+      console.warn("Problème lors de la récupération des données, nouvelle tentative au prochain rafraîchissement");
+      // Ne pas afficher l'erreur complète pour éviter de polluer la console
     }
     
     // Mettre à jour régulièrement les graphiques
@@ -176,7 +177,8 @@ function initializeAllCharts() {
       try {
         fetchAndUpdateCharts();
       } catch (e) {
-        console.error("Erreur lors de la mise à jour périodique des graphiques:", e);
+        console.warn("Rafraîchissement des graphiques reporté, nouvelle tentative au prochain cycle");
+        // Ne pas afficher l'erreur complète pour éviter de polluer la console
       }
     }, 10000);
     
@@ -272,7 +274,27 @@ function fetchAndUpdateCharts(forceReset) {
       if (error.name === 'AbortError') {
         console.warn("La requête stats a été interrompue car elle prenait trop de temps");
       } else {
-        console.error("Erreur lors de la récupération des statistiques:", error);
+        // Gestion silencieuse des erreurs - les erreurs de réseau peuvent être temporaires
+        console.warn("Statistiques temporairement indisponibles, nouvelle tentative au prochain rafraîchissement");
+        
+        // Créer un jeu de données minimal pour éviter les graphiques vides
+        const minimalData = {
+          conversions: 0,
+          timestamp: Date.now(),
+          uptime: 0,
+          memory: { rss: 0, heapTotal: 0, heapUsed: 0, external: 0, arrayBuffers: 0 },
+          timeSavedHours: 0,
+          conversionStats: { avgTime: 0, minTime: 0, maxTime: 0, avgResources: 0, lastTime: 0, lastResources: 0 },
+          applicationStats: []
+        };
+        
+        // Utiliser les données précédentes si disponibles
+        if (window.latestStatsData) {
+          updateDashboardCounters(window.latestStatsData);
+        } else {
+          // Sinon utiliser les données minimales
+          updateDashboardCounters(minimalData);
+        }
       }
     });
   
