@@ -31,17 +31,54 @@ echo -e "${GREEN}Initialisation du système de conversion HL7 vers FHIR...${NC}"
 # Vérification et téléchargement automatique des dépendances volumineuses
 echo -e "${BLUE}Vérification des dépendances volumineuses...${NC}"
 
-# Vérification de HAPI FHIR
+# Vérification et démarrage du serveur HAPI FHIR
 HAPI_JAR="./hapi-fhir/hapi-fhir-server-starter-5.4.0.jar"
+HAPI_RUNNING=false
+
+# Vérifier si le serveur HAPI FHIR est déjà en cours d'exécution
+if ps aux | grep -v grep | grep -q "hapi-fhir-server-starter-5.4.0.jar"; then
+  echo -e "${GREEN}✓ Serveur HAPI FHIR déjà en cours d'exécution${NC}"
+  HAPI_RUNNING=true
+fi
+
+# Vérifier si le JAR existe, sinon le télécharger
 if [ ! -f "$HAPI_JAR" ]; then
   echo -e "${YELLOW}Le serveur HAPI FHIR n'est pas installé. Téléchargement automatique...${NC}"
   # Création du répertoire hapi-fhir s'il n'existe pas
   mkdir -p ./hapi-fhir
   # Appel au script de téléchargement du serveur HAPI FHIR
   bash ./start-hapi-fhir.sh --help > /dev/null
-  echo -e "${GREEN}✓ Configuration de HAPI FHIR terminée${NC}"
+  echo -e "${GREEN}✓ Téléchargement du serveur HAPI FHIR terminé${NC}"
 else
   echo -e "${GREEN}✓ Serveur HAPI FHIR déjà installé${NC}"
+fi
+
+# Démarrer le serveur HAPI FHIR s'il n'est pas déjà en cours d'exécution
+if [ "$HAPI_RUNNING" = false ]; then
+  echo -e "${BLUE}Démarrage du serveur HAPI FHIR en arrière-plan...${NC}"
+  bash ./start-hapi-fhir.sh --port 8080 --memory 512 --database h2 &
+  echo -e "${GREEN}✓ Serveur HAPI FHIR démarré en arrière-plan${NC}"
+  echo -e "${GREEN}✓ URL du serveur FHIR: http://localhost:8080/fhir${NC}"
+  
+  # Attendre que le serveur soit disponible (jusqu'à 30 secondes)
+  echo -e "${BLUE}Attente du démarrage du serveur HAPI FHIR...${NC}"
+  MAX_WAIT=30
+  WAIT_COUNT=0
+  while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/fhir/metadata 2>/dev/null | grep -q "200"; then
+      echo -e "${GREEN}✓ Serveur HAPI FHIR prêt et opérationnel${NC}"
+      break
+    fi
+    sleep 1
+    WAIT_COUNT=$((WAIT_COUNT+1))
+    if [ $((WAIT_COUNT % 5)) -eq 0 ]; then
+      echo -e "${YELLOW}Toujours en attente du serveur HAPI FHIR... ($WAIT_COUNT/$MAX_WAIT)${NC}"
+    fi
+  done
+  
+  if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
+    echo -e "${YELLOW}⚠️ Délai d'attente dépassé, mais le serveur HAPI FHIR pourrait toujours démarrer en arrière-plan${NC}"
+  fi
 fi
 
 # Vérification des terminologies françaises
@@ -49,12 +86,50 @@ FRENCH_TERM_DIR="./storage/terminologies/french"
 if [ ! -d "$FRENCH_TERM_DIR" ] || [ -z "$(ls -A $FRENCH_TERM_DIR 2>/dev/null)" ]; then
   echo -e "${YELLOW}Terminologies françaises manquantes. Téléchargement automatique...${NC}"
   mkdir -p $FRENCH_TERM_DIR
-  # Appel au script de téléchargement des terminologies
+  
+  # Vérifier si le script de téléchargement des terminologies existe
   if [ -f "./get_french_terminology.py" ]; then
-    python3 ./get_french_terminology.py || echo -e "${YELLOW}⚠️ Impossible de télécharger automatiquement les terminologies françaises${NC}"
+    # Vérifier si Python 3 est installé
+    if command -v python3 >/dev/null 2>&1; then
+      # Vérifier si le module requests est installé
+      if python3 -c "import requests" 2>/dev/null; then
+        echo -e "${BLUE}Téléchargement des terminologies françaises...${NC}"
+        python3 ./get_french_terminology.py
+        if [ $? -eq 0 ]; then
+          echo -e "${GREEN}✓ Terminologies françaises téléchargées avec succès${NC}"
+        else
+          echo -e "${YELLOW}⚠️ Échec du téléchargement des terminologies françaises${NC}"
+        fi
+      else
+        echo -e "${YELLOW}⚠️ Module Python 'requests' non installé. Installation...${NC}"
+        pip3 install requests
+        if [ $? -eq 0 ]; then
+          echo -e "${GREEN}✓ Module 'requests' installé. Téléchargement des terminologies...${NC}"
+          python3 ./get_french_terminology.py
+          if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✓ Terminologies françaises téléchargées avec succès${NC}"
+          else
+            echo -e "${YELLOW}⚠️ Échec du téléchargement des terminologies françaises${NC}"
+          fi
+        else
+          echo -e "${YELLOW}⚠️ Impossible d'installer le module 'requests'${NC}"
+        fi
+      fi
+    else
+      echo -e "${YELLOW}⚠️ Python 3 n'est pas installé. Les terminologies ne peuvent pas être téléchargées automatiquement${NC}"
+    fi
   else
-    echo -e "${YELLOW}⚠️ Script de téléchargement des terminologies non trouvé${NC}"
+    echo -e "${YELLOW}⚠️ Script de téléchargement des terminologies (get_french_terminology.py) non trouvé${NC}"
   fi
+  
+  # Vérifier si les terminologies existent maintenant
+  if [ -d "$FRENCH_TERM_DIR" ] && [ ! -z "$(ls -A $FRENCH_TERM_DIR 2>/dev/null)" ]; then
+    echo -e "${GREEN}✓ Terminologies françaises prêtes à être utilisées${NC}"
+  else
+    echo -e "${YELLOW}⚠️ Attention: Les terminologies françaises ne sont pas disponibles. Certaines fonctionnalités peuvent être limitées.${NC}"
+  fi
+else
+  echo -e "${GREEN}✓ Terminologies françaises déjà disponibles${NC}"
 fi
 
 echo -e "${GREEN}Chargement des terminologies françaises...${NC}"

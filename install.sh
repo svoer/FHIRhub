@@ -206,6 +206,10 @@ if [ "$use_local_nodejs" = true ]; then
   # Modifier le script de démarrage pour utiliser le Node.js local
   sed -i "s|^node app.js|\"${PWD}/${NODE_LOCAL_PATH}/bin/node\" app.js|g" ./start.sh
   echo "   ✓ Script de démarrage modifié pour utiliser Node.js local."
+  
+  # S'assurer que le script HAPI FHIR est exécutable
+  chmod +x ./start-hapi-fhir.sh
+  echo "   ✓ Script HAPI FHIR rendu exécutable."
 fi
 
 # Utiliser le Node.js local pour le reste de l'installation si nécessaire
