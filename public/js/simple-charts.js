@@ -451,6 +451,24 @@ function updateTimestamps() {
   });
 }
 
+// Compatibilité avec dashboard-charts.js
+function updateAllCharts(statsData) {
+  console.log("Compatibilité: redirection des données vers les graphiques simplifiés");
+  if (statsData) {
+    // Mettre à jour les compteurs du tableau de bord
+    updateDashboardCounters(statsData);
+    
+    // Mettre à jour les graphiques spécifiques
+    if (statsData.memory) {
+      updateMemoryChart(statsData.memory);
+    }
+    
+    if (statsData.conversionStats && statsData.conversionStats.lastTime) {
+      updateConversionTrendChart(statsData.conversionStats.lastTime);
+    }
+  }
+}
+
 // Création et mise à jour du graphique mémoire
 function createMemoryChart() {
   const ctx = document.getElementById('memoryChart');
