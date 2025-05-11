@@ -1,0 +1,347 @@
+/**
+ * Styles pour le chatbot de support FHIRHub
+ */
+
+.chatbot-container {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  width: 320px;
+  height: 400px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  max-height: 30px; /* Montrer seulement la barre de titre initialement */
+  box-sizing: border-box;
+  border: 1px solid #e0e0e0;
+}
+
+.chatbot-container.open {
+  max-height: 400px; /* Hauteur complète quand ouvert */
+}
+
+.chatbot-header {
+  background: linear-gradient(135deg, #d62828, #fa7921);
+  color: white;
+  padding: 5px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 8px 8px 0 0;
+  height: 30px;
+}
+
+.chatbot-header-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: bold;
+  font-size: 12px;
+}
+
+.chatbot-header-icon {
+  font-size: 14px;
+}
+
+.chatbot-toggle {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+}
+
+.chatbot-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chatbot-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 10px 10px 10px;
+  padding: 10px 0;
+  background-color: white;
+}
+
+.chatbot-input-container {
+  display: flex;
+  gap: 8px;
+  margin: 10px;
+  border-top: 1px solid #eee;
+  padding-top: 10px;
+  background-color: white;
+}
+
+#chatbotInput {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  outline: none;
+  font-size: 14px;
+}
+
+#chatbotInput:focus {
+  border-color: #666;
+}
+
+#chatbotSend {
+  background: linear-gradient(135deg, #d62828, #fa7921);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+#chatbotSend:hover {
+  opacity: 0.9;
+}
+
+/* Styles pour les messages du chatbot */
+.message {
+  max-width: 80%;
+  padding: 10px 12px;
+  border-radius: 15px;
+  margin-bottom: 5px;
+  word-break: break-word;
+  animation: fadeIn 0.3s ease;
+}
+
+.message.user {
+  align-self: flex-end;
+  background-color: #f0f0f0;
+  border-top-right-radius: 5px;
+  color: #333;
+}
+
+.message.system {
+  align-self: flex-start;
+  background: linear-gradient(135deg, rgba(230, 57, 70, 0.1), rgba(250, 121, 33, 0.15));
+  border-top-left-radius: 5px;
+  color: #333;
+  border-left: 2px solid #d62828;
+}
+
+/* Rétrocompatibilité avec ancien code */
+.chatbot-message {
+  max-width: 80%;
+  padding: 10px 12px;
+  border-radius: 15px;
+  margin-bottom: 5px;
+  word-break: break-word;
+}
+
+.chatbot-footer {
+  padding: 10px 15px;
+  border-top: 1px solid #eee;
+  display: flex;
+  gap: 10px;
+}
+
+.chatbot-input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  outline: none;
+  font-size: 14px;
+  transition: border-color 0.3s;
+}
+
+.chatbot-input:focus {
+  border-color: #666;
+}
+
+.chatbot-send {
+  background: linear-gradient(135deg, #d62828, #fa7921);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.chatbot-send:hover {
+  opacity: 0.9;
+}
+
+.chatbot-send:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Animation pour les messages */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Style pour l'indicateur de chargement */
+.message.typing {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border-radius: 15px;
+  align-self: flex-start;
+  font-size: 14px;
+  color: #777;
+  max-width: 80px;
+  font-style: italic;
+}
+
+.message.typing span {
+  display: inline-block;
+  animation: typingAnimation 1s infinite;
+}
+
+/* Rétrocompatibilité avec l'ancien code */
+.chatbot-typing {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border-radius: 15px;
+  align-self: flex-start;
+  font-size: 14px;
+  color: #555;
+  max-width: 80px;
+}
+
+.chatbot-typing-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #777;
+  border-radius: 50%;
+  animation: typingAnimation 1s infinite;
+}
+
+.chatbot-typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.chatbot-typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingAnimation {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+/* Style pour le bouton de raccourci */
+.chatbot-shortcut {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #d62828, #fa7921);
+  border-radius: 50%;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 999;
+  transition: transform 0.3s;
+}
+
+.chatbot-shortcut:hover {
+  transform: scale(1.05);
+}
+
+.chatbot-hidden .chatbot-shortcut {
+  display: flex;
+}
+
+.chatbot-hidden .chatbot-container {
+  display: none;
+}
+
+/* Style pour le bouton de support */
+.support-button {
+  position: fixed;
+  bottom: 80px;  /* Repositionné pour éviter la superposition */
+  right: 20px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #d62828, #fa7921);
+  color: white;
+  border: none;
+  border-radius: 30px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  z-index: 999;
+  transition: all 0.3s ease;
+}
+
+.support-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Style pour les supports dans différentes tailles d'écran */
+@media (max-width: 768px) {
+  .chatbot-container {
+    width: 300px;
+    height: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .chatbot-container {
+    width: 280px;
+    height: 350px;
+    bottom: 10px;
+    right: 10px;
+  }
+  
+  .chatbot-shortcut {
+    bottom: 10px;
+    right: 10px;
+  }
+}

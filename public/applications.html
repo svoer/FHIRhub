@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Applications - FHIRHub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/sidebar-menu.css">
+  
+  <!-- Inclusions du chatbot de support -->
+  <link rel="stylesheet" href="/css/support-chatbot.css">
+  <script src="/js/support-chatbot.js" defer></script>
+  
+  <!-- Inclusion du menu latéral -->
+  <script src="/js/include-sidebar.js" defer></script>
+  <script src="/js/sidebar-menu.js" defer></script>
+  <style>
+    .apps-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .app-card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .app-title {
+      font-size: 18px;
+      font-weight: 500;
+      color: #333;
+    }
+    .app-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .app-stats {
+      display: flex;
+      justify-content: space-between;
+    }
+    .stat-updated {
+      animation: pulse 1s;
+    }
+    .refresh-button {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #666;
+      transition: transform 0.3s ease;
+    }
+    .refresh-button:hover {
+      color: #e63946;
+      transform: rotate(180deg);
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); background-color: rgba(230, 57, 70, 0.1); }
+      100% { transform: scale(1); }
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+    }
+    .stat-item {
+      text-align: center;
+      position: relative;
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      transition: all 0.3s ease;
+    }
+    .stat-value.highlight {
+      color: #e94e31;
+      animation: pulse 1.5s;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .refresh-stats {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      background: #f1f1f1;
+      border: 1px solid #ddd;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 12px;
+      color: #555;
+      transition: all 0.2s ease;
+    }
+    .refresh-stats:hover {
+      background: #e0e0e0;
+    }
+    .refresh-stats.rotating i {
+      animation: spin 1s linear infinite;
+    }
+      color: #3498db;
+      margin-bottom: 5px;
+    }
+    .stat-label {
+      font-size: 14px;
+      color: #777;
+    }
+    .button-primary {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    .button-primary:hover {
+      background-color: #2980b9;
+    }
+    .button-secondary {
+      background-color: #f1f1f1;
+      color: #333;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    .button-secondary:hover {
+      background-color: #ddd;
+    }
+    .button-danger {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    .button-danger:hover {
+      background-color: #c0392b;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      width: 500px;
+      max-width: 90%;
+    }
+    .modal-header {
+      margin-bottom: 20px;
+    }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 500;
+      color: #333;
+      margin: 0;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .form-input:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    .form-textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      min-height: 100px;
+      resize: vertical;
+    }
+    .form-textarea:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .no-apps {
+      text-align: center;
+      padding: 40px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      color: #777;
+    }
+    .no-apps i {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #aaa;
+    }
+    .app-description {
+      color: #555;
+      margin-bottom: 15px;
+    }
+    .app-date {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 15px;
+    }
+    .app-settings {
+      background-color: #f8f9fa;
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .app-settings-title {
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    .settings-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+    .settings-item {
+      display: flex;
+      flex-direction: column;
+    }
+    .settings-label {
+      font-size: 14px;
+      color: #777;
+    }
+    .settings-value {
+      font-weight: 500;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <!-- Le menu latéral sera chargé par include-sidebar.js -->
+  <div id="sidebar-container"></div>
+
+  <div class="main-content">
+    <div class="container">
+      <div class="apps-header">
+        <h1>Applications</h1>
+        <button class="button-primary" id="addAppBtn"><i class="fas fa-plus"></i> Nouvelle application</button>
+      </div>
+      
+      <div id="applicationsList">
+        <!-- Applications will be loaded here -->
+        <div class="no-apps" id="noAppsMessage">
+          <i class="fas fa-laptop-code"></i>
+          <h2>Aucune application</h2>
+          <p>Vous n'avez pas encore créé d'applications. Cliquez sur "Nouvelle application" pour commencer.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add/Edit Application Modal -->
+  <div id="appModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modalTitle">Nouvelle application</h2>
+      </div>
+      
+      <form id="appForm">
+        <input type="hidden" id="appId">
+        
+        <div class="form-group">
+          <label for="appName" class="form-label">Nom de l'application *</label>
+          <input type="text" id="appName" class="form-input" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="appDescription" class="form-label">Description</label>
+          <textarea id="appDescription" class="form-textarea"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="appCorsOrigins" class="form-label">Origines CORS autorisées</label>
+          <input type="text" id="appCorsOrigins" class="form-input" placeholder="http://example.com, https://app.example.com">
+          <small>Séparez les différentes origines par des virgules</small>
+        </div>
+        
+        <div class="form-group">
+          <label for="appMaxConversions" class="form-label">Limite de conversions par jour</label>
+          <input type="number" id="appMaxConversions" class="form-input" value="1000" min="1">
+        </div>
+        
+        <div class="form-group">
+          <label for="appMaxMessageSize" class="form-label">Taille maximale des messages (octets)</label>
+          <input type="number" id="appMaxMessageSize" class="form-input" value="100000" min="1000">
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="button-secondary" id="cancelBtn">Annuler</button>
+          <button type="submit" class="button-primary" id="saveAppBtn">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Confirmer la suppression</h2>
+      </div>
+      
+      <p>Êtes-vous sûr de vouloir supprimer cette application ? Cette action est irréversible.</p>
+      <p><strong>Attention :</strong> Toutes les clés API associées à cette application seront également supprimées.</p>
+      
+      <div class="modal-footer">
+        <button type="button" class="button-secondary" id="cancelDeleteBtn">Annuler</button>
+        <button type="button" class="button-danger" id="confirmDeleteBtn">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-text">
+        &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+        <div class="footer-version">Version: <span class="version-text">Chargement...</span></div>
+      </div>
+      <ul class="footer-links">
+      </ul>
+    </div>
+  </footer>
+  
+  <!-- Script pour gérer la version dans le footer -->
+  <script src="/js/footer-version.js"></script>
+
+  <script>
+    // Fonction pour rafraîchir les statistiques d'une application spécifique
+    async function refreshAppStats(appId) {
+      try {
+        console.log(`Rafraîchissement manuel des statistiques pour l'application ${appId}...`);
+        
+        // Ajout d'une animation au bouton de rafraîchissement
+        const refreshBtn = document.querySelector(`.app-card[data-app-id="${appId}"] .refresh-button`);
+        if (refreshBtn) {
+          refreshBtn.style.transform = 'rotate(360deg)';
+          setTimeout(() => {
+            refreshBtn.style.transform = 'rotate(0deg)';
+          }, 1000);
+        }
+        
+        // Récupérer les statistiques actualisées
+        const stats = await fetchApplicationStats(appId);
+        
+        console.log(`Nouvelles statistiques reçues:`, stats);
+        
+        // Mettre à jour les compteurs dans l'interface
+        const appCard = document.querySelector(`.app-card[data-app-id="${appId}"]`);
+        if (appCard) {
+          // Mettre à jour chaque statistique
+          appCard.querySelector('.stat-conversions-today').textContent = stats.conversionsToday;
+          appCard.querySelector('.stat-total-conversions').textContent = stats.totalConversions;
+          appCard.querySelector('.stat-api-keys').textContent = stats.apiKeys;
+          appCard.querySelector('.stat-errors').textContent = stats.errors;
+          
+          // Ajouter une animation pour montrer que les données ont été mises à jour
+          appCard.classList.add('stat-updated');
+          setTimeout(() => {
+            appCard.classList.remove('stat-updated');
+          }, 1000);
+        }
+        
+        return stats;
+      } catch (error) {
+        console.error(`Erreur lors du rafraîchissement des statistiques pour l'application ${appId}:`, error);
+        return null;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      // Vérifier l'authentification
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      // Récupérer les informations de l'utilisateur
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Vérifier si l'utilisateur est admin (seul l'admin peut gérer les applications)
+      if (user.role !== 'admin') {
+        // Afficher un message d'erreur explicatif et un bouton de retour
+        const container = document.querySelector('.main-content .container');
+        container.innerHTML = `
+          <div class="alert alert-error" style="margin: 20px 0; padding: 20px; border-radius: 5px; background-color: #ffdddd; border-left: 5px solid #f44336; color: #333;">
+            <h3 style="margin-top: 0; color: #d32f2f;">Accès restreint</h3>
+            <p>Cette page est réservée aux administrateurs. Seuls les comptes disposant de droits d'administration peuvent gérer les applications du système.</p>
+            <p>Les applications définissent les paramètres et les limites de conversion pour différents services ou établissements utilisant FHIRHub.</p>
+            <p>Pour accéder à cette fonctionnalité, veuillez contacter votre administrateur système ou vous connecter avec un compte disposant des privilèges appropriés.</p>
+            <button id="returnToDashboard" class="btn btn-primary" style="margin-top: 15px;">Retourner au tableau de bord</button>
+          </div>
+        `;
+        
+        // Ajouter l'événement pour retourner au tableau de bord
+        document.getElementById('returnToDashboard').addEventListener('click', function() {
+          window.location.href = '/dashboard.html';
+        });
+        
+        // Masquer les éléments de gestion des applications
+        document.querySelectorAll('.applications-list, .applications-header, .page-header .btn-container').forEach(element => {
+          if (element) {
+            element.style.display = 'none';
+          }
+        });
+        
+        return; // Arrêter l'exécution du reste du script
+      }
+      
+      // Gestion de la déconnexion - avec vérification de l'existence du bouton
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login.html';
+        });
+      } else {
+        console.warn("Bouton de déconnexion non trouvé. L'événement sera géré par include-sidebar.js");
+      }
+      
+      // Charger les applications
+      loadApplications();
+      
+      // Event listeners pour les modals
+      const appModal = document.getElementById('appModal');
+      const deleteModal = document.getElementById('deleteModal');
+      
+      document.getElementById('addAppBtn').addEventListener('click', showAddAppModal);
+      document.getElementById('cancelBtn').addEventListener('click', closeAppModal);
+      document.getElementById('cancelDeleteBtn').addEventListener('click', closeDeleteModal);
+      document.getElementById('appForm').addEventListener('submit', saveApplication);
+      
+      // Fermer les modals en cliquant en dehors
+      window.addEventListener('click', function(e) {
+        if (e.target === appModal) {
+          closeAppModal();
+        }
+        if (e.target === deleteModal) {
+          closeDeleteModal();
+        }
+      });
+    });
+    
+    // Charger les applications depuis l'API
+    async function loadApplications() {
+      try {
+        console.log("Chargement des applications...");
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/applications', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des applications');
+        }
+        
+        const data = await response.json();
+        console.log("Données des applications reçues:", data);
+        
+        if (data.success && data.data && data.data.length > 0) {
+          // Afficher d'abord les applications sans statistiques pour une meilleure réactivité
+          renderApplications(data.data);
+          
+          // Cacher le message "Aucune application"
+          const noAppsMessage = document.getElementById('noAppsMessage');
+          if (noAppsMessage) {
+            noAppsMessage.style.display = 'none';
+          }
+          
+          // Récupérer les statistiques pour chaque application
+          const appsWithStats = [];
+          
+          for (const app of data.data) {
+            try {
+              console.log(`Récupération des statistiques pour l'application ${app.id}...`);
+              // Récupérer les statistiques de l'application (conversions, clés API, etc.)
+              const statsData = await fetchApplicationStats(app.id);
+              console.log(`Statistiques reçues pour l'application ${app.id}:`, statsData);
+              
+              appsWithStats.push({
+                ...app,
+                stats: statsData
+              });
+            } catch (statsError) {
+              console.warn(`Erreur lors de la récupération des statistiques pour l'application ${app.id}:`, statsError);
+              
+              // Continuer avec des statistiques vides plutôt que de bloquer
+              appsWithStats.push({
+                ...app,
+                stats: {
+                  conversionsToday: 0,
+                  totalConversions: 0,
+                  apiKeys: 0,
+                  errors: 0
+                }
+              });
+            }
+          }
+          
+          // Mettre à jour l'interface avec les statistiques complètes
+          console.log("Mise à jour de l'interface avec les statistiques:", appsWithStats);
+          renderApplications(appsWithStats);
+        } else {
+          // Afficher le message "Aucune application"
+          const noAppsMessage = document.getElementById('noAppsMessage');
+          if (noAppsMessage) {
+            noAppsMessage.style.display = 'block';
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des applications:', error);
+        
+        // Gérer plus proprement l'affichage d'erreur
+        if (error instanceof Error) {
+          alert('Erreur lors de la récupération des applications : ' + error.message);
+        } else {
+          alert('Erreur inconnue lors de la récupération des applications');
+        }
+      }
+    }
+    
+    // Fonction pour rafraîchir les statistiques d'une application spécifique  
+    async function refreshAppStats(appId) {
+      try {
+        // Récupérer les statistiques actualisées
+        const statsData = await fetchApplicationStats(appId);
+        
+        console.log(`Statistiques rafraîchies pour l'application ${appId}:`, statsData);
+        
+        // Mettre à jour l'affichage des statistiques dans le DOM
+        const conversionsElement = document.getElementById(`app-${appId}-conversions`);
+        const apiKeysElement = document.getElementById(`app-${appId}-apikeys`);
+        const errorsElement = document.getElementById(`app-${appId}-errors`);
+        
+        if (conversionsElement) {
+          // Sauvegarder l'ancienne valeur pour la comparaison
+          const oldValue = parseInt(conversionsElement.textContent);
+          const newValue = parseInt(statsData.conversionsToday) || 0;
+          
+          // Mettre à jour la valeur
+          conversionsElement.textContent = newValue;
+          
+          // Ajouter une animation si la valeur a changé
+          if (oldValue !== newValue) {
+            conversionsElement.classList.add('highlight');
+            setTimeout(() => {
+              conversionsElement.classList.remove('highlight');
+            }, 1500);
+          }
+        }
+        
+        if (apiKeysElement) {
+          apiKeysElement.textContent = statsData.apiKeys;
+        }
+        
+        if (errorsElement) {
+          errorsElement.textContent = statsData.errors;
+        }
+        
+        return statsData;
+      } catch (error) {
+        console.error(`Erreur lors du rafraîchissement des statistiques pour l'application ${appId}:`, error);
+        return null;
+      }
+    }
+    
+    // Afficher les applications dans la liste
+    function renderApplications(applications) {
+      const appsList = document.getElementById('applicationsList');
+      appsList.innerHTML = '';
+      
+      applications.forEach(app => {
+        // Pas besoin de parser les paramètres, on utilise un objet vide par défaut
+        let settings = {};
+        
+        // S'assurer que app.stats existe pour éviter l'erreur TypeError
+        if (!app.stats) {
+          app.stats = {
+            conversionsToday: 0,
+            totalConversions: 0,
+            apiKeys: 0,
+            errors: 0
+          };
+        }
+        
+        // Convertir les statistiques en nombres pour s'assurer qu'elles sont affichées correctement
+        const conversionsToday = parseInt(app.stats.conversionsToday) || 0;
+        const totalConversions = parseInt(app.stats.totalConversions) || 0;
+        const apiKeys = parseInt(app.stats.apiKeys) || 0;
+        const errors = parseInt(app.stats.errors) || 0;
+        
+        console.log(`Affichage des statistiques pour l'application ${app.id}:`, {
+          conversionsToday,
+          totalConversions,
+          apiKeys,
+          errors
+        });
+        
+        const appCard = document.createElement('div');
+        appCard.className = 'app-card';
+        appCard.dataset.appId = app.id;
+        appCard.innerHTML = `
+          <div class="app-header">
+            <h2 class="app-title">${app.name}</h2>
+            <div class="app-actions">
+              <button class="button-secondary edit-app-btn" data-id="${app.id}">
+                <i class="fas fa-edit"></i> Modifier
+              </button>
+              <button class="button-danger delete-app-btn" data-id="${app.id}">
+                <i class="fas fa-trash"></i> Supprimer
+              </button>
+            </div>
+          </div>
+          
+          <div class="app-date">
+            Créé le ${new Date(app.created_at).toLocaleDateString()} à ${new Date(app.created_at).toLocaleTimeString()}
+          </div>
+          
+          <div class="app-description">
+            ${app.description || 'Aucune description fournie.'}
+          </div>
+          
+          <div class="app-settings">
+            <div class="app-settings-title">Paramètres de l'application</div>
+            <div class="settings-list">
+              <div class="settings-item">
+                <span class="settings-label">Limite de conversions / jour</span>
+                <span class="settings-value">${settings.max_conversions_per_day || 'Illimité'}</span>
+              </div>
+              <div class="settings-item">
+                <span class="settings-label">Taille max. des messages</span>
+                <span class="settings-value">${settings.max_message_size ? (settings.max_message_size / 1000) + ' Ko' : 'Illimité'}</span>
+              </div>
+              <div class="settings-item">
+                <span class="settings-label">Origines CORS</span>
+                <span class="settings-value">${app.cors_origins || 'Aucune restriction'}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="app-stats">
+            <div class="stat-item">
+              <div id="app-${app.id}-totalconversions" class="stat-value stat-total-conversions" style="font-size: 16px;">${totalConversions}</div>
+              <div class="stat-label">Total conversions</div>
+              <a href="/application-history.html?id=${app.id}" class="button-secondary" style="margin-top: 10px;">
+                <i class="fas fa-history"></i> Voir l'historique
+              </a>
+            </div>
+          </div>
+        `;
+        
+        appsList.appendChild(appCard);
+      });
+      
+      // Ajouter les event listeners pour les boutons d'action
+      document.querySelectorAll('.edit-app-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const appId = this.getAttribute('data-id');
+          editApplication(appId);
+        });
+      });
+      
+      document.querySelectorAll('.delete-app-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const appId = this.getAttribute('data-id');
+          showDeleteModal(appId);
+        });
+      });
+      
+      // Configurer une rafraîchissement automatique toutes les 30 secondes
+      setInterval(() => {
+        console.log("Rafraîchissement automatique des statistiques...");
+        document.querySelectorAll('.app-card').forEach(card => {
+          const appId = card.dataset.appId;
+          if (appId) {
+            refreshAppStats(appId);
+          }
+        });
+      }, 30000);
+    }
+    
+    // Fonction pour récupérer les statistiques d'une application
+    async function fetchApplicationStats(appId) {
+      try {
+        const token = localStorage.getItem('token');
+        
+        console.log(`Récupération des statistiques pour l'application ${appId}`);
+        
+        // Récupérer les clés API associées à l'application
+        const appResponse = await fetch(`/api/applications/${appId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        // Récupérer TOUTES les conversions pour cette application (limite élevée) pour un calcul précis
+        // Récupérer à la fois les conversions associées à l'application et celles sans application_id
+        const conversionsResponse = await fetch(`/api/applications/${appId}/conversions?limit=1000&include_null=true`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!appResponse.ok || !conversionsResponse.ok) {
+          throw new Error('Erreur lors de la récupération des statistiques');
+        }
+        
+        const appData = await appResponse.json();
+        const conversionsData = await conversionsResponse.json();
+        
+        console.log(`Données des conversions reçues:`, conversionsData);
+        
+        // Nombre de clés API pour cette application
+        let apiKeysCount = 0;
+        if (appData.success && appData.data && appData.data.api_keys) {
+          apiKeysCount = appData.data.api_keys.length;
+        }
+        
+        // Calculer les conversions d'aujourd'hui et les erreurs
+        let todayConversions = 0;
+        let errorsCount = 0;
+        let totalConversions = 0;
+        
+        if (conversionsData.success && conversionsData.data && conversionsData.data.conversions) {
+          const logs = conversionsData.data.conversions;
+          totalConversions = logs.length;
+          console.log(`Nombre total de conversions trouvées: ${totalConversions}`);
+          
+          // Obtenir la date d'aujourd'hui au format YYYY-MM-DD dans le fuseau horaire français
+          // Utiliser une méthode qui gère automatiquement l'heure d'été/hiver
+          const options = { timeZone: 'Europe/Paris' };
+          const nowInFrance = new Date(new Date().toLocaleString('fr-FR', options));
+          
+          const todayYear = nowInFrance.getFullYear();
+          const todayMonth = String(nowInFrance.getMonth() + 1).padStart(2, '0');
+          const todayDay = String(nowInFrance.getDate()).padStart(2, '0');
+          const todayFormatted = `${todayYear}-${todayMonth}-${todayDay}`;
+          
+          console.log(`Date d'aujourd'hui en France: ${todayFormatted}`);
+          
+          // Filtrer les conversions d'aujourd'hui et compter les erreurs
+          logs.forEach(log => {
+            // Vérifier si le log a un timestamp valide
+            if (log.timestamp) {
+              // Extraire la date du timestamp du log, quelle que soit sa forme
+              let logDate;
+              
+              try {
+                // Essayer d'extraire la date à partir de différents formats
+                const date = new Date(log.timestamp);
+                
+                // Ajuster pour le fuseau horaire français (gère automatiquement l'heure d'été/hiver)
+                const options = { timeZone: 'Europe/Paris' };
+                const dateInFrance = new Date(date.toLocaleString('fr-FR', options));
+                
+                // Formater la date dans le même format que notre date d'aujourd'hui
+                const year = dateInFrance.getFullYear();
+                const month = String(dateInFrance.getMonth() + 1).padStart(2, '0');
+                const day = String(dateInFrance.getDate()).padStart(2, '0');
+                logDate = `${year}-${month}-${day}`;
+                
+                // Alternative: utiliser directement la chaîne si elle contient une date au format YYYY-MM-DD
+                if (log.timestamp.includes('-')) {
+                  const dateParts = log.timestamp.split(' ')[0].split('-');
+                  if (dateParts.length === 3) {
+                    const [dbYear, dbMonth, dbDay] = dateParts;
+                    // Si c'est au format YYYY-MM-DD, l'utiliser directement
+                    if (dbYear.length === 4) {
+                      logDate = `${dbYear}-${dbMonth}-${dbDay}`;
+                    }
+                  }
+                }
+                
+                console.log(`Log ID ${log.id}, date: ${logDate}, aujourd'hui: ${todayFormatted}, égal: ${logDate === todayFormatted}`);
+                
+                // Comparer avec la date d'aujourd'hui
+                if (logDate === todayFormatted) {
+                  todayConversions++;
+                }
+              } catch (dateError) {
+                console.warn(`Impossible de parser la date pour le log ${log.id}:`, dateError);
+              }
+            }
+            
+            // Compter toutes les erreurs, pas seulement celles d'aujourd'hui
+            if (log.status === 'error' || log.status === 'échec') {
+              errorsCount++;
+            }
+          });
+          
+          console.log(`Conversions aujourd'hui: ${todayConversions}, Erreurs: ${errorsCount}`);
+        }
+        
+        return {
+          conversionsToday: todayConversions,
+          totalConversions: totalConversions,
+          apiKeys: apiKeysCount,
+          errors: errorsCount
+        };
+      } catch (error) {
+        console.error('Erreur lors de la récupération des statistiques de l\'application:', error);
+        return {
+          conversionsToday: 0,
+          totalConversions: 0,
+          apiKeys: 0,
+          errors: 0
+        };
+      }
+    }
+    
+    // Afficher le modal pour ajouter une application
+    function showAddAppModal() {
+      document.getElementById('modalTitle').textContent = 'Nouvelle application';
+      document.getElementById('appId').value = '';
+      document.getElementById('appForm').reset();
+      document.getElementById('appModal').style.display = 'flex';
+    }
+    
+    // Afficher le modal pour modifier une application
+    async function editApplication(appId) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/applications/${appId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des détails de l\'application');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          const app = data.data;
+          // La propriété settings est déjà parsée par le serveur, pas besoin de parser à nouveau
+          const settings = app.settings || {};
+          
+          document.getElementById('modalTitle').textContent = 'Modifier l\'application';
+          document.getElementById('appId').value = app.id;
+          document.getElementById('appName').value = app.name;
+          document.getElementById('appDescription').value = app.description || '';
+          document.getElementById('appCorsOrigins').value = app.cors_origins || '';
+          document.getElementById('appMaxConversions').value = settings.max_conversions_per_day || 1000;
+          document.getElementById('appMaxMessageSize').value = settings.max_message_size || 100000;
+          
+          document.getElementById('appModal').style.display = 'flex';
+        } else {
+          throw new Error('Application non trouvée');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la récupération des détails de l\'application : ' + error.message);
+      }
+    }
+    
+    // Fermer le modal d'application
+    function closeAppModal() {
+      document.getElementById('appModal').style.display = 'none';
+    }
+    
+    // Afficher le modal de confirmation de suppression
+    function showDeleteModal(appId) {
+      // Supprimer les anciens event listeners en clonant et remplaçant l'élément
+      const oldButton = document.getElementById('confirmDeleteBtn');
+      const newButton = oldButton.cloneNode(true);
+      oldButton.parentNode.replaceChild(newButton, oldButton);
+      
+      // Définir l'ID de l'application à supprimer
+      newButton.setAttribute('data-id', appId);
+      document.getElementById('deleteModal').style.display = 'flex';
+      
+      // Ajouter l'event listener pour le bouton de confirmation
+      newButton.addEventListener('click', deleteApplication);
+    }
+    
+    // Fermer le modal de confirmation de suppression
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').style.display = 'none';
+    }
+    
+    // Sauvegarder une application (création ou modification)
+    async function saveApplication(e) {
+      e.preventDefault();
+      
+      const appId = document.getElementById('appId').value;
+      const isNewApp = !appId;
+      
+      const appData = {
+        name: document.getElementById('appName').value,
+        description: document.getElementById('appDescription').value,
+        cors_origins: document.getElementById('appCorsOrigins').value,
+        settings: JSON.stringify({
+          max_conversions_per_day: parseInt(document.getElementById('appMaxConversions').value),
+          max_message_size: parseInt(document.getElementById('appMaxMessageSize').value)
+        })
+      };
+      
+      try {
+        const url = isNewApp ? '/api/applications' : `/api/applications/${appId}`;
+        const method = isNewApp ? 'POST' : 'PUT';
+        
+        const response = await fetch(url, {
+          method: method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify(appData)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de l\'enregistrement de l\'application');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          closeAppModal();
+          loadApplications();
+        } else {
+          throw new Error(data.message || 'Erreur inconnue');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'enregistrement de l\'application : ' + error.message);
+      }
+    }
+    
+    // Supprimer une application
+    async function deleteApplication() {
+      const appId = this.getAttribute('data-id');
+      
+      try {
+        const response = await fetch(`/api/applications/${appId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la suppression de l\'application');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          closeDeleteModal();
+          loadApplications();
+        } else {
+          throw new Error(data.message || 'Erreur inconnue');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la suppression de l\'application : ' + error.message);
+      }
+    }
+  </script>
+</body>
+</html>

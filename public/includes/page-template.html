@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PAGE_TITLE}} - FHIRHub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/sidebar-menu.css">
+  
+  <!-- Inclusions spécifiques à la page -->
+  {{PAGE_SPECIFIC_HEAD}}
+  
+  <!-- Inclusions du chatbot de support -->
+  <link rel="stylesheet" href="/css/support-chatbot.css">
+  <script src="/js/support-chatbot.js" defer></script>
+  
+  <!-- Inclusion du menu latéral -->
+  <script src="/js/include-sidebar.js" defer></script>
+  <script src="/js/sidebar-menu-new.js" defer></script>
+</head>
+<body>
+  <!-- Le contenu du menu latéral sera chargé par include-sidebar.js -->
+
+  <!-- Contenu principal -->
+  <div id="main-content" class="main-content">
+    <div class="container">
+      <!-- Contenu spécifique à la page -->
+      {{PAGE_CONTENT}}
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-text">
+        &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+      </div>
+    </div>
+  </footer>
+  
+  <!-- Le chatbot sera créé dynamiquement par support-chatbot.js -->
+  
+  <!-- Scripts spécifiques à la page -->
+  {{PAGE_SPECIFIC_SCRIPTS}}
+</body>
+</html>

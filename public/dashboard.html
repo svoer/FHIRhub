@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Tableau de bord - FHIRHub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/sidebar-menu.css">
+  <link rel="stylesheet" href="/css/metrics-dashboard.css">
+  <link rel="stylesheet" href="/css/ai-indicator.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/js/simple-charts.js" defer></script>
+  
+  <!-- Inclusions du chatbot de support -->
+  <link rel="stylesheet" href="/css/support-chatbot.css">
+  <script src="/js/support-chatbot.js" defer></script>
+  
+  <!-- Inclusion de l'indicateur de fournisseur d'IA -->
+  <script src="/js/ai-provider-indicator.js" defer></script>
+  
+  <!-- Inclusion du menu latéral -->
+  <script src="/js/include-sidebar.js" defer></script>
+  <script src="/js/sidebar-menu.js" defer></script>
+</head>
+<body>
+  <!-- Contenu du menu latéral chargé par include-sidebar.js -->
+  <div id="sidebar-container"></div>
+
+  <!-- Contenu principal -->
+  <div class="main-content">
+    <div class="container">
+      <h1>Tableau de bord</h1>
+      
+      <div class="dashboard-cards">
+        <div class="stat-card">
+          <div class="stat-value" id="conversionsCount">0</div>
+          <div class="stat-label">Conversions totales</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-value" id="applicationsCount">0</div>
+          <div class="stat-label">Applications</div>
+        </div>
+        
+        <div class="stat-card">
+          <div class="stat-value" id="apiKeysCount">0</div>
+          <div class="stat-label">Clés API</div>
+        </div>
+      </div>
+      
+      <!-- Indicateurs avancés -->
+      <div class="dashboard-cards benefits-cards">
+        <div class="benefit-card">
+          <div class="benefit-icon"><i class="fas fa-clock"></i></div>
+          <div class="benefit-content">
+            <div class="benefit-value" id="timeSaved"><span class="counter">0</span> h</div>
+            <div class="benefit-label">Temps gagné</div>
+            <div class="benefit-detail">Par rapport à une conversion traditionnelle</div>
+          </div>
+        </div>
+        
+        <div class="benefit-card">
+          <div class="benefit-icon"><i class="fas fa-bolt"></i></div>
+          <div class="benefit-content">
+            <div class="benefit-value" id="successRate"><span class="counter">0</span>%</div>
+            <div class="benefit-label">Taux de succès</div>
+            <div class="benefit-detail">Conversions réussies</div>
+          </div>
+        </div>
+        
+        <div class="benefit-card">
+          <div class="benefit-icon"><i class="fas fa-code-branch"></i></div>
+          <div class="benefit-content">
+            <div class="benefit-value" id="resourceCount"><span class="counter">0</span></div>
+            <div class="benefit-label">Ressources générées</div>
+            <div class="benefit-detail">Ressources FHIR produites</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Statistiques de conversion -->
+      <div class="card">
+        <div class="card-header" style="position: sticky; top: 0; background: white; z-index: 999; padding: 15px; border-bottom: 1px solid #eee;">
+          <h2 class="card-title">Statistiques de conversion</h2>
+          <div class="refresh-info" style="position: sticky; top: 0; display: flex; align-items: center; padding: 5px 0;">
+            <button id="refreshStatsBtn" class="btn-refresh" title="Rafraîchir les statistiques" style="margin-right: 10px;">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+            <button id="resetStatsBtn" class="btn-reset" title="Réinitialiser toutes les données" style="position: sticky; top: 15px; right: 15px; display: inline-flex !important; visibility: visible !important; z-index: 9999; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-right: 10px; border: 2px solid #fff; font-size: 18px; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+              <i class="fas fa-trash-alt" style="margin: auto;"></i>
+            </button>
+            <span style="margin-left: 5px;">Dernière mise à jour: <span id="statsUpdateTime"></span></span>
+          </div>
+          <!-- Les boutons sont maintenant sticky (fixés) en haut lors du défilement -->
+        </div>
+        
+        <div class="conversion-stats">
+          <div class="metrics-grid">
+            <div class="metric-card gradient-card">
+              <div class="metric-icon">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="metric-content">
+                <span class="metric-value" id="avg-conversion-time">0 ms</span>
+                <span class="metric-label">Temps moyen de conversion</span>
+              </div>
+            </div>
+            
+            <div class="metric-card gradient-card">
+              <div class="metric-icon">
+                <i class="fas fa-bolt"></i>
+              </div>
+              <div class="metric-content">
+                <span class="metric-value" id="last-conversion-time">0 ms</span>
+                <span class="metric-label">Dernière conversion</span>
+              </div>
+            </div>
+            
+            <div class="metric-card gradient-card">
+              <div class="metric-icon">
+                <i class="fas fa-tachometer-alt"></i>
+              </div>
+              <div class="metric-content">
+                <span class="metric-value" id="minmax-conversion-time">0 / 0 ms</span>
+                <span class="metric-label">Temps min/max</span>
+              </div>
+            </div>
+            
+            <div class="metric-card gradient-card">
+              <div class="metric-icon">
+                <i class="fas fa-cubes"></i>
+              </div>
+              <div class="metric-content">
+                <span class="metric-value" id="avg-resources">0</span>
+                <span class="metric-label">Ressources moyennes générées</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Métriques système et médicales -->
+      <div class="card">
+        <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; padding: 0.8rem 1rem;">
+          <h2 class="card-title" style="margin: 0; padding-right: 15px;">Métriques avancées</h2>
+          <div class="metric-controls">
+            <button id="resetOrderBtn" class="btn-metric-control" title="Réinitialiser l'ordre des graphiques">
+              <i class="fas fa-undo"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="system-metrics" id="draggableMetrics">
+          <!-- Graphique mémoire -->
+          <div class="metric-container" data-metric-id="memory" draggable="true">
+            <div class="metric-header">Utilisation mémoire</div>
+            <div class="metric-body">
+              <canvas id="memoryChart"></canvas>
+            </div>
+          </div>
+          
+          <!-- Tendances temps de conversion -->
+          <div class="metric-container" data-metric-id="conversionTime" draggable="true">
+            <div class="metric-header">Tendances temps de conversion (ms)</div>
+            <div class="metric-body">
+              <canvas id="conversionTrendChart"></canvas>
+            </div>
+          </div>
+          
+          <!-- Widget de distribution des ressources FHIR a été supprimé sur demande -->
+          
+          <!-- Taux de réussite -->
+          <div class="metric-container" data-metric-id="successRate" draggable="true">
+            <div class="metric-header">Taux de réussite des conversions</div>
+            <div class="metric-body">
+              <div id="successRateNoData" style="display: flex; justify-content: center; align-items: center; height: 100%; font-weight: bold; color: #666;">Aucune donnée disponible</div>
+              <div id="successRateChartContainer" style="height: 100%; width: 100%;">
+                <canvas id="successRateChart"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Types de messages HL7 -->
+          <div class="metric-container" data-metric-id="messageTypes" draggable="true">
+            <div class="metric-header">Types de messages HL7</div>
+            <div class="metric-body">
+              <div id="messageTypesNoData" style="display: flex; justify-content: center; align-items: center; height: 100%; font-weight: bold; color: #666;">Aucune donnée disponible</div>
+              <div id="messageTypesChartContainer" style="height: 100%; width: 100%;">
+                <canvas id="messageTypesChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Le bouton de réinitialisation est maintenant dans la carte de statistiques -->
+  
+  <!-- Boîte de dialogue modale pour confirmation -->
+  <div id="resetConfirmModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);">
+    <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border-radius: 5px; width: 80%; max-width: 500px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+      <h3 style="color: #e74c3c; margin-top: 0;">⚠️ Attention: Réinitialisation des statistiques</h3>
+      <p>Vous êtes sur le point de réinitialiser les statistiques de FHIRHub.</p>
+      <p>Cette action va:</p>
+      <ul style="margin-bottom: 20px;">
+        <li>Effacer l'historique des conversions</li>
+        <li>Réinitialiser les compteurs de performances</li>
+        <li>Remettre à zéro les indicateurs de bénéfices</li>
+        <li>Nettoyer les logs d'utilisation</li>
+      </ul>
+      <p style="font-weight: bold; color: #e74c3c;">Cette action est irréversible !</p>
+      <div style="text-align: right; margin-top: 20px;">
+        <button id="cancelResetBtn" style="background-color: #95a5a6; color: white; border: none; padding: 8px 15px; margin-right: 10px; border-radius: 4px; cursor: pointer;">Annuler</button>
+        <button id="confirmResetBtn" style="background-color: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Réinitialiser</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Le chatbot sera créé dynamiquement par support-chatbot.js -->
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Vérifier l'authentification
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      // Gestion de la déconnexion - avec vérification de l'existence du bouton
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login.html';
+        });
+      } else {
+        console.warn("Bouton de déconnexion non trouvé. L'événement sera géré par include-sidebar.js");
+      }
+      
+      // Récupérer les statistiques
+      fetchStats();
+      
+      // Récupérer le nombre d'applications
+      fetchApplicationsCount();
+      
+      // Récupérer le nombre de clés API
+      fetchApiKeysCount();
+      
+      // Utiliser la fonction d'initialisation des graphiques du fichier dashboard-charts-fixed.js
+      // La fonction initCharts() a été remplacée par des fonctions plus avancées dans ce fichier
+      // qui gèrent mieux l'affichage des graphiques et les données réelles
+      
+      // Initialiser la fonctionnalité de drag-and-drop pour les métriques
+      initDraggableMetrics();
+      
+      // Initialisation du chatbot de support
+      initChatbot();
+      
+      // Configurer l'intervalle de rafraîchissement des métriques
+      setInterval(fetchStats, 10000); // Rafraîchir toutes les 10 secondes pour une mise à jour plus rapide
+      
+      // Ajouter l'indicateur de dernière mise à jour
+      updateLastRefreshTime();
+      
+      // Restaurer la disposition des widgets sauvegardée
+      restoreWidgetLayout();
+      
+      // Configurer la fonctionnalité de déplacement des widgets
+      setupWidgetDragSave();
+      
+      // Ajouter le gestionnaire d'événement pour le bouton de rafraîchissement
+      const refreshStatsBtn = document.getElementById('refreshStatsBtn');
+      if (refreshStatsBtn) {
+        refreshStatsBtn.addEventListener('click', function() {
+          // Ajouter une classe pour l'animation de rotation
+          this.classList.add('refreshing');
+          
+          // Rafraîchir les statistiques
+          fetchStats();
+          
+          // Retirer la classe après l'animation
+          setTimeout(() => {
+            this.classList.remove('refreshing');
+          }, 1000);
+        });
+      }
+      
+      // Ajouter le gestionnaire d'événement pour le bouton de réinitialisation
+      const resetStatsBtn = document.getElementById('resetStatsBtn');
+      const resetConfirmModal = document.getElementById('resetConfirmModal');
+      const cancelResetBtn = document.getElementById('cancelResetBtn');
+      const confirmResetBtn = document.getElementById('confirmResetBtn');
+      
+      // Fonction pour afficher la boîte de dialogue de confirmation
+      function showResetConfirmation() {
+        resetConfirmModal.style.display = 'block';
+      }
+      
+      if (resetStatsBtn) {
+        resetStatsBtn.addEventListener('click', showResetConfirmation);
+      }
+      
+      // Le gestionnaire d'événement pour le bouton flottant est supprimé
+      
+      // Gérer le clic sur le bouton Annuler
+      if (cancelResetBtn) {
+        cancelResetBtn.addEventListener('click', function() {
+          resetConfirmModal.style.display = 'none';
+        });
+      }
+      
+      // Gérer le clic en dehors de la boîte de dialogue
+      window.addEventListener('click', function(event) {
+        if (event.target === resetConfirmModal) {
+          resetConfirmModal.style.display = 'none';
+        }
+      });
+      
+      // Gérer le clic sur le bouton Confirmer
+      if (confirmResetBtn) {
+        confirmResetBtn.addEventListener('click', function() {
+          // Fermer la boîte de dialogue
+          resetConfirmModal.style.display = 'none';
+          
+          // Appeler l'API de réinitialisation
+          resetStats();
+        });
+      }
+    });
+    
+    // La fonction initChatbot est maintenant gérée par le fichier support-chatbot.js
+    function initChatbot() {
+      // Pointeur vers le fichier externe qui initialise le chatbot
+      console.log("Initialisation du chatbot via support-chatbot.js");
+    }
+    
+    // Initialisation du bouton de réinitialisation de l'environnement
+    function initResetEnvironmentButton() {
+      const resetBtn = document.getElementById('resetEnvironmentBtn');
+      const modal = document.getElementById('resetConfirmModal');
+      const cancelBtn = document.getElementById('cancelResetBtn');
+      const confirmBtn = document.getElementById('confirmResetBtn');
+      
+      // Afficher la boîte de dialogue modale au clic sur le bouton de réinitialisation
+      resetBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        modal.style.display = 'block';
+      });
+      
+      // Fermer la boîte de dialogue au clic sur "Annuler"
+      cancelBtn.addEventListener('click', function() {
+        modal.style.display = 'none';
+      });
+      
+      // Fermer la boîte de dialogue en cliquant en dehors
+      window.addEventListener('click', function(e) {
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+      
+      // Exécuter la réinitialisation au clic sur "Réinitialiser"
+      confirmBtn.addEventListener('click', function() {
+        // Afficher un message de traitement
+        confirmBtn.textContent = 'Réinitialisation en cours...';
+        confirmBtn.disabled = true;
+        
+        // Exécuter le script de réinitialisation via une requête au serveur
+        fetch('/api/admin/reset-environment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-KEY': 'dev-key',
+            'Authorization': `Bearer ${localStorage.getItem('token')}` // Ajout du token d'authentification
+          }
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Erreur lors de la réinitialisation');
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Fermer la boîte de dialogue
+          modal.style.display = 'none';
+          
+          // Afficher un message de confirmation
+          alert('Les statistiques ont été réinitialisées avec succès. L\'application va redémarrer.');
+          
+          // Rediriger vers la page d'accueil après réinitialisation
+          // Délai plus long pour laisser le temps au serveur de traiter la réinitialisation
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          
+          setTimeout(() => {
+            window.location.href = '/login.html';
+          }, 3000);
+        })
+        .catch(error => {
+          console.error('Erreur:', error);
+          alert('Erreur lors de la réinitialisation. Veuillez consulter la console pour plus de détails.');
+          
+          // Réinitialiser le bouton
+          confirmBtn.textContent = 'Réinitialiser';
+          confirmBtn.disabled = false;
+        });
+      });
+    }
+    
+    // Fonction pour réinitialiser les statistiques via l'API
+    // Fonction pour sauvegarder la disposition des widgets
+    function saveWidgetLayout() {
+      const systemMetricsDiv = document.querySelector('.system-metrics');
+      if (!systemMetricsDiv) return;
+      
+      // Obtenir l'ordre actuel des widgets
+      const widgets = Array.from(systemMetricsDiv.children);
+      const widgetOrder = widgets.map(widget => widget.id);
+      
+      // Sauvegarder dans localStorage
+      localStorage.setItem('dashboardWidgetLayout', JSON.stringify(widgetOrder));
+      console.log('Disposition des widgets sauvegardée:', widgetOrder);
+    }
+    
+    // Fonction pour restaurer la disposition des widgets
+    function restoreWidgetLayout() {
+      const systemMetricsDiv = document.querySelector('.system-metrics');
+      if (!systemMetricsDiv) return;
+      
+      const savedLayout = localStorage.getItem('dashboardWidgetLayout');
+      if (!savedLayout) return;
+      
+      try {
+        const widgetOrder = JSON.parse(savedLayout);
+        
+        // Créer un objet pour accéder facilement aux widgets
+        const widgetMap = {};
+        Array.from(systemMetricsDiv.children).forEach(widget => {
+          widgetMap[widget.id] = widget;
+        });
+        
+        // Réorganiser les widgets dans l'ordre sauvegardé
+        widgetOrder.forEach(widgetId => {
+          const widget = widgetMap[widgetId];
+          if (widget) {
+            systemMetricsDiv.appendChild(widget);
+          }
+        });
+        
+        console.log('Disposition des widgets restaurée avec succès');
+      } catch (error) {
+        console.error('Erreur lors de la restauration de la disposition des widgets:', error);
+      }
+    }
+
+    function resetStats() {
+      try {
+        // Sauvegarder la disposition des widgets avant la réinitialisation
+        saveWidgetLayout();
+        
+        // Réinitialiser immédiatement toutes les valeurs affichées dans l'interface
+        // Utiliser une fonction sécurisée pour mettre à jour les éléments du DOM
+        function safeSetText(selector, text) {
+          const element = document.querySelector(selector);
+          if (element) {
+            element.textContent = text;
+          } else {
+            console.warn(`Élément ${selector} non trouvé lors de la réinitialisation`);
+          }
+        }
+        
+        safeSetText('#conversionsCount', "0");
+        safeSetText('#avg-conversion-time', "0 ms");
+        safeSetText('#last-conversion-time', "0 ms");
+        safeSetText('#minmax-conversion-time', "0 / 0 ms");
+        safeSetText('#avg-resources', "0");
+        
+        // Réinitialiser également les statistiques de bénéfices
+        safeSetText('#timeSaved .counter', "0");
+        safeSetText('#successRate .counter', "100.0");
+        safeSetText('#resourceCount .counter', "0");
+        
+        // Réinitialiser les graphiques immédiatement de façon complète
+        resetAllCharts();
+        
+        // Afficher un indicateur de chargement
+        const loadingDiv = document.createElement('div');
+        loadingDiv.className = 'loading-overlay';
+        loadingDiv.innerHTML = `
+          <div class="loading-spinner"></div>
+          <div class="loading-message">Réinitialisation en cours...</div>
+        `;
+        document.body.appendChild(loadingDiv);
+        
+        // Créer un controller pour pouvoir annuler la requête si elle prend trop de temps
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondes de timeout
+        
+        // Appeler l'API de réinitialisation
+        fetch('/api/reset-stats', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
+          signal: controller.signal
+        })
+        .then(response => {
+          clearTimeout(timeoutId); // Annuler le timeout si la réponse arrive
+          if (!response.ok) {
+            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Supprimer l'indicateur de chargement s'il existe encore
+          if (document.body.contains(loadingDiv)) {
+            document.body.removeChild(loadingDiv);
+          }
+          
+          console.log("Réponse de l'API de réinitialisation:", data);
+          
+          // Afficher un message de succès
+          alert('Les statistiques ont été réinitialisées avec succès');
+          
+          // Rafraîchir séquentiellement pour assurer une réinitialisation complète
+          setTimeout(() => {
+            console.log("Actualisation après réinitialisation");
+            
+            // Forcer l'actualisation de tous les graphiques
+            if (typeof window.fetchAndUpdateCharts === 'function') {
+              window.fetchAndUpdateCharts(true); // true = forceUpdate
+            } else {
+              // Si la fonction n'existe pas, utiliser l'approche traditionnelle
+              fetch('/api/stats?t=' + Date.now(), { 
+                method: 'GET',
+                headers: {
+                  'Cache-Control': 'no-cache, no-store, must-revalidate',
+                  'Pragma': 'no-cache',
+                  'Expires': '0'
+                }
+              })
+              .then(response => {
+                if (!response.ok) {
+                  throw new Error(`Erreur HTTP ${response.status} lors de la récupération des stats`);
+                }
+                return response.json();
+              })
+              .then(refreshData => {
+                console.log("Données fraîches après réinitialisation:", refreshData);
+                
+                // Restaurer la disposition des widgets
+                restoreWidgetLayout();
+                
+                // Mettre à jour l'heure de dernière actualisation
+                updateLastRefreshTime();
+              })
+              .catch(refreshError => {
+                console.error('Erreur lors de la vérification des stats après réinitialisation:', refreshError);
+              });
+            }
+          }, 1000);
+        })
+        .catch(error => {
+          clearTimeout(timeoutId); // Annuler le timeout en cas d'erreur
+          
+          // Supprimer l'indicateur de chargement s'il existe encore
+          if (document.body.contains(loadingDiv)) {
+            document.body.removeChild(loadingDiv);
+          }
+          
+          // Gérer spécifiquement les erreurs d'abort
+          if (error.name === 'AbortError') {
+            console.error('La réinitialisation a été interrompue car elle prenait trop de temps');
+            alert('La réinitialisation a été interrompue car elle prenait trop de temps. Les graphiques ont été réinitialisés localement.');
+          } else {
+            // Afficher un message d'erreur détaillé
+            console.error('Erreur lors de la réinitialisation:', error);
+            alert(`Une erreur est survenue lors de la réinitialisation des statistiques: ${error.message}. Les graphiques ont été réinitialisés localement.`);
+          }
+          
+          // Même en cas d'erreur, restaurer la disposition des widgets et actualiser les graphiques
+          restoreWidgetLayout();
+        });
+      } catch (generalError) {
+        // Capture des erreurs JavaScript générales
+        console.error('Erreur générale dans la fonction resetStats:', generalError);
+        alert('Une erreur inattendue est survenue. Veuillez actualiser la page et réessayer.');
+      }
+    }
+    
+    // Fonction pour réinitialiser tous les graphiques
+    function resetAllCharts() {
+      // Récupérer tous les graphiques et les réinitialiser
+      if (window.memoryChart) {
+        window.memoryChart.data.datasets[0].data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        window.memoryChart.update();
+      }
+      
+      if (window.conversionTrendChart) {
+        window.conversionTrendChart.data.datasets[0].data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        window.conversionTrendChart.update();
+      }
+      
+      // Widget resourceDistChart supprimé
+      
+      if (window.successRateChart) {
+        window.successRateChart.data.datasets[0].data = [0, 0];
+        window.successRateChart.update();
+      }
+      
+      if (window.messageTypesChart) {
+        window.messageTypesChart.data.datasets[0].data = [0, 0, 0, 0, 0];
+        window.messageTypesChart.update();
+      }
+      
+      // Mise à jour de l'heure de dernière actualisation
+      updateLastRefreshTime();
+    }
+
+    // Cette fonction est obsolète et remplacée par simple-charts.js
+    function fetchStats() {
+      // Ne rien faire, la fonctionnalité a été déplacée vers simple-charts.js
+      console.log("fetchStats appelé depuis dashboard.html - redirigé vers simple-charts.js");
+    }
+    
+    // Calcul et mise à jour des indicateurs avancés avec des données RÉELLES uniquement
+    function updateBenefitsMetrics(data) {
+      const conversions = data.conversions || 0;
+      const avgProcessingTime = data.conversionStats?.avgTime || 0;
+      const avgResources = data.conversionStats?.avgResources || 0;
+      
+      // Utiliser le temps économisé calculé côté serveur
+      const timeSavedHours = data.timeSavedHours || 0;
+      
+      // Ajouter des logs pour le débogage
+      console.log("Données reçues du serveur:", data);
+      console.log("Temps économisé en heures:", timeSavedHours);
+      
+      // Utiliser uniquement des taux d'erreur et de succès réels
+      // SUPPRESSION de la manipulation artificielle du taux de succès
+      // Dans un système médical, on doit afficher le taux de succès réel
+      
+      // Par défaut, si l'API ne fournit pas cette information, supposer 100% de succès
+      // car c'est cohérent avec les logs qui montrent des conversions existantes
+      const successCount = data.conversionStats?.successCount !== undefined ? 
+                           data.conversionStats.successCount : conversions;
+      const errorCount = data.conversionStats?.errorCount !== undefined ? 
+                         data.conversionStats.errorCount : 0;
+                         
+      const totalCount = successCount + errorCount;
+      const successRate = totalCount > 0 ? ((successCount / totalCount) * 100).toFixed(1) : "100.0";
+      
+      // Calcul du nombre total de ressources FHIR générées
+      // Basé sur le nombre de conversions et la moyenne de ressources par conversion
+      let totalResources = Math.round(conversions * (avgResources || 5));
+      if (totalResources === 0 && conversions > 0) {
+        totalResources = conversions * 5; // Valeur par défaut si aucune statistique n'est disponible
+      }
+      
+      // Mise à jour des valeurs sur le tableau de bord
+      document.querySelector('#timeSaved .counter').textContent = timeSavedHours;
+      document.querySelector('#successRate .counter').textContent = successRate;
+      document.querySelector('#resourceCount .counter').textContent = totalResources;
+      
+      // Animation des compteurs pour un effet visuel plus attractif
+      animateCounters();
+    }
+    
+    // Animation des compteurs
+    function animateCounters() {
+      const counters = document.querySelectorAll('.counter');
+      
+      counters.forEach(counter => {
+        const target = parseFloat(counter.textContent);
+        const increment = target / 20; // Diviser en 20 étapes
+        let current = 0;
+        
+        const updateCounter = () => {
+          if (current < target) {
+            current += increment;
+            // Si c'est un nombre entier
+            if (Number.isInteger(target)) {
+              counter.textContent = Math.ceil(current);
+            } else {
+              // Si c'est un nombre decimal (avec 1 décimale)
+              counter.textContent = Math.min(target, current.toFixed(1));
+            }
+            requestAnimationFrame(updateCounter);
+          } else {
+            counter.textContent = target;
+          }
+        };
+        
+        updateCounter();
+      });
+    }
+    
+    // Configuration de la sauvegarde de la disposition des widgets lors du déplacement
+    function setupWidgetDragSave() {
+      const systemMetricsDiv = document.querySelector('.system-metrics');
+      if (!systemMetricsDiv) return;
+      
+      const widgets = Array.from(systemMetricsDiv.querySelectorAll('.metric-container'));
+      
+      // Assurez-vous que tous les widgets ont un ID unique
+      widgets.forEach((widget, index) => {
+        if (!widget.id) {
+          widget.id = `widget-${index}`;
+        }
+        
+        // Ajouter des gestionnaires pour le déplacement des widgets
+        const header = widget.querySelector('.metric-header');
+        if (header) {
+          header.addEventListener('mousedown', function(e) {
+            if (e.target.tagName.toLowerCase() === 'button') return; // Ne pas déclencher le glisser si on clique sur un bouton
+            
+            const rect = widget.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const offsetY = e.clientY - rect.top;
+            
+            widget.classList.add('dragging');
+            
+            const moveAt = function(pageX, pageY) {
+              widget.style.position = 'absolute';
+              widget.style.zIndex = '1000';
+              widget.style.left = pageX - offsetX + 'px';
+              widget.style.top = pageY - offsetY + 'px';
+            };
+            
+            moveAt(e.clientX, e.clientY);
+            
+            const onMouseMove = function(event) {
+              moveAt(event.clientX, event.clientY);
+              
+              // Déterminer si le widget est au-dessus d'un autre widget
+              const elemBelow = document.elementFromPoint(event.clientX, event.clientY);
+              const widgetBelow = elemBelow ? elemBelow.closest('.metric-container') : null;
+              
+              if (widgetBelow && widgetBelow !== widget) {
+                // Si le curseur est dans la première moitié du widget, insérer avant
+                const rectBelow = widgetBelow.getBoundingClientRect();
+                const middleY = rectBelow.top + rectBelow.height / 2;
+                
+                if (event.clientY < middleY) {
+                  systemMetricsDiv.insertBefore(widget, widgetBelow);
+                } else {
+                  systemMetricsDiv.insertBefore(widget, widgetBelow.nextSibling);
+                }
+              }
+            };
+            
+            document.addEventListener('mousemove', onMouseMove);
+            
+            document.addEventListener('mouseup', function onMouseUp() {
+              document.removeEventListener('mousemove', onMouseMove);
+              document.removeEventListener('mouseup', onMouseUp);
+              
+              widget.classList.remove('dragging');
+              widget.style.position = '';
+              widget.style.left = '';
+              widget.style.top = '';
+              widget.style.zIndex = '';
+              
+              // Sauvegarder la nouvelle disposition
+              saveWidgetLayout();
+            }, { once: true });
+          });
+        }
+      });
+    }
+    
+    function updateSystemMetrics(memory, conversionStats, applicationStats) {
+      // Utiliser la fonction updateAllCharts de notre fichier externe dashboard-charts-fixed.js
+      if (typeof updateAllCharts === 'function') {
+        const statsData = {
+          conversions: parseInt(document.getElementById('conversionsCount').textContent) || 0,
+          memory: memory,
+          conversionStats: conversionStats,
+          applicationStats: applicationStats
+        };
+        updateAllCharts(statsData);
+        return;
+      }
+      
+      // Fallback en cas de problème avec le fichier externe
+      console.warn("La fonction updateAllCharts n'est pas disponible");
+      
+      // Récupérer les données de mémoire depuis statsData
+      if (statsData && statsData.memory && statsData.memory.heapUsed) {
+        const usedMemory = Math.round(statsData.memory.heapUsed / (1024 * 1024));
+        
+        // Mettre à jour le graphique de mémoire avec des données RÉELLES seulement
+        const memoryChart = Chart.getChart(document.getElementById('memoryChart'));
+        if (memoryChart) {
+          // Ajouter la nouvelle valeur et supprimer la plus ancienne
+          memoryChart.data.datasets[0].data.push(usedMemory);
+          memoryChart.data.datasets[0].data.shift();
+          
+          // Mettre à jour le graphique avec animation complète pour forcer le rafraîchissement
+          memoryChart.update('none');
+        }
+      } else {
+        console.error("Erreur lors de la récupération des statistiques:", statsData);
+      }
+      
+      // Destruction et recréation complète du graphique des tendances de temps de conversion
+      const conversionTrendCanvas = document.getElementById('conversionTrendChart');
+      if (conversionTrendCanvas) {
+        // N'utiliser que des données réelles, ne pas avoir de valeur par défaut
+        if (!conversionStats || (!conversionStats.lastTime && !conversionStats.avgTime)) {
+          console.warn("Données de temps de conversion non disponibles, graphique non mis à jour");
+          return;
+        }
+        
+        // Déterminer la valeur réelle à utiliser pour la mise à jour
+        let newValue;
+        
+        if (conversionStats.lastTime && conversionStats.lastTime > 0) {
+          newValue = conversionStats.lastTime;
+        } else if (conversionStats.avgTime && conversionStats.avgTime > 0) {
+          newValue = conversionStats.avgTime;
+        } else {
+          console.warn("Aucune donnée valide de temps de conversion disponible");
+          return;
+        }
+        
+        console.log("Recréation du graphique de tendance avec valeur réelle:", newValue);
+        
+        // Détruire l'ancien graphique s'il existe
+        const oldChart = Chart.getChart(conversionTrendCanvas);
+        if (oldChart) {
+          oldChart.destroy();
+        }
+        
+        // Obtenir les données historiques existantes ou initialiser avec des valeurs par défaut
+        let historicalData = Array(4).fill(newValue).concat([newValue]);
+        
+        // Créer un nouveau graphique
+        new Chart(conversionTrendCanvas, {
+          type: 'line',
+          data: {
+            labels: ['Il y a 100 sec', 'Il y a 80 sec', 'Il y a 60 sec', 'Il y a 40 sec', 'Il y a 20 sec'],
+            datasets: [{
+              label: 'Temps de conversion (ms)',
+              data: historicalData,
+              backgroundColor: 'rgba(231, 76, 60, 0.2)',
+              borderColor: '#e74c3c',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+              duration: 1000  // Animation plus longue pour montrer clairement le changement
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  font: {
+                    size: 11
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      }
+      
+      // Widget de distribution des ressources FHIR supprimé sur demande utilisateur
+      
+      // Destruction et recréation complète du graphique de taux de réussite
+      const successRateCanvas = document.getElementById('successRateChart');
+      if (successRateCanvas) {
+        // Log pour débogage
+        console.log("Recréation du graphique taux de réussite avec conversions:", totalConversions);
+        
+        // Destruction de l'ancien graphique s'il existe
+        const oldChart = Chart.getChart(successRateCanvas);
+        if (oldChart) {
+          oldChart.destroy();
+        }
+        
+        // Récupérer les données réelles sur les conversions réussies et en erreur
+        let successfulCount, errorCount;
+        
+        // Si aucune donnée de conversion n'est disponible, afficher un graphique vide
+        if (!conversionStats || parseInt(totalConversions) <= 0) {
+          console.warn("Aucune donnée de conversion disponible pour le taux de réussite, graphique non mis à jour");
+          
+          // Créer un message dans le graphique indiquant qu'aucune donnée n'est disponible
+          const ctx = successRateCanvas.getContext('2d');
+          ctx.clearRect(0, 0, successRateCanvas.width, successRateCanvas.height);
+          ctx.font = '14px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#666';
+          ctx.fillText('Aucune donnée de conversion disponible', successRateCanvas.width / 2, successRateCanvas.height / 2);
+          
+          console.log("Graphique de taux de réussite vidé - aucune donnée disponible");
+          return; // Sortir de la fonction
+        } else {
+          // Si ces données ne sont pas disponibles via l'API, utiliser des valeurs basées sur les conversions réelles
+          successfulCount = typeof conversionStats.successCount !== 'undefined' 
+            ? conversionStats.successCount 
+            : parseInt(totalConversions); // Par défaut, toutes les conversions sont réussies
+          
+          errorCount = typeof conversionStats.errorCount !== 'undefined'
+            ? conversionStats.errorCount
+            : 0; // Par défaut, aucune erreur (seulement les valeurs réelles)
+            
+          // Si aucune donnée réelle n'est disponible, ne pas afficher le graphique
+          if (successfulCount <= 0 && errorCount <= 0) {
+            console.warn("Aucune donnée réelle de conversion disponible, graphique non mis à jour");
+            const ctx = successRateCanvas.getContext('2d');
+            ctx.clearRect(0, 0, successRateCanvas.width, successRateCanvas.height);
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#666';
+            ctx.fillText('Aucune donnée de conversion disponible', successRateCanvas.width / 2, successRateCanvas.height / 2);
+            return;
+          }
+        }
+        
+        console.log("Données réelles taux de réussite:", { successfulCount, errorCount });
+        
+        // Création d'un nouveau graphique avec les données réelles
+        new Chart(successRateCanvas, {
+          type: 'doughnut',
+          data: {
+            labels: ['Réussi', 'Erreur'],
+            datasets: [{
+              label: 'Taux de réussite',
+              data: [successfulCount, errorCount],
+              backgroundColor: [
+                'rgba(46, 204, 113, 0.7)',
+                'rgba(231, 76, 60, 0.7)'
+              ],
+              borderColor: [
+                'rgba(46, 204, 113, 1)',
+                'rgba(231, 76, 60, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+              duration: 1000  // Animation plus longue pour montrer clairement le changement
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  font: {
+                    size: 11
+                  }
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const total = successfulCount + errorCount;
+                    const percent = total > 0 ? Math.round(context.raw / total * 100) : 0;
+                    return `${context.label}: ${context.raw} (${percent}%)`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      // Destruction et recréation du graphique des types de messages HL7
+      const messageTypesCanvas = document.getElementById('messageTypesChart');
+      if (messageTypesCanvas) {
+        console.log("Recréation du graphique des types de messages HL7");
+        
+        // Destruction de l'ancien graphique s'il existe
+        const oldChart = Chart.getChart(messageTypesCanvas);
+        if (oldChart) {
+          oldChart.destroy();
+        }
+        
+        // Préparer les données de distribution
+        let messageTypeData;
+        
+        // Si aucune donnée de conversion n'est disponible, afficher un graphique vide
+        if (!conversionStats || parseInt(totalConversions) <= 0) {
+          console.warn("Aucune donnée de conversion disponible pour les types de messages, graphique non mis à jour");
+          
+          // Créer un message dans le graphique indiquant qu'aucune donnée n'est disponible
+          const ctx = messageTypesCanvas.getContext('2d');
+          ctx.clearRect(0, 0, messageTypesCanvas.width, messageTypesCanvas.height);
+          ctx.font = '14px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#666';
+          ctx.fillText('Aucune donnée de conversion disponible', messageTypesCanvas.width / 2, messageTypesCanvas.height / 2);
+          
+          console.log("Graphique des types de messages HL7 vidé - aucune donnée disponible");
+          return; // Sortir de la fonction sans créer de graphique
+        }
+        // Si les données réelles de distribution des types de messages sont disponibles dans l'API
+        else if (conversionStats.messageTypesDistribution) {
+          console.log("Utilisation des données réelles de types de messages:", conversionStats.messageTypesDistribution);
+          
+          // Ne pas utiliser de valeurs par défaut, seulement les données réelles
+          messageTypeData = [
+            conversionStats.messageTypesDistribution.ADT || 0,
+            conversionStats.messageTypesDistribution.ORU || 0,
+            conversionStats.messageTypesDistribution.ORM || 0,
+            conversionStats.messageTypesDistribution.MDM || 0,
+            conversionStats.messageTypesDistribution.other || 0
+          ];
+          
+          // Vérifier si toutes les valeurs sont nulles
+          const hasNoData = messageTypeData.every(val => val === 0);
+          if (hasNoData) {
+            console.warn("Aucune donnée réelle disponible dans la distribution des types de messages");
+            const ctx = messageTypesCanvas.getContext('2d');
+            ctx.clearRect(0, 0, messageTypesCanvas.width, messageTypesCanvas.height);
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#666';
+            ctx.fillText('Aucune donnée de type de message disponible', messageTypesCanvas.width / 2, messageTypesCanvas.height / 2);
+            return;
+          }
+        } else {
+          // Si les données ne sont pas disponibles, afficher un message au lieu de générer des données
+          console.warn("Aucune donnée détaillée de types de messages disponible, graphique non mis à jour");
+          
+          // Créer un message dans le graphique indiquant qu'aucune donnée détaillée n'est disponible
+          const ctx = messageTypesCanvas.getContext('2d');
+          ctx.clearRect(0, 0, messageTypesCanvas.width, messageTypesCanvas.height);
+          ctx.font = '14px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = '#666';
+          ctx.fillText('Données détaillées non disponibles', messageTypesCanvas.width / 2, messageTypesCanvas.height / 2);
+          
+          return; // Sortir de la fonction sans créer de graphique
+        }
+        
+        // Création d'un nouveau graphique
+        new Chart(messageTypesCanvas, {
+          type: 'bar',
+          data: {
+            labels: ['ADT', 'ORU', 'ORM', 'MDM', 'Autres'],
+            datasets: [{
+              label: 'Types de messages',
+              data: messageTypeData,
+              backgroundColor: [
+                'rgba(231, 76, 60, 0.7)',
+                'rgba(241, 136, 5, 0.7)', 
+                'rgba(243, 156, 18, 0.7)',
+                'rgba(246, 185, 59, 0.7)',
+                'rgba(249, 231, 159, 0.7)'
+              ],
+              borderColor: [
+                'rgba(231, 76, 60, 1)',
+                'rgba(241, 136, 5, 1)',
+                'rgba(243, 156, 18, 1)',
+                'rgba(246, 185, 59, 1)',
+                'rgba(249, 231, 159, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+              duration: 1000  // Animation plus longue pour montrer clairement le changement
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  precision: 0
+                }
+              }
+            },
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  font: {
+                    size: 11
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      // Mettre à jour les indicateurs de dernière mise à jour
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString();
+      
+      // Mise à jour pour les métriques avancées
+      const lastUpdateElement = document.getElementById('lastUpdateTime');
+      if (lastUpdateElement) {
+        lastUpdateElement.textContent = timeStr;
+      }
+      
+      // Mise à jour pour les statistiques de conversion
+      const statsUpdateElement = document.getElementById('statsUpdateTime');
+      if (statsUpdateElement) {
+        statsUpdateElement.textContent = timeStr;
+      }
+    }
+    
+    function fetchApplicationsCount() {
+      fetch('/api/applications', {
+        method: 'GET',
+        headers: {
+          'X-API-KEY': 'dev-key'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('applicationsCount').textContent = data.data.length;
+        }
+      })
+      .catch(error => {
+        console.error('Erreur lors de la récupération des applications:', error);
+      });
+    }
+    
+    function fetchApiKeysCount() {
+      fetch('/api/api-keys', {
+        method: 'GET',
+        headers: {
+          'X-API-KEY': 'dev-key'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('apiKeysCount').textContent = data.data.length;
+        }
+      })
+      .catch(error => {
+        console.error('Erreur lors de la récupération des clés API:', error);
+      });
+    }
+    
+    // Variables globales pour les graphiques (accessibles pour la réinitialisation)
+    window.memoryChart = null;
+    window.conversionTrendChart = null;
+    // window.resourceDistChart = null; // Widget supprimé sur demande utilisateur
+    window.successRateChart = null;
+    window.messageTypesChart = null;
+    
+    function initCharts() {
+      // Destruction des graphiques existants si présents
+      ['memoryChart', 'conversionTrendChart', /* 'resourceDistChart' supprimé, */ 'successRateChart', 'messageTypesChart'].forEach(chartId => {
+        const existingChart = Chart.getChart(document.getElementById(chartId));
+        if (existingChart) {
+          existingChart.destroy();
+        }
+      });
+      
+      // Labels communs pour tous les graphiques temporels
+      const timeLabels = ['Il y a 100 sec', 'Il y a 80 sec', 'Il y a 60 sec', 'Il y a 40 sec', 'Il y a 20 sec'];
+      
+      // Configuration commune des graphiques
+      const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: {
+                size: 11
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      };
+      
+      // Données pour le graphique de mémoire - valeurs initiales vides
+      const memoryData = {
+        labels: timeLabels,
+        datasets: [{
+          label: 'Utilisation mémoire (MB)',
+          data: [0, 0, 0, 0, 0],
+          backgroundColor: 'rgba(241, 136, 5, 0.2)',
+          borderColor: '#f18805',
+          borderWidth: 2,
+          fill: true
+        }]
+      };
+      
+      // Données pour le graphique des tendances de temps de conversion - valeurs vides initiales
+      const conversionTrendData = {
+        labels: timeLabels,
+        datasets: [{
+          label: 'Temps de conversion (ms)',
+          data: [0, 0, 0, 0, 0], // Valeurs vides initiales - seront remplacées par des données réelles
+          backgroundColor: 'rgba(231, 76, 60, 0.2)',
+          borderColor: '#e74c3c',
+          borderWidth: 2
+        }]
+      };
+      
+      // Données pour le graphique de distribution des ressources FHIR - supprimé
+      
+      // Données pour le taux de réussite - valeurs vides initiales
+      const successRateData = {
+        labels: ['Réussi', 'Erreur'],
+        datasets: [{
+          label: 'Taux de réussite',
+          data: [0, 0], // Valeurs vides initiales
+          backgroundColor: [
+            'rgba(46, 204, 113, 0.7)',
+            'rgba(231, 76, 60, 0.7)'
+          ],
+          borderColor: [
+            'rgba(46, 204, 113, 1)',
+            'rgba(231, 76, 60, 1)'
+          ],
+          borderWidth: 1
+        }]
+      };
+      
+      // Données pour les types de messages HL7 - valeurs vides initiales
+      const messageTypesData = {
+        labels: ['ADT', 'ORU', 'ORM', 'MDM', 'Autres'],
+        datasets: [{
+          label: 'Types de messages',
+          data: [0, 0, 0, 0, 0], // Valeurs vides initiales
+          backgroundColor: [
+            'rgba(231, 76, 60, 0.7)',
+            'rgba(241, 136, 5, 0.7)', 
+            'rgba(243, 156, 18, 0.7)',
+            'rgba(246, 185, 59, 0.7)',
+            'rgba(249, 231, 159, 0.7)'
+          ],
+          borderColor: [
+            'rgba(231, 76, 60, 1)',
+            'rgba(241, 136, 5, 1)',
+            'rgba(243, 156, 18, 1)',
+            'rgba(246, 185, 59, 1)',
+            'rgba(249, 231, 159, 1)'
+          ],
+          borderWidth: 1
+        }]
+      };
+      
+      // Ajouter des options pour afficher "Aucune donnée disponible" quand il n'y a pas de données
+      const emptyDataOptions = {
+        plugins: {
+          ...commonOptions.plugins,
+          emptyDoughnut: {
+            color: 'rgba(150, 150, 150, 0.5)',
+            width: 5,
+            radiusPercentage: 70
+          }
+        }
+      };
+
+      // Créer les graphiques
+      window.memoryChart = new Chart(document.getElementById('memoryChart'), {
+        type: 'line',
+        data: memoryData,
+        options: {
+          ...commonOptions,
+          plugins: {
+            ...commonOptions.plugins,
+            title: {
+              display: true,
+              text: 'Aucune donnée disponible',
+              color: 'rgba(150, 150, 150, 0.8)',
+              font: {
+                size: 14
+              },
+              // Le titre s'affiche uniquement quand il n'y a pas de données
+              display: memoryData.datasets[0].data.every(d => d === 0 || d === null)
+            }
+          }
+        }
+      });
+      
+      window.conversionTrendChart = new Chart(document.getElementById('conversionTrendChart'), {
+        type: 'line',
+        data: conversionTrendData,
+        options: {
+          ...commonOptions,
+          plugins: {
+            ...commonOptions.plugins,
+            title: {
+              display: true,
+              text: 'Aucune donnée disponible',
+              color: 'rgba(150, 150, 150, 0.8)',
+              font: {
+                size: 14
+              },
+              // Le titre s'affiche uniquement quand il n'y a pas de données
+              display: conversionTrendData.datasets[0].data.every(d => d === 0 || d === null)
+            }
+          }
+        }
+      });
+      
+      // Initialisation de resourceDistChart supprimée - widget retiré sur demande utilisateur
+      
+      window.successRateChart = new Chart(document.getElementById('successRateChart'), {
+        type: 'doughnut',
+        data: successRateData,
+        options: {
+          ...commonOptions,
+          plugins: {
+            ...commonOptions.plugins,
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const sum = successRateData.datasets[0].data.reduce((a, b) => a + b, 0);
+                  if (sum === 0) return `${context.label}: 0 (0%)`;
+                  const percent = Math.round(context.raw / sum * 100);
+                  return `${context.label}: ${context.raw} (${percent}%)`;
+                }
+              }
+            },
+            title: {
+              display: true,
+              text: 'Aucune donnée disponible',
+              color: 'rgba(150, 150, 150, 0.8)',
+              font: {
+                size: 14
+              },
+              // Le titre s'affiche uniquement quand il n'y a pas de données
+              display: successRateData.datasets[0].data.every(d => d === 0 || d === null)
+            }
+          }
+        }
+      });
+      
+      window.messageTypesChart = new Chart(document.getElementById('messageTypesChart'), {
+        type: 'bar',
+        data: messageTypesData,
+        options: {
+          ...commonOptions,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                precision: 0
+              }
+            }
+          },
+          plugins: {
+            ...commonOptions.plugins,
+            title: {
+              display: true,
+              text: 'Aucune donnée disponible',
+              color: 'rgba(150, 150, 150, 0.8)',
+              font: {
+                size: 14
+              },
+              // Le titre s'affiche uniquement quand il n'y a pas de données
+              display: messageTypesData.datasets[0].data.every(d => d === 0 || d === null)
+            }
+          }
+        }
+      });
+    }
+    
+    // Initialisation de la fonctionnalité de drag-and-drop pour les métriques
+    function initDraggableMetrics() {
+      const metricsContainer = document.getElementById('draggableMetrics');
+      if (!metricsContainer) return;
+      
+      let draggedItem = null;
+      
+      // Sauvegarder l'ordre des métriques dans le localStorage
+      function saveMetricsOrder() {
+        const metricContainers = document.querySelectorAll('.metric-container');
+        const order = Array.from(metricContainers).map(container => container.getAttribute('data-metric-id'));
+        localStorage.setItem('metricsOrder', JSON.stringify(order));
+      }
+      
+      // Restaurer l'ordre des métriques depuis le localStorage
+      function restoreMetricsOrder() {
+        const savedOrder = localStorage.getItem('metricsOrder');
+        if (!savedOrder) return;
+        
+        try {
+          const order = JSON.parse(savedOrder);
+          const metricContainers = Array.from(document.querySelectorAll('.metric-container'));
+          
+          // Trier les conteneurs selon l'ordre sauvegardé
+          order.forEach(metricId => {
+            const container = metricContainers.find(c => c.getAttribute('data-metric-id') === metricId);
+            if (container) {
+              metricsContainer.appendChild(container);
+            }
+          });
+        } catch (error) {
+          console.error('Erreur lors de la restauration de l\'ordre des métriques:', error);
+        }
+      }
+      
+      // Initialiser les événements de glisser-déposer
+      document.querySelectorAll('.metric-container').forEach(container => {
+        container.addEventListener('dragstart', function(e) {
+          draggedItem = this;
+          setTimeout(() => {
+            this.classList.add('dragging');
+          }, 0);
+        });
+        
+        container.addEventListener('dragend', function() {
+          this.classList.remove('dragging');
+          draggedItem = null;
+          saveMetricsOrder();
+        });
+        
+        container.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          if (draggedItem === this) return;
+          
+          const rect = this.getBoundingClientRect();
+          const y = e.clientY - rect.top;
+          
+          if (y < rect.height / 2) {
+            metricsContainer.insertBefore(draggedItem, this);
+          } else {
+            metricsContainer.insertBefore(draggedItem, this.nextSibling);
+          }
+        });
+      });
+      
+      // Initialiser le bouton de réinitialisation de l'ordre
+      const resetOrderBtn = document.getElementById('resetOrderBtn');
+      if (resetOrderBtn) {
+        resetOrderBtn.addEventListener('click', function() {
+          localStorage.removeItem('metricsOrder');
+          location.reload();
+        });
+      }
+      
+      // Restaurer l'ordre précédemment sauvegardé
+      restoreMetricsOrder();
+    }
+    
+    // Fonction pour mettre à jour l'horodatage de dernière actualisation
+    function updateLastRefreshTime() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString();
+      const dateStr = now.toLocaleDateString();
+      
+      // Ajouter l'élément d'horodatage pour les métriques avancées s'il n'existe pas
+      if (!document.querySelector('.metrics-refresh-time')) {
+        const metricsCard = document.querySelector('.card:has(.system-metrics)');
+        if (metricsCard) {
+          const refreshDiv = document.createElement('div');
+          refreshDiv.className = 'metrics-refresh-time';
+          refreshDiv.innerHTML = `Dernière mise à jour: <span id="lastUpdateTime">${timeStr}</span> - ${dateStr}`;
+          
+          // Insérer avant le premier élément dans metrics-container
+          const header = metricsCard.querySelector('.card-header');
+          if (header) {
+            header.appendChild(refreshDiv);
+          }
+        }
+      } else {
+        const lastUpdateElement = document.getElementById('lastUpdateTime');
+        if (lastUpdateElement) {
+          lastUpdateElement.textContent = timeStr;
+        }
+      }
+      
+      // Mise à jour de l'horodatage pour les statistiques de conversion
+      const statsUpdateElement = document.getElementById('statsUpdateTime');
+      if (statsUpdateElement) {
+        statsUpdateElement.textContent = timeStr;
+      }
+      
+      // Mettre à jour les horodatages chaque fois que les statistiques sont rafraîchies
+      // Modifier la fonction fetchStats pour assurer le rafraîchissement
+      const originalFetchStats = fetchStats;
+      fetchStats = function() {
+        // Utiliser le chemin relatif pour éviter les problèmes CORS
+        // Utiliser une requête avec cache désactivé pour forcer un rafraîchissement
+        fetch('/api/stats', {
+          method: 'GET',
+          cache: 'no-store', // Forcer le rafraîchissement sans cache
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            console.log("Données fraîches reçues via fetchStats modifié:", data.data);
+            
+            // Mise à jour complète des données
+            const stats = data.data;
+            // Mise à jour du compteur de conversions
+            document.getElementById('conversionsCount').textContent = stats.conversions;
+            
+            // Continuer avec les autres mises à jour
+            if (stats.conversionStats) {
+              updateBenefitsMetrics(stats);
+              updateSystemMetrics(
+                stats.memory,
+                stats.conversionStats,
+                stats.applicationStats
+              );
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Erreur lors de la récupération des statistiques:', error);
+        });
+        
+        // Mettre à jour l'horodatage
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString();
+        
+        // Mise à jour pour les métriques avancées
+        const lastUpdateElement = document.getElementById('lastUpdateTime');
+        if (lastUpdateElement) {
+          lastUpdateElement.textContent = timeStr;
+        }
+        
+        // Mise à jour pour les statistiques de conversion
+        const statsUpdateElement = document.getElementById('statsUpdateTime');
+        if (statsUpdateElement) {
+          statsUpdateElement.textContent = timeStr;
+        }
+      };
+      
+      // Fonction pour récupérer les types de messages HL7
+      function fetchMessageTypes() {
+        // Récupérer l'élément du message "Aucune donnée disponible"
+        const noDataMsg = document.getElementById('noDataMessage');
+        const chartCanvas = document.getElementById('messageTypesChart');
+        
+        // Nous utilisons le chemin relatif pour éviter les problèmes CORS
+        fetch('/api/message-types', {
+          method: 'GET',
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          // Déterminer si nous avons des données valides à afficher
+          let messageTypesData = data;
+          if (data.success && data.data) {
+            messageTypesData = data.data;
+          }
+          
+          // Vérifiez si nous avons effectivement des données de message
+          if (messageTypesData && messageTypesData.length > 0) {
+            console.log("Données de types de messages HL7 reçues:", messageTypesData);
+            
+            // Masquer le message "Aucune donnée disponible"
+            if (noDataMsg) {
+              noDataMsg.style.display = 'none';
+            }
+            
+            // Afficher le canevas pour le graphique
+            if (chartCanvas) {
+              chartCanvas.style.opacity = '1';
+            }
+            
+            // Préparer les données pour le graphique
+            const labels = [];
+            const values = [];
+            
+            // Extraire les données
+            messageTypesData.forEach(item => {
+              labels.push(item.message_type);
+              values.push(item.count);
+            });
+            
+            const messageTypesCtx = chartCanvas.getContext('2d');
+            
+            // Mise à jour du graphique des types de messages
+            if (window.messageTypesChart) {
+              // Mettre à jour les données du graphique existant sans le détruire
+              window.messageTypesChart.data.labels = labels;
+              window.messageTypesChart.data.datasets[0].data = values;
+              window.messageTypesChart.update();
+              console.log("Graphique des types de messages HL7 mis à jour avec les données réelles");
+            } else {
+              // Création d'un nouveau graphique avec les données réelles si aucun n'existe
+              window.messageTypesChart = new Chart(messageTypesCtx, {
+                type: 'bar',
+                data: {
+                  labels: labels,
+                  datasets: [{
+                    label: 'Types de messages',
+                    data: values,
+                    backgroundColor: [
+                      'rgba(231, 76, 60, 0.7)',
+                      'rgba(241, 136, 5, 0.7)',
+                      'rgba(243, 156, 18, 0.7)',
+                      'rgba(246, 185, 59, 0.7)',
+                      'rgba(249, 231, 159, 0.7)'
+                    ],
+                    borderColor: [
+                      'rgba(231, 76, 60, 1)',
+                      'rgba(241, 136, 5, 1)',
+                      'rgba(243, 156, 18, 1)',
+                      'rgba(246, 185, 59, 1)',
+                      'rgba(249, 231, 159, 1)'
+                    ],
+                    borderWidth: 1
+                  }]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  animation: {
+                    duration: 800
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        precision: 0
+                      }
+                    }
+                  },
+                  plugins: {
+                    legend: {
+                      display: true,
+                      position: 'top'
+                    },
+                    title: {
+                      display: false
+                    }
+                  }
+                }
+              });
+              console.log("Graphique des types de messages HL7 créé avec les données réelles");
+            }
+          } else {
+            console.warn("Aucune donnée de types de messages HL7 disponible");
+            
+            // Afficher le message "Aucune donnée disponible"
+            if (noDataMsg) {
+              noDataMsg.style.display = 'block';
+            }
+            
+            // Masquer ou opacifier le canevas qui pourrait avoir un ancien graphique
+            if (chartCanvas) {
+              chartCanvas.style.opacity = '0.2';
+            }
+            
+            // Détruire le graphique s'il existe pour éviter les données fantômes
+            if (window.messageTypesChart) {
+              window.messageTypesChart.destroy();
+              window.messageTypesChart = null;
+            }
+          }
+        })
+        .catch(error => {
+          console.error('Erreur lors de la récupération des types de messages:', error);
+          
+          // Afficher le message "Aucune donnée disponible" en cas d'erreur
+          if (noDataMsg) {
+            noDataMsg.textContent = 'Erreur lors de la récupération des données';
+            noDataMsg.style.display = 'block';
+          }
+          
+          // Masquer ou opacifier le canevas en cas d'erreur
+          if (chartCanvas) {
+            chartCanvas.style.opacity = '0.2';
+          }
+          
+          // Détruire le graphique s'il existe pour éviter les données fantômes
+          if (window.messageTypesChart) {
+            window.messageTypesChart.destroy();
+            window.messageTypesChart = null;
+          }
+        });
+      }
+      
+      // Appel initial pour charger les types de messages
+      fetchMessageTypes();
+      
+      // Intervalle d'actualisation réduit à une fois par minute pour améliorer la stabilité
+      setInterval(() => {
+        fetchStats();
+        fetchMessageTypes();
+      }, 60000); // Actualisation toutes les 60 secondes
+    }
+  </script>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-text">
+        &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+        <div class="footer-version">Version: <span class="version-text">Chargement...</span></div>
+      </div>
+    </div>
+  </footer>
+  
+  <!-- Script pour gérer la version dans le footer -->
+  <script src="/js/footer-version.js"></script>
+</body>
+</html>

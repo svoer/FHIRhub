@@ -1,0 +1,2216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ Technique | FHIRHub</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/sidebar-menu.css">
+    <link rel="stylesheet" href="/css/documentation.css">
+    <link rel="stylesheet" href="/css/faq.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="/js/include-sidebar.js"></script>
+    <script src="/js/faq.js" defer></script>
+    <script src="/js/doc-menu.js" defer></script>
+    <style>
+        /* Styles pour le bouton "Retour en haut" */
+        .back-to-top {
+            display: block;
+            position: fixed;
+            bottom: 40px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+            border-radius: 50%;
+            color: white;
+            text-align: center;
+            line-height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-decoration: none;
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+        }
+        
+        /* Styles pour les surlignages de recherche */
+        mark.highlight {
+            background: #FFEB3B;
+            padding: 0 3px;
+            border-radius: 2px;
+            box-shadow: 0 0 1px rgba(0,0,0,0.2);
+        }
+        
+        mark.highlight-pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { background-color: #FFEB3B; }
+            50% { background-color: #FFD54F; }
+            100% { background-color: #FFEB3B; }
+        }
+        
+        /* Style pour le message "Aucun résultat" */
+        .no-results {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: var(--border-radius);
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="with-sidebar">
+    <!-- Le menu latéral sera injecté ici par include-sidebar.js -->
+
+    <div class="main-content with-sidebar">
+        <!-- Bouton retour en haut de page -->
+        <a href="#" id="back-to-top" class="back-to-top" title="Retour en haut de page">
+            <i class="fas fa-arrow-up"></i>
+        </a>
+
+        <div class="container">
+            <div class="doc-header">
+                <div>
+                    <h1 style="margin-bottom: 20px;">Foire Aux Questions</h1>
+                    <p class="subtitle">Réponses aux questions techniques sur FHIRHub</p>
+                </div>
+            </div>
+
+            <div class="section-nav">
+                <div class="nav-items-container">
+                    <a href="#terminology" class="nav-item active"><i class="fas fa-language"></i> Système de terminologie</a>
+                    <a href="#conversion" class="nav-item"><i class="fas fa-exchange-alt"></i> Conversion HL7 vers FHIR</a>
+                    <a href="#ai-integration" class="nav-item"><i class="fas fa-robot"></i> Intégration IA</a>
+                    <a href="#auth-security" class="nav-item"><i class="fas fa-shield-alt"></i> Authentification et sécurité</a>
+                    <a href="#database" class="nav-item"><i class="fas fa-database"></i> Base de données</a>
+
+                    <a href="#ui" class="nav-item"><i class="fas fa-desktop"></i> Interface utilisateur</a>
+                    <a href="#architecture" class="nav-item"><i class="fas fa-cubes"></i> Architecture système</a>
+                    <a href="#api" class="nav-item"><i class="fas fa-plug"></i> API et intégration</a>
+                    <a href="#errors-logging" class="nav-item"><i class="fas fa-exclamation-triangle"></i> Erreurs et logging</a>
+                    <a href="#performance" class="nav-item"><i class="fas fa-tachometer-alt"></i> Performance</a>
+                    <a href="#internationalization" class="nav-item"><i class="fas fa-globe"></i> Internationalisation</a>
+                </div>
+            </div>
+
+        <div class="container">
+            <div id="terminology" class="documentation-section">
+            <h2>Système de terminologie</h2>
+                
+                <div class="faq-item">
+                    <h3 id="terminology-corrupt">Comment le système gère-t-il les fichiers de terminologie non valides ou corrompus ?</h3>
+                    <div class="faq-answer">
+                        <p>Le système FHIRHub implémente une stratégie robuste en 3 étapes pour gérer les fichiers de terminologie non valides ou corrompus :</p>
+                        
+                        <ol>
+                            <li><strong>Validation préventive :</strong> Lors du chargement d'un fichier de terminologie, le système effectue une validation complète (syntaxe JSON, structure attendue, présence des champs obligatoires).</li>
+                            <li><strong>Sauvegarde automatique :</strong> Avant toute mise à jour ou modification, le système crée une sauvegarde automatique avec le préfixe "backup_" + nom du fichier original.</li>
+                            <li><strong>Mécanisme de restauration :</strong> Si un fichier est détecté comme corrompu lors de la lecture, le système tente automatiquement de restaurer la dernière version valide depuis les fichiers de sauvegarde.</li>
+                        </ol>
+                        
+                        <p>Voici le code principal qui gère la détection et la restauration (dans <code>routes/terminology.js</code>) :</p>
+                        
+                        <pre><code>// Essayer de lire le fichier
+try {
+  const data = await readTerminologyFile(filename);
+  return data;
+} catch (error) {
+  console.error(`Erreur lors de la lecture du fichier ${filename}:`, error);
+  
+  // Tenter une restauration automatique depuis la sauvegarde
+  try {
+    const backupFilename = `backup_${filename}`;
+    console.log(`Tentative de restauration depuis ${backupFilename}...`);
+    const backupData = await readTerminologyFile(backupFilename);
+    
+    // Copier la sauvegarde vers le fichier original
+    await fs.promises.writeFile(
+      path.join(terminologyDir, filename),
+      JSON.stringify(backupData, null, 2)
+    );
+    
+    console.log(`Restauration réussie depuis ${backupFilename}`);
+    return backupData;
+  } catch (backupError) {
+    console.error('Échec de la restauration:', backupError);
+    throw new Error(`Impossible de lire ou restaurer le fichier ${filename}`);
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="terminology-backup">Quel est le mécanisme exact de sauvegarde des fichiers de terminologie et quand est-il déclenché ?</h3>
+                    <div class="faq-answer">
+                        <p>Le mécanisme de sauvegarde des fichiers de terminologie est automatique et se déclenche dans deux cas précis :</p>
+                        
+                        <ol>
+                            <li><strong>Lors de chaque lecture réussie :</strong> Si un fichier est lu correctement, une sauvegarde est créée ou mise à jour.</li>
+                            <li><strong>Avant chaque mise à jour :</strong> Avant d'écrire dans un fichier, le système sauvegarde d'abord l'ancienne version.</li>
+                        </ol>
+                        
+                        <p>Les fichiers de sauvegarde sont stockés dans le même répertoire que les fichiers originaux avec le préfixe "backup_". Ce mécanisme garantit qu'il existe toujours une version fonctionnelle récente en cas de corruption.</p>
+                        
+                        <p>Implémentation dans <code>src/services/terminologyService.js</code> :</p>
+                        
+                        <pre><code>async function createBackup(filename) {
+  const filePath = path.join(terminologyDir, filename);
+  const backupPath = path.join(terminologyDir, `backup_${filename}`);
+  
+  try {
+    // Vérifier si le fichier original existe
+    if (await fileExists(filePath)) {
+      // Copier le fichier vers la sauvegarde
+      await fs.promises.copyFile(filePath, backupPath);
+      console.log(`Sauvegarde créée: ${backupPath}`);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(`Erreur lors de la création de la sauvegarde pour ${filename}:`, error);
+    return false;
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="terminology-cache">Comment sont chargés et mis en cache les fichiers de terminologie pour optimiser les performances ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub utilise un système de mise en cache à deux niveaux pour optimiser l'accès aux fichiers de terminologie :</p>
+                        
+                        <ol>
+                            <li><strong>Cache mémoire :</strong> Les fichiers de terminologie fréquemment utilisés sont stockés en mémoire à l'aide d'une Map JavaScript avec une durée de validité configurable.</li>
+                            <li><strong>Cache de pré-calcul :</strong> Pour certaines opérations complexes comme les recherches inversées (code vers description), des index sont pré-calculés et mis en cache.</li>
+                        </ol>
+                        
+                        <p>Le système utilise aussi un mécanisme de rechargement conditionnel basé sur les dates de modification des fichiers.</p>
+                        
+                        <p>Implémentation du système de cache :</p>
+                        
+                        <pre><code>// Structure de cache global
+const terminologyCache = {
+  files: new Map(),  // Stocke les contenus des fichiers
+  indexes: new Map(), // Stocke les index pré-calculés
+  lastCheck: 0        // Timestamp de la dernière vérification
+};
+
+async function getTerminologyFile(filename, forceReload = false) {
+  const now = Date.now();
+  const cacheEntry = terminologyCache.files.get(filename);
+  
+  // Vérifier si une entrée de cache valide existe
+  if (!forceReload && cacheEntry && (now - cacheEntry.timestamp < CACHE_TTL_MS)) {
+    console.log(`Utilisation du cache pour ${filename}`);
+    return cacheEntry.data;
+  }
+  
+  // Sinon, charger depuis le disque
+  try {
+    const filePath = path.join(terminologyDir, filename);
+    const fileData = await fs.promises.readFile(filePath, 'utf8');
+    const parsedData = JSON.parse(fileData);
+    
+    // Mettre à jour le cache
+    terminologyCache.files.set(filename, {
+      data: parsedData,
+      timestamp: now
+    });
+    
+    // Créer une sauvegarde après chaque lecture réussie
+    await createBackup(filename);
+    
+    return parsedData;
+  } catch (error) {
+    console.error(`Erreur de chargement pour ${filename}:`, error);
+    throw error;
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="terminology-oids">Comment les identifiants OID français sont-ils résolus lors de la conversion HL7 vers FHIR ?</h3>
+                    <div class="faq-answer">
+                        <p>La résolution des identifiants OID français est une fonctionnalité clé de FHIRHub, particulièrement importante pour la conformité avec les spécifications ANS (Agence du Numérique en Santé).</p>
+                        
+                        <p>Lorsqu'un message HL7 contient un OID français, le processus suivant s'exécute :</p>
+                        
+                        <ol>
+                            <li>Le système recherche d'abord l'OID dans le fichier <code>french_terminology/ans_oids.json</code> qui contient les mappings officiels ANS.</li>
+                            <li>Si l'OID est trouvé, le système récupère son URL FHIR correspondante (généralement un système de terminologie).</li>
+                            <li>Cette URL est ensuite utilisée comme système de référence pour les ressources FHIR générées.</li>
+                            <li>En cas d'absence dans le fichier principal, le système tente une résolution alternative via d'autres sources comme <code>ans_terminology_systems.json</code>.</li>
+                        </ol>
+                        
+                        <p>Exemple de résolution d'OID dans le convertisseur :</p>
+                        
+                        <pre><code>// Résoudre un OID français vers une URL de système FHIR
+function resolveOID(oid) {
+  // Chercher dans la table de mapping OID
+  if (oidMappings[oid]) {
+    logger.debug(`OID résolu: ${oid} -> ${oidMappings[oid].url}`);
+    return oidMappings[oid].url;
+  }
+  
+  // Fallback pour les OID non trouvés
+  logger.warn(`OID non trouvé dans les mappings français: ${oid}`);
+  return `urn:oid:${oid}`;
+}
+
+// Exemple d'utilisation dans la conversion d'un code
+function convertHL7CodeToFHIR(hl7Code, oid) {
+  const system = resolveOID(oid);
+  return {
+    system: system,
+    code: hl7Code.value,
+    display: hl7Code.display || getCodeDisplay(system, hl7Code.value)
+  };
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="terminology-conflicts">Quelle est la stratégie de gestion des conflits lorsque deux systèmes de terminologie définissent le même code ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub utilise une stratégie de priorité hiérarchique pour résoudre les conflits entre systèmes de terminologie :</p>
+                        
+                        <ol>
+                            <li><strong>Priorité des systèmes français :</strong> Les codes définis dans les terminologies ANS ont toujours priorité sur les autres.</li>
+                            <li><strong>Liste de priorité configurable :</strong> Une liste ordonnée de systèmes permet de définir quel système a préséance en cas de conflit.</li>
+                            <li><strong>Journal des conflits :</strong> Tous les conflits détectés sont journalisés pour analyse ultérieure.</li>
+                            <li><strong>Mécanisme de qualification :</strong> Le système peut qualifier les codes avec le préfixe du système (ex: "LOINC:12345") pour lever les ambiguïtés.</li>
+                        </ol>
+                        
+                        <p>Implémentation de la résolution de conflits :</p>
+                        
+                        <pre><code>// Liste ordonnée de priorités des systèmes
+const SYSTEM_PRIORITIES = [
+  'https://mos.esante.gouv.fr/NOS', // Priorité maximale: NOS français
+  'http://loinc.org',               // LOINC
+  'http://snomed.info/sct',         // SNOMED CT
+  'http://terminology.hl7.org',     // Terminologies HL7
+  'http://unitsofmeasure.org',      // UCUM
+  // Autres systèmes avec priorité plus basse
+];
+
+function resolveCodeConflict(code, systems) {
+  if (systems.length === 1) return systems[0]; // Pas de conflit
+  
+  // Logger le conflit
+  logger.warn(`Conflit détecté pour le code '${code}' entre les systèmes: ${systems.join(', ')}`);
+  
+  // Trier les systèmes selon leur priorité
+  systems.sort((a, b) => {
+    const priorityA = SYSTEM_PRIORITIES.indexOf(a);
+    const priorityB = SYSTEM_PRIORITIES.indexOf(b);
+    
+    // Si un système n'est pas dans la liste, lui donner la priorité la plus basse
+    const aValue = priorityA === -1 ? Number.MAX_SAFE_INTEGER : priorityA;
+    const bValue = priorityB === -1 ? Number.MAX_SAFE_INTEGER : priorityB;
+    
+    return aValue - bValue;
+  });
+  
+  // Retourner le système avec la priorité la plus élevée
+  logger.info(`Résolution du conflit en faveur de: ${systems[0]}`);
+  return systems[0];
+}</code></pre>
+
+                        <p>Un exemple concret de conflit pourrait survenir avec le code "8302-2" qui existe à la fois dans LOINC (pour la taille) et dans un système local. Le système appliquera la hiérarchie de priorité pour choisir le système LOINC, qui est standard et reconnu internationalement.</p>
+                        
+                        <p>Dans les cas de conflit critiques, le système enregistre les détails complets dans le journal des conflits (<code>conflict-resolution.log</code>) qui peut être consulté par les administrateurs. Ce journal contient l'horodatage, les systèmes en conflit, le code concerné et la résolution appliquée.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="terminology-structure">Quelle est la structure des fichiers de terminologie utilisés par FHIRHub ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub utilise plusieurs fichiers de terminologie au format JSON, chacun avec une structure spécifique optimisée pour son usage :</p>
+                        
+                        <ol>
+                            <li><strong>ans_terminology_systems.json</strong> : Contient la liste des systèmes de terminologie reconnus par l'ANS avec leurs détails (nom, OID, URL FHIR, version).</li>
+                            <li><strong>ans_oids.json</strong> : Table de correspondance entre les OIDs français et les URLs de systèmes FHIR.</li>
+                            <li><strong>ans_common_codes.json</strong> : Codes communs utilisés dans les conversions (sexe, type d'adresse, etc.) avec leurs équivalents FHIR.</li>
+                        </ol>
+                        
+                        <p>Voici un extrait de la structure du fichier <code>ans_terminology_systems.json</code> :</p>
+                        
+                        <pre><code>{
+  "systems": [
+    {
+      "name": "JDV_J01-XdsTypeCode-CISIS",
+      "oid": "1.2.250.1.213.1.1.5.1",
+      "url": "https://mos.esante.gouv.fr/NOS/JDV_J01-XdsTypeCode-CISIS/FHIR/JDV-J01-XdsTypeCode-CISIS",
+      "version": "1.1.0",
+      "publisher": "ANS",
+      "status": "active",
+      "description": "Liste des codes de types de documents définis par le CISIS"
+    },
+    {
+      "name": "TRE_R13-InterventionMedicale",
+      "oid": "1.2.250.1.213.1.1.4.13",
+      "url": "https://mos.esante.gouv.fr/NOS/TRE_R13-InterventionMedicale/FHIR/TRE-R13-InterventionMedicale",
+      "version": "1.2.0",
+      "publisher": "ANS",
+      "status": "active",
+      "description": "Interventions médicales (procédures)"
+    }
+  ]
+}</code></pre>
+
+                        <p>Et un extrait de <code>ans_common_codes.json</code> :</p>
+                        
+                        <pre><code>{
+  "gender": {
+    "M": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender",
+      "code": "M",
+      "display": "Masculin"
+    },
+    "F": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender",
+      "code": "F",
+      "display": "Féminin"
+    },
+    "U": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-AdministrativeGender",
+      "code": "U",
+      "display": "Inconnu"
+    }
+  },
+  "addressType": {
+    "H": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-AddressUse",
+      "code": "home",
+      "display": "Domicile"
+    },
+    "B": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-AddressUse",
+      "code": "work",
+      "display": "Travail"
+    }
+  }
+}</code></pre>
+                        
+                        <p>Ces structures sont optimisées pour une recherche rapide et une validation efficace. Les fichiers sont vérifiés à l'aide de schémas JSON qui définissent strictement la structure attendue, garantissant ainsi leur intégrité.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="terminology-versioning">Comment est gérée la compatibilité entre différentes versions des terminologies ?</h3>
+                    <div class="faq-answer">
+                        <p>La gestion des versions des terminologies est un aspect critique de FHIRHub, particulièrement pour les terminologies ANS qui évoluent régulièrement :</p>
+                        
+                        <ol>
+                            <li><strong>Versionnement explicite :</strong> Chaque fichier de terminologie contient des attributs de version qui permettent d'identifier précisément quelle version est utilisée.</li>
+                            <li><strong>Compatibilité ascendante :</strong> Les mises à jour sont conçues pour maintenir la compatibilité avec les versions antérieures lorsque possible.</li>
+                            <li><strong>Mappings de migration :</strong> Pour les changements majeurs, des tables de correspondance sont utilisées pour traduire entre les anciennes et nouvelles versions.</li>
+                            <li><strong>Journalisation des changements :</strong> Un journal détaillé des modifications est maintenu pour chaque fichier de terminologie.</li>
+                        </ol>
+                        
+                        <p>Voici comment le système gère une mise à jour de terminologie :</p>
+                        
+                        <pre><code>async function updateTerminologyFile(filename, newData) {
+  const currentVersion = await getTerminologyVersion(filename);
+  const newVersion = newData.version || 'unknown';
+  
+  // Vérifier si c'est une mise à jour
+  if (currentVersion && currentVersion !== newVersion) {
+    logger.info(`Mise à jour de terminologie: ${filename} de ${currentVersion} vers ${newVersion}`);
+    
+    // Créer une sauvegarde datée pour cette version spécifique
+    const versionedBackup = `backup_${currentVersion}_${filename}`;
+    await createVersionedBackup(filename, versionedBackup);
+    
+    // Journaliser les différences
+    const currentData = await getTerminologyFile(filename, true);
+    const changes = computeTerminologyChanges(currentData, newData);
+    await logTerminologyChanges(filename, currentVersion, newVersion, changes);
+  }
+  
+  // Créer une sauvegarde standard
+  await createBackup(filename);
+  
+  // Écrire les nouvelles données
+  const filePath = path.join(terminologyDir, filename);
+  await fs.promises.writeFile(filePath, JSON.stringify(newData, null, 2));
+  
+  // Invalider le cache
+  terminologyCache.files.delete(filename);
+  terminologyCache.indexes.delete(filename);
+  
+  // Générer les nouvelles structures d'index si nécessaire
+  await generateIndexes(filename, newData);
+  
+  logger.info(`Terminologie mise à jour avec succès: ${filename}`);
+  return true;
+}</code></pre>
+                        
+                        <p>Les modifications sont tracées de manière détaillée :</p>
+                        
+                        <pre><code>function computeTerminologyChanges(oldData, newData) {
+  const changes = {
+    added: [],
+    removed: [],
+    modified: []
+  };
+  
+  // Pour les systèmes de terminologie
+  if (oldData.systems && newData.systems) {
+    const oldSystems = new Map(oldData.systems.map(s => [s.oid, s]));
+    const newSystems = new Map(newData.systems.map(s => [s.oid, s]));
+    
+    // Détecter les ajouts
+    for (const [oid, system] of newSystems.entries()) {
+      if (!oldSystems.has(oid)) {
+        changes.added.push({ type: 'system', oid, name: system.name });
+      } else {
+        // Détecter les modifications
+        const oldSystem = oldSystems.get(oid);
+        if (JSON.stringify(oldSystem) !== JSON.stringify(system)) {
+          changes.modified.push({ 
+            type: 'system', 
+            oid, 
+            name: system.name,
+            oldVersion: oldSystem.version,
+            newVersion: system.version
+          });
+        }
+      }
+    }
+    
+    // Détecter les suppressions
+    for (const [oid, system] of oldSystems.entries()) {
+      if (!newSystems.has(oid)) {
+        changes.removed.push({ type: 'system', oid, name: system.name });
+      }
+    }
+  }
+  
+  // Logique similaire pour d'autres types de contenu...
+  
+  return changes;
+}</code></pre>
+                        
+                        <p>Grâce à ce système, FHIRHub peut assurer une traçabilité complète des évolutions terminologiques et garantir que les conversions effectuées à différentes périodes restent cohérentes et documentées.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="terminology-validation">Comment les terminologies sont-elles validées lors de leur chargement ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub implémente un processus de validation multi-niveaux pour garantir l'intégrité des fichiers de terminologie :</p>
+                        
+                        <ol>
+                            <li><strong>Validation syntaxique :</strong> Vérification que le fichier est un JSON valide et bien formé.</li>
+                            <li><strong>Validation structurelle :</strong> Contrôle que le fichier respecte le schéma attendu (champs obligatoires, types de données, etc.).</li>
+                            <li><strong>Validation sémantique :</strong> Vérification de la cohérence interne des données (unicité des identifiants, absence de références cycliques, etc.).</li>
+                            <li><strong>Validation contextuelle :</strong> Vérification des relations avec d'autres fichiers de terminologie (références croisées valides).</li>
+                        </ol>
+                        
+                        <p>Cette validation est effectuée lors de chaque chargement et lors des mises à jour. Voici l'implémentation détaillée :</p>
+                        
+                        <pre><code>async function validateTerminologyFile(filename, data) {
+  const validationResults = {
+    valid: true,
+    errors: [],
+    warnings: []
+  };
+  
+  // 1. Validation du schéma selon le type de fichier
+  const schema = getSchemaForFile(filename);
+  if (schema) {
+    const validator = new Ajv();
+    const validate = validator.compile(schema);
+    const isValid = validate(data);
+    
+    if (!isValid) {
+      validationResults.valid = false;
+      validationResults.errors.push(...validate.errors.map(err => ({
+        type: 'schema',
+        path: err.dataPath,
+        message: err.message
+      })));
+    }
+  } else {
+    validationResults.warnings.push({
+      type: 'schema',
+      message: `Pas de schéma de validation défini pour ${filename}`
+    });
+  }
+  
+  // 2. Validations spécifiques selon le type de fichier
+  if (filename === 'ans_terminology_systems.json') {
+    // Vérifier l'unicité des OIDs
+    const oids = new Set();
+    if (data.systems) {
+      for (const system of data.systems) {
+        if (oids.has(system.oid)) {
+          validationResults.valid = false;
+          validationResults.errors.push({
+            type: 'semantic',
+            message: `OID en doublon: ${system.oid} (${system.name})`
+          });
+        }
+        oids.add(system.oid);
+        
+        // Vérifier la validité des URLs FHIR
+        if (system.url && !isValidFhirUrl(system.url)) {
+          validationResults.warnings.push({
+            type: 'semantic',
+            message: `URL FHIR potentiellement invalide: ${system.url}`
+          });
+        }
+      }
+    }
+  }
+  
+  if (filename === 'ans_oids.json') {
+    // Vérifier les références aux systèmes dans ans_terminology_systems.json
+    const terminologySystems = await getTerminologyFile('ans_terminology_systems.json');
+    const systemUrls = new Set(terminologySystems.systems.map(s => s.url));
+    
+    for (const [oid, mapping] of Object.entries(data)) {
+      if (mapping.url && !systemUrls.has(mapping.url)) {
+        validationResults.warnings.push({
+          type: 'reference',
+          message: `URL de système non trouvée dans ans_terminology_systems.json: ${mapping.url}`
+        });
+      }
+    }
+  }
+  
+  return validationResults;
+}</code></pre>
+                        
+                        <p>Les schémas de validation sont définis en utilisant le standard JSON Schema :</p>
+                        
+                        <pre><code>const TERMINOLOGY_SCHEMAS = {
+  'ans_terminology_systems.json': {
+    type: 'object',
+    required: ['systems'],
+    properties: {
+      systems: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['name', 'oid', 'url'],
+          properties: {
+            name: { type: 'string' },
+            oid: { 
+              type: 'string',
+              pattern: '^[0-9]+(\\.[0-9]+)*$' 
+            },
+            url: { type: 'string', format: 'uri' },
+            version: { type: 'string' },
+            publisher: { type: 'string' },
+            status: { 
+              type: 'string',
+              enum: ['active', 'draft', 'retired'] 
+            },
+            description: { type: 'string' }
+          }
+        }
+      }
+    }
+  },
+  
+  'ans_oids.json': {
+    type: 'object',
+    additionalProperties: {
+      type: 'object',
+      required: ['url'],
+      properties: {
+        url: { type: 'string', format: 'uri' },
+        name: { type: 'string' },
+        description: { type: 'string' }
+      }
+    }
+  }
+}</code></pre>
+                        
+                        <p>Ce système de validation garantit que seuls des fichiers structurellement valides et sémantiquement cohérents sont utilisés pour la conversion, ce qui est essentiel pour maintenir la qualité et la fiabilité des résultats.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="terminology-customization">Comment les clients peuvent-ils personnaliser les terminologies pour leurs besoins spécifiques ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub offre un système flexible de personnalisation des terminologies pour répondre aux besoins spécifiques des clients :</p>
+                        
+                        <ol>
+                            <li><strong>Fichiers de terminologie spécifiques au client :</strong> Chaque client peut avoir ses propres fichiers de terminologie stockés dans un sous-répertoire dédié.</li>
+                            <li><strong>Mécanisme de surcharge :</strong> Les définitions spécifiques au client peuvent surcharger les définitions standard pour certains codes.</li>
+                            <li><strong>Interface d'administration :</strong> Une interface web permet aux administrateurs de gérer les terminologies personnalisées sans accéder directement aux fichiers.</li>
+                            <li><strong>API d'importation/exportation :</strong> Les terminologies peuvent être importées ou exportées au format standardisé.</li>
+                        </ol>
+                        
+                        <p>Voici comment fonctionne le système de résolution avec surcharge client :</p>
+                        
+                        <pre><code>async function resolveCode(system, code, clientId = null) {
+  // 1. Essayer d'abord dans les terminologies spécifiques au client si un clientId est fourni
+  if (clientId) {
+    const clientTerminologyPath = `clients/${clientId}/terminologies`;
+    try {
+      const clientSpecificFiles = await fs.promises.readdir(clientTerminologyPath);
+      
+      // Parcourir les fichiers spécifiques au client
+      for (const file of clientSpecificFiles) {
+        if (file.endsWith('.json')) {
+          const clientTerminology = await readJsonFile(path.join(clientTerminologyPath, file));
+          
+          // Vérifier si ce fichier contient une définition pour ce système/code
+          const result = findCodeInTerminology(clientTerminology, system, code);
+          if (result) {
+            logger.debug(`Code ${code} trouvé dans la terminologie spécifique au client ${clientId}: ${file}`);
+            return {
+              ...result,
+              source: 'client-specific'
+            };
+          }
+        }
+      }
+    } catch (error) {
+      // Gérer le cas où le répertoire client n'existe pas
+      if (error.code !== 'ENOENT') {
+        logger.error(`Erreur lors de l'accès aux terminologies client: ${error.message}`);
+      }
+    }
+  }
+  
+  // 2. Ensuite, essayer dans les terminologies standard
+  const standardFiles = [
+    'ans_common_codes.json',
+    'ans_extended_codes.json',
+    // Autres fichiers standard à consulter
+  ];
+  
+  for (const file of standardFiles) {
+    const terminology = await getTerminologyFile(file);
+    const result = findCodeInTerminology(terminology, system, code);
+    if (result) {
+      return {
+        ...result,
+        source: 'standard'
+      };
+    }
+  }
+  
+  // 3. Si aucune correspondance n'est trouvée, retourner le code tel quel
+  logger.warn(`Code non trouvé dans les terminologies: ${system}#${code}`);
+  return {
+    system,
+    code,
+    display: code,
+    source: 'fallback'
+  };
+}</code></pre>
+                        
+                        <p>L'interface d'administration permet de gérer ces personnalisations de manière conviviale :</p>
+                        
+                        <ol>
+                            <li>Visualisation des terminologies standard et spécifiques au client</li>
+                            <li>Recherche de codes par système, valeur ou description</li>
+                            <li>Ajout, modification ou suppression de définitions spécifiques</li>
+                            <li>Importation de terminologies depuis des fichiers CSV ou Excel</li>
+                            <li>Exportation des personnalisations pour sauvegarde ou transfert</li>
+                            <li>Historique des modifications avec possibilité de rollback</li>
+                        </ol>
+                        
+                        <p>Cette approche offre une flexibilité maximale tout en garantissant que les terminologies standard restent intactes et peuvent être mises à jour indépendamment des personnalisations client.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section Conversion HL7 vers FHIR -->
+            <section id="conversion" class="faq-section">
+                <h2>Conversion HL7 vers FHIR</h2>
+                
+                <div class="faq-item">
+                    <h3 id="conversion-custom">Comment le parseur HL7 identifie-t-il et traite-t-il les segments personnalisés ou non standard ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub utilise une approche flexible pour traiter les segments personnalisés ou non standard dans les messages HL7 :</p>
+                        
+                        <ol>
+                            <li><strong>Détection automatique :</strong> Le parseur commence par identifier les segments qui ne font pas partie des spécifications standard HL7 v2.5.</li>
+                            <li><strong>Registre de segments personnalisés :</strong> Le système maintient un registre configurable de segments personnalisés connus, notamment ceux définis par la spécification française.</li>
+                            <li><strong>Mode de préservation :</strong> Les segments non reconnus sont préservés dans une section "extension" des ressources FHIR générées.</li>
+                        </ol>
+                        
+                        <p>Voici comment le parseur traite les segments personnalisés :</p>
+                        
+                        <pre><code>// Fonction principale de traitement des segments
+function processSegment(segment, message) {
+  const segmentType = segment.name;
+  
+  // Vérifier si c'est un segment standard
+  if (STANDARD_SEGMENTS.includes(segmentType)) {
+    return processStandardSegment(segment, message);
+  }
+  
+  // Vérifier s'il s'agit d'un segment personnalisé connu
+  if (CUSTOM_SEGMENT_REGISTRY[segmentType]) {
+    logger.info(`Traitement du segment personnalisé: ${segmentType}`);
+    return CUSTOM_SEGMENT_REGISTRY[segmentType].handler(segment, message);
+  }
+  
+  // Segment non reconnu - préserver dans les extensions
+  logger.warn(`Segment non standard détecté: ${segmentType}. Préservation dans les extensions.`);
+  return {
+    type: 'Extension',
+    url: `http://fhirhub.fr/StructureDefinition/hl7v2-segment-${segmentType.toLowerCase()}`,
+    extension: convertSegmentToExtensions(segment)
+  };
+}</code></pre>
+
+                        <p>Pour les segments personnalisés français spécifiques, le système charge les définitions depuis le fichier <code>french_terminology/ans_hl7_custom_segments.json</code>.</p>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="conversion-dates">Quelle est la méthode de conversion des dates entre HL7 et FHIR, notamment pour les formats spécifiques français ?</h3>
+                    <div class="faq-answer">
+                        <p>La conversion des dates est une des opérations les plus délicates, notamment en raison des spécificités françaises. FHIRHub utilise une approche robuste :</p>
+                        
+                        <ol>
+                            <li><strong>Détection de format :</strong> L'application reconnaît automatiquement les différents formats de date HL7 (complets, partiels, avec/sans fuseau horaire).</li>
+                            <li><strong>Normalisation :</strong> Toutes les dates sont normalisées en interne vers le format UTC ISO-8601.</li>
+                            <li><strong>Gestion des spécificités françaises :</strong> Le système prend en compte les formats français spécifiques (jour/mois/année) et le fuseau horaire Europe/Paris.</li>
+                            <li><strong>Préservation de la précision :</strong> Si la date d'origine n'inclut que le jour sans heure, cette précision est respectée dans FHIR.</li>
+                        </ol>
+                        
+                        <p>Voici l'implémentation principale de la conversion de dates :</p>
+                        
+                        <pre><code>// Convertir une date HL7 en date FHIR
+function convertHL7DateToFHIR(hl7Date) {
+  if (!hl7Date) return null;
+  
+  // Détecter le format et la précision
+  const format = detectHL7DateFormat(hl7Date);
+  
+  try {
+    // Patterns pour les différents formats de date HL7
+    switch (format) {
+      case 'YYYYMMDD':
+        // Format YYYYMMDD (date uniquement)
+        return `${hl7Date.substring(0, 4)}-${hl7Date.substring(4, 6)}-${hl7Date.substring(6, 8)}`;
+        
+      case 'YYYYMMDDHHMM':
+        // Format YYYYMMDDHHMM (date + heure)
+        return `${hl7Date.substring(0, 4)}-${hl7Date.substring(4, 6)}-${hl7Date.substring(6, 8)}T` +
+               `${hl7Date.substring(8, 10)}:${hl7Date.substring(10, 12)}:00+01:00`;
+      
+      case 'YYYYMMDDHHMMSS':
+        // Format YYYYMMDDHHMMSS (date + heure + secondes)
+        return `${hl7Date.substring(0, 4)}-${hl7Date.substring(4, 6)}-${hl7Date.substring(6, 8)}T` +
+               `${hl7Date.substring(8, 10)}:${hl7Date.substring(10, 12)}:${hl7Date.substring(12, 14)}+01:00`;
+      
+      case 'YYYYMMDDHHMMSS.FFFF':
+        // Format avec millisecondes
+        // Conversion complexe avec gestion des décimales
+        // ...
+        
+      case 'FRENCH_DDMMYYYY':
+        // Format spécifique français JJ/MM/AAAA
+        return `${hl7Date.substring(4, 8)}-${hl7Date.substring(2, 4)}-${hl7Date.substring(0, 2)}`;
+        
+      // Autres cas...
+        
+      default:
+        // Tenter une analyse fallback avec les fonctions de date JavaScript
+        logger.warn(`Format de date HL7 non reconnu: ${hl7Date}, tentative de parsing standard`);
+        const parsedDate = new Date(hl7Date);
+        if (!isNaN(parsedDate.getTime())) {
+          return parsedDate.toISOString();
+        }
+        throw new Error(`Format de date non pris en charge: ${hl7Date}`);
+    }
+  } catch (error) {
+    logger.error(`Erreur de conversion de date: ${error.message}`);
+    // Préserver la valeur originale si la conversion échoue
+    return `${hl7Date} (format non converti)`;
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="conversion-errors">Comment le système gère-t-il les erreurs de syntaxe dans les messages HL7 d'entrée ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub implémente une stratégie de tolérance aux erreurs pour les messages HL7 mal formés :</p>
+                        
+                        <ol>
+                            <li><strong>Validation multi-niveau :</strong> Le message passe par plusieurs niveaux de validation (structure générale, segments, champs).</li>
+                            <li><strong>Correction automatique :</strong> Pour certaines erreurs mineures (délimiteurs incorrects, caractères de fin de ligne), le système tente des corrections automatiques.</li>
+                            <li><strong>Mode de récupération partielle :</strong> Même en cas d'erreur dans certaines parties du message, le système peut extraire et convertir les segments valides.</li>
+                            <li><strong>Rapports d'erreur détaillés :</strong> Toutes les erreurs sont documentées avec leur position exacte et des suggestions de correction.</li>
+                        </ol>
+                        
+                        <p>Voici l'implémentation des principales fonctions de gestion d'erreurs :</p>
+                        
+                        <pre><code>// Valider et nettoyer un message HL7 d'entrée
+function validateAndCleanHL7Message(rawMessage) {
+  let cleanedMessage = rawMessage;
+  const validationIssues = [];
+  
+  // 1. Vérification des délimiteurs de base
+  if (!cleanedMessage.startsWith('MSH')) {
+    validationIssues.push({
+      severity: 'error',
+      message: 'Le message doit commencer par un segment MSH',
+      position: 0
+    });
+    // Tenter de trouver le début du segment MSH
+    const mshIndex = cleanedMessage.indexOf('MSH');
+    if (mshIndex > 0) {
+      cleanedMessage = cleanedMessage.substring(mshIndex);
+      validationIssues.push({
+        severity: 'info',
+        message: `Caractères initiaux supprimés, début du message ajusté à la position ${mshIndex}`,
+        position: 0
+      });
+    }
+  }
+  
+  // 2. Normalisation des fins de ligne
+  cleanedMessage = cleanedMessage.replace(/\\r\\n|\\r|\\n/g, '\\r');
+  
+  // 3. Vérification des délimiteurs dans le segment MSH
+  try {
+    const mshSegment = cleanedMessage.split('\\r')[0];
+    const fieldSeparator = mshSegment.charAt(3);
+    
+    if (fieldSeparator === ' ' || !fieldSeparator) {
+      validationIssues.push({
+        severity: 'error',
+        message: 'Séparateur de champ invalide dans le segment MSH',
+        position: 3
+      });
+    }
+    
+    // Extraire et valider les autres délimiteurs...
+  } catch (error) {
+    validationIssues.push({
+      severity: 'error',
+      message: `Impossible d'analyser les délimiteurs: ${error.message}`,
+      position: 0
+    });
+  }
+  
+  // 4. Vérification de la cohérence des segments
+  // ...
+  
+  // Si des erreurs critiques sont présentes, lever une exception
+  const criticalIssues = validationIssues.filter(issue => issue.severity === 'error');
+  if (criticalIssues.length > 0) {
+    const error = new Error('Le message HL7 contient des erreurs critiques');
+    error.validationIssues = validationIssues;
+    throw error;
+  }
+  
+  // Retourner le message nettoyé et les avertissements
+  return {
+    message: cleanedMessage,
+    issues: validationIssues
+  };
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="conversion-datatypes">Comment sont mappés les types de données complexes entre HL7 et FHIR ?</h3>
+                    <div class="faq-answer">
+                        <p>Le mapping des types de données complexes est géré par un sous-système dédié qui traduit chaque type de données HL7 vers son équivalent FHIR le plus approprié :</p>
+                        
+                        <ol>
+                            <li><strong>Tables de correspondance :</strong> Des tables prédéfinies établissent les correspondances entre types HL7 et FHIR.</li>
+                            <li><strong>Convertisseurs spécialisés :</strong> Chaque type complexe (CX, XPN, XAD, etc.) a son propre convertisseur dédié.</li>
+                            <li><strong>Préservation des extensions :</strong> Les informations sans équivalent direct sont préservées dans des extensions FHIR.</li>
+                        </ol>
+                        
+                        <p>Exemple d'implémentation pour le type CX (identifiant composite) :</p>
+                        
+                        <pre><code>// Mapping du type CX (Composite ID) vers un Identifier FHIR
+function convertCXtoIdentifier(cxValue) {
+  if (!cxValue || !cxValue.id) return null;
+  
+  const identifier = {
+    system: null,
+    value: cxValue.id
+  };
+  
+  // Traiter l'autorité d'assignation
+  if (cxValue.assigningAuthority) {
+    // Vérifier si c'est un OID et le résoudre
+    if (cxValue.assigningAuthority.universalId && 
+        cxValue.assigningAuthority.universalIdType === 'ISO') {
+      identifier.system = resolveOID(cxValue.assigningAuthority.universalId);
+    } else if (cxValue.assigningAuthority.namespaceId) {
+      // Utiliser le namespace comme fallback
+      identifier.system = `urn:oid:${cxValue.assigningAuthority.namespaceId}`;
+    }
+  }
+  
+  // Traiter le type d'identifiant
+  if (cxValue.identifierTypeCode) {
+    const typeCode = cxValue.identifierTypeCode;
+    
+    // Mapper les codes spécifiques
+    if (typeCode === 'INS-C' || typeCode === 'INS-A') {
+      // Identifiant national de santé français
+      identifier.system = 'https://mos.esante.gouv.fr/NOS/TRE_R304/FHIR/TRE-R304';
+      identifier.type = {
+        coding: [{
+          system: 'https://mos.esante.gouv.fr/NOS/TRE_R304/FHIR/TRE-R304',
+          code: typeCode
+        }]
+      };
+    } else {
+      // Autres types d'identifiants
+      identifier.type = {
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+          code: typeCode
+        }]
+      };
+    }
+  }
+  
+  // Ajouter les dates de validité si présentes
+  if (cxValue.effectiveDate) {
+    identifier.period = { start: convertHL7DateToFHIR(cxValue.effectiveDate) };
+  }
+  
+  if (cxValue.expirationDate) {
+    if (!identifier.period) identifier.period = {};
+    identifier.period.end = convertHL7DateToFHIR(cxValue.expirationDate);
+  }
+  
+  return identifier;
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="conversion-validation">Quel est le processus de validation des ressources FHIR générées pour s'assurer de leur conformité au standard R4 ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub implémente un processus de validation en trois phases pour garantir que les ressources FHIR générées sont conformes au standard R4 :</p>
+                        
+                        <ol>
+                            <li><strong>Validation structurelle :</strong> Vérifie que chaque ressource contient tous les éléments obligatoires et respecte les contraintes de cardinalité.</li>
+                            <li><strong>Validation sémantique :</strong> S'assure que les valeurs respectent les contraintes de type, de format et de vocabulaire.</li>
+                            <li><strong>Validation de profil :</strong> Vérifie la conformité avec les profils français spécifiques définis par l'ANS.</li>
+                        </ol>
+                        
+                        <p>Voici l'implémentation du processus de validation :</p>
+                        
+                        <pre><code>// Valider une ressource FHIR après conversion
+async function validateFHIRResource(resource, profile = null) {
+  const validationResults = {
+    valid: true,
+    issues: []
+  };
+  
+  // 1. Validation structurelle de base
+  if (!resource.resourceType) {
+    validationResults.valid = false;
+    validationResults.issues.push({
+      severity: 'error',
+      code: 'structure',
+      message: 'Ressource sans type défini'
+    });
+    return validationResults;
+  }
+  
+  // Vérifier les champs obligatoires selon le type de ressource
+  const requiredFields = RESOURCE_REQUIRED_FIELDS[resource.resourceType] || [];
+  for (const field of requiredFields) {
+    if (!resource[field]) {
+      validationResults.valid = false;
+      validationResults.issues.push({
+        severity: 'error',
+        code: 'required',
+        message: `Champ obligatoire manquant: ${field}`
+      });
+    }
+  }
+  
+  // 2. Validation sémantique
+  // Vérifier les formats de date
+  const dateFields = findAllDateFields(resource);
+  for (const [path, value] of dateFields) {
+    if (!isValidFHIRDate(value)) {
+      validationResults.valid = false;
+      validationResults.issues.push({
+        severity: 'error',
+        code: 'value',
+        message: `Format de date invalide à ${path}: ${value}`
+      });
+    }
+  }
+  
+  // Vérifier les références
+  const references = findAllReferences(resource);
+  for (const [path, ref] of references) {
+    if (!ref.reference && !ref.identifier) {
+      validationResults.issues.push({
+        severity: 'warning',
+        code: 'reference',
+        message: `Référence sans identifiant à ${path}`
+      });
+    }
+  }
+  
+  // 3. Validation de profil spécifique (si un profil est spécifié)
+  if (profile) {
+    try {
+      const profileValidation = await validateAgainstProfile(resource, profile);
+      if (!profileValidation.valid) {
+        validationResults.valid = false;
+        validationResults.issues.push(...profileValidation.issues);
+      }
+    } catch (error) {
+      validationResults.issues.push({
+        severity: 'warning',
+        code: 'processing',
+        message: `Erreur lors de la validation du profil: ${error.message}`
+      });
+    }
+  }
+  
+  return validationResults;
+}</code></pre>
+
+                        <p>Pour les validations de profils français, FHIRHub utilise les définitions officielles publiées par l'ANS sur le Modèle des Objets de Santé (MOS).</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Ajoutez les autres sections ici... -->
+            <section id="ai-integration" class="faq-section">
+                <h2>Intégration IA</h2>
+                
+                <div class="faq-item">
+                    <h3 id="ai-provider-architecture">Comment est structurée l'architecture d'intégration des modèles d'IA dans FHIRHub ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub utilise une architecture modulaire d'intégration IA basée sur le pattern "Provider". Cette architecture permet de connecter différents modèles d'IA sans modifier le code de base, en suivant ces principes :</p>
+                        
+                        <ol>
+                            <li><strong>Table ai_providers :</strong> Stocke les configurations des différents fournisseurs d'IA (clés API, endpoints, paramètres)</li>
+                            <li><strong>Factory pattern :</strong> La classe AIProviderFactory dans <code>src/services/hl7AIService.js</code> instancie dynamiquement le bon provider basé sur les enregistrements de la base de données</li>
+                            <li><strong>Interface commune :</strong> Chaque provider implémente la même interface avec des méthodes comme <code>analyzeMessage()</code> et <code>suggestMapping()</code></li>
+                        </ol>
+                        
+                        <p>Le code clé de cette architecture est :</p>
+                        
+                        <pre><code>// src/services/hl7AIService.js
+class AIProviderFactory {
+  static createProvider(config) {
+    switch(config.type.toLowerCase()) {
+      case 'mistral':
+        return new MistralProvider(config);
+      case 'openai':
+        return new OpenAIProvider(config);
+      case 'local':
+        return new LocalLLMProvider(config);
+      default:
+        throw new Error(`Provider type non supporté: ${config.type}`);
+    }
+  }
+}
+
+// Instanciation dynamique du provider actif
+const createActiveAIProvider = async () => {
+  const activeProviders = await db.getAllActiveProviders();
+  if (activeProviders.length === 0) {
+    return new FallbackProvider();
+  }
+  // Prendre le premier provider actif (priorité)
+  return AIProviderFactory.createProvider(activeProviders[0]);
+};</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="ai-mistral-integration">Comment l'intégration avec le modèle Mistral est-elle implémentée techniquement ?</h3>
+                    <div class="faq-answer">
+                        <p>L'intégration avec Mistral AI est implémentée à travers un adaptateur dédié qui gère l'authentification, les requêtes API et le formatage des réponses :</p>
+                        
+                        <pre><code>// src/services/providers/mistralProvider.js
+class MistralProvider {
+  constructor(config) {
+    this.apiKey = config.api_key;
+    this.apiEndpoint = config.endpoint || 'https://api.mistral.ai/v1';
+    this.model = config.model_name || 'mistral-large';
+    this.maxTokens = config.max_tokens || 1024;
+    this.temperature = config.temperature || 0.7;
+    
+    // Validation de la configuration
+    if (!this.apiKey) {
+      throw new Error('Clé API Mistral manquante');
+    }
+  }
+
+  async analyzeMessage(hl7Message) {
+    try {
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.apiKey}`
+      };
+      
+      const response = await fetch(`${this.apiEndpoint}/chat/completions`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: systemPromptTemplate },
+            { role: 'user', content: `Analyse ce message HL7:\n\n${hl7Message}` }
+          ],
+          max_tokens: this.maxTokens,
+          temperature: this.temperature
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur API Mistral: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      return {
+        analysis: data.choices[0].message.content,
+        modelUsed: this.model,
+        provider: 'mistral'
+      };
+    } catch (error) {
+      logger.error(`Erreur lors de l'analyse avec Mistral: ${error.message}`);
+      throw error;
+    }
+  }
+}</code></pre>
+
+                        <p>Cette implémentation permet :</p>
+                        <ul>
+                            <li>La gestion d'erreurs robuste avec logging détaillé</li>
+                            <li>La configuration flexible des paramètres du modèle (température, tokens max)</li>
+                            <li>L'adaptation des prompts système pour des tâches spécifiques</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="ai-request-caching">Comment le système optimise-t-il les performances des requêtes IA ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub optimise les performances des requêtes IA grâce à plusieurs mécanismes :</p>
+                        
+                        <ol>
+                            <li><strong>Mise en cache des résultats :</strong> Les réponses précédentes pour des messages HL7 identiques sont stockées en base de données pour éviter des appels redondants aux API d'IA.</li>
+                            <li><strong>Stratégie de retry intelligente :</strong> En cas d'erreur temporaire (timeout, erreur réseau), le système réessaie automatiquement avec un délai exponentiel.</li>
+                            <li><strong>Compression des contextes :</strong> Pour optimiser l'utilisation des tokens, les messages HL7 volumineux sont prétraités et compressés avant l'envoi à l'API.</li>
+                        </ol>
+                        
+                        <p>Le code de mise en cache est implémenté dans le service central :</p>
+                        
+                        <pre><code>async function getAIAnalysis(hl7Message) {
+  // Générer une clé de cache unique basée sur le contenu du message
+  const cacheKey = crypto
+    .createHash('md5')
+    .update(hl7Message.trim())
+    .digest('hex');
+    
+  // Vérifier si une analyse existe déjà en cache
+  const cachedAnalysis = await db.getAIAnalysisFromCache(cacheKey);
+  if (cachedAnalysis) {
+    logger.info(`Utilisation de l'analyse en cache pour le message (${cacheKey})`);
+    return {
+      ...cachedAnalysis,
+      fromCache: true
+    };
+  }
+  
+  // Aucun résultat en cache, effectuer une nouvelle analyse
+  const provider = await createActiveAIProvider();
+  const analysis = await provider.analyzeMessage(hl7Message);
+  
+  // Stocker le résultat en cache pour les futures requêtes
+  await db.saveAIAnalysisToCache(cacheKey, analysis);
+  
+  return {
+    ...analysis,
+    fromCache: false
+  };
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="auth-security" class="faq-section">
+                <h2>Authentification et sécurité</h2>
+                
+                <div class="faq-item">
+                    <h3 id="auth-mechanisms">Quels mécanismes d'authentification sont implémentés dans FHIRHub ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub implémente une architecture de sécurité à plusieurs couches avec trois mécanismes d'authentification principaux :</p>
+                        
+                        <ol>
+                            <li><strong>Authentification par session (JWT) :</strong> Utilisée pour l'interface utilisateur web avec une durée de validité configurable</li>
+                            <li><strong>Authentification par clé API :</strong> Pour les intégrations machine-to-machine et les appels d'API externes</li>
+                            <li><strong>Authentification hors-ligne :</strong> Mécanisme spécial pour les environnements sans connexion internet</li>
+                        </ol>
+                        
+                        <p>L'implémentation pour les clés API se trouve dans le middleware <code>apiKeyAuthMiddleware.js</code> :</p>
+                        
+                        <pre><code>// middleware/apiKeyAuthMiddleware.js
+const { db } = require('../services/database');
+const logger = require('../services/logger');
+
+async function apiKeyAuthMiddleware(req, res, next) {
+  try {
+    // Récupérer la clé API de l'en-tête ou des paramètres de requête
+    const apiKey = req.headers['x-api-key'] || req.query.api_key;
+    
+    if (!apiKey) {
+      return res.status(401).json({ 
+        error: 'Unauthorized', 
+        message: 'Clé API requise' 
+      });
+    }
+    
+    // Valider la clé API dans la base de données
+    const keyInfo = await db.getApiKeyInfo(apiKey);
+    
+    if (!keyInfo || !keyInfo.is_active) {
+      logger.warn(`Tentative d'accès avec une clé API invalide: ${apiKey}`);
+      return res.status(401).json({ 
+        error: 'Unauthorized', 
+        message: 'Clé API invalide ou inactive' 
+      });
+    }
+    
+    // Vérifier les restrictions d'origine (CORS)
+    if (keyInfo.origin_restrictions) {
+      const origin = req.headers.origin || req.headers.referer;
+      const allowed = keyInfo.origin_restrictions.split(',')
+        .some(allowed => origin && origin.includes(allowed));
+      
+      if (!allowed) {
+        logger.warn(`Tentative d'accès depuis une origine non autorisée: ${origin}`);
+        return res.status(403).json({ 
+          error: 'Forbidden', 
+          message: 'Origine non autorisée' 
+        });
+      }
+    }
+    
+    // Attacher les informations de l'API et de l'application à la requête pour un usage ultérieur
+    req.apiKey = keyInfo;
+    req.application = {
+      id: keyInfo.application_id,
+      name: keyInfo.application_name
+    };
+    
+    // Mettre à jour le compteur d'utilisation
+    await db.incrementApiKeyUsage(apiKey);
+    
+    next();
+  } catch (error) {
+    logger.error(`Erreur d'authentification API: ${error.message}`);
+    res.status(500).json({ 
+      error: 'Server Error', 
+      message: 'Erreur lors de la validation de la clé API' 
+    });
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="offline-auth">Comment fonctionne l'authentification en mode hors-ligne ?</h3>
+                    <div class="faq-answer">
+                        <p>Le mode d'authentification hors-ligne est une fonctionnalité spéciale conçue pour les environnements isolés. Son fonctionnement repose sur plusieurs principes :</p>
+                        
+                        <ul>
+                            <li><strong>Stockage local :</strong> Les informations d'identification sont conservées localement dans un fichier chiffré</li>
+                            <li><strong>Validation périodique :</strong> Si une connexion internet devient disponible, le système peut synchroniser avec le serveur central</li>
+                            <li><strong>Sceau temporel :</strong> Les identifiants ont une limite de temps après laquelle ils expirent, même hors-ligne</li>
+                        </ul>
+                        
+                        <p>L'implémentation se trouve dans <code>middleware/offlineAuthMiddleware.js</code> :</p>
+                        
+                        <pre><code>// middleware/offlineAuthMiddleware.js
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const logger = require('../services/logger');
+
+// Chemin vers le fichier d'informations d'authentification hors-ligne
+const OFFLINE_AUTH_FILE = path.join(__dirname, '../data/secure/offline_auth.enc');
+const OFFLINE_AUTH_KEY = process.env.OFFLINE_AUTH_KEY || 'default-offline-key';
+
+function decryptAuthData(encryptedData) {
+  try {
+    const algorithm = 'aes-256-cbc';
+    // Utiliser les 32 premiers caractères de la clé comme clé AES
+    const key = crypto.createHash('sha256').update(OFFLINE_AUTH_KEY).digest('base64').substr(0, 32);
+    // Extraire l'IV (vecteur d'initialisation) des 16 premiers octets
+    const iv = Buffer.from(encryptedData.slice(0, 16));
+    // Obtenir les données chiffrées (le reste après l'IV)
+    const encryptedText = encryptedData.slice(16);
+    // Créer un déchiffreur avec la clé et l'IV
+    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    // Déchiffrer les données
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    // Convertir les données déchiffrées en objet JSON
+    return JSON.parse(decrypted.toString());
+  } catch (error) {
+    logger.error(`Erreur lors du déchiffrement des données d'authentification: ${error.message}`);
+    return null;
+  }
+}
+
+function offlineAuthMiddleware(req, res, next) {
+  try {
+    // Vérifier si le fichier d'authentification hors-ligne existe
+    if (!fs.existsSync(OFFLINE_AUTH_FILE)) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Configuration d\'authentification hors-ligne non trouvée'
+      });
+    }
+
+    // Lire et déchiffrer les données d'authentification
+    const encryptedData = fs.readFileSync(OFFLINE_AUTH_FILE);
+    const authData = decryptAuthData(encryptedData);
+
+    if (!authData) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Données d\'authentification hors-ligne corrompues'
+      });
+    }
+
+    // Vérifier l'expiration des informations d'authentification
+    const now = Date.now();
+    if (authData.expiresAt < now) {
+      return res.status(401).json({
+        error: 'Unauthorized',
+        message: 'Authentification hors-ligne expirée'
+      });
+    }
+
+    // Attacher les données d'authentification à la requête
+    req.offlineAuth = authData;
+    req.application = {
+      id: authData.applicationId,
+      name: authData.applicationName
+    };
+
+    next();
+  } catch (error) {
+    logger.error(`Erreur d'authentification hors-ligne: ${error.message}`);
+    res.status(500).json({
+      error: 'Server Error',
+      message: 'Erreur lors de la validation de l'authentification hors-ligne'
+    });
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="jwt-implementation">Comment sont implémentés les JWT pour l'authentification des sessions ?</h3>
+                    <div class="faq-answer">
+                        <p>L'authentification par JWT (JSON Web Token) est utilisée pour sécuriser les sessions utilisateur dans l'interface web. Voici les aspects clés de cette implémentation :</p>
+                        
+                        <ol>
+                            <li><strong>Signature HMAC-SHA256 :</strong> Les tokens sont signés avec l'algorithme HS256 pour assurer leur intégrité</li>
+                            <li><strong>Rotation des secrets :</strong> Le secret de signature des JWT est automatiquement changé à intervalle régulier</li>
+                            <li><strong>Gestion de la révocation :</strong> Une liste de révocation en cache permet d'invalider des tokens spécifiques avant leur expiration</li>
+                        </ol>
+                        
+                        <p>Voici un extrait du code d'authentification par JWT :</p>
+                        
+                        <pre><code>// services/authService.js
+const jwt = require('jsonwebtoken');
+const { promisify } = require('util');
+const redis = require('../services/redis');
+const logger = require('../services/logger');
+
+// Promisifier les fonctions JWT pour utiliser async/await
+const signAsync = promisify(jwt.sign);
+const verifyAsync = promisify(jwt.verify);
+
+// Clé secrète pour signer les JWT
+const JWT_SECRET = process.env.JWT_SECRET || 'default-jwt-secret';
+// Durée de validité des tokens (24 heures par défaut)
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION || '24h';
+
+// Préfixe pour stocker les tokens révoqués dans Redis
+const REVOKED_TOKEN_PREFIX = 'revoked:';
+
+async function generateToken(user) {
+  try {
+    // Création du payload avec les informations de l'utilisateur
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      role: user.role,
+      // Identifiant unique pour ce token spécifique
+      jti: crypto.randomBytes(16).toString('hex')
+    };
+    
+    // Options JWT
+    const options = {
+      expiresIn: JWT_EXPIRATION,
+      algorithm: 'HS256'
+    };
+    
+    // Générer le token
+    const token = await signAsync(payload, JWT_SECRET, options);
+    
+    // Stocker des métadonnées du token (facultatif)
+    await redis.set(
+      `token:${payload.jti}`,
+      JSON.stringify({
+        userId: user.id,
+        createdAt: Date.now(),
+        userAgent: user.userAgent,
+        ip: user.ip
+      }),
+      'EX',
+      86400 // Expire après 24h
+    );
+    
+    return {
+      token,
+      expiresIn: JWT_EXPIRATION
+    };
+  } catch (error) {
+    logger.error(`Erreur lors de la génération du token: ${error.message}`);
+    throw new Error('Erreur lors de la génération du token');
+  }
+}
+
+async function verifyToken(token) {
+  try {
+    // Vérifier la validité du token (signature, expiration)
+    const decoded = await verifyAsync(token, JWT_SECRET);
+    
+    // Vérifier si le token a été révoqué
+    const isRevoked = await redis.exists(`${REVOKED_TOKEN_PREFIX}${decoded.jti}`);
+    if (isRevoked) {
+      throw new Error('Token révoqué');
+    }
+    
+    return decoded;
+  } catch (error) {
+    logger.warn(`Validation de token échouée: ${error.message}`);
+    throw new Error(`Token invalide: ${error.message}`);
+  }
+}
+
+async function revokeToken(token) {
+  try {
+    // Décoder le token sans vérifier la signature pour obtenir le jti
+    const decoded = jwt.decode(token);
+    if (!decoded || !decoded.jti) {
+      throw new Error('Token malformé');
+    }
+    
+    // Calculer le temps restant avant expiration
+    const expirationTime = decoded.exp - Math.floor(Date.now() / 1000);
+    if (expirationTime <= 0) {
+      return true; // Le token est déjà expiré
+    }
+    
+    // Ajouter le jti à la liste de révocation jusqu'à son expiration
+    await redis.set(
+      `${REVOKED_TOKEN_PREFIX}${decoded.jti}`,
+      '1',
+      'EX',
+      expirationTime
+    );
+    
+    return true;
+  } catch (error) {
+    logger.error(`Erreur lors de la révocation du token: ${error.message}`);
+    throw error;
+  }
+}</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <section id="database" class="faq-section">
+                <h2>Base de données et persistance</h2>
+                
+                <div class="faq-item">
+                    <h3 id="sqlite-architecture">Comment FHIRHub utilise-t-il SQLite pour garantir la portabilité ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub utilise SQLite comme moteur de base de données principal pour maximiser la portabilité et minimiser les dépendances externes. Voici comment cette architecture est implémentée :</p>
+                        
+                        <ol>
+                            <li><strong>Fichier unique :</strong> Toutes les données sont stockées dans un fichier unique, facilitant les sauvegardes et la portabilité</li>
+                            <li><strong>Mode WAL (Write-Ahead Logging) :</strong> Activé pour améliorer les performances et la concurrence</li>
+                            <li><strong>Migrations automatiques :</strong> Structure de schéma évolutive avec migrations versionnées</li>
+                        </ol>
+                        
+                        <p>Le code d'initialisation de la base de données illustre cette approche :</p>
+                        
+                        <pre><code>// services/database.js
+const sqlite3 = require('sqlite3').verbose();
+const { open } = require('sqlite');
+const path = require('path');
+const fs = require('fs');
+const logger = require('./logger');
+
+// Répertoire de stockage des données
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '../data');
+// Chemin du fichier de base de données
+const DB_FILE = path.join(DATA_DIR, 'fhirhub.db');
+// Version actuelle du schéma
+const SCHEMA_VERSION = 7;
+
+// S'assurer que le répertoire de données existe
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+async function initDatabase() {
+  try {
+    // Ouvrir la connexion à la base de données
+    const db = await open({
+      filename: DB_FILE,
+      driver: sqlite3.Database
+    });
+    
+    // Activer le mode WAL pour de meilleures performances
+    await db.exec('PRAGMA journal_mode = WAL;');
+    // Forcer les contraintes de clés étrangères
+    await db.exec('PRAGMA foreign_keys = ON;');
+    
+    // Vérifier et créer la table de version du schéma si nécessaire
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS schema_version (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        version INTEGER NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    
+    // Obtenir la version actuelle du schéma
+    const versionRow = await db.get('SELECT version FROM schema_version WHERE id = 1');
+    const currentVersion = versionRow ? versionRow.version : 0;
+    
+    // Appliquer les migrations nécessaires
+    if (currentVersion < SCHEMA_VERSION) {
+      logger.info(`Migration de la base de données de la version ${currentVersion} vers ${SCHEMA_VERSION}`);
+      
+      // Débuter une transaction
+      await db.exec('BEGIN TRANSACTION;');
+      
+      try {
+        // Appliquer chaque migration dans l'ordre
+        for (let v = currentVersion + 1; v <= SCHEMA_VERSION; v++) {
+          const migrationFile = path.join(__dirname, `../migrations/v${v}.sql`);
+          
+          if (fs.existsSync(migrationFile)) {
+            const migration = fs.readFileSync(migrationFile, 'utf8');
+            await db.exec(migration);
+            logger.info(`Migration v${v} appliquée avec succès`);
+          }
+        }
+        
+        // Mettre à jour la version du schéma
+        if (currentVersion === 0) {
+          await db.run('INSERT INTO schema_version (id, version) VALUES (1, ?)', SCHEMA_VERSION);
+        } else {
+          await db.run('UPDATE schema_version SET version = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1', SCHEMA_VERSION);
+        }
+        
+        // Valider la transaction
+        await db.exec('COMMIT;');
+        logger.info(`Base de données migrée avec succès vers la version ${SCHEMA_VERSION}`);
+      } catch (error) {
+        // Annuler la transaction en cas d'erreur
+        await db.exec('ROLLBACK;');
+        logger.error(`Erreur lors de la migration de la base de données: ${error.message}`);
+        throw error;
+      }
+    }
+    
+    return db;
+  } catch (error) {
+    logger.error(`Erreur lors de l'initialisation de la base de données: ${error.message}`);
+    throw error;
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="db-backup-strategy">Quelle stratégie de sauvegarde est implémentée pour protéger les données ?</h3>
+                    <div class="faq-answer">
+                        <p>FHIRHub implémente une stratégie de sauvegarde robuste en plusieurs couches pour garantir l'intégrité et la récupération des données :</p>
+                        
+                        <ol>
+                            <li><strong>Sauvegardes automatiques planifiées :</strong> Exécutées à intervalles réguliers (par défaut toutes les 24 heures)</li>
+                            <li><strong>Sauvegardes avant opérations critiques :</strong> Avant les mises à jour de schéma ou les imports massifs</li>
+                            <li><strong>Rotation des sauvegardes :</strong> Conservation des 7 dernières sauvegardes quotidiennes, 4 hebdomadaires et 3 mensuelles</li>
+                        </ol>
+                        
+                        <p>Le code de sauvegarde utilise les fonctionnalités natives de SQLite :</p>
+                        
+                        <pre><code>// services/backupService.js
+const sqlite3 = require('sqlite3').verbose();
+const { open } = require('sqlite');
+const path = require('path');
+const fs = require('fs');
+const { execSync } = require('child_process');
+const logger = require('./logger');
+
+// Répertoire des sauvegardes
+const BACKUP_DIR = process.env.BACKUP_DIR || path.join(__dirname, '../backups');
+// Fichier de base de données principal
+const DB_FILE = path.join(__dirname, '../data/fhirhub.db');
+
+// S'assurer que le répertoire de sauvegarde existe
+if (!fs.existsSync(BACKUP_DIR)) {
+  fs.mkdirSync(BACKUP_DIR, { recursive: true });
+}
+
+/**
+ * Crée une sauvegarde complète de la base de données
+ * @param {string} suffix - Suffixe à ajouter au nom du fichier (ex: 'pre-update')
+ * @returns {Promise<string>} - Chemin du fichier de sauvegarde
+ */
+async function createBackup(suffix = '') {
+  try {
+    // Générer un nom de fichier de sauvegarde avec timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupName = `fhirhub-backup${suffix ? '-' + suffix : ''}-${timestamp}.db`;
+    const backupPath = path.join(BACKUP_DIR, backupName);
+    
+    // Ouvrir la base de données source
+    const sourceDb = new sqlite3.Database(DB_FILE);
+    
+    // Créer une nouvelle base de données pour la sauvegarde
+    const backupDb = new sqlite3.Database(backupPath);
+    
+    // Attendre que la sauvegarde soit terminée
+    await new Promise((resolve, reject) => {
+      // Utiliser l'API de sauvegarde native de SQLite
+      const backup = sourceDb.backup(backupDb, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+      
+      // Afficher la progression pour les grandes bases de données
+      backup.step(100); // Nombre de pages à copier à chaque étape
+    });
+    
+    // Fermer les connexions
+    await new Promise(resolve => sourceDb.close(resolve));
+    await new Promise(resolve => backupDb.close(resolve));
+    
+    logger.info(`Sauvegarde créée avec succès: ${backupPath}`);
+    
+    // Optimiser le fichier de sauvegarde (facultatif)
+    try {
+      execSync(`sqlite3 "${backupPath}" "VACUUM;"`);
+      logger.info(`Optimisation de la sauvegarde terminée: ${backupPath}`);
+    } catch (optimizeError) {
+      logger.warn(`Impossible d'optimiser la sauvegarde: ${optimizeError.message}`);
+    }
+    
+    return backupPath;
+  } catch (error) {
+    logger.error(`Erreur lors de la création de la sauvegarde: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Restaure la base de données à partir d'une sauvegarde
+ * @param {string} backupPath - Chemin du fichier de sauvegarde 
+ * @returns {Promise<boolean>} - true si la restauration a réussi
+ */
+async function restoreFromBackup(backupPath) {
+  try {
+    if (!fs.existsSync(backupPath)) {
+      throw new Error(`Fichier de sauvegarde non trouvé: ${backupPath}`);
+    }
+    
+    // Fermer toutes les connexions à la base de données principale
+    // Note: Ceci est simplifié ici, mais nécessite une mise en œuvre plus robuste en production
+    
+    // Créer une sauvegarde de sécurité avant la restauration
+    const tempBackup = DB_FILE + '.pre-restore';
+    fs.copyFileSync(DB_FILE, tempBackup);
+    
+    // Copier la sauvegarde vers le fichier de base de données principal
+    fs.copyFileSync(backupPath, DB_FILE);
+    
+    logger.info(`Base de données restaurée avec succès depuis: ${backupPath}`);
+    
+    // Supprimer la sauvegarde temporaire si tout s'est bien passé
+    fs.unlinkSync(tempBackup);
+    
+    return true;
+  } catch (error) {
+    logger.error(`Erreur lors de la restauration de la sauvegarde: ${error.message}`);
+    
+    // Tenter de restaurer la sauvegarde de sécurité en cas d'échec
+    const tempBackup = DB_FILE + '.pre-restore';
+    if (fs.existsSync(tempBackup)) {
+      try {
+        fs.copyFileSync(tempBackup, DB_FILE);
+        logger.info(`Restauration d'urgence effectuée depuis: ${tempBackup}`);
+      } catch (restoreError) {
+        logger.error(`Échec de la restauration d'urgence: ${restoreError.message}`);
+      }
+    }
+    
+    throw error;
+  }
+}</code></pre>
+                    </div>
+                </div>
+                
+                <div class="faq-item">
+                    <h3 id="log-db-schema">Comment est structuré le schéma de la base de données des journaux de conversion ?</h3>
+                    <div class="faq-answer">
+                        <p>Le schéma de la base de données pour les journaux de conversion est conçu pour optimiser les performances des requêtes tout en stockant des informations détaillées sur chaque conversion :</p>
+                        
+                        <pre><code>CREATE TABLE conversion_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  application_id INTEGER NOT NULL,
+  message_type VARCHAR(10),
+  message_event VARCHAR(10),
+  message_id VARCHAR(255),
+  processing_time INTEGER,
+  source_size INTEGER,
+  result_size INTEGER,
+  resource_count INTEGER,
+  status VARCHAR(20) NOT NULL,
+  error_details TEXT,
+  input_hash VARCHAR(64),
+  timestamp INTEGER DEFAULT (strftime('%s','now') * 1000),
+  input_sample TEXT,
+  output_sample TEXT,
+  client_ip VARCHAR(50),
+  user_agent VARCHAR(255),
+  FOREIGN KEY (application_id) REFERENCES applications(id)
+);</code></pre>
+                        
+                        <p>Cette structure permet :</p>
+                        <ul>
+                            <li><strong>Analyse des performances :</strong> Les champs processing_time et resource_count permettent de suivre la performance des conversions</li>
+                            <li><strong>Déduplication :</strong> Le champ input_hash permet d'identifier rapidement les messages identiques</li>
+                            <li><strong>Analyses statistiques :</strong> Les indexes sur application_id, message_type et status optimisent les requêtes d'analyse</li>
+                            <li><strong>Traçabilité :</strong> L'échantillonnage des entrées/sorties permet un diagnostic rapide sans stocker l'intégralité des messages</li>
+                        </ul>
+                        
+                        <p>Les index principaux sont configurés ainsi :</p>
+                        
+                        <pre><code>-- Index pour les recherches fréquentes
+CREATE INDEX idx_conversion_logs_app_id ON conversion_logs(application_id);
+CREATE INDEX idx_conversion_logs_status ON conversion_logs(status);
+CREATE INDEX idx_conversion_logs_timestamp ON conversion_logs(timestamp);
+CREATE INDEX idx_conversion_logs_message_type ON conversion_logs(message_type);
+
+-- Index composite pour les analyses par application et période
+CREATE INDEX idx_conversion_logs_app_time ON conversion_logs(application_id, timestamp);</code></pre>
+                        
+                        <p>Cette conception permet de générer efficacement les statistiques de performance et les tableaux de bord sans impact sur les performances de l'application principale.</p>
+                    </div>
+                </div>
+            </section>
+
+
+            <section id="ui" class="faq-section">
+                <h2>Interface utilisateur</h2>
+                <!-- Ajoutez les FAQ sur l'interface utilisateur ici -->
+            </section>
+
+            <section id="architecture" class="faq-section">
+                <h2>Architecture système</h2>
+                <!-- Ajoutez les FAQ sur l'architecture système ici -->
+            </section>
+
+            <section id="api" class="faq-section">
+                <h2>API et intégration</h2>
+                <!-- Ajoutez les FAQ sur l'API et l'intégration ici -->
+            </section>
+
+            <section id="errors-logging" class="faq-section">
+                <h2>Gestion des erreurs et logging</h2>
+                <!-- Ajoutez les FAQ sur la gestion des erreurs et logging ici -->
+            </section>
+
+            <section id="performance" class="faq-section">
+                <h2>Performance et optimisation</h2>
+                <!-- Ajoutez les FAQ sur la performance et l'optimisation ici -->
+            </section>
+
+            <section id="internationalization" class="faq-section">
+                <h2>Internationalisation et localisation</h2>
+                <!-- Ajoutez les FAQ sur l'internationalisation et la localisation ici -->
+            </section>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-text">
+                &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+                <div class="footer-version">Version: <span class="version-text">Chargement...</span></div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/footer-version.js"></script>
+    <script src="/js/sidebar-menu.js"></script>
+    
+    <!-- Solution directe pour les flèches FAQ -->
+    <script src="/js/faq-fix.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Structure des catégories et des questions
+            const faqCategories = [
+                { id: 'terminology', name: 'Système de terminologie' },
+                { id: 'conversion', name: 'Conversion HL7 vers FHIR' },
+                { id: 'ai-integration', name: 'Intégration IA' },
+                { id: 'auth-security', name: 'Authentification et sécurité' },
+                { id: 'database', name: 'Base de données' },
+
+                { id: 'ui', name: 'Interface utilisateur' },
+                { id: 'architecture', name: 'Architecture système' },
+                { id: 'api', name: 'API et intégration' },
+                { id: 'errors-logging', name: 'Erreurs et logging' },
+                { id: 'performance', name: 'Performance' },
+                { id: 'internationalization', name: 'Internationalisation' }
+            ];
+
+            // Éléments DOM - correction des sélecteurs
+            const categoryList = document.querySelector('.nav-items-container');
+            const faqSearch = document.getElementById('faqSearch');
+            const searchButton = document.getElementById('searchButton');
+            
+            // Générer la navigation par catégorie
+            function generateCategoryNav() {
+                categoryList.innerHTML = '';
+                
+                faqCategories.forEach(category => {
+                    const a = document.createElement('a');
+                    a.href = `#${category.id}`;
+                    a.textContent = category.name;
+                    a.dataset.category = category.id;
+                    
+                    // Ajouter une icône pour chaque catégorie
+                    const icon = document.createElement('i');
+                    icon.className = getCategoryIcon(category.id);
+                    a.insertBefore(icon, a.firstChild);
+                    
+                    categoryList.appendChild(a);
+                });
+                
+                // Ajouter les gestionnaires d'événements
+                categoryList.querySelectorAll('a').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        // Activer le lien cliqué
+                        categoryList.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
+            }
+            
+            // Fonction pour obtenir l'icône appropriée pour chaque catégorie
+            function getCategoryIcon(categoryId) {
+                const icons = {
+                    'terminology': 'fas fa-language',
+                    'conversion': 'fas fa-exchange-alt',
+                    'ai-integration': 'fas fa-robot',
+                    'auth-security': 'fas fa-shield-alt',
+                    'database': 'fas fa-database',
+
+                    'ui': 'fas fa-desktop',
+                    'architecture': 'fas fa-cubes',
+                    'api': 'fas fa-plug',
+                    'errors-logging': 'fas fa-exclamation-triangle',
+                    'performance': 'fas fa-tachometer-alt',
+                    'internationalization': 'fas fa-globe'
+                };
+                
+                return icons[categoryId] || 'fas fa-question-circle';
+            }
+            
+            // Gérer le bouton retour en haut de page
+            function setupBackToTop() {
+                const backToTopButton = document.getElementById('back-to-top');
+                if (backToTopButton) {
+                    // Afficher le bouton quand on descend
+                    window.addEventListener('scroll', () => {
+                        if (window.scrollY > 300) {
+                            backToTopButton.classList.add('visible');
+                        } else {
+                            backToTopButton.classList.remove('visible');
+                        }
+                    });
+                    
+                    // Revenir en haut lors du clic
+                    backToTopButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        window.scrollTo({
+                            top: 0,
+                            behavior: 'smooth'
+                        });
+                    });
+                }
+            }
+            
+            // Configurer les interactions des FAQ items
+            function setupFAQInteractions() {
+                document.querySelectorAll('.faq-item h3').forEach(header => {
+                    header.addEventListener('click', function() {
+                        const parent = this.parentElement;
+                        
+                        // Toggle l'état actif
+                        const isActive = parent.classList.contains('active');
+                        
+                        // Si on ouvre cette FAQ, fermer les autres
+                        if (!isActive) {
+                            const siblings = parent.parentElement.querySelectorAll('.faq-item');
+                            siblings.forEach(item => {
+                                if (item !== parent && item.classList.contains('active')) {
+                                    item.classList.remove('active');
+                                }
+                            });
+                        }
+                        
+                        // Toggle l'état de cette FAQ
+                        parent.classList.toggle('active');
+                    });
+                });
+            }
+            
+            // Fonction de recherche
+            function setupSearch() {
+                if (!faqSearch || !searchButton) return;
+                
+                function performSearch() {
+                    const query = faqSearch.value.trim().toLowerCase();
+                    
+                    if (!query) {
+                        // Réinitialiser l'affichage si la recherche est vide
+                        document.querySelectorAll('.faq-item').forEach(item => {
+                            item.style.display = '';
+                            item.classList.remove('active');
+                            
+                            // Supprimer les surlignages précédents
+                            const content = item.innerHTML;
+                            item.innerHTML = content.replace(/<mark class="highlight(.*?)?">|<\/mark>/g, '');
+                        });
+                        return;
+                    }
+                    
+                    let foundResults = false;
+                    
+                    // Parcourir tous les éléments FAQ
+                    document.querySelectorAll('.faq-item').forEach(item => {
+                        const question = item.querySelector('h3').textContent.toLowerCase();
+                        const answer = item.querySelector('.faq-answer').textContent.toLowerCase();
+                        const matches = question.includes(query) || answer.includes(query);
+                        
+                        if (matches) {
+                            item.style.display = '';
+                            item.classList.add('active');
+                            foundResults = true;
+                            
+                            // Surligner les occurrences
+                            highlightText(item, query);
+                        } else {
+                            item.style.display = 'none';
+                        }
+                    });
+                    
+                    // Afficher un message si aucun résultat
+                    const noResultsEl = document.getElementById('noResults');
+                    if (!foundResults) {
+                        if (!noResultsEl) {
+                            const message = document.createElement('div');
+                            message.id = 'noResults';
+                            message.className = 'no-results';
+                            message.innerHTML = `<p>Aucun résultat trouvé pour <strong>"${query}"</strong>.</p>`;
+                            document.querySelector('.faq-container').prepend(message);
+                        }
+                    } else if (noResultsEl) {
+                        noResultsEl.remove();
+                    }
+                }
+                
+                // Surligner le texte correspondant à la recherche
+                function highlightText(element, query) {
+                    // Enlever les surlignages précédents
+                    const content = element.innerHTML;
+                    element.innerHTML = content.replace(/<mark class="highlight(.*?)?">|<\/mark>/g, '');
+                    
+                    // Créer une expression régulière pour la recherche insensible à la casse
+                    const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi');
+                    
+                    // Parcourir et surligner
+                    walkTextNodes(element);
+                    
+                    // Fonction pour surligner le texte dans un nœud de texte
+                    function highlightInTextNode(textNode) {
+                        const parent = textNode.parentNode;
+                        
+                        // Sauter les noeuds dans les balises pre/code
+                        if (parent.tagName === 'CODE' || parent.tagName === 'PRE') {
+                            return;
+                        }
+                        
+                        const content = textNode.nodeValue;
+                        if (regex.test(content)) {
+                            const fragment = document.createDocumentFragment();
+                            let match;
+                            let lastIndex = 0;
+                            regex.lastIndex = 0;
+                            
+                            while ((match = regex.exec(content)) !== null) {
+                                // Ajouter le texte avant le match
+                                if (match.index > lastIndex) {
+                                    fragment.appendChild(document.createTextNode(content.substring(lastIndex, match.index)));
+                                }
+                                
+                                // Ajouter le texte surligné
+                                const mark = document.createElement('mark');
+                                mark.className = 'highlight highlight-pulse';
+                                mark.appendChild(document.createTextNode(match[0]));
+                                fragment.appendChild(mark);
+                                
+                                lastIndex = regex.lastIndex;
+                            }
+                            
+                            // Ajouter le reste du texte
+                            if (lastIndex < content.length) {
+                                fragment.appendChild(document.createTextNode(content.substring(lastIndex)));
+                            }
+                            
+                            parent.replaceChild(fragment, textNode);
+                            return true;
+                        }
+                        return false;
+                    }
+                    
+                    // Fonction récursive pour parcourir tous les noeuds
+                    function walkTextNodes(node) {
+                        if (node.nodeType === 3) { // Noeud texte
+                            return highlightInTextNode(node);
+                        } else if (node.nodeType === 1 && node.childNodes && 
+                                   !/(script|style|textarea)/i.test(node.tagName)) {
+                            let hasHighlight = false;
+                            for (let i = 0; i < node.childNodes.length; i++) {
+                                const childNode = node.childNodes[i];
+                                if (walkTextNodes(childNode)) {
+                                    hasHighlight = true;
+                                    // Ajuster l'index pour tenir compte des modifications dans le DOM
+                                    i += childNode.childNodes ? childNode.childNodes.length - 1 : 0;
+                                }
+                            }
+                            return hasHighlight;
+                        }
+                        return false;
+                    }
+                }
+                
+                // Ajouter les événements
+                searchButton.addEventListener('click', performSearch);
+                faqSearch.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') {
+                        performSearch();
+                    }
+                });
+            }
+            
+            // Initialiser tous les composants
+            // Désactivé : ne pas générer la navigation, utiliser l'existante
+            // generateCategoryNav();
+            
+            // Préparation des catégories dans le menu existant
+            if (categoryList) {
+                categoryList.querySelectorAll('a.nav-item').forEach(link => {
+                    const categoryId = link.getAttribute('href').substring(1);
+                    link.dataset.category = categoryId;
+                });
+            }
+            
+            setupFAQInteractions();
+            setupSearch();
+            setupBackToTop();
+            
+            // Naviguer vers le hash après que tout soit initialisé
+            setTimeout(navigateToHash, 100);
+            
+            // Écouter les changements de hash pour la navigation
+            window.addEventListener('hashchange', navigateToHash);
+            
+            // Fonction pour naviguer vers une FAQ spécifique si l'URL contient un hash
+            function navigateToHash() {
+                if (window.location.hash) {
+                    const id = window.location.hash.substring(1);
+                    const targetElement = document.getElementById(id);
+                    
+                    if (targetElement) {
+                        // Si c'est un en-tête de question, ouvrir la FAQ correspondante
+                        if (targetElement.tagName === 'H3') {
+                            const faqItem = targetElement.closest('.faq-item');
+                            if (faqItem) {
+                                faqItem.classList.add('active');
+                            }
+                        }
+                        
+                        // Activer la catégorie correspondante
+                        const section = targetElement.closest('.faq-section');
+                        if (section) {
+                            const sectionId = section.id;
+                            categoryList.querySelectorAll('a').forEach(a => {
+                                if (a.dataset.category === sectionId) {
+                                    a.classList.add('active');
+                                }
+                            });
+                        }
+                        
+                        // Faire défiler jusqu'à l'élément après un court délai
+                        setTimeout(() => {
+                            targetElement.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                    }
+                } else {
+                    // Si pas de hash, activer la première catégorie par défaut
+                    const firstCategoryLink = categoryList.querySelector('a');
+                    if (firstCategoryLink) {
+                        firstCategoryLink.classList.add('active');
+                    }
+                }
+            }
+            
+            console.log('FAQ initialisée avec succès');
+        });
+    </script>
+</body>
+</html>

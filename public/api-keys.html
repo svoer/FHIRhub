@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clés API - FHIRHub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/sidebar-menu.css">
+  
+  <!-- Inclusion du menu latéral -->
+  <script src="/js/include-sidebar.js" defer></script>
+  <script src="/js/sidebar-menu.js" defer></script>
+  
+  <!-- Boîtes de dialogue modernes -->
+  <script src="/js/modern-dialogs.js" defer></script>
+  <style>
+    .api-keys-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .keys-table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .keys-table th {
+      text-align: left;
+      padding: 15px;
+      background-color: #f8f9fa;
+      color: #333;
+      font-weight: 500;
+      border-bottom: 1px solid #ddd;
+    }
+    .keys-table td {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      color: #555;
+    }
+    .keys-table tr:last-child td {
+      border-bottom: none;
+    }
+    .keys-table tr:hover {
+      background-color: #f8f9fa;
+    }
+    .key-value {
+      font-family: monospace;
+      background-color: #f1f1f1;
+      padding: 5px 10px;
+      border-radius: 4px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .key-value span {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .key-masked {
+      letter-spacing: 2px;
+    }
+    .copy-btn {
+      background: none;
+      border: none;
+      color: #3498db;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: color 0.2s;
+      padding: 5px;
+    }
+    .copy-btn:hover {
+      color: #2980b9;
+    }
+    .show-btn {
+      background: none;
+      border: none;
+      color: #3498db;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: color 0.2s;
+      padding: 5px;
+    }
+    .show-btn:hover {
+      color: #2980b9;
+    }
+    .key-actions {
+      display: flex;
+      gap: 5px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 30px;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      min-width: 80px;
+    }
+    .status-active {
+      background-color: #e3f8e4;
+      color: #27ae60;
+    }
+    .status-revoked {
+      background-color: #fbe8e5;
+      color: #e74c3c;
+    }
+    .status-expired {
+      background-color: #f9f3eb;
+      color: #f39c12;
+    }
+    .button-primary {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    .button-primary:hover {
+      background-color: #2980b9;
+    }
+    .button-secondary {
+      background-color: #f1f1f1;
+      color: #333;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    .button-secondary:hover {
+      background-color: #ddd;
+    }
+    .button-danger {
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s;
+    }
+    .button-danger:hover {
+      background-color: #c0392b;
+    }
+    .button-icon {
+      border: none;
+      background: none;
+      color: #555;
+      cursor: pointer;
+      transition: color 0.2s;
+      padding: 5px;
+    }
+    .button-icon.danger {
+      color: #e74c3c;
+    }
+    .button-icon.primary {
+      color: #3498db;
+    }
+    .button-icon.warning {
+      color: #f39c12;
+    }
+    .button-icon:hover {
+      color: #333;
+    }
+    .button-icon.danger:hover {
+      color: #c0392b;
+    }
+    .button-icon.primary:hover {
+      color: #2980b9;
+    }
+    .button-icon.warning:hover {
+      color: #e67e22;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background-color: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      width: 500px;
+      max-width: 90%;
+    }
+    .modal-header {
+      margin-bottom: 20px;
+    }
+    .modal-title {
+      font-size: 20px;
+      font-weight: 500;
+      color: #333;
+      margin: 0;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    .form-input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .form-input:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    .form-select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      background-color: white;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      background-size: 16px;
+    }
+    .form-select:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    .form-textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+      min-height: 100px;
+      resize: vertical;
+    }
+    .form-textarea:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .no-keys {
+      text-align: center;
+      padding: 40px;
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      color: #777;
+    }
+    .no-keys i {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #aaa;
+    }
+    .new-key-alert {
+      background-color: #e3f8e4;
+      border: 1px solid #27ae60;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .new-key-value {
+      background-color: #f8f8f8;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: monospace;
+      margin: 15px 0;
+      word-break: break-all;
+      position: relative;
+      font-weight: 500;
+      color: #2c3e50;
+    }
+    .key-warning {
+      color: #e74c3c;
+      font-weight: 500;
+      margin-top: 10px;
+    }
+    .expiry-date {
+      font-size: 14px;
+      color: #777;
+    }
+    .date-picker {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 14px;
+    }
+    .date-picker:focus {
+      border-color: #3498db;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <!-- Le menu latéral sera chargé par include-sidebar.js -->
+  <div id="sidebar-container"></div>
+
+  <div class="main-content">
+    <div class="container">
+      <div class="api-keys-header">
+        <h1>Clés API</h1>
+        <button class="button-primary" id="addKeyBtn"><i class="fas fa-plus"></i> Nouvelle clé API</button>
+      </div>
+      
+      <div class="new-key-alert" id="newKeyAlert">
+        <h3><i class="fas fa-exclamation-circle"></i> Votre nouvelle clé API a été créée</h3>
+        <p>Copiez cette clé et conservez-la en lieu sûr. Par mesure de sécurité, elle ne sera plus jamais affichée.</p>
+        <div class="new-key-value" id="newKeyValue">
+          api_key_123456789
+          <button class="copy-btn" onclick="copyNewKey()"><i class="fas fa-copy"></i></button>
+        </div>
+        <p class="key-warning">Cette clé vous donne accès à des fonctionnalités et données sensibles. Ne la partagez pas et ne la publiez pas.</p>
+      </div>
+      
+      <div id="apiKeysList">
+        <!-- API Keys will be loaded here -->
+        <table class="keys-table" id="keysTable" style="display: none;">
+          <thead>
+            <tr>
+              <th>Clé API</th>
+              <th>Application</th>
+              <th>Description</th>
+              <th>Statut</th>
+              <th>Expiration</th>
+              <th>Dernière utilisation</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="keysTableBody">
+            <!-- API Keys rows will be loaded here -->
+          </tbody>
+        </table>
+        
+        <div class="no-keys" id="noKeysMessage">
+          <i class="fas fa-key"></i>
+          <h2>Aucune clé API</h2>
+          <p>Vous n'avez pas encore créé de clés API. Cliquez sur "Nouvelle clé API" pour commencer.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Add API Key Modal -->
+  <div id="keyModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Nouvelle clé API</h2>
+      </div>
+      
+      <form id="keyForm">
+        <div class="form-group">
+          <label for="keyApp" class="form-label">Application *</label>
+          <select id="keyApp" class="form-select" required>
+            <option value="">Sélectionnez une application</option>
+            <!-- Applications will be loaded here -->
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="keyDescription" class="form-label">Description</label>
+          <input type="text" id="keyDescription" class="form-input" placeholder="ex: Clé de production, Clé de développement...">
+        </div>
+        
+        <div class="form-group">
+          <label for="keyExpires" class="form-label">Date d'expiration</label>
+          <input type="date" id="keyExpires" class="date-picker">
+          <small>Laissez vide pour une clé sans date d'expiration</small>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="button-secondary" id="cancelKeyBtn">Annuler</button>
+          <button type="submit" class="button-primary" id="saveKeyBtn">Créer la clé</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteKeyModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 class="modal-title">Confirmer la suppression</h2>
+      </div>
+      
+      <p>Êtes-vous sûr de vouloir supprimer cette clé API ? Cette action est irréversible.</p>
+      <p><strong>Attention :</strong> Si cette clé est utilisée par une application, celle-ci ne pourra plus accéder à l'API.</p>
+      
+      <div class="modal-footer">
+        <button type="button" class="button-secondary" id="cancelDeleteKeyBtn">Annuler</button>
+        <button type="button" class="button-danger" id="confirmDeleteKeyBtn">Supprimer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Vérifier l'authentification
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      // Récupérer les informations de l'utilisateur
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Vérifier si l'utilisateur est admin (seul l'admin peut gérer les clés API)
+      if (user.role !== 'admin') {
+        // Afficher un message d'erreur explicatif et un bouton de retour
+        const container = document.querySelector('.main-content .container');
+        container.innerHTML = `
+          <div class="alert alert-error" style="margin: 20px 0; padding: 20px; border-radius: 5px; background-color: #ffdddd; border-left: 5px solid #f44336; color: #333;">
+            <h3 style="margin-top: 0; color: #d32f2f;">Accès restreint</h3>
+            <p>Cette page est réservée aux administrateurs. Seuls les comptes disposant de droits d'administration peuvent gérer les clés API pour le système.</p>
+            <p>En tant qu'utilisateur standard, vous pouvez utiliser les clés API qui vous ont été fournies par un administrateur, mais vous ne pouvez pas en créer de nouvelles ou les gérer.</p>
+            <p>Pour accéder à cette fonctionnalité, veuillez contacter votre administrateur système ou vous connecter avec un compte disposant des privilèges appropriés.</p>
+            <button id="returnToDashboard" class="btn btn-primary" style="margin-top: 15px;">Retourner au tableau de bord</button>
+          </div>
+        `;
+        
+        // Ajouter l'événement pour retourner au tableau de bord
+        document.getElementById('returnToDashboard').addEventListener('click', function() {
+          window.location.href = '/dashboard.html';
+        });
+        
+        // Masquer les éléments de gestion des clés API
+        document.querySelectorAll('.card, .page-header .btn-container').forEach(element => {
+          if (element) {
+            element.style.display = 'none';
+          }
+        });
+        
+        return; // Arrêter l'exécution du reste du script
+      }
+      
+      // Gestion de la déconnexion - avec vérification de l'existence du bouton
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login.html';
+        });
+      } else {
+        console.warn("Bouton de déconnexion non trouvé. L'événement sera géré par include-sidebar.js");
+      }
+      
+      // Charger les clés API
+      loadApiKeys();
+      
+      // Event listeners pour les modals
+      const keyModal = document.getElementById('keyModal');
+      const deleteKeyModal = document.getElementById('deleteKeyModal');
+      
+      document.getElementById('addKeyBtn').addEventListener('click', showAddKeyModal);
+      document.getElementById('cancelKeyBtn').addEventListener('click', closeKeyModal);
+      document.getElementById('cancelDeleteKeyBtn').addEventListener('click', closeDeleteKeyModal);
+      document.getElementById('keyForm').addEventListener('submit', createApiKey);
+      
+      // Fermer les modals en cliquant en dehors
+      window.addEventListener('click', function(e) {
+        if (e.target === keyModal) {
+          closeKeyModal();
+        }
+        if (e.target === deleteKeyModal) {
+          closeDeleteKeyModal();
+        }
+      });
+    });
+    
+    // Charger les clés API depuis l'API
+    async function loadApiKeys() {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/api-keys', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des clés API');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+          document.getElementById('keysTable').style.display = 'table';
+          document.getElementById('noKeysMessage').style.display = 'none';
+          renderApiKeys(data.data);
+        } else {
+          document.getElementById('keysTable').style.display = 'none';
+          document.getElementById('noKeysMessage').style.display = 'block';
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la récupération des clés API: ' + error.message);
+      }
+    }
+    
+    // Afficher les clés API dans le tableau
+    function renderApiKeys(keys) {
+      const tbody = document.getElementById('keysTableBody');
+      tbody.innerHTML = '';
+      
+      keys.forEach(key => {
+        const tr = document.createElement('tr');
+        
+        // Déterminer le statut
+        let statusClass = 'status-active';
+        let statusText = 'Active';
+        
+        if (!key.is_active) {
+          statusClass = 'status-revoked';
+          statusText = 'Révoquée';
+        } else if (key.expires_at && new Date(key.expires_at) < new Date()) {
+          statusClass = 'status-expired';
+          statusText = 'Expirée';
+        }
+        
+        // Formater les dates
+        const expiryDate = key.expires_at ? new Date(key.expires_at).toLocaleDateString() : 'Jamais';
+        const lastUsed = key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : 'Jamais';
+        
+        tr.innerHTML = `
+          <td>
+            <div class="key-value">
+              <span class="key-masked">••••••••••••••••••••••</span>
+              <button class="show-btn" title="Afficher/Masquer"><i class="fas fa-eye"></i></button>
+              <button class="copy-btn" title="Copier" data-key="${key.key}"><i class="fas fa-copy"></i></button>
+            </div>
+          </td>
+          <td>${key.application_name || 'Application inconnue'}</td>
+          <td>${key.description || '-'}</td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td class="expiry-date">${expiryDate}</td>
+          <td>${lastUsed}</td>
+          <td class="key-actions">
+            ${key.is_active ? 
+              `<button class="button-icon warning" title="Révoquer" onclick="revokeApiKey(${key.id})"><i class="fas fa-ban"></i></button>` :
+              `<button class="button-icon primary" title="Activer" onclick="activateApiKey(${key.id})"><i class="fas fa-check"></i></button>`
+            }
+            <button class="button-icon danger" title="Supprimer" onclick="showDeleteKeyModal(${key.id})"><i class="fas fa-trash"></i></button>
+          </td>
+        `;
+        
+        tbody.appendChild(tr);
+      });
+      
+      // Ajouter les event listeners pour les boutons
+      document.querySelectorAll('.show-btn').forEach(button => {
+        button.addEventListener('click', function() {
+          const keySpan = this.previousElementSibling;
+          const icon = this.querySelector('i');
+          
+          if (keySpan.classList.contains('key-masked')) {
+            // Récupérer la clé complète
+            const copyBtn = this.nextElementSibling;
+            const key = copyBtn.getAttribute('data-key');
+            keySpan.textContent = key;
+            keySpan.classList.remove('key-masked');
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+          } else {
+            keySpan.textContent = '••••••••••••••••••••••';
+            keySpan.classList.add('key-masked');
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+          }
+        });
+      });
+      
+      document.querySelectorAll('.copy-btn').forEach(button => {
+        button.addEventListener('click', async function() {
+          const key = this.getAttribute('data-key');
+          copyToClipboard(key);
+          await ModernDialogs.alert('Clé API copiée dans le presse-papier', 'Succès');
+        });
+      });
+    }
+    
+    // Afficher le modal pour ajouter une clé API
+    async function showAddKeyModal() {
+      try {
+        const response = await fetch('/api/applications', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des applications');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.data && data.data.length > 0) {
+          const select = document.getElementById('keyApp');
+          select.innerHTML = '<option value="">Sélectionnez une application</option>';
+          
+          data.data.forEach(app => {
+            const option = document.createElement('option');
+            option.value = app.id;
+            option.textContent = app.name;
+            select.appendChild(option);
+          });
+          
+          document.getElementById('keyModal').style.display = 'flex';
+        } else {
+          await ModernDialogs.alert('Vous devez d\'abord créer une application avant de pouvoir générer une clé API', 'Information');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la récupération des applications: ' + error.message);
+      }
+    }
+    
+    // Fermer le modal de clé API
+    function closeKeyModal() {
+      document.getElementById('keyModal').style.display = 'none';
+      document.getElementById('keyForm').reset();
+    }
+    
+    // Créer une nouvelle clé API
+    async function createApiKey(e) {
+      e.preventDefault();
+      
+      const appId = document.getElementById('keyApp').value;
+      const description = document.getElementById('keyDescription').value;
+      const expires = document.getElementById('keyExpires').value;
+      
+      if (!appId) {
+        alert('Veuillez sélectionner une application');
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/api-keys', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            application_id: parseInt(appId),
+            description: description,
+            expires_at: expires || null
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la création de la clé API');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+          // Afficher la nouvelle clé
+          document.getElementById('newKeyValue').textContent = data.data.key;
+          document.getElementById('newKeyAlert').style.display = 'block';
+          
+          // Fermer le modal
+          closeKeyModal();
+          
+          // Recharger les clés
+          loadApiKeys();
+          
+          // Faire défiler vers le haut pour voir l'alerte
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          throw new Error(data.message || 'Erreur inconnue');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la création de la clé API: ' + error.message);
+      }
+    }
+    
+    // Révoquer une clé API
+    async function revokeApiKey(keyId) {
+      try {
+        const response = await fetch(`/api/api-keys/${keyId}/revoke`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la révocation de la clé API');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          loadApiKeys();
+        } else {
+          throw new Error(data.message || 'Erreur inconnue');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la révocation de la clé API: ' + error.message);
+      }
+    }
+    
+    // Activer une clé API
+    async function activateApiKey(keyId) {
+      try {
+        const response = await fetch(`/api/api-keys/${keyId}/activate`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de l\'activation de la clé API');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          loadApiKeys();
+        } else {
+          throw new Error(data.message || 'Erreur inconnue');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de l\'activation de la clé API: ' + error.message);
+      }
+    }
+    
+    // Afficher le modal de confirmation de suppression
+    function showDeleteKeyModal(keyId) {
+      document.getElementById('confirmDeleteKeyBtn').setAttribute('data-id', keyId);
+      document.getElementById('deleteKeyModal').style.display = 'flex';
+      
+      // Ajouter l'event listener pour le bouton de confirmation
+      document.getElementById('confirmDeleteKeyBtn').addEventListener('click', deleteApiKey);
+    }
+    
+    // Fermer le modal de confirmation de suppression
+    function closeDeleteKeyModal() {
+      document.getElementById('deleteKeyModal').style.display = 'none';
+    }
+    
+    // Supprimer une clé API
+    async function deleteApiKey() {
+      const keyId = this.getAttribute('data-id');
+      
+      try {
+        const response = await fetch(`/api/api-keys/${keyId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la suppression de la clé API');
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          closeDeleteKeyModal();
+          loadApiKeys();
+        } else {
+          throw new Error(data.message || 'Erreur inconnue');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la suppression de la clé API: ' + error.message);
+      }
+    }
+    
+    // Copier la nouvelle clé dans le presse-papier
+    function copyNewKey() {
+      const keyValue = document.getElementById('newKeyValue').textContent.trim();
+      copyToClipboard(keyValue);
+      alert('Clé API copiée dans le presse-papier');
+    }
+    
+    // Copier du texte dans le presse-papier
+    function copyToClipboard(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+  </script>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-text">
+        &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+        <div class="footer-version">Version: <span class="version-text">Chargement...</span></div>
+      </div>
+      <ul class="footer-links">
+      </ul>
+    </div>
+  </footer>
+  
+  <!-- Script pour gérer la version dans le footer -->
+  <script src="/js/footer-version.js"></script>
+</body>
+</html>

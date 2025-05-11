@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion - FHIRHub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="logo">
+        <img src="/img/flame-icon-white.svg" alt="FHIRHub Logo">
+        <span>FHIRHub</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="login-container">
+    <div class="login-form">
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Connexion</h2>
+        </div>
+        
+        <div id="loginAlert" class="alert alert-danger hidden"></div>
+        
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="username">Nom d'utilisateur</label>
+            <input type="text" id="username" class="form-control" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" class="form-control" required>
+          </div>
+          
+          <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+        </form>
+      </div>
+    </div>
+    
+    <div class="login-hero">
+      <img src="/img/healthcare-professionals-fhirhub.png" alt="Professionnels de santé utilisant FHIRHub pour la conversion HL7 vers FHIR" class="login-hero-image">
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-text">
+        &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+      </div>
+      <ul class="footer-links">
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginForm = document.getElementById('loginForm');
+      const loginAlert = document.getElementById('loginAlert');
+      
+      // Vérifier si l'utilisateur est déjà connecté
+      const token = localStorage.getItem('token');
+      if (token) {
+        // Vérifier la validité du token
+        fetch('/api/auth/verify', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            window.location.href = '/dashboard.html';
+          }
+        })
+        .catch(error => {
+          console.error('Erreur lors de la vérification du token:', error);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        });
+      }
+      
+      // Gérer la soumission du formulaire de connexion
+      loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        
+        // Masquer l'alerte précédente
+        loginAlert.classList.add('hidden');
+        
+        // Envoyer la requête d'authentification
+        fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, password })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            // Stocker le token et les informations utilisateur
+            localStorage.setItem('token', data.data.token);
+            localStorage.setItem('user', JSON.stringify(data.data.user));
+            
+            // Rediriger vers le tableau de bord
+            window.location.href = '/dashboard.html';
+          } else {
+            // Afficher l'erreur
+            loginAlert.textContent = data.message || 'Échec de l\'authentification. Veuillez vérifier vos identifiants.';
+            loginAlert.classList.remove('hidden');
+          }
+        })
+        .catch(error => {
+          console.error('Erreur lors de la connexion:', error);
+          loginAlert.textContent = 'Une erreur est survenue lors de la tentative de connexion.';
+          loginAlert.classList.remove('hidden');
+        });
+      });
+    });
+  </script>
+</body>
+</html>

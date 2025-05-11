@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des Fournisseurs d'IA - FHIRHub</title>
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/sidebar-menu.css">
+  <link rel="stylesheet" href="css/support-chatbot.css">
+  <link rel="stylesheet" href="css/ai-indicator.css">
+  <style>
+    /* Styles pour les modèles dans la liste déroulante */
+    .loading-select {
+      background-color: #f9f9f9 !important;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="%23888" d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></path></svg>') !important;
+      background-position: right 8px center !important;
+      border-color: #d1d1d1 !important;
+      pointer-events: none;
+      opacity: 0.8;
+    }
+    
+    /* Style pour les options de modèles larges */
+    .model-option-large {
+      font-weight: 500;
+      color: #e83e28;
+    }
+    
+    /* Style pour les options de petits modèles */
+    .model-option-small {
+      color: #6c757d;
+    }
+    
+    /* Style pour les options au survol */
+    select.form-control option:hover,
+    select.form-control option:checked {
+      background: linear-gradient(135deg, #fff8f7, #fff5f0) !important;
+      color: #e83e28;
+    }
+    
+    /* Animation de transition pour les selects */
+    select.form-control:focus {
+      border-color: #ff7e5f;
+      box-shadow: 0 0 0 0.2rem rgba(255, 126, 95, 0.25);
+      outline: none;
+    }
+    
+    /* Styles pour le design 2025 e-santé */
+    .card {
+      border-radius: 12px;
+      border: none;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      transition: transform 0.3s, box-shadow 0.3s;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+    }
+    
+    .card-header {
+      background: linear-gradient(135deg, #ff7e5f, #feb47b);
+      color: white;
+      font-weight: 600;
+      border: none;
+      padding: 15px 20px;
+    }
+    
+    .card-body {
+      padding: 20px;
+    }
+    
+    /* Styles pour le tableau moderne */
+    #ai-providers-table {
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    #ai-providers-table thead th {
+      background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+      color: #495057;
+      font-weight: 600;
+      padding: 14px 18px;
+      border: none;
+    }
+    
+    #ai-providers-table tbody tr {
+      transition: background-color 0.2s;
+    }
+    
+    #ai-providers-table tbody tr:hover {
+      background-color: #f8f9fa;
+    }
+    
+    #ai-providers-table td {
+      padding: 14px 18px;
+      border-top: 1px solid #f1f1f1;
+      vertical-align: middle;
+    }
+    
+    /* Styles pour les boutons */
+    .btn-primary {
+      background: linear-gradient(135deg, #ff7e5f, #feb47b);
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #ff6a4b, #fea867);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      border: none;
+      border-radius: 6px;
+    }
+    
+    .btn-danger {
+      background: #dc3545;
+      border: none;
+      border-radius: 6px;
+    }
+    
+    /* Style du switch moderne */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 54px;
+      height: 28px;
+    }
+    
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #e9ecef;
+      transition: .4s;
+      border-radius: 28px;
+    }
+    
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    
+    input:checked + .slider {
+      background: linear-gradient(135deg, #ff7e5f, #feb47b);
+    }
+    
+    input:focus + .slider {
+      box-shadow: 0 0 1px #ff7e5f;
+    }
+    
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    
+    /* Modals modernisés */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1050;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0,0,0,0.5);
+      backdrop-filter: blur(3px);
+    }
+    
+    .modal-content {
+      background-color: #fff;
+      margin: 8% auto;
+      padding: 30px;
+      border: none;
+      width: 50%;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      animation: modalFadeIn 0.3s ease-out;
+    }
+    
+    @keyframes modalFadeIn {
+      from {opacity: 0; transform: translateY(-20px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+    
+    .close-modal {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    
+    .close-modal:hover,
+    .close-modal:focus {
+      color: #ff7e5f;
+      text-decoration: none;
+    }
+    
+    .form-control {
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      padding: 10px 15px;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    
+    .form-control:focus {
+      border-color: #ff7e5f;
+      box-shadow: 0 0 0 0.2rem rgba(255, 126, 95, 0.25);
+    }
+    
+    .form-label {
+      font-weight: 500;
+      color: #495057;
+      margin-bottom: 8px;
+    }
+    
+    .info-icon {
+      color: #ff7e5f;
+      cursor: help;
+      transition: color 0.2s;
+    }
+    
+    .info-icon:hover {
+      color: #ff5c38;
+    }
+    
+    #add-provider-btn {
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .actions-cell {
+      white-space: nowrap;
+      display: flex;
+      gap: 6px;
+    }
+    
+    #ai-providers-table th:first-child,
+    #ai-providers-table td:first-child {
+      text-align: center;
+      width: 80px;
+    }
+    
+    /* Styles pour les alertes */
+    .alert {
+      border-radius: 8px;
+      border: none;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      padding: 15px 20px;
+    }
+    
+    .alert-danger {
+      background-color: #fff5f5;
+      color: #e53e3e;
+    }
+    
+    .alert-success {
+      background-color: #f0fff4;
+      color: #38a169;
+    }
+    
+    .alert-info {
+      background-color: #f0f9ff;
+      color: #3182ce;
+    }
+    
+    .alert i {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header fixe avec menu hamburger -->
+  <header class="header">
+    <div class="container">
+      <!-- Bouton menu hamburger -->
+      <button id="menu-toggle" class="menu-toggle" title="Menu">
+        <i class="fas fa-bars"></i>
+      </button>
+      
+      <!-- Logo -->
+      <div class="logo">
+        <img src="/img/flame-icon-white.svg" alt="FHIRHub Logo">
+        <span>FHIRHub</span>
+      </div>
+      
+      <!-- Barre de recherche -->
+      <div class="logo-spacer"></div>
+      
+      <!-- Contrôles utilisateur -->
+      <div class="user-controls">
+        <a href="/user-profile.html" class="user-profile" title="Mon profil">
+          <i class="fas fa-user-circle"></i>
+          <span class="user-name">Admin</span>
+          <i class="fas fa-cog user-settings-icon"></i>
+        </a>
+      </div>
+    </div>
+  </header>
+  
+  <div class="wrapper">
+    <!-- Menu latéral -->
+    <aside id="sidebar" class="sidebar">
+      <!-- Menu de navigation hiérarchique -->
+      <ul class="nav-menu">
+        <li class="nav-category">Principal</li>
+        <li><a href="/dashboard.html" data-page="dashboard"><i class="fas fa-chart-line"></i> Tableau de bord <button class="favorite-btn" data-url="/dashboard.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        
+        <li class="nav-category">Conversion</li>
+        <li><a href="/convert.html" data-page="convert"><i class="fas fa-exchange-alt"></i> HL7 vers FHIR <button class="favorite-btn" data-url="/convert.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        
+        <li class="nav-category">FHIR</li>
+        <li><a href="/direct-fhir.html" data-page="direct-fhir"><i class="fas fa-search"></i> Explorateur FHIR <button class="favorite-btn" data-url="/direct-fhir.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        <li><a href="/patient-viewer.html" data-page="patient-viewer"><i class="fas fa-user-md"></i> Visualiseur Patient <button class="favorite-btn" data-url="/patient-viewer.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        <li><a href="/fhir-settings.html" data-page="fhir-settings"><i class="fas fa-cog"></i> Configuration FHIR <button class="favorite-btn" data-url="/fhir-settings.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        
+        <li class="nav-category">Administration</li>
+        <li><a href="/applications.html" data-page="applications"><i class="fas fa-th"></i> Applications <button class="favorite-btn" data-url="/applications.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        <li><a href="/api-keys.html" data-page="api-keys"><i class="fas fa-key"></i> Clés API <button class="favorite-btn" data-url="/api-keys.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        <li><a href="/users.html" data-page="users"><i class="fas fa-users"></i> Utilisateurs <button class="favorite-btn" data-url="/users.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        
+        <li class="nav-category">Configuration</li>
+        <li><a href="/terminologies.html" data-page="terminologies"><i class="fas fa-book-medical"></i> Terminologies <button class="favorite-btn" data-url="/terminologies.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        <li><a href="/ai-providers.html" data-page="ai-providers"><i class="fas fa-sliders-h"></i> Paramètres IA <button class="favorite-btn" data-url="/ai-providers.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        
+        <li class="nav-category">Ressources</li>
+        <li><a href="/documentation.html" data-page="documentation"><i class="fas fa-file-alt"></i> Documentation <button class="favorite-btn" data-url="/documentation.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        <li><a href="/api-reference.html" data-page="api-reference"><i class="fas fa-code"></i> API Reference <button class="favorite-btn" data-url="/api-reference.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        <li><a href="/faq.html" data-page="faq"><i class="fas fa-question-circle"></i> FAQ <button class="favorite-btn" data-url="/faq.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+        
+        <li class="favorites-divider"><i class="fas fa-star"></i> Favoris</li>
+        <ul id="favorites-list" class="favorites-list">
+          <!-- Les favoris seront ajoutés ici dynamiquement -->
+          <li><p class="no-favorites">Aucun favori</p></li>
+        </ul>
+        <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
+      </ul>
+    </aside>
+    
+    <!-- Bouton mobile pour ouvrir le sidebar -->
+    <div id="sidebar-toggle-mobile" class="sidebar-toggle-mobile">
+      <i class="fas fa-bars"></i>
+    </div>
+
+    <div id="content" class="main-content">
+      <div class="container-fluid">
+      
+        <!-- Panel titre avec dégradé rouge-orange simplifié -->
+        <div class="server-panel" style="background: linear-gradient(135deg, #e83e28, #fd7e30); box-shadow: 0 3px 8px rgba(232, 62, 40, 0.15); border-radius: 8px; padding: 18px 22px; margin: 25px 0;">
+          <div class="server-title" style="font-size: 1.4rem; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; color: white;">
+            <i class="fas fa-sliders-h"></i> 
+            <span>Gestion des Fournisseurs d'IA</span>
+          </div>
+          <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 0.95rem;">
+            Configurez les fournisseurs d'IA pour l'analyse des données médicales.
+          </p>
+          
+          <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+            <button id="add-provider-btn" class="btn btn-primary" style="background-color: white; color: #e83e28; border: none; border-radius: 6px; padding: 8px 14px; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-plus"></i> Ajouter un fournisseur
+            </button>
+          </div>
+        </div>
+        
+        <!-- Alertes -->
+        <div id="error-alert" class="alert alert-danger" style="display: none; margin: 15px 0; box-shadow: 0 3px 10px rgba(220, 53, 69, 0.1); border-radius: 10px; border: none;" role="alert">
+          <i class="fas fa-exclamation-triangle"></i> <span id="error-message"></span>
+        </div>
+        
+        <div id="success-alert" class="alert alert-success" style="display: none; margin: 15px 0; box-shadow: 0 3px 10px rgba(40, 167, 69, 0.1); border-radius: 10px; border: none;" role="alert">
+          <i class="fas fa-check-circle"></i> <span id="success-message"></span>
+        </div>
+        
+        <!-- Message si aucun fournisseur -->
+        <div id="no-providers-message" class="alert alert-info" style="display: none; margin: 15px 0; box-shadow: 0 3px 10px rgba(0, 123, 255, 0.1); border-radius: 10px; border: none;">
+          <i class="fas fa-info-circle"></i> Aucun fournisseur d'IA n'est configuré. Utilisez le bouton "Ajouter un fournisseur" pour commencer.
+        </div>
+        
+        <!-- Tableau des fournisseurs -->
+        <div style="background-color: white; border-radius: 8px; margin: 20px 0; box-shadow: 0 1px 6px rgba(0,0,0,0.03); overflow: hidden;">
+          <div style="padding: 15px;">
+            <table id="ai-providers-table" class="table" style="margin-bottom: 0; border-collapse: collapse;">
+              <thead>
+                <tr style="background: #f8f9fa;">
+                  <th style="padding: 12px; border-top: none; font-weight: 600; color: #495057;">Statut</th>
+                  <th style="padding: 12px; border-top: none; font-weight: 600; color: #495057;">Nom</th>
+                  <th style="padding: 12px; border-top: none; font-weight: 600; color: #495057;">Type</th>
+                  <th style="padding: 12px; border-top: none; font-weight: 600; color: #495057;">Modèles</th>
+                  <th style="padding: 12px; border-top: none; font-weight: 600; color: #495057;">Dernière Mise à Jour</th>
+                  <th style="padding: 12px; border-top: none; font-weight: 600; color: #495057;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="ai-providers-body">
+                <!-- Les fournisseurs seront listés ici dynamiquement -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <!-- Panneau d'informations -->
+        <div style="background-color: white; border-radius: 12px; margin: 25px 0; box-shadow: 0 3px 10px rgba(0,0,0,0.04); overflow: hidden;">
+          <div style="background: #f8f9fa; padding: 15px 20px; border-bottom: 1px solid #e9ecef;">
+            <h5 style="margin: 0; color: #e83e28; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+              <i class="fas fa-info-circle"></i>
+              Informations sur les fournisseurs d'IA
+            </h5>
+          </div>
+          <div style="padding: 20px 25px;">
+            <p style="color: #444; line-height: 1.6;">
+              FHIRHub prend en charge plusieurs fournisseurs d'IA pour l'analyse et le traitement des données médicales.
+            </p>
+            
+            <h6 style="color: #e83e28; margin: 20px 0 15px; font-weight: 600;">Fournisseurs pris en charge</h6>
+            <ul style="color: #444; padding-left: 20px; margin: 0;">
+              <li style="padding: 4px 0;"><strong>Mistral AI</strong> - Service d'IA avancé nécessitant une clé API.</li>
+              <li style="padding: 4px 0;"><strong>Ollama</strong> - Solution locale pour exécuter des modèles d'IA sur votre propre infrastructure.</li>
+              <li style="padding: 4px 0;"><strong>OpenAI</strong> - Service d'IA basé sur GPT, nécessitant une clé API.</li>
+              <li style="padding: 4px 0;"><strong>DeepSeek</strong> - Modèles DeepSeek-Chat et DeepSeek-Coder, nécessitant une clé API.</li>
+              <li style="padding: 4px 0;"><strong>API Compatible OpenAI</strong> - Pour toute API compatible avec le format OpenAI (Together AI, Groq, Anyscale, etc.).</li>
+            </ul>
+            
+            <div style="background-color: #fff8e5; border-left: 4px solid #ffc107; padding: 15px 20px; margin-top: 25px; border-radius: 3px;">
+              <div>
+                <strong style="color: #e83e28;">Note de confidentialité :</strong>
+                <p style="margin: 8px 0 0; color: #666;">Les fonctionnalités d'IA ne traitent jamais directement les données de santé issues des messages HL7 ou des ressources FHIR.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Pied de page -->
+      <footer class="footer">
+        <div class="container-fluid">
+          <div class="row">
+            <div class="col-md-6">
+              <p>&copy; 2025 FHIRHub - Tous droits réservés</p>
+            </div>
+            <div class="col-md-6 text-md-end">
+              <p>Version <span id="app-version">1.5.0</span></p>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </div>
+  
+  <!-- Modal Ajout de Fournisseur -->
+  <div id="add-provider-modal" class="modal">
+    <div class="modal-content" style="border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.1); max-width: 550px; margin: 30px auto; padding: 0; background: white; overflow: hidden;">
+      <!-- En-tête du modal avec couleur rouge-orange -->
+      <div style="background: #e83e28; padding: 16px 20px; color: white; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0; font-size: 1.3rem; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-plus-circle"></i>
+          Ajouter un Fournisseur d'IA
+        </h2>
+        <span class="close-modal" style="font-size: 1.3rem; cursor: pointer; color: white;">&times;</span>
+      </div>
+      
+      <!-- Formulaire -->
+      <form id="add-provider-form" style="padding: 20px;">
+        <div style="margin-bottom: 16px;">
+          <label for="provider-name" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">Nom du Fournisseur</label>
+          <input type="text" class="form-control" id="provider-name" name="provider-name" required 
+            style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9rem;">
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label for="provider-type" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">Type de Fournisseur</label>
+          <select class="form-control" id="provider-type" name="provider-type" required
+            style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9rem; background-color: white;">
+            <option value="">Sélectionnez un type</option>
+            <!-- Options ajoutées dynamiquement -->
+          </select>
+        </div>
+        
+        <div style="margin-bottom: 16px;" id="api-key-field">
+          <label for="api-key" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">Clé API</label>
+          <input type="password" class="form-control" id="api-key" name="api-key"
+            style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9rem;">
+        </div>
+        
+        <div style="margin-bottom: 16px;" id="endpoint-field">
+          <label for="endpoint" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">Point d'accès (Endpoint)</label>
+          <input type="text" class="form-control" id="endpoint" name="endpoint" placeholder="https://api.exemple.com/v1"
+            style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9rem;">
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label for="model-selection" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">Modèle</label>
+          <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
+            <select class="form-control" id="model-selection" style="flex-grow: 1; padding: 8px 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9rem; height: 38px; transition: all 0.3s ease; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill=%22%23888%22 height=%2224%22 viewBox=%220 0 24 24%22 width=%2224%22 xmlns=%22http://www.w3.org/2000/svg%22><path d=%22M7 10l5 5 5-5z%22/><path d=%22M0 0h24v24H0z%22 fill=%22none%22/></svg>'); background-repeat: no-repeat; background-position: right 8px center; background-size: 16px; padding-right: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <option value="">Sélectionnez un modèle</option>
+              <!-- Les options seront remplies dynamiquement -->
+            </select>
+            <button type="button" id="load-models-btn" style="display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #ff7e5f, #feb47b); color: white; border: none; border-radius: 4px; padding: 0 12px; cursor: pointer; font-size: 0.9rem; height: 38px; white-space: nowrap; transition: all 0.3s ease; box-shadow: 0 2px 5px rgba(255, 126, 95, 0.2);">
+              <i class="fas fa-sync-alt"></i> Charger les modèles
+            </button>
+          </div>
+          <div style="margin-top: 8px;">
+            <div style="position: relative;">
+              <input type="text" class="form-control" id="models" name="models" placeholder="Modèles séparés par des virgules"
+                style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.3s ease;">
+              <div style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #999; font-size: 0.8rem; background: #f9f9f9; padding: 2px 6px; border-radius: 3px; pointer-events: none;">
+                <i class="fas fa-tag"></i> Modèles
+              </div>
+            </div>
+            <div style="margin-top: 6px; font-size: 0.8rem; color: #6c757d; display: flex; align-items: center; gap: 5px;">
+              <i class="fas fa-info-circle" style="color: #ff7e5f;"></i>
+              <span>Les modèles sélectionnés ci-dessus seront automatiquement ajoutés ici</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Boutons d'action -->
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="close-modal" style="background-color: #f1f1f1; color: #555; border: none; border-radius: 4px; padding: 8px 16px; cursor: pointer;">
+            Annuler
+          </button>
+          <button type="submit" style="background-color: #e83e28; color: white; border: none; border-radius: 4px; padding: 8px 16px; cursor: pointer;">
+            <i class="fas fa-plus" style="margin-right: 6px;"></i>Ajouter
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Modal Édition de Fournisseur -->
+  <div id="edit-provider-modal" class="modal">
+    <div class="modal-content" style="border-radius: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.1); max-width: 550px; margin: 30px auto; padding: 0; background: white; overflow: hidden;">
+      <!-- En-tête du modal -->
+      <div style="background: #e83e28; padding: 16px 20px; color: white; display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin: 0; font-size: 1.3rem; font-weight: 600; display: flex; align-items: center; gap: 10px;">
+          <i class="fas fa-edit"></i>
+          Modifier un Fournisseur d'IA
+        </h2>
+        <span class="close-modal" style="font-size: 1.3rem; cursor: pointer; color: white;">&times;</span>
+      </div>
+      
+      <!-- Formulaire -->
+      <form id="edit-provider-form" onsubmit="updateProvider(event)" style="padding: 20px;">
+        <input type="hidden" id="edit-provider-id" name="provider-id">
+        
+        <div style="margin-bottom: 16px;">
+          <label for="edit-provider-name" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">Nom du Fournisseur</label>
+          <input type="text" class="form-control" id="edit-provider-name" name="provider-name" required
+            style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9rem;">
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label for="edit-provider-type" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">Type de Fournisseur</label>
+          <input type="text" class="form-control" id="edit-provider-type" name="provider-type" readonly
+            style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ddd; background-color: #f8f9fa; color: #555; font-size: 0.9rem;">
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label for="edit-api-key" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">
+            Clé API <small style="font-weight: normal; color: #888;">(laissez vide pour ne pas modifier)</small>
+          </label>
+          <input type="password" class="form-control" id="edit-api-key" name="api-key"
+            style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9rem;">
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label for="edit-endpoint" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">Point d'accès (Endpoint)</label>
+          <input type="text" class="form-control" id="edit-endpoint" name="endpoint"
+            style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9rem;">
+        </div>
+        
+        <div style="margin-bottom: 16px;">
+          <label for="edit-model-selection" style="display: block; margin-bottom: 6px; font-weight: 500; color: #333;">Modèle</label>
+          <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
+            <select class="form-control" id="edit-model-selection" style="flex-grow: 1; padding: 8px 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 0.9rem; height: 38px; transition: all 0.3s ease; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill=%22%23888%22 height=%2224%22 viewBox=%220 0 24 24%22 width=%2224%22 xmlns=%22http://www.w3.org/2000/svg%22><path d=%22M7 10l5 5 5-5z%22/><path d=%22M0 0h24v24H0z%22 fill=%22none%22/></svg>'); background-repeat: no-repeat; background-position: right 8px center; background-size: 16px; padding-right: 30px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+              <option value="">Sélectionnez un modèle</option>
+              <!-- Les options seront remplies dynamiquement -->
+            </select>
+            <button type="button" id="edit-load-models-btn" style="display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #ff7e5f, #feb47b); color: white; border: none; border-radius: 4px; padding: 0 12px; cursor: pointer; font-size: 0.9rem; height: 38px; white-space: nowrap; transition: all 0.3s ease; box-shadow: 0 2px 5px rgba(255, 126, 95, 0.2);">
+              <i class="fas fa-sync-alt"></i> Charger les modèles
+            </button>
+          </div>
+          <div style="margin-top: 8px;">
+            <div style="position: relative;">
+              <input type="text" class="form-control" id="edit-models" name="models" placeholder="Modèles séparés par des virgules"
+                style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 0.9rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.3s ease;">
+              <div style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #999; font-size: 0.8rem; background: #f9f9f9; padding: 2px 6px; border-radius: 3px; pointer-events: none;">
+                <i class="fas fa-tag"></i> Modèles
+              </div>
+            </div>
+            <div style="margin-top: 6px; font-size: 0.8rem; color: #6c757d; display: flex; align-items: center; gap: 5px;">
+              <i class="fas fa-info-circle" style="color: #ff7e5f;"></i>
+              <span>Les modèles sélectionnés ci-dessus seront automatiquement ajoutés ici</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Boutons d'action -->
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+          <button type="button" class="close-modal" style="background-color: #f1f1f1; color: #555; border: none; border-radius: 4px; padding: 8px 16px; cursor: pointer;">
+            Annuler
+          </button>
+          <button type="submit" style="background-color: #e83e28; color: white; border: none; border-radius: 4px; padding: 8px 16px; cursor: pointer;">
+            <i class="fas fa-save" style="margin-right: 6px;"></i>Mettre à jour
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Chatbot Support -->
+  <div id="support-chatbot-container"></div>
+  
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/sidebar-menu.js"></script>
+  <script src="js/support-chatbot.js"></script>
+  <script src="js/ai-providers-management.js"></script>
+  <script src="js/footer-version.js"></script>
+  
+  <script>
+    // Marquer l'élément actif dans le menu
+    document.addEventListener('DOMContentLoaded', () => {
+      // Marquer la page active dans le menu
+      const activePage = '/ai-providers.html';
+      const menuItems = document.querySelectorAll('.nav-menu a');
+      
+      menuItems.forEach(item => {
+        if (item.getAttribute('href') === activePage) {
+          item.classList.add('active');
+        }
+      });
+      
+      // Configuration du menu mobile
+      const menuToggle = document.getElementById('menu-toggle');
+      const sidebar = document.getElementById('sidebar');
+      
+      if (menuToggle && sidebar) {
+        menuToggle.addEventListener('click', () => {
+          document.body.classList.toggle('sidebar-open');
+        });
+      }
+      
+      // Bouton mobile
+      const sidebarToggleMobile = document.getElementById('sidebar-toggle-mobile');
+      if (sidebarToggleMobile && sidebar) {
+        sidebarToggleMobile.addEventListener('click', () => {
+          document.body.classList.toggle('sidebar-open');
+        });
+      }
+      
+      // Chargement de l'indicateur d'IA
+      setTimeout(function() {
+        const script = document.createElement('script');
+        script.src = '/js/ai-provider-indicator.js';
+        script.defer = true;
+        document.head.appendChild(script);
+      }, 500);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,892 @@
+/**
+ * Routes pour l'analyse de ressources FHIR via des fournisseurs d'IA
+ * Comprend également les routes pour le chatbot de support
+ * @module routes/ai-fhir-analyze
+ */
+
+const express = require('express');
+const router = express.Router();
+const fhirService = require('../utils/fhirService');
+// Service IA unifié
+let aiService;
+try {
+    aiService = require('../utils/aiService');
+} catch (error) {
+    console.error("Erreur lors de l'importation de aiService:", error.message);
+    // Créer un objet fake pour éviter les erreurs
+    aiService = {
+        generateResponse: async () => "Service IA non disponible"
+    };
+}
+// Vérifier si le module existe et l'importer correctement
+let aiProviderService;
+try {
+    aiProviderService = require('../utils/aiProviderService');
+} catch (error) {
+    console.error("Erreur lors de l'importation de aiProviderService:", error.message);
+    // Créer un objet fake pour éviter les erreurs
+    aiProviderService = {
+        getActiveAIProvider: async () => null,
+        getAllAIProviders: async () => []
+    };
+}
+const { getActiveAIProvider } = aiProviderService;
+const { authCombined } = require('../middleware/auth');
+
+// Modules pour les différents fournisseurs d'IA
+let mistralClient, ollamaClient;
+try {
+    mistralClient = require('../utils/mistralClient');
+} catch (error) {
+    console.error("Erreur lors de l'importation de mistralClient:", error.message);
+    // Client factice pour éviter les erreurs
+    mistralClient = { generateText: async () => "Service Mistral non disponible" };
+}
+
+try {
+    ollamaClient = require('../utils/ollamaClient');
+} catch (error) {
+    console.error("Erreur lors de l'importation de ollamaClient:", error.message);
+    // Client factice pour éviter les erreurs
+    ollamaClient = { generateText: async () => "Service Ollama non disponible" };
+}
+
+/**
+ * @swagger
+ * /api/ai/analyze-patient:
+ *   post:
+ *     summary: Analyse les données d'un patient avec l'IA
+ *     description: Utilise le fournisseur d'IA actif pour générer une analyse du patient à partir des ressources FHIR
+ *     tags:
+ *       - IA
+ *     security:
+ *       - jwt: []
+ *       - apiKey: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - patientId
+ *               - serverUrl
+ *             properties:
+ *               patientId:
+ *                 type: string
+ *                 description: ID du patient à analyser
+ *               serverUrl:
+ *                 type: string
+ *                 description: URL du serveur FHIR
+ *               patientData:
+ *                 type: object
+ *                 description: Données du patient déjà récupérées (optionnel)
+ *     responses:
+ *       200:
+ *         description: Analyse générée avec succès
+ *       400:
+ *         description: Requête invalide
+ *       401:
+ *         description: Non autorisé
+ *       500:
+ *         description: Erreur serveur
+ */
+// Route pour l'analyse de patient - désactive l'authentification
+router.post('/analyze-patient', async (req, res) => {
+    // Logs pour debug
+    console.log('Route /api/ai/analyze-patient accessible sans authentification - BYPASS_AUTH:', process.env.BYPASS_AUTH);
+    
+    // Ajouter un timeout global pour la route entière (2 minutes)
+    // Ceci permet de s'assurer que la requête répond toujours, même si le service IA est bloqué
+    const ROUTE_TIMEOUT = 120000; // 120 secondes = 2 minutes
+    let timeoutHandle = setTimeout(() => {
+        console.warn('Timeout global dépassé pour l\'analyse du patient après', ROUTE_TIMEOUT/1000, 'secondes');
+        if (!res.headersSent) {
+            res.status(503).json({
+                success: false,
+                message: 'Délai d\'attente dépassé pour l\'analyse du patient',
+                error: 'Service temporairement indisponible - veuillez réessayer plus tard'
+            });
+        }
+    }, ROUTE_TIMEOUT);
+    
+    try {
+        // S'assurer que le timeout est annulé dans tous les cas (réussite ou échec)
+        res.on('finish', () => {
+            clearTimeout(timeoutHandle);
+        });
+        const { patientId, serverUrl, patientData } = req.body;
+        console.log('[AI-Analyze] Requête avec patientId:', patientId, 'serverUrl:', serverUrl);
+        
+        if (!patientId || !serverUrl) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID du patient et URL du serveur requis'
+            });
+        }
+        
+        // Obtenir le fournisseur d'IA actif
+        const aiProvider = await getActiveAIProvider();
+        
+        if (!aiProvider) {
+            return res.status(400).json({
+                success: false,
+                message: 'Aucun fournisseur d\'IA actif disponible'
+            });
+        }
+        
+        // Collecter toutes les ressources liées au patient
+        let patient = patientData;
+        let observations = [];
+        let conditions = [];
+        let medications = [];
+        let encounters = [];
+        
+        try {
+            // Si les données du patient ne sont pas fournies, les récupérer
+            if (!patient) {
+                patient = await fhirService.getResource(serverUrl, 'Patient', patientId);
+                if (!patient) {
+                    throw new Error("Patient non trouvé");
+                }
+            }
+            
+            // Récupérer les ressources associées en parallèle
+            const [obsResponse, condResponse, medResponse, encResponse] = await Promise.all([
+                fhirService.searchResources(serverUrl, 'Observation', { patient: patientId, _count: 50 }),
+                fhirService.searchResources(serverUrl, 'Condition', { patient: patientId, _count: 50 }),
+                fhirService.searchResources(serverUrl, 'MedicationRequest', { patient: patientId, _count: 50 }),
+                fhirService.searchResources(serverUrl, 'Encounter', { patient: patientId, _count: 50 })
+            ]);
+            
+            // Extraire les ressources des réponses
+            observations = obsResponse.entry ? obsResponse.entry.map(e => e.resource) : [];
+            conditions = condResponse.entry ? condResponse.entry.map(e => e.resource) : [];
+            medications = medResponse.entry ? medResponse.entry.map(e => e.resource) : [];
+            encounters = encResponse.entry ? encResponse.entry.map(e => e.resource) : [];
+            
+        } catch (error) {
+            console.error('Erreur lors de la récupération des ressources:', error);
+            return res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la récupération des données du patient',
+                error: error.message
+            });
+        }
+        
+        // Vérifier que le patient existe et contient des données minimales
+        if (!patient || !patient.id) {
+            return res.status(404).json({
+                success: false,
+                message: 'Données du patient insuffisantes ou non trouvées'
+            });
+        }
+        
+        // Créer un résumé structuré des données du patient avec tous les onglets
+        const patientSummary = {
+            patient: {
+                id: patient.id,
+                name: patient.name ? patient.name.map(n => {
+                    return {
+                        family: n.family,
+                        given: n.given
+                    };
+                }) : [],
+                gender: patient.gender || 'unknown',
+                birthDate: patient.birthDate || 'unknown',
+                telecom: patient.telecom || [],
+                address: patient.address || []
+            },
+            // Résumé statistique
+            observationsCount: observations.length,
+            conditionsCount: conditions.length,
+            medicationsCount: medications.length,
+            encountersCount: encounters.length,
+            
+            // Onglet observations - toutes les observations 
+            observations: observations.map(o => {
+                return {
+                    id: o.id,
+                    code: o.code?.coding?.[0]?.display || o.code?.text,
+                    value: getObservationValue(o),
+                    date: getEffectiveDate(o),
+                    status: o.status,
+                    category: o.category?.[0]?.coding?.[0]?.display || 'Non spécifié'
+                };
+            }),
+            
+            // Onglet conditions - toutes les conditions, pas seulement les actives
+            conditions: conditions.map(c => {
+                return {
+                    id: c.id,
+                    name: c.code?.coding?.[0]?.display || c.code?.text,
+                    status: c.clinicalStatus?.coding?.[0]?.display || 'Non spécifié',
+                    severity: c.severity?.coding?.[0]?.display,
+                    recordedDate: c.recordedDate,
+                    onsetDate: c.onsetDateTime || c.onsetPeriod?.start,
+                    category: c.category?.[0]?.coding?.[0]?.display
+                };
+            }),
+            
+            // Onglet médicaments - tous les médicaments, pas seulement les actifs
+            medications: medications.map(m => {
+                return {
+                    id: m.id,
+                    name: m.medicationCodeableConcept?.coding?.[0]?.display || m.medicationCodeableConcept?.text,
+                    status: m.status,
+                    dosage: m.dosageInstruction?.[0]?.text,
+                    route: m.dosageInstruction?.[0]?.route?.coding?.[0]?.display,
+                    authoredOn: m.authoredOn,
+                    prescriber: m.requester?.display || (m.requester?.reference ? m.requester?.reference.split('/').pop() : 'Non spécifié')
+                };
+            }),
+            
+            // Onglet consultations - toutes les rencontres
+            encounters: encounters.map(e => {
+                return {
+                    id: e.id,
+                    class: e.class?.display || e.class?.code,
+                    type: e.type?.[0]?.coding?.[0]?.display || 'Non spécifié',
+                    status: e.status,
+                    period: {
+                        start: e.period?.start,
+                        end: e.period?.end
+                    },
+                    reason: e.reasonCode?.[0]?.coding?.[0]?.display,
+                    location: e.location?.[0]?.location?.display
+                };
+            }),
+            
+            // Pour le résumé, conserver des listes plus restreintes
+            recentObservations: observations.slice(0, 5).map(o => {
+                return {
+                    code: o.code?.coding?.[0]?.display || o.code?.text,
+                    value: getObservationValue(o),
+                    date: getEffectiveDate(o)
+                };
+            }),
+            activeConditions: conditions.filter(c => 
+                c.clinicalStatus?.coding?.[0]?.code === 'active' || 
+                c.clinicalStatus?.coding?.[0]?.display === 'active'
+            ).map(c => {
+                return {
+                    name: c.code?.coding?.[0]?.display || c.code?.text,
+                    severity: c.severity?.coding?.[0]?.display,
+                    recordedDate: c.recordedDate
+                };
+            }),
+            currentMedications: medications.filter(m => 
+                m.status === 'active'
+            ).map(m => {
+                return {
+                    name: m.medicationCodeableConcept?.coding?.[0]?.display || m.medicationCodeableConcept?.text,
+                    dosage: m.dosageInstruction?.[0]?.text,
+                    authoredOn: m.authoredOn
+                };
+            })
+        };
+        
+        // Préparer le prompt pour l'IA basé sur le type de fournisseur
+        let prompt = '';
+        let analysis = '';
+        
+        switch (aiProvider.provider_type) {
+            case 'mistral':
+            case 'openai':
+            case 'llama':
+            case 'ollama':
+                prompt = `En tant que professionnel de santé, analyse de manière factuelle, précise et clinique les données FHIR suivantes d'un patient. 
+Génère un résumé synthétique de l'état de santé actuel du patient basé UNIQUEMENT sur ces données, sans aucune spéculation.
+Tu ne dois PAS inventer d'informations ni faire de diagnostic. Tu dois te restreindre strictement aux données disponibles.
+
+Structure ton rapport en sections pour chaque type de données, en incluant:
+1. Un résumé global des informations patient
+2. Une analyse des observations cliniques (laboratoire, signes vitaux, etc.)
+3. Une analyse des conditions médicales actives et passées
+4. Une analyse des traitements médicamenteux
+5. Un historique des consultations et hospitalisations
+6. Une synthèse chronologique des événements majeurs
+
+Voici les données FHIR du patient sous format JSON:
+${JSON.stringify(patientSummary, null, 2)}
+                
+Réponds avec un rapport HTML bien structuré pour faciliter la lecture. Utilise les éléments HTML comme <div>, <h3>, <ul>, <li>, <p> avec des styles CSS en ligne pour créer un rapport visuellement organisé. Utilise des tableaux pour regrouper les données quand c'est pertinent.`;
+                
+                // Appeler le fournisseur d'IA spécifique
+                try {
+                    if (aiProvider.provider_type === 'mistral') {
+                        // Utiliser le client Mistral avec la fonction appropriée et une meilleure configuration de timeout
+                        const mistralClient = require('../utils/mistralClient');
+                        
+                        // Configuration pour augmenter les chances de succès
+                        const response = await mistralClient.generateResponse(prompt, {
+                            model: 'mistral-large-2411',
+                            temperature: 0.3,
+                            maxTokens: 1500,
+                            retryCount: 3  // Tentatives multiples avec la nouvelle implémentation de retry
+                        });
+                        
+                        analysis = response.trim();
+                        console.log("Analyse Mistral générée avec succès");
+                    } 
+                    else if (aiProvider.provider_type === 'ollama') {
+                        // Utiliser le client Ollama
+                        const ollamaClient = require('../utils/ollamaClient');
+                        const response = await ollamaClient.generateText(prompt);
+                        analysis = response.trim();
+                    }
+                    else if (aiProvider.provider_type === 'deepseek') {
+                        try {
+                            // DeepSeek utilise une API compatible avec OpenAI
+                            const endpoint = aiProvider.endpoint || aiProvider.api_url || 'https://api.deepseek.com/v1';
+                            const apiKey = aiProvider.api_key;
+                            
+                            if (!apiKey) {
+                                throw new Error('Clé API DeepSeek manquante');
+                            }
+                            
+                            // Faire l'appel API directement
+                            const deepseekResponse = await fetch(`${endpoint}/chat/completions`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${apiKey}`
+                                },
+                                body: JSON.stringify({
+                                    model: aiProvider.model_id || 'deepseek-chat',
+                                    messages: [
+                                        { role: 'system', content: 'Vous êtes un assistant médical expert qui analyse les dossiers médicaux de manière factuelle.' },
+                                        { role: 'user', content: prompt }
+                                    ],
+                                    temperature: 0.3,
+                                    max_tokens: 1500
+                                })
+                            });
+                            
+                            if (!deepseekResponse.ok) {
+                                const errorData = await deepseekResponse.json();
+                                throw new Error(errorData.error?.message || `Erreur HTTP: ${deepseekResponse.status}`);
+                            }
+                            
+                            const data = await deepseekResponse.json();
+                            
+                            // Extraire la réponse de DeepSeek
+                            analysis = data.choices[0]?.message?.content || "Je suis désolé, je n'ai pas pu générer une analyse cohérente.";
+                            console.log('[DEEPSEEK] Analyse patient générée avec succès');
+                        } catch (error) {
+                            console.error(`Erreur lors de l'appel à DeepSeek pour l'analyse patient: ${error.message}`);
+                            // Utiliser le résumé de base en cas d'échec
+                            analysis = generateBasicSummary(patientSummary);
+                        }
+                    }
+                    else {
+                        // Fournisseur non implémenté, utiliser un résumé basique
+                        analysis = generateBasicSummary(patientSummary);
+                    }
+                } catch (error) {
+                    console.error(`Erreur lors de l'appel au fournisseur d'IA ${aiProvider.provider_type}:`, error);
+                    analysis = generateBasicSummary(patientSummary);
+                }
+                break;
+                
+            default:
+                // Fournisseur inconnu, utiliser un résumé basique
+                analysis = generateBasicSummary(patientSummary);
+        }
+        
+        // Répondre avec l'analyse générée
+        return res.status(200).json({
+            success: true,
+            message: 'Analyse générée avec succès',
+            analysis
+        });
+        
+    } catch (error) {
+        // S'assurer que le timeout est annulé même en cas d'erreur
+        clearTimeout(timeoutHandle);
+        console.error('Erreur lors de l\'analyse du patient:', error);
+        
+        // Renvoyer une réponse d'erreur appropriée et informative
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'analyse du patient',
+            error: error.message,
+            errorType: error.name, // Type d'erreur pour un meilleur diagnostic
+            statusCode: error.statusCode || 500 // Conserver le code d'erreur HTTP original si disponible
+        });
+    }
+});
+
+/**
+ * Génère un résumé basique du patient (fallback si l'IA n'est pas disponible)
+ * @param {Object} summary - Résumé des données du patient
+ * @returns {string} - Résumé HTML basique
+ */
+function generateBasicSummary(summary) {
+    const { 
+        patient, 
+        observations, 
+        conditions, 
+        medications, 
+        encounters, 
+        observationsCount, 
+        conditionsCount, 
+        medicationsCount, 
+        encountersCount, 
+        activeConditions, 
+        currentMedications 
+    } = summary;
+    
+    // Formater le nom
+    let patientName = 'Patient sans nom';
+    if (patient.name && patient.name.length > 0) {
+        const name = patient.name[0];
+        const family = name.family || '';
+        const given = name.given || [];
+        
+        if (family && given.length > 0) {
+            patientName = `${family.toUpperCase()} ${given.join(' ')}`;
+        } else if (family) {
+            patientName = family.toUpperCase();
+        } else if (given.length > 0) {
+            patientName = given.join(' ');
+        }
+    }
+    
+    // Formater l'adresse si disponible
+    let addressHtml = 'Non spécifiée';
+    if (patient.address && patient.address.length > 0) {
+        const addr = patient.address[0];
+        const lines = [];
+        if (addr.line && addr.line.length > 0) lines.push(addr.line.join(', '));
+        if (addr.postalCode) lines.push(addr.postalCode);
+        if (addr.city) lines.push(addr.city);
+        if (addr.country) lines.push(addr.country);
+        
+        if (lines.length > 0) {
+            addressHtml = lines.join(' ');
+        }
+    }
+    
+    // Formater les téléphones et emails si disponibles
+    let contactInfo = 'Non spécifiée';
+    if (patient.telecom && patient.telecom.length > 0) {
+        const contacts = patient.telecom.map(t => {
+            if (t.system === 'phone') return `<span style="white-space: nowrap;"><i class="fas fa-phone" style="color: #e83e28;"></i> ${t.value}</span>`;
+            if (t.system === 'email') return `<span style="white-space: nowrap;"><i class="fas fa-envelope" style="color: #e83e28;"></i> ${t.value}</span>`;
+            return `${t.system}: ${t.value}`;
+        });
+        
+        if (contacts.length > 0) {
+            contactInfo = contacts.join(' | ');
+        }
+    }
+    
+    return `
+        <div style="padding: 15px 0; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: #444;">Résumé des informations patient</h3>
+            <p style="color: #666; margin-bottom: 20px;">Analyse basée uniquement sur les données disponibles dans le dossier.</p>
+            
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #555;">Données démographiques</h4>
+                <p style="margin: 5px 0;"><strong>Nom:</strong> ${patientName}</p>
+                <p style="margin: 5px 0;"><strong>Genre:</strong> ${patient.gender || 'Non spécifié'}</p>
+                <p style="margin: 5px 0;"><strong>Date de naissance:</strong> ${patient.birthDate ? new Date(patient.birthDate).toLocaleDateString('fr-FR') : 'Non spécifiée'}</p>
+                <p style="margin: 5px 0;"><strong>Adresse:</strong> ${addressHtml}</p>
+                <p style="margin: 5px 0;"><strong>Contact:</strong> ${contactInfo}</p>
+            </div>
+            
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #555;">Résumé des données cliniques</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 15px;">
+                    <div style="flex: 1; min-width: 120px; background: rgba(232, 62, 40, 0.05); padding: 12px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 1.8rem; font-weight: 600; color: #e83e28;">${observationsCount}</div>
+                        <div style="color: #666;">Observations</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: rgba(232, 62, 40, 0.05); padding: 12px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 1.8rem; font-weight: 600; color: #e83e28;">${activeConditions.length}</div>
+                        <div style="color: #666;">Conditions actives</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: rgba(232, 62, 40, 0.05); padding: 12px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 1.8rem; font-weight: 600; color: #e83e28;">${currentMedications.length}</div>
+                        <div style="color: #666;">Médicaments actifs</div>
+                    </div>
+                    <div style="flex: 1; min-width: 120px; background: rgba(232, 62, 40, 0.05); padding: 12px; border-radius: 6px; text-align: center;">
+                        <div style="font-size: 1.8rem; font-weight: 600; color: #e83e28;">${encountersCount}</div>
+                        <div style="color: #666;">Consultations</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Observations cliniques -->
+            ${observations && observations.length > 0 ? `
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #555;">Observations cliniques récentes</h4>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background: rgba(232, 62, 40, 0.1);">
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Observation</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Valeur</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${observations.slice(0, 8).map(o => `
+                            <tr>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;">${o.code || 'Non spécifié'}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${o.value || 'Non spécifié'}</strong></td>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;">${o.date ? new Date(o.date).toLocaleDateString('fr-FR') : 'Non spécifiée'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                ${observations.length > 8 ? `<p style="margin: 10px 0 0; text-align: right; font-style: italic; color: #666;">${observations.length - 8} observations supplémentaires non affichées</p>` : ''}
+            </div>` : ''}
+            
+            <!-- Conditions actives -->
+            ${activeConditions.length > 0 ? `
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #555;">Conditions médicales actives</h4>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background: rgba(232, 62, 40, 0.1);">
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Condition</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Sévérité</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${activeConditions.map(c => `
+                            <tr>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${c.name || 'Non spécifiée'}</strong></td>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;">${c.severity || 'Non spécifiée'}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;">${c.recordedDate ? new Date(c.recordedDate).toLocaleDateString('fr-FR') : 'Non spécifiée'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>` : ''}
+            
+            <!-- Médicaments actifs -->
+            ${currentMedications.length > 0 ? `
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #555;">Traitements médicamenteux en cours</h4>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background: rgba(232, 62, 40, 0.1);">
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Médicament</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Posologie</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Date prescription</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${currentMedications.map(m => `
+                            <tr>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${m.name || 'Non spécifié'}</strong></td>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;">${m.dosage || 'Non spécifiée'}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;">${m.authoredOn ? new Date(m.authoredOn).toLocaleDateString('fr-FR') : 'Non spécifiée'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>` : ''}
+            
+            <!-- Consultations récentes -->
+            ${encounters && encounters.length > 0 ? `
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; color: #555;">Consultations récentes</h4>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="background: rgba(232, 62, 40, 0.1);">
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Type</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Raison</th>
+                            <th style="padding: 8px; text-align: left; border-bottom: 1px solid #ddd;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${encounters.slice(0, 5).map(e => `
+                            <tr>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>${e.type || e.class || 'Non spécifié'}</strong></td>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;">${e.reason || 'Non spécifiée'}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #eee;">${e.period?.start ? new Date(e.period.start).toLocaleDateString('fr-FR') : 'Non spécifiée'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                ${encounters.length > 5 ? `<p style="margin: 10px 0 0; text-align: right; font-style: italic; color: #666;">${encounters.length - 5} consultations supplémentaires non affichées</p>` : ''}
+            </div>` : ''}
+            
+            <div style="background: rgba(253, 126, 48, 0.1); padding: 10px; border-radius: 6px; margin-top: 15px; text-align: center;">
+                <p style="margin: 0; font-style: italic; color: #666;">
+                    Cette analyse est purement factuelle, basée uniquement sur les données disponibles dans le dossier.
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Obtient la valeur d'une observation sous forme de chaîne formatée
+ * @param {Object} observation - Ressource Observation FHIR
+ * @returns {string} - Valeur formatée
+ */
+function getObservationValue(observation) {
+    if (observation.valueQuantity) {
+        return `${observation.valueQuantity.value} ${observation.valueQuantity.unit || ''}`;
+    } else if (observation.valueCodeableConcept) {
+        return observation.valueCodeableConcept.coding?.[0]?.display || observation.valueCodeableConcept.text || 'Non spécifiée';
+    } else if (observation.valueString) {
+        return observation.valueString;
+    } else if (observation.valueBoolean !== undefined) {
+        return observation.valueBoolean ? 'Oui' : 'Non';
+    } else if (observation.valueInteger !== undefined) {
+        return observation.valueInteger.toString();
+    } else if (observation.valueRange) {
+        return `${observation.valueRange.low?.value || '?'} - ${observation.valueRange.high?.value || '?'} ${observation.valueRange.low?.unit || ''}`;
+    } else if (observation.valueRatio) {
+        return `${observation.valueRatio.numerator?.value || '?'} : ${observation.valueRatio.denominator?.value || '?'}`;
+    } else if (observation.component && observation.component.length > 0) {
+        return 'Composants multiples';
+    } else {
+        return 'Non spécifiée';
+    }
+}
+
+/**
+ * Obtient la date effective d'une observation
+ * @param {Object} observation - Ressource Observation FHIR
+ * @returns {string} - Date formatée ou chaîne vide
+ */
+function getEffectiveDate(observation) {
+    if (observation.effectiveDateTime) {
+        return observation.effectiveDateTime;
+    } else if (observation.effectivePeriod && observation.effectivePeriod.start) {
+        return observation.effectivePeriod.start;
+    } else if (observation.issued) {
+        return observation.issued;
+    } else {
+        return '';
+    }
+}
+
+/**
+ * @swagger
+ * /api/ai/chat:
+ *   post:
+ *     summary: Interagit avec le chatbot via l'IA active
+ *     description: Utilise le fournisseur d'IA actif pour répondre aux questions du chatbot de support
+ *     tags:
+ *       - IA
+ *     security:
+ *       - jwt: []
+ *       - apiKey: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - provider
+ *               - messages
+ *             properties:
+ *               provider:
+ *                 type: string
+ *                 description: Nom du fournisseur d'IA à utiliser
+ *               messages:
+ *                 type: array
+ *                 description: Historique de messages pour la conversation
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     role:
+ *                       type: string
+ *                       enum: [system, user, assistant]
+ *                     content:
+ *                       type: string
+ *               max_tokens:
+ *                 type: integer
+ *                 description: Nombre maximum de tokens pour la réponse
+ *     responses:
+ *       200:
+ *         description: Réponse générée avec succès
+ *       400:
+ *         description: Requête invalide
+ *       401:
+ *         description: Non autorisé
+ *       500:
+ *         description: Erreur serveur
+ */
+// Route pour le chatbot - désactive complètement l'authentification pour cette route
+router.post('/chat', async (req, res) => {
+    // Log pour debug
+    console.log('Route /api/ai/chat accessible sans authentification - BYPASS_AUTH:', process.env.BYPASS_AUTH);
+    try {
+        const { messages, max_tokens = 1000 } = req.body;
+        
+        if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Messages requis et doivent être un tableau non vide'
+            });
+        }
+        
+        // Utiliser notre service d'IA unifié
+        const aiService = require('../utils/aiService');
+        
+        // Extraire le message système et l'historique des messages
+        const systemMessage = messages.find(msg => msg.role === 'system')?.content || '';
+        const userMessages = messages.filter(msg => msg.role !== 'system');
+        
+        // Formater les messages pour notre service d'IA unifié
+        const formattedPrompt = userMessages.map(msg => {
+            const prefix = msg.role === 'user' ? 'Utilisateur: ' : 'Assistant: ';
+            return `${prefix}${msg.content}`;
+        }).join('\n\n');
+        
+        try {
+            // Générer la réponse avec notre service d'IA unifié
+            const response = await aiService.generateResponse({
+                prompt: formattedPrompt,
+                systemPrompt: systemMessage,
+                maxTokens: max_tokens,
+                temperature: 0.7
+            });
+            case 'mistral':
+                try {
+                    // Formater les messages pour Mistral
+                    const formattedMessages = messages.map(msg => ({
+                        role: msg.role,
+                        content: msg.content
+                    }));
+                    
+                    // Appeler le client Mistral avec l'historique des messages
+                    const mistralResponse = await mistralClient.generateChatCompletion(formattedMessages, {
+                        model: aiProvider.model_id || 'mistral-large-2411',
+                        temperature: 0.7,
+                        max_tokens: max_tokens
+                    });
+                    
+                    // Extraire la réponse de Mistral
+                    response = mistralResponse && mistralResponse.content
+                        ? mistralResponse.content
+                        : "Je suis désolé, je n'ai pas pu générer une réponse cohérente.";
+                } catch (error) {
+                    console.error(`Erreur lors de l'appel à Mistral pour le chat: ${error.message}`);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Erreur lors de la communication avec le fournisseur d\'IA',
+                        error: error.message
+                    });
+                }
+                break;
+                
+            case 'ollama':
+                try {
+                    // Utiliser directement la méthode generateCompletion d'Ollama pour gérer l'historique des conversations
+                    try {
+                        const ollamaResponse = await ollamaClient.generateCompletion({
+                            messages: messages,
+                            model: aiProvider.model_id || 'llama3',
+                            temperature: 0.7,
+                            maxTokens: max_tokens
+                        });
+                        
+                        // Extraire la réponse
+                        response = ollamaResponse.content;
+                    } catch (error) {
+                        console.error(`Erreur lors de l'appel à la méthode generateCompletion d'Ollama: ${error.message}`);
+                        throw error;
+                    }
+                } catch (error) {
+                    console.error(`Erreur lors de l'appel à Ollama pour le chat: ${error.message}`);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Erreur lors de la communication avec le fournisseur d\'IA',
+                        error: error.message
+                    });
+                }
+                break;
+                
+            case 'deepseek':
+                try {
+                    // DeepSeek utilise une API compatible avec OpenAI
+                    const endpoint = aiProvider.endpoint || aiProvider.api_url || 'https://api.deepseek.com/v1';
+                    const apiKey = aiProvider.api_key;
+                    
+                    if (!apiKey) {
+                        throw new Error('Clé API DeepSeek manquante');
+                    }
+                    
+                    // Formater les messages pour DeepSeek (format OpenAI)
+                    const formattedMessages = messages.map(msg => ({
+                        role: msg.role,
+                        content: msg.content
+                    }));
+                    
+                    // Faire l'appel API directement
+                    const deepseekResponse = await fetch(`${endpoint}/chat/completions`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: aiProvider.model_id || 'deepseek-chat',
+                            messages: formattedMessages,
+                            temperature: 0.7,
+                            max_tokens: max_tokens
+                        })
+                    });
+                    
+                    if (!deepseekResponse.ok) {
+                        const errorData = await deepseekResponse.json();
+                        throw new Error(errorData.error?.message || `Erreur HTTP: ${deepseekResponse.status}`);
+                    }
+                    
+                    const data = await deepseekResponse.json();
+                    
+                    // Extraire la réponse de DeepSeek
+                    response = data.choices[0]?.message?.content || "Je suis désolé, je n'ai pas pu générer une réponse cohérente.";
+                    console.log('[DEEPSEEK] Réponse générée avec succès:', response.substring(0, 50) + '...');
+                } catch (error) {
+                    console.error(`Erreur lors de l'appel à DeepSeek pour le chat: ${error.message}`);
+                    return res.status(500).json({
+                        success: false,
+                        message: 'Erreur lors de la communication avec le fournisseur d\'IA',
+                        error: error.message
+                    });
+                }
+                break;
+                
+            default:
+                // Fournisseur non supporté pour le chatbot
+                return res.status(400).json({
+                    success: false,
+                    message: `Le fournisseur d'IA ${aiProvider.provider_type} n'est pas supporté pour le chatbot`
+                });
+        }
+        
+        // Journaliser la requête et la réponse (sans les données sensibles)
+        console.log(`[CHATBOT] Interaction avec ${aiProvider.provider_name}: ${messages.length} messages traités`);
+        
+        // Répondre avec la réponse générée
+        return res.status(200).json({
+            success: true,
+            message: 'Réponse générée avec succès',
+            content: response,
+            provider: aiProvider.provider_name
+        });
+        
+    } catch (error) {
+        console.error('Erreur lors du traitement de la requête du chatbot:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur lors du traitement de la requête',
+            error: error.message
+        });
+    }
+});
+
+// Export du routeur
+module.exports = router;

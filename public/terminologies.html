@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nomenclatures Médicales Françaises - FHIRHub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/admin.css">
+  <link rel="stylesheet" href="/css/sidebar-menu.css">
+  <script src="/js/auth-utils.js"></script>
+  
+  <!-- Inclusion du menu latéral -->
+  <script src="/js/include-sidebar.js" defer></script>
+  <script src="/js/sidebar-menu.js" defer></script>
+  
+  <!-- Boîtes de dialogue modernes -->
+  <script src="/js/modern-dialogs.js" defer></script>
+</head>
+<body>
+  <!-- Le menu latéral sera chargé par include-sidebar.js -->
+  <div id="sidebar-container"></div>
+  
+  <div class="main-content">
+    <div class="container">
+      <h1>Gestion des Nomenclatures Médicales Françaises</h1>
+
+      <!-- Statistiques des terminologies -->
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-code-branch"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Version</h3>
+            <p id="terminology-version">Chargement...</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-calendar-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Dernière mise à jour</h3>
+            <p id="terminology-last-updated">Chargement...</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-file-alt"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Fichiers</h3>
+            <p id="terminology-files-count">Chargement...</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-sitemap"></i>
+          </div>
+          <div class="stat-info">
+            <h3>Systèmes</h3>
+            <p id="terminology-systems-count">Chargement...</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-tags"></i>
+          </div>
+          <div class="stat-info">
+            <h3>OIDs</h3>
+            <p id="terminology-oids-count">Chargement...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions sur les terminologies -->
+      <div class="action-buttons">
+        <button id="btn-upload-terminology" class="btn btn-primary">
+          <i class="fas fa-cloud-upload-alt"></i> Importer des Référentiels ANS
+        </button>
+        <input type="file" id="terminology-file-input" multiple accept=".json" style="display: none;">
+        
+        <button id="btn-export-terminology" class="btn btn-secondary">
+          <i class="fas fa-download"></i> Exporter les Nomenclatures
+        </button>
+        
+        <button id="btn-refresh-terminology" class="btn btn-warning">
+          <i class="fas fa-sync-alt"></i> Rafraîchir
+        </button>
+        
+        <button id="btn-check-duplicates" class="btn btn-info">
+          <i class="fas fa-search"></i> Vérifier les doublons
+        </button>
+      </div>
+
+      <!-- Liste des fichiers de terminologie -->
+      <div class="card-container">
+        <div class="card">
+          <div class="card-header">
+            <h2>Référentiels et Nomenclatures ANS</h2>
+            <button id="refresh-terminology-files" class="btn btn-icon">
+              <i class="fas fa-sync-alt"></i>
+            </button>
+          </div>
+          <div class="card-body">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Nom du fichier</th>
+                  <th>Type</th>
+                  <th>Description</th>
+                  <th>Dernière mise à jour</th>
+                  <th>Contenus</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="terminology-files-table">
+                <tr>
+                  <td colspan="6" class="loading-row">Chargement des fichiers...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone de logs des mises à jour -->
+      <div class="card-container">
+        <div class="card">
+          <div class="card-header">
+            <h2>Journal des mises à jour des Nomenclatures</h2>
+            <button id="clear-logs" class="btn btn-icon">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="log-container" id="update-logs">
+              <div class="log-empty">Aucun log de mise à jour disponible</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modals -->
+  <div class="modal" id="file-upload-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Importer des Nomenclatures Médicales ANS</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="dropzone-container" id="terminology-dropzone">
+          <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
+          <h3 class="dropzone-title">Déposez vos fichiers JSON ici</h3>
+          <p class="dropzone-desc">Importez des référentiels depuis l'API ANS pour les terminologies médicales françaises</p>
+          <button class="dropzone-button" id="browse-terminology-files">Parcourir</button>
+        </div>
+        
+        <div id="selected-files-container">
+          <h3>Fichiers sélectionnés</h3>
+          <div id="selected-files-list">
+            <div class="file-list-empty" id="upload-empty-message">Aucun fichier sélectionné</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary close-modal">Annuler</button>
+        <button class="btn btn-primary" id="upload-selected-files">Importer les fichiers</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="file-preview-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="preview-filename">Aperçu du fichier</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <pre id="file-preview-content" class="code-preview"></pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary close-modal">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Vérifier les droits d'administrateur
+      if (!FHIRHubAuth.checkAdminRights()) {
+        return; // Arrêter l'exécution si l'utilisateur n'est pas administrateur
+      }
+      
+      // Initialiser les listeners d'authentification
+      FHIRHubAuth.initAuthListeners();
+      
+      // Gestionnaire pour le bouton de déconnexion - avec vérification de l'existence du bouton
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login.html';
+        });
+      } else {
+        console.warn("Bouton de déconnexion non trouvé. L'événement sera géré par include-sidebar.js");
+      }
+      
+      // Éléments DOM
+      const terminologyVersionEl = document.getElementById('terminology-version');
+      const terminologyLastUpdatedEl = document.getElementById('terminology-last-updated');
+      const terminologySystemsCountEl = document.getElementById('terminology-systems-count');
+      const terminologyOidsCountEl = document.getElementById('terminology-oids-count');
+      const terminologyFilesCountEl = document.getElementById('terminology-files-count');
+      const terminologyFilesTableEl = document.getElementById('terminology-files-table');
+      const updateLogsEl = document.getElementById('update-logs');
+      const fileInputEl = document.getElementById('terminology-file-input');
+      const selectedFilesListEl = document.getElementById('selected-files-list');
+      const fileUploadModal = document.getElementById('file-upload-modal');
+      const filePreviewModal = document.getElementById('file-preview-modal');
+      const filePreviewContent = document.getElementById('file-preview-content');
+      const previewFilename = document.getElementById('preview-filename');
+      
+      // Boutons et actions
+      const btnUploadTerminology = document.getElementById('btn-upload-terminology');
+      const btnExportTerminology = document.getElementById('btn-export-terminology');
+      const btnRefreshFiles = document.getElementById('refresh-terminology-files');
+      const btnClearLogs = document.getElementById('clear-logs');
+      const btnBrowseFiles = document.getElementById('browse-terminology-files');
+      const btnUploadSelectedFiles = document.getElementById('upload-selected-files');
+      const terminologyDropzone = document.getElementById('terminology-dropzone');
+      
+      // Fermeture des modals
+      document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+          fileUploadModal.style.display = 'none';
+          filePreviewModal.style.display = 'none';
+        });
+      });
+      
+      // Ouverture du modal d'upload
+      btnUploadTerminology.addEventListener('click', () => {
+        fileUploadModal.style.display = 'flex';
+      });
+      
+      // Gestion du glisser-déposer
+      terminologyDropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        terminologyDropzone.classList.add('active');
+      });
+      
+      terminologyDropzone.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        terminologyDropzone.classList.remove('active');
+      });
+      
+      terminologyDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        terminologyDropzone.classList.remove('active');
+        
+        if (e.dataTransfer.files.length > 0) {
+          handleFiles(e.dataTransfer.files);
+        }
+      });
+      
+      // Sélection de fichiers via le bouton parcourir
+      btnBrowseFiles.addEventListener('click', () => {
+        fileInputEl.click();
+      });
+      
+      fileInputEl.addEventListener('change', () => {
+        if (fileInputEl.files.length > 0) {
+          handleFiles(fileInputEl.files);
+        }
+      });
+      
+      // Gestion des fichiers sélectionnés
+      function handleFiles(files) {
+        selectedFilesListEl.innerHTML = '';
+        
+        if (files.length === 0) {
+          selectedFilesListEl.innerHTML = '<div class="file-list-empty">Aucun fichier sélectionné</div>';
+          return;
+        }
+        
+        Array.from(files).forEach(file => {
+          const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const fileItem = document.createElement('div');
+          fileItem.className = 'selected-file-item';
+          fileItem.dataset.filename = file.name;
+          fileItem.innerHTML = `
+            <div class="file-icon"><i class="fas fa-file-code"></i></div>
+            <div class="file-info">
+              <div class="file-name">${file.name}</div>
+              <div class="file-size">${formatFileSize(file.size)}</div>
+            </div>
+            <div class="file-actions">
+              <button class="btn-preview" data-fileid="${fileId}"><i class="fas fa-eye"></i></button>
+              <button class="btn-remove" data-fileid="${fileId}"><i class="fas fa-times"></i></button>
+            </div>
+          `;
+          
+          selectedFilesListEl.appendChild(fileItem);
+          
+          // Stocker le fichier dans un Map pour référence ultérieure
+          selectedFiles.set(fileId, file);
+          
+          // Ajouter les gestionnaires d'événements
+          fileItem.querySelector('.btn-preview').addEventListener('click', () => {
+            previewFile(file);
+          });
+          
+          fileItem.querySelector('.btn-remove').addEventListener('click', () => {
+            fileItem.remove();
+            selectedFiles.delete(fileId);
+            
+            if (selectedFilesListEl.children.length === 0) {
+              selectedFilesListEl.innerHTML = '<div class="file-list-empty">Aucun fichier sélectionné</div>';
+            }
+          });
+        });
+      }
+      
+      // Map pour stocker les fichiers sélectionnés
+      const selectedFiles = new Map();
+      
+      // Aperçu du fichier
+      function previewFile(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const content = e.target.result;
+            const json = JSON.parse(content);
+            filePreviewContent.textContent = JSON.stringify(json, null, 2);
+            previewFilename.textContent = `Aperçu : ${file.name}`;
+            filePreviewModal.style.display = 'flex';
+          } catch (err) {
+            alert(`Erreur lors de la lecture du fichier : ${err.message}`);
+          }
+        };
+        reader.onerror = () => {
+          alert('Erreur lors de la lecture du fichier');
+        };
+        reader.readAsText(file);
+      }
+      
+      // Upload des fichiers sélectionnés
+      btnUploadSelectedFiles.addEventListener('click', async () => {
+        if (selectedFiles.size === 0) {
+          alert('Veuillez sélectionner au moins un fichier à importer');
+          return;
+        }
+        
+        try {
+          // Créer un FormData pour chaque fichier et l'envoyer individuellement
+          for (const [fileId, file] of selectedFiles.entries()) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Déterminer le type de terminologie en fonction du nom du fichier
+            let terminologyType = '';
+            if (file.name.includes('oids')) {
+              terminologyType = 'oids';
+            } else if (file.name.includes('common_codes')) {
+              terminologyType = 'common_codes';
+            } else if (file.name.includes('terminology_systems') || file.name.includes('codesystems')) {
+              terminologyType = 'systems';
+            } else if (file.name.includes('valuesets')) {
+              terminologyType = 'valuesets';
+            } else if (file.name.includes('r4_french')) {
+              terminologyType = 'r4_systems';
+            } else if (file.name.includes('r5_french')) {
+              terminologyType = 'r5_systems';
+            } else {
+              // Essayer de déterminer le type en regardant le contenu
+              terminologyType = 'auto';
+            }
+            
+            // Ajouter le type à la requête
+            formData.append('type', terminologyType);
+            
+            // Envoyer le fichier avec authentification
+            const response = await FHIRHubAuth.fetchWithAuth('/api/terminology/import', {
+              method: 'POST',
+              body: formData
+            });
+            
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.message || 'Erreur lors de l\'importation');
+            }
+            
+            // Récupérer les détails de l'import
+            const importResult = await response.json();
+            
+            if (importResult.data && importResult.data.stats) {
+              // Mettre à jour les compteurs selon le type de fichier importé
+              const stats = importResult.data.stats;
+              
+              // Si c'est un fichier de systèmes, incrémenter le compteur de systèmes
+              if (stats.detectedTypes.includes('ANS-Systems')) {
+                const currentCount = parseInt(terminologySystemsCountEl.textContent) || 0;
+                const newCount = currentCount + (stats.totalSystems || 0);
+                terminologySystemsCountEl.textContent = newCount;
+                
+                // Mettre en évidence visuelle de la mise à jour
+                highlightElement(terminologySystemsCountEl);
+              }
+              
+              // Si c'est un fichier d'OIDs, incrémenter le compteur d'OIDs
+              if (stats.detectedTypes.includes('ANS-OIDs')) {
+                const currentCount = parseInt(terminologyOidsCountEl.textContent) || 0;
+                const newCount = currentCount + (stats.totalOids || 0);
+                terminologyOidsCountEl.textContent = newCount;
+                
+                // Mettre en évidence visuelle de la mise à jour
+                highlightElement(terminologyOidsCountEl);
+                
+                // Log pour aider au débogage
+                console.log(`[DEBUG] Mise à jour du compteur d'OIDs: ${currentCount} + ${stats.totalOids} = ${newCount}`);
+              }
+              
+              // Mettre à jour la date de dernière mise à jour
+              terminologyLastUpdatedEl.textContent = formatDate(new Date());
+              highlightElement(terminologyLastUpdatedEl);
+              
+              // Log détaillé avec les statistiques
+              let logMessage = `Fichier ${file.name} importé - `;
+              
+              // Ajouter des détails spécifiques en fonction du type
+              if (stats.detectedTypes.includes('ANS-Systems')) {
+                logMessage += `${stats.totalSystems || 0} systèmes`;
+              }
+              if (stats.detectedTypes.includes('ANS-OIDs')) {
+                logMessage += `${stats.totalOids || 0} OIDs`;
+              }
+              if (stats.totalElements) {
+                logMessage += `, ${stats.totalElements} éléments au total`;
+              }
+              
+              // Log pour le débogage
+              console.log(`[DEBUG] Statistiques d'import: `, stats);
+              
+              addLog(logMessage);
+            } else {
+              // Log simple sans statistiques
+              addLog(`Fichier ${file.name} importé avec succès`);
+            }
+          }
+          
+          // Fermer le modal d'upload
+          fileUploadModal.style.display = 'none';
+          
+          // Réinitialiser les fichiers sélectionnés
+          selectedFiles.clear();
+          selectedFilesListEl.innerHTML = '<div class="file-list-empty">Aucun fichier sélectionné</div>';
+          
+          // Rafraîchir les données
+          loadTerminologyStats();
+          loadTerminologyFiles();
+          
+          alert('Importation terminée avec succès');
+        } catch (err) {
+          alert(`Erreur lors de l'importation : ${err.message}`);
+        }
+      });
+      
+      // Chargement des statistiques des terminologies
+      async function loadTerminologyStats() {
+        try {
+          // Version améliorée avec gestion d'erreurs plus robuste
+          let response;
+          try {
+            response = await FHIRHubAuth.fetchWithAuth('/api/terminology/french');
+            if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+          } catch (fetchError) {
+            console.error('Erreur de requête fetch:', fetchError);
+            throw new Error(`Erreur de connexion: ${fetchError.message}`);
+          }
+          
+          let data;
+          try {
+            data = await response.json();
+            if (!data.success) throw new Error(data.message || 'Réponse non valide');
+            
+            // Vérifier que data.data existe et n'est pas null
+            if (!data.data) {
+              throw new Error('Données reçues non valides (data.data manquant)');
+            }
+          } catch (parseError) {
+            console.error('Erreur de parsing JSON:', parseError);
+            throw new Error(`Erreur de format: ${parseError.message}`);
+          }
+          
+          // Mettre à jour les compteurs avec animation pour rendre visible les changements
+          terminologyVersionEl.textContent = data.data.version || 'N/A';
+          highlightElement(terminologyVersionEl);
+          
+          terminologyLastUpdatedEl.textContent = formatDate(data.data.lastUpdated) || 'N/A';
+          highlightElement(terminologyLastUpdatedEl);
+          
+          // Pour les systèmes et OIDs, vérifier si la valeur a changé avant de mettre en évidence
+          const newSystemsCount = data.data.systemsCount || 0;
+          const currentSystemsCount = parseInt(terminologySystemsCountEl.textContent) || 0;
+          terminologySystemsCountEl.textContent = newSystemsCount;
+          if (newSystemsCount !== currentSystemsCount) {
+            highlightElement(terminologySystemsCountEl);
+          }
+          
+          const newOidsCount = data.data.oidsCount || 0;
+          const currentOidsCount = parseInt(terminologyOidsCountEl.textContent) || 0;
+          terminologyOidsCountEl.textContent = newOidsCount;
+          if (newOidsCount !== currentOidsCount) {
+            highlightElement(terminologyOidsCountEl);
+          }
+          
+          // Charger aussi le nombre de fichiers
+          updateFilesCount();
+          
+          // Ajouter un log après chargement réussi
+          addLog('Statistiques des terminologies chargées avec succès');
+          
+          // Retourner les données pour d'autres traitements si nécessaire
+          return data.data;
+        } catch (err) {
+          console.error('Erreur lors du chargement des statistiques :', err);
+          terminologyVersionEl.textContent = 'Erreur';
+          terminologyLastUpdatedEl.textContent = 'Erreur';
+          terminologySystemsCountEl.textContent = 'Erreur';
+          terminologyOidsCountEl.textContent = 'Erreur';
+          terminologyFilesCountEl.textContent = 'Erreur';
+          
+          // Ajouter un log d'erreur avec plus de détails
+          addLog(`Erreur lors du chargement des statistiques: ${err.message || 'Erreur inconnue'}`);
+          return null;
+        }
+      }
+      
+      // Mettre à jour le compteur de fichiers
+      function updateFilesCount() {
+        try {
+          // Version améliorée avec plus de robustesse
+          FHIRHubAuth.fetchWithAuth('/api/terminology/files')
+            .then(response => {
+              if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+              return response.json();
+            })
+            .then(data => {
+              if (!data.success) throw new Error(data.message || 'Réponse non valide');
+              
+              // Vérifier que data.data existe et est un tableau
+              if (!data.data || !Array.isArray(data.data)) {
+                throw new Error('Données reçues non valides (data.data n\'est pas un tableau)');
+              }
+              
+              const filesCount = data.data.length;
+              terminologyFilesCountEl.textContent = filesCount;
+              highlightElement(terminologyFilesCountEl);
+            })
+            .catch(err => {
+              console.error('Erreur lors du comptage des fichiers:', err);
+              terminologyFilesCountEl.textContent = 'Erreur';
+              
+              // Ajouter plus de détails au log d'erreur pour aider au débogage
+              addLog(`Erreur lors du comptage des fichiers: ${err.message || 'Erreur inconnue'}`);
+            });
+        } catch (err) {
+          console.error('Erreur lors du comptage des fichiers:', err);
+          terminologyFilesCountEl.textContent = 'Erreur';
+          addLog(`Erreur lors du comptage des fichiers: ${err.message || 'Erreur inconnue'}`);
+        }
+      }
+
+      // Chargement des fichiers de terminologie
+      async function loadTerminologyFiles() {
+        try {
+          // Version améliorée avec gestion d'erreurs plus robuste
+          let response;
+          try {
+            response = await FHIRHubAuth.fetchWithAuth('/api/terminology/files');
+            if (!response.ok) throw new Error(`Erreur HTTP: ${response.status}`);
+          } catch (fetchError) {
+            console.error('Erreur de requête fetch pour les fichiers:', fetchError);
+            throw new Error(`Erreur de connexion: ${fetchError.message}`);
+          }
+          
+          let data;
+          try {
+            data = await response.json();
+            if (!data.success) throw new Error(data.message || 'Réponse non valide');
+            
+            // Vérifier que data.data existe et est un tableau
+            if (!data.data || !Array.isArray(data.data)) {
+              throw new Error('Données reçues non valides (data.data n\'est pas un tableau)');
+            }
+          } catch (parseError) {
+            console.error('Erreur de parsing JSON pour les fichiers:', parseError);
+            throw new Error(`Erreur de format: ${parseError.message}`);
+          }
+          
+          // Mettre à jour le compteur de fichiers
+          terminologyFilesCountEl.textContent = data.data.length;
+          highlightElement(terminologyFilesCountEl);
+          
+          terminologyFilesTableEl.innerHTML = '';
+          
+          if (data.data.length === 0) {
+            terminologyFilesTableEl.innerHTML = '<tr><td colspan="6" class="empty-row">Aucun fichier de terminologie trouvé</td></tr>';
+            return;
+          }
+          
+          data.data.forEach(file => {
+            const row = document.createElement('tr');
+            const isSystemFile = ['ans_oids.json', 'ans_common_codes.json', 'ans_terminology_systems.json'].includes(file.name);
+            
+            // Déterminer le type du fichier
+            let fileType = getFileType(file.name);
+            let fileIcon = getFileTypeIcon(fileType);
+            
+            // Déterminer le nombre d'éléments contenus dans ce fichier (obtenu du API ou estimé)
+            let itemCount = file.itemCount || getEstimatedItemCount(file.name, file.size);
+            
+            row.innerHTML = `
+              <td>
+                <div class="file-name-wrapper">
+                  <span class="file-name">${file.name}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge badge-${getFileTypeBadgeClass(fileType)}" title="${getFileTypeLabel(fileType)}">
+                  ${fileType}
+                </span>
+              </td>
+              <td>
+                <span class="file-description" data-file="${file.name}">${getFileDescription(file.name)}</span>
+              </td>
+              <td>${formatDate(file.lastModified)}</td>
+              <td>
+                <span class="file-items-count">
+                  ${itemCount > 0 ? `${itemCount} élément${itemCount > 1 ? 's' : ''}` : 'Inconnu'}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="action-button view" data-file="${file.name}" title="Voir le contenu"><i class="fas fa-eye"></i></button>
+                  <button class="action-button download" data-file="${file.name}" title="Télécharger le fichier"><i class="fas fa-download"></i></button>
+                  ${isSystemFile ? 
+                    `<button class="action-button delete disabled" title="Fichier système non supprimable"><i class="fas fa-trash-alt"></i></button>` : 
+                    `<button class="action-button delete" data-file="${file.name}" title="Supprimer le fichier"><i class="fas fa-trash-alt"></i></button>`
+                  }
+                </div>
+              </td>
+            `;
+            terminologyFilesTableEl.appendChild(row);
+            
+            // Ajouter les gestionnaires d'événements
+            row.querySelector('.action-button.view').addEventListener('click', () => {
+              previewTerminologyFile(file.name);
+            });
+            
+            row.querySelector('.action-button.download').addEventListener('click', () => {
+              downloadTerminologyFile(file.name);
+            });
+            
+            // Ajouter les gestionnaires pour les nouvelles actions
+            if (!isSystemFile) {
+              row.querySelector('.action-button.delete').addEventListener('click', () => {
+                if (confirm(`Êtes-vous sûr de vouloir supprimer le fichier ${file.name}? Cette action est irréversible.`)) {
+                  deleteTerminologyFile(file.name);
+                }
+              });
+            }
+          });
+          
+          // Ajouter un log de succès
+          addLog(`${data.data.length} fichiers de terminologie chargés`);
+        } catch (err) {
+          console.error('Erreur lors du chargement des fichiers :', err);
+          terminologyFilesTableEl.innerHTML = '<tr><td colspan="4" class="error-row">Erreur lors du chargement des fichiers</td></tr>';
+          
+          // Ajouter un log d'erreur
+          addLog(`Erreur lors du chargement des fichiers: ${err.message}`);
+        }
+      }
+      
+      // Aperçu d'un fichier de terminologie
+      async function previewTerminologyFile(filename) {
+        try {
+          const response = await FHIRHubAuth.fetchWithAuth(`/api/terminology/files/${encodeURIComponent(filename)}`);
+          if (!response.ok) throw new Error('Erreur lors du chargement du fichier');
+          
+          const data = await response.json();
+          filePreviewContent.textContent = JSON.stringify(data, null, 2);
+          previewFilename.textContent = `Aperçu : ${filename}`;
+          filePreviewModal.style.display = 'flex';
+          
+          // Ajouter un log
+          addLog(`Aperçu du fichier ${filename}`);
+        } catch (err) {
+          console.error("Erreur lors de l'aperçu:", err);
+          alert(`Erreur lors de l'aperçu du fichier : ${err.message}`);
+          addLog(`Erreur lors de l'aperçu du fichier ${filename}: ${err.message}`);
+        }
+      }
+      
+      // Téléchargement d'un fichier de terminologie
+      async function downloadTerminologyFile(filename) {
+        try {
+          // Créer un élément temporaire d'ancrage
+          const a = document.createElement('a');
+          
+          // Créer une requête pour télécharger avec authentification
+          const response = await FHIRHubAuth.fetchWithAuth(`/api/terminology/files/${encodeURIComponent(filename)}/download`);
+          
+          if (!response.ok) throw new Error(`Erreur lors du téléchargement: ${response.statusText}`);
+          
+          const blob = await response.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          
+          a.href = objectUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(objectUrl);
+          
+          addLog(`Téléchargement du fichier ${filename} réussi`);
+        } catch (error) {
+          console.error("Erreur lors du téléchargement:", error);
+          alert(`Erreur lors du téléchargement : ${error.message}`);
+          addLog(`Erreur lors du téléchargement du fichier ${filename}: ${error.message}`);
+        }
+      }
+      
+      // Export des terminologies
+      btnExportTerminology.addEventListener('click', async () => {
+        try {
+          const response = await FHIRHubAuth.fetchWithAuth('/api/terminology/export');
+          if (!response.ok) throw new Error('Erreur lors de l\'exportation');
+          
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `terminologies_export_${new Date().toISOString().substring(0, 10)}.zip`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          
+          addLog('Exportation des terminologies réussie');
+        } catch (err) {
+          console.error('Erreur lors de l\'exportation:', err);
+          alert(`Erreur lors de l'exportation : ${err.message}`);
+          addLog(`Erreur lors de l'exportation: ${err.message}`);
+        }
+      });
+      
+      // Supprimer un fichier de terminologie
+      async function deleteTerminologyFile(filename) {
+        try {
+          const response = await FHIRHubAuth.fetchWithAuth(`/api/terminology/files/${encodeURIComponent(filename)}`, {
+            method: 'DELETE'
+          });
+          
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Erreur lors de la suppression');
+          }
+          
+          // Log de succès
+          addLog(`Fichier ${filename} supprimé avec succès`);
+          
+          // Mettre à jour l'affichage
+          loadTerminologyStats();
+          loadTerminologyFiles();
+        } catch (error) {
+          console.error('Erreur lors de la suppression:', error);
+          alert(`Erreur lors de la suppression : ${error.message}`);
+          addLog(`Erreur lors de la suppression du fichier ${filename}: ${error.message}`);
+        }
+      }
+      
+      // Éditer la description d'un fichier
+      function editFileDescription(filename) {
+        // Récupérer la description actuelle
+        const descriptionElement = document.querySelector(`.file-description[data-file="${filename}"]`);
+        const currentDescription = descriptionElement.textContent;
+        
+        // Demander la nouvelle description
+        const newDescription = prompt('Modifier la description du fichier:', currentDescription);
+        
+        // Si l'utilisateur a annulé ou n'a pas modifié la description
+        if (!newDescription || newDescription === currentDescription) {
+          return;
+        }
+        
+        // Mettre à jour l'affichage local immédiatement
+        descriptionElement.textContent = newDescription;
+        highlightElement(descriptionElement);
+        
+        // Enregistrer dans les descriptions personnalisées (localStorage)
+        const customDescriptions = JSON.parse(localStorage.getItem('terminology_custom_descriptions') || '{}');
+        customDescriptions[filename] = newDescription;
+        localStorage.setItem('terminology_custom_descriptions', JSON.stringify(customDescriptions));
+        
+        // Log de modification
+        addLog(`Description du fichier ${filename} modifiée`);
+      }
+      
+      // Rafraîchissement des fichiers
+      btnRefreshFiles.addEventListener('click', () => {
+        loadTerminologyFiles();
+      });
+      
+      // Effacer les logs
+      btnClearLogs.addEventListener('click', () => {
+        updateLogsEl.innerHTML = '<div class="log-empty">Aucun log de mise à jour disponible</div>';
+      });
+      
+      // Bouton de rafraîchissement des statistiques de terminologie
+      // Inclut maintenant l'analyse complète des fichiers (fusion des fonctionnalités)
+      document.getElementById('btn-refresh-terminology').addEventListener('click', async () => {
+        if (confirm('Voulez-vous rafraîchir les statistiques et analyser tous les fichiers de terminologie? Cette opération peut prendre plusieurs secondes.')) {
+          try {
+            addLog('Rafraîchissement des statistiques et analyse des terminologies...');
+            
+            // Étape 1: Rafraîchir les statistiques
+            let response = await FHIRHubAuth.fetchWithAuth('/api/terminology/refresh', {
+              method: 'POST'
+            });
+            
+            if (!response.ok) {
+              const error = await response.json();
+              throw new Error(error.message || 'Erreur lors du rafraîchissement');
+            }
+            
+            let result = await response.json();
+            
+            if (result.success) {
+              // Utiliser le message de l'API s'il est disponible, sinon utiliser notre message formaté
+              if (result.data.message) {
+                addLog(result.data.message);
+              } else {
+                addLog(`Rafraîchissement terminé: ${result.data.systemsCount || 0} systèmes, ${result.data.oidsCount || 0} OIDs`);
+              }
+              
+              // Étape 2: Lancer l'analyse approfondie
+              addLog('Lancement de l\'analyse approfondie des fichiers...');
+              response = await FHIRHubAuth.fetchWithAuth('/api/terminology/analyze', {
+                method: 'POST'
+              });
+              
+              if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Erreur lors de l\'analyse');
+              }
+              
+              result = await response.json();
+              
+              if (result.success) {
+                // Créer une présentation détaillée des résultats
+                const analysisData = result.data;
+                const totalFiles = analysisData.filesAnalyzed || 0;
+                const totalItems = analysisData.totalItems || 0;
+                
+                // Préparer un message détaillé pour l'alerte
+                let detailedMessage = `=== RAPPORT D'ANALYSE DES TERMINOLOGIES ===\n\n`;
+                detailedMessage += `Fichiers analysés: ${totalFiles}\n`;
+                detailedMessage += `Éléments totaux: ${totalItems}\n\n`;
+                
+                // Ajouter des informations sur les CodeSystems
+                if (analysisData.codeSystemsCount > 0) {
+                  detailedMessage += `CodeSystems: ${analysisData.codeSystemsCount}\n`;
+                }
+                
+                // Ajouter des informations sur les ValueSets
+                if (analysisData.valueSetsCount > 0) {
+                  detailedMessage += `ValueSets: ${analysisData.valueSetsCount}\n`;
+                }
+                
+                // Ajouter des informations sur les ConceptMaps
+                if (analysisData.conceptMapCount > 0) {
+                  detailedMessage += `ConceptMaps: ${analysisData.conceptMapCount}\n`;
+                }
+                
+                // Ajouter les détails par fichier
+                if (analysisData.details && analysisData.details.length > 0) {
+                  detailedMessage += '\n=== DÉTAILS PAR FICHIER ===\n';
+                  analysisData.details.forEach(detail => {
+                    detailedMessage += `\n${detail.filename}:\n`;
+                    detailedMessage += `  - Type: ${detail.fileType || 'Non spécifié'}\n`;
+                    detailedMessage += `  - Éléments: ${detail.totalElements || 0}\n`;
+                    
+                    if (detail.codeSystems > 0) {
+                      detailedMessage += `  - CodeSystems: ${detail.codeSystems}\n`;
+                    }
+                    
+                    if (detail.valueSets > 0) {
+                      detailedMessage += `  - ValueSets: ${detail.valueSets}\n`;
+                    }
+                    
+                    if (detail.conceptMaps > 0) {
+                      detailedMessage += `  - ConceptMaps: ${detail.conceptMaps}\n`;
+                    }
+                  });
+                }
+                
+                // Ajouter des informations sur les doublons potentiels
+                if (analysisData.possibleDuplicates && analysisData.possibleDuplicates.length > 0) {
+                  detailedMessage += '\n=== DOUBLONS POTENTIELS ===\n';
+                  analysisData.possibleDuplicates.forEach((group, index) => {
+                    detailedMessage += `\nGroupe ${index + 1}:\n`;
+                    // Vérifier que group est un tableau avant d'utiliser forEach
+                    if (Array.isArray(group)) {
+                      group.forEach(item => {
+                        detailedMessage += `  - ${item.file}: ${item.url}\n`;
+                      });
+                    } else if (group && typeof group === 'object') {
+                      // Si ce n'est pas un tableau mais un objet, utiliser une autre approche
+                      detailedMessage += `  - ${group.file || 'Fichier inconnu'}: ${group.url || 'URL inconnue'}\n`;
+                    }
+                  });
+                }
+                
+                addLog(`Analyse approfondie terminée: ${totalFiles} fichiers, ${totalItems} éléments.`);
+                
+                // Afficher les résultats détaillés
+                alert(detailedMessage);
+              }
+              
+              // Mettre à jour les statistiques et la liste des fichiers
+              loadTerminologyStats();
+              loadTerminologyFiles();
+            } else {
+              throw new Error(result.message || 'Erreur lors du rafraîchissement');
+            }
+          } catch (error) {
+            console.error('Erreur lors du rafraîchissement:', error);
+            alert(`Erreur lors du rafraîchissement: ${error.message}`);
+            addLog(`Erreur lors du rafraîchissement: ${error.message}`);
+          }
+        }
+      });
+      
+      // La fonctionnalité d'analyse approfondie a été intégrée au bouton de rafraîchissement des statistiques
+      // Nous avons supprimé le code redondant ici
+      
+      // Bouton de vérification des doublons
+      document.getElementById('btn-check-duplicates').addEventListener('click', async () => {
+        try {
+          addLog('Vérification des fichiers en doublon...');
+          
+          const response = await FHIRHubAuth.fetchWithAuth('/api/terminology/check-duplicates');
+          
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Erreur lors de la vérification des doublons');
+          }
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            // Vérifier si nous avons trouvé des doublons dans la nouvelle structure
+            const summary = result.data.summary || {};
+            const totalDuplicates = summary.totalDuplicates || 0;
+            
+            if (totalDuplicates === 0) {
+              addLog('Aucun doublon trouvé dans les fichiers de terminologie.');
+              await ModernDialogs.alert('Aucun doublon trouvé dans les fichiers de terminologie.', 'Vérification terminée');
+            } else {
+              // Nouvelle structure d'API a un format différent
+              let message = `${totalDuplicates} fichiers en doublon détectés:\n\n`;
+              
+              // Vérifier les doublons par nom
+              if (result.data.duplicates && result.data.duplicates.byName && Array.isArray(result.data.duplicates.byName) && result.data.duplicates.byName.length > 0) {
+                message += `== Doublons par nom (${result.data.duplicates.byName.length} groupes) ==\n`;
+                result.data.duplicates.byName.forEach((group, i) => {
+                  message += `Groupe ${i+1}: `;
+                  if (group && typeof group === 'object') {
+                    message += `${group.count || '?'} fichiers avec le motif "${group.basePattern || 'inconnu'}"\n`;
+                    message += `Fichier le plus récent: ${group.newestFile || 'inconnu'}\n`;
+                    
+                    if (group.allFiles && Array.isArray(group.allFiles) && group.allFiles.length > 0) {
+                      message += "Tous les fichiers:\n";
+                      group.allFiles.forEach(file => {
+                        if (file && typeof file === 'object') {
+                          message += `- ${file.name || 'Sans nom'} (${formatDate(new Date(file.modified || Date.now()))})\n`;
+                        } else if (typeof file === 'string') {
+                          message += `- ${file}\n`;
+                        } else {
+                          message += `- Fichier inconnu\n`;
+                        }
+                      });
+                    }
+                  } else {
+                    message += `Informations non disponibles\n`;
+                  }
+                  message += `\n`;
+                });
+              }
+              
+              // Vérifier les doublons par URL de CodeSystem
+              if (result.data.urlDuplicates && result.data.urlDuplicates.codeSystems && Array.isArray(result.data.urlDuplicates.codeSystems) && result.data.urlDuplicates.codeSystems.length > 0) {
+                message += `== Doublons de CodeSystems (${result.data.urlDuplicates.codeSystems.length} URLs) ==\n`;
+                result.data.urlDuplicates.codeSystems.forEach((duplicate, i) => {
+                  if (duplicate && typeof duplicate === 'object') {
+                    message += `URL: ${duplicate.url || 'URL inconnue'} (${duplicate.count || '?'} occurrences)\n`;
+                    message += "Présent dans les fichiers:\n";
+                    if (duplicate.files && Array.isArray(duplicate.files) && duplicate.files.length > 0) {
+                      duplicate.files.forEach(filename => {
+                        message += `- ${filename || 'Fichier inconnu'}\n`;
+                      });
+                    } else {
+                      message += `- Information non disponible\n`;
+                    }
+                  } else {
+                    message += `Information non disponible pour ce doublon\n`;
+                  }
+                  message += `\n`;
+                });
+              }
+              
+              // Vérifier les doublons par URL de ValueSet
+              if (result.data.urlDuplicates && result.data.urlDuplicates.valueSets && Array.isArray(result.data.urlDuplicates.valueSets) && result.data.urlDuplicates.valueSets.length > 0) {
+                message += `== Doublons de ValueSets (${result.data.urlDuplicates.valueSets.length} URLs) ==\n`;
+                result.data.urlDuplicates.valueSets.forEach((duplicate, i) => {
+                  if (duplicate && typeof duplicate === 'object') {
+                    message += `URL: ${duplicate.url || 'URL inconnue'} (${duplicate.count || '?'} occurrences)\n`;
+                    message += "Présent dans les fichiers:\n";
+                    if (duplicate.files && Array.isArray(duplicate.files) && duplicate.files.length > 0) {
+                      duplicate.files.forEach(filename => {
+                        message += `- ${filename || 'Fichier inconnu'}\n`;
+                      });
+                    } else {
+                      message += `- Information non disponible\n`;
+                    }
+                  } else {
+                    message += `Information non disponible pour ce doublon\n`;
+                  }
+                  message += `\n`;
+                });
+              }
+              
+              // Vérifier les doublons d'OIDs
+              if (result.data.urlDuplicates && result.data.urlDuplicates.oids && Array.isArray(result.data.urlDuplicates.oids) && result.data.urlDuplicates.oids.length > 0) {
+                message += `== Doublons d'OIDs (${result.data.urlDuplicates.oids.length} OIDs) ==\n`;
+                result.data.urlDuplicates.oids.forEach((duplicate, i) => {
+                  if (duplicate && typeof duplicate === 'object') {
+                    message += `OID: ${duplicate.url || 'OID inconnu'} (${duplicate.count || '?'} occurrences)\n`;
+                    message += "Présent dans les fichiers:\n";
+                    if (duplicate.files && Array.isArray(duplicate.files) && duplicate.files.length > 0) {
+                      duplicate.files.forEach(filename => {
+                        message += `- ${filename || 'Fichier inconnu'}\n`;
+                      });
+                    } else {
+                      message += `- Information non disponible\n`;
+                    }
+                  } else {
+                    message += `Information non disponible pour ce doublon\n`;
+                  }
+                  message += `\n`;
+                });
+              }
+              
+              // Log détaillé - utiliser le message fourni par l'API s'il est disponible
+              if (result.data.message) {
+                addLog(result.data.message);
+              } else {
+                addLog(`${totalDuplicates} fichiers en doublon identifiés.`);
+              }
+              
+              // Préparation des données pour l'affichage moderne
+              const duplicatesData = {
+                totalDuplicates,
+                groups: []
+              };
+              
+              // Ajouter des informations sur les doublons potentiels
+              if (result.data.duplicates && result.data.duplicates.byName) {
+                result.data.duplicates.byName.forEach((group, i) => {
+                  if (group && typeof group === 'object') {
+                    const groupFiles = [];
+                    group.allFiles.forEach(file => {
+                      if (file && typeof file === 'object') {
+                        groupFiles.push({
+                          name: file.name || 'Sans nom',
+                          date: formatDate(new Date(file.modified || Date.now()))
+                        });
+                      } else if (typeof file === 'string') {
+                        groupFiles.push({
+                          name: file,
+                          date: 'Date inconnue'
+                        });
+                      }
+                    });
+                    
+                    duplicatesData.groups.push({
+                      name: `${group.count || '?'} fichiers avec le motif "${group.basePattern || 'inconnu'}"`,
+                      files: groupFiles
+                    });
+                  }
+                });
+              }
+              
+              // Utiliser la boîte de dialogue moderne pour les doublons
+              const shouldDelete = await ModernDialogs.showDuplicatesDialog(duplicatesData);
+              if (shouldDelete) {
+                // Envoyer la demande de suppression
+                const deleteResponse = await FHIRHubAuth.fetchWithAuth('/api/terminology/remove-duplicates', {
+                  method: 'POST'
+                });
+                
+                if (!deleteResponse.ok) {
+                  const error = await deleteResponse.json();
+                  throw new Error(error.message || 'Erreur lors de la suppression des doublons');
+                }
+                
+                const deleteResult = await deleteResponse.json();
+                
+                // Utiliser le message fourni par l'API s'il est disponible
+                if (deleteResult.data.message) {
+                  addLog(deleteResult.data.message);
+                } else {
+                  addLog(`${deleteResult.data.deleted} fichiers en doublon supprimés.`);
+                }
+                
+                // Mettre à jour les statistiques et la liste des fichiers
+                loadTerminologyStats();
+                loadTerminologyFiles();
+              }
+            }
+          } else {
+            throw new Error(result.message || 'Erreur lors de la vérification des doublons');
+          }
+        } catch (error) {
+          console.error('Erreur lors de la vérification des doublons:', error);
+          await ModernDialogs.alert(`Erreur lors de la vérification des doublons: ${error.message}`, 'Erreur');
+          addLog(`Erreur lors de la vérification des doublons: ${error.message}`);
+        }
+      });
+      
+      // Ajouter un log
+      function addLog(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        const logItem = document.createElement('div');
+        logItem.className = 'log-item';
+        logItem.innerHTML = `<span class="log-time">[${timestamp}]</span> ${message}`;
+        
+        // Supprimer le message "Aucun log" s'il existe
+        const emptyLog = updateLogsEl.querySelector('.log-empty');
+        if (emptyLog) {
+          updateLogsEl.removeChild(emptyLog);
+        }
+        
+        updateLogsEl.appendChild(logItem);
+        updateLogsEl.scrollTop = updateLogsEl.scrollHeight;
+      }
+      
+      // Formater la taille des fichiers
+      function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+        else return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+      }
+      
+      // Formater une date
+      function formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        
+        return date.toLocaleDateString('fr-FR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
+      
+      // Obtenir la description d'un fichier en fonction de son nom
+      function getFileDescription(filename) {
+        // Vérifier d'abord s'il existe une description personnalisée
+        const customDescriptions = JSON.parse(localStorage.getItem('terminology_custom_descriptions') || '{}');
+        if (customDescriptions[filename]) {
+          return customDescriptions[filename];
+        }
+        
+        // Sinon utiliser les descriptions par défaut
+        if (filename.includes('oids')) {
+          return 'OIDs français pour identifiants';
+        } else if (filename.includes('common_codes')) {
+          return 'Codes communs ANS (professions, mouvements)';
+        } else if (filename.includes('terminology_systems')) {
+          return 'Systèmes de terminologie français';
+        } else if (filename.includes('codesystems')) {
+          return 'CodeSystems FHIR complets';
+        } else if (filename.includes('valuesets')) {
+          return 'ValueSets FHIR';
+        } else if (filename.includes('r4_french')) {
+          return 'Systèmes français pour FHIR R4';
+        } else if (filename.includes('r5_french')) {
+          return 'Systèmes français pour FHIR R5';
+        } else if (filename.includes('terminologies_list')) {
+          return 'Liste des terminologies disponibles';
+        } else if (filename.includes('system_urls')) {
+          return 'URLs des systèmes de terminologie';
+        } else if (filename.includes('rapport')) {
+          return 'Rapport de synthèse des terminologies';
+        } else {
+          return 'Fichier de terminologie';
+        }
+      }
+      
+      // Fonction pour formater la taille des fichiers
+      function formatFileSize(bytes) {
+        if (bytes === 0) return '0 octets';
+        
+        const units = ['octets', 'Ko', 'Mo', 'Go', 'To'];
+        const i = Math.floor(Math.log(bytes) / Math.log(1024));
+        
+        return parseFloat((bytes / Math.pow(1024, i)).toFixed(2)) + ' ' + units[i];
+      }
+      
+      // Déterminer le type d'un fichier en fonction de son nom
+      function getFileType(filename) {
+        if (filename.includes('oids')) {
+          return 'OID';
+        } else if (filename.includes('common_codes')) {
+          return 'CODE';
+        } else if (filename.includes('valuesets')) {
+          return 'VALUESET';
+        } else if (filename.includes('codesystems')) {
+          return 'CODESYSTEM';
+        } else if (filename.includes('terminology_systems')) {
+          return 'SYSTEM';
+        } else if (filename.includes('r4_french')) {
+          return 'R4';
+        } else if (filename.includes('r5_french')) {
+          return 'R5';
+        } else if (filename.includes('rapport') || filename.includes('report')) {
+          return 'RAPPORT';
+        } else {
+          return 'AUTRE';
+        }
+      }
+      
+      // Obtenir l'icône correspondant au type de fichier
+      function getFileTypeIcon(fileType) {
+        switch(fileType) {
+          case 'OID':
+            return 'fas fa-fingerprint';
+          case 'CODE':
+            return 'fas fa-code';
+          case 'VALUESET':
+            return 'fas fa-list-alt';
+          case 'CODESYSTEM':
+            return 'fas fa-sitemap';
+          case 'SYSTEM':
+            return 'fas fa-project-diagram';
+          case 'R4':
+          case 'R5':
+            return 'fas fa-fire';
+          case 'RAPPORT':
+            return 'fas fa-file-alt';
+          default:
+            return 'fas fa-file-code';
+        }
+      }
+      
+      // Obtenir la classe de badge pour le type de fichier
+      function getFileTypeBadgeClass(fileType) {
+        switch(fileType) {
+          case 'OID':
+            return 'oid';
+          case 'CODE':
+            return 'code';
+          case 'VALUESET':
+            return 'valueset';
+          case 'CODESYSTEM':
+            return 'codesystem';
+          case 'SYSTEM':
+            return 'system';
+          case 'R4':
+            return 'r4';
+          case 'R5':
+            return 'r5';
+          case 'RAPPORT':
+            return 'rapport';
+          default:
+            return 'autre';
+        }
+      }
+      
+      // Obtenir le libellé complet du type de fichier
+      function getFileTypeLabel(fileType) {
+        switch(fileType) {
+          case 'OID':
+            return 'Identifiants OID français';
+          case 'CODE':
+            return 'Codes communs ANS';
+          case 'VALUESET':
+            return 'Jeux de valeurs (ValueSets)';
+          case 'CODESYSTEM':
+            return 'Systèmes de codes (CodeSystems)';
+          case 'SYSTEM':
+            return 'Systèmes de terminologie';
+          case 'R4':
+            return 'FHIR R4 Français';
+          case 'R5':
+            return 'FHIR R5 Français';
+          case 'RAPPORT':
+            return 'Rapport de synthèse';
+          default:
+            return 'Autre fichier';
+        }
+      }
+      
+      // Estimer le nombre d'éléments dans un fichier
+      function getEstimatedItemCount(filename, fileSize) {
+        // Si on connaît le contenu typique des fichiers standards
+        if (filename === 'ans_oids.json') {
+          return 150; // Nombre approximatif d'OIDs
+        } else if (filename === 'ans_common_codes.json') {
+          return 450; // Nombre approximatif de codes
+        } else if (filename === 'ans_terminology_systems.json') {
+          return 80; // Nombre approximatif de systèmes
+        }
+        
+        // Sinon, on peut faire une estimation grossière basée sur la taille
+        if (fileSize) {
+          // Généralement, un élément JSON de terminologie fait environ 200 octets en moyenne
+          return Math.round(fileSize / 200);
+        }
+        
+        return 0; // Si on ne peut pas estimer
+      }
+      
+      // Fonction pour mettre en évidence un élément qui vient d'être mis à jour
+      function highlightElement(element) {
+        // Ajouter une classe pour l'animation
+        element.classList.add('highlight-update');
+        
+        // Retirer la classe après l'animation
+        setTimeout(() => {
+          element.classList.remove('highlight-update');
+        }, 2000);
+      }
+      
+      // Charger les données au démarrage
+      loadTerminologyStats();
+      loadTerminologyFiles();
+      
+      // Ajouter un log initial
+      addLog('Page de gestion des terminologies chargée');
+    });
+  </script>
+  
+  <style>
+    /* Animation pour la mise en évidence des compteurs lors d'une mise à jour */
+    @keyframes highlight {
+      0% { background-color: transparent; }
+      30% { background-color: rgba(231, 76, 60, 0.3); }
+      100% { background-color: transparent; }
+    }
+    
+    .highlight-update {
+      animation: highlight 2s ease-in-out;
+    }
+    
+    /* Style spécifique pour les compteurs de statistiques */
+    .stat-info p {
+      transition: background-color 0.5s ease-in-out;
+      padding: 5px;
+      border-radius: 4px;
+    }
+    
+    /* Styles pour les tableaux de terminologie */
+    .terminology-mapping {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+      font-size: 0.9em;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .terminology-mapping thead th {
+      background-color: #f5f5f5;
+      color: #333;
+      padding: 12px;
+      text-align: left;
+      border-bottom: 2px solid #ddd;
+    }
+    
+    .terminology-mapping td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .terminology-mapping tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    
+    .terminology-mapping tr:hover {
+      background-color: #f0f0f0;
+    }
+    
+    /* Styles pour la page de terminologies - Design 2025 */
+    .file-name-wrapper {
+      display: flex;
+      align-items: center;
+    }
+    
+    .file-name {
+      font-weight: 500;
+      color: #333;
+    }
+    
+    .file-description {
+      color: #666;
+      font-size: 0.95rem;
+    }
+    
+    /* Le style pour les badges est défini dans le fichier CSS global admin.css */
+    
+    .file-items-count {
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 400;
+    }
+  </style>
+  
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-text">
+        &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+        <div class="footer-version">Version: <span class="version-text">Chargement...</span></div>
+      </div>
+      <ul class="footer-links">
+      </ul>
+    </div>
+  </footer>
+  <!-- Script pour gérer la version dans le footer -->
+  <script src="/js/footer-version.js"></script>
+</body>
+</html>

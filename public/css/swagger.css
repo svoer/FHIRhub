@@ -1,0 +1,108 @@
+/**
+ * Correctifs pour empêcher le clignotement dans Swagger UI
+ * Ce fichier désactive complètement les animations et transitions
+ * qui causent des problèmes visuels dans l'interface Swagger
+ * Version stabilisée - Correction des problèmes de clignotement
+ */
+
+/* Désactiver strictement toutes les animations pour empêcher le clignotement */
+.swagger-ui * {
+  animation: none !important;
+  transition: none !important;
+  animation-delay: 0 !important;
+  animation-duration: 0 !important;
+  transition-delay: 0 !important;
+  transition-duration: 0 !important;
+}
+
+/* Réglages spécifiques pour le modal d'authentification - Solution renforcée contre le clignotement */
+.swagger-ui .dialog-ux .backdrop-container {
+  animation: none !important;
+  transition: none !important;
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+  opacity: 0.8 !important;
+}
+
+.swagger-ui .dialog-ux .modal-ux {
+  animation: none !important;
+  transition: none !important;
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+  opacity: 1 !important;
+}
+
+.swagger-ui .dialog-ux .modal-ux-inner {
+  animation: none !important;
+  transition: none !important;
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+  transform: none !important;
+}
+
+.swagger-ui .auth-container {
+  animation: none !important;
+  transition: none !important;
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+  opacity: 1 !important;
+}
+
+/* Force l'affichage du modal sans animation */
+.swagger-ui .dialog-ux {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Améliorations visuelles pour les boutons et interactions */
+.swagger-ui .btn.authorize {
+  background: linear-gradient(135deg, #e74c3c, #ff5722) !important;
+  color: white !important;
+  border: none !important;
+  font-weight: bold !important;
+  padding: 6px 15px !important;
+  border-radius: 4px !important;
+}
+
+.swagger-ui .btn.authorize svg {
+  fill: white !important;
+}
+
+.swagger-ui .auth-btn-wrapper {
+  padding: 15px !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+.swagger-ui .auth-btn-wrapper .btn-done {
+  background: linear-gradient(135deg, #e74c3c, #ff5722) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.swagger-ui .auth-btn-wrapper .btn-cancel {
+  background: #f8f9fa !important;
+  color: #333 !important;
+}
+
+/* Styles généraux pour améliorer l'expérience utilisateur */
+.swagger-ui .opblock-summary {
+  transition: none !important;
+}
+
+.swagger-ui .opblock-summary:hover {
+  background-color: #f8f9fa !important;
+}
+
+/* Fond pour le modal d'authentification */
+.swagger-ui .dialog-ux .backdrop-container {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}

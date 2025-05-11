@@ -1,0 +1,2374 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation - FHIRHub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/sidebar-menu.css">
+  <link rel="stylesheet" href="/css/documentation.css">
+  
+  <!-- Inclusion du menu latéral -->
+  <script src="/js/include-sidebar.js" defer></script>
+  <script src="/js/sidebar-menu.js" defer></script>
+  
+  <!-- Font Awesome pour les icônes -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  
+  <!-- Bibliothèque HTML2PDF pour la génération de PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  
+  <!-- Script de génération de PDF -->
+  <script src="/js/generate-pdf.js" defer></script>
+  
+  <!-- Script pour le menu de navigation -->
+  <script src="/js/doc-menu.js" defer></script>
+</head>
+<body>
+  <!-- Le menu latéral sera chargé par include-sidebar.js -->
+  <div id="sidebar-container"></div>
+
+  <div class="main-content">
+    <!-- Bouton retour en haut de page -->
+    <a href="#" id="back-to-top" class="back-to-top" title="Retour en haut de page">
+      <i class="fas fa-arrow-up"></i>
+    </a>
+    
+    <div class="container">
+      <div class="doc-header">
+        <div>
+          <h1 style="margin-bottom: 20px;">Documentation Technique FHIRHub</h1>
+          <p class="subtitle">Guide complet pour les développeurs et ingénieurs d'intégration</p>
+        </div>
+      </div>
+      
+      <div class="section-nav">
+        <!-- Bouton de toggle supprimé -->
+        <div class="nav-items-container">
+          <a href="#introduction" class="nav-item active"><i class="fas fa-home"></i> Introduction</a>
+          <a href="#parser" class="nav-item"><i class="fas fa-code"></i> Analyse HL7</a>
+          <a href="#message-types" class="nav-item"><i class="fas fa-exchange-alt"></i> Types de Messages</a>
+          <a href="#converter" class="nav-item"><i class="fas fa-sync-alt"></i> Convertisseur</a>
+          <a href="#patient-viewer" class="nav-item"><i class="fas fa-user-md"></i> Visualiseur Patient</a>
+          <a href="#terminology" class="nav-item"><i class="fas fa-language"></i> Terminologies</a>
+          <a href="#workflows" class="nav-item"><i class="fas fa-sitemap"></i> Workflows</a>
+          <a href="#ai-integration" class="nav-item"><i class="fas fa-robot"></i> IA & Assistance</a>
+          <a href="#api" class="nav-item"><i class="fas fa-plug"></i> APIs</a>
+          <a href="#cache" class="nav-item"><i class="fas fa-database"></i> Cache</a>
+          <a href="#database" class="nav-item"><i class="fas fa-server"></i> Base de Données</a>
+          <a href="#docker" class="nav-item"><i class="fab fa-docker"></i> Docker</a>
+          <a href="#nomenclatures-medicales" class="nav-item"><i class="fas fa-heartbeat"></i> Nomenclatures Médicales</a>
+          <a href="#prerequites" class="nav-item"><i class="fas fa-clipboard-check"></i> Prérequis</a>
+        </div>
+      </div>
+      
+      <div id="introduction" class="documentation-section">
+        <h2>Introduction à FHIRHub</h2>
+        <p>FHIRHub est une solution robuste de conversion de messages HL7 v2.5 vers le format FHIR R4 (version 4.0.1), conçue spécifiquement pour l'écosystème de santé français et conforme aux standards de l'ANS. Cette documentation explique les mécanismes internes du système et comment l'utiliser efficacement.</p>
+        
+        <div class="tip-box">
+          <p><strong>Le futur du partage de données santé, dès aujourd'hui.</strong> Modernisez votre interop, sans refonte, sans complexité. FHIRHub – L'upgrade FHIR, aussi simple qu'un glisser-déposer.</p>
+        </div>
+        
+        <h3>Interface utilisateur</h3>
+        <p>FHIRHub présente une interface utilisateur intuitive avec une identité visuelle distinctive :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Caractéristiques de l'interface</div>
+          <ul>
+            <li><strong>Charte graphique :</strong> Design en dégradé rouge-orange, identité visuelle cohérente sur toutes les pages</li>
+            <li><strong>Navigation :</strong> Menu latéral rétractable permettant un accès rapide à toutes les fonctionnalités</li>
+            <li><strong>Recherche globale :</strong> Champ de recherche intégré au menu pour accéder rapidement aux fonctionnalités</li>
+            <li><strong>Favoris :</strong> Possibilité d'ajouter des pages fréquemment utilisées aux favoris</li>
+            <li><strong>Responsive design :</strong> Adaptation automatique à tous les types d'écrans (ordinateurs, tablettes, mobiles)</li>
+            <li><strong>Typographie :</strong> Police Roboto pour une lisibilité optimale sur tous les supports</li>
+          </ul>
+        </div>
+        
+        <h3>Architecture générale</h3>
+        <p>FHIRHub est conçu avec une architecture API-first qui permet son intégration dans n'importe quel environnement de santé. Le système se compose de plusieurs modules interconnectés :</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Parser HL7</div>
+            <div class="step-description">Module d'analyse syntaxique des messages HL7 v2.5 qui extrait et structure chaque composant.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Service de Terminologie</div>
+            <div class="step-description">Gestion des mappings entre les codes HL7 et les terminologies françaises (ANS).</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Convertisseur FHIR</div>
+            <div class="step-description">Transformation des données structurées en ressources FHIR R4 complètes.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">API RESTful</div>
+            <div class="step-description">Endpoints pour l'intégration dans des systèmes existants, avec authentification sécurisée.</div>
+          </div>
+        </div>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Spécifications techniques</div>
+          <ul>
+            <li><strong>Backend :</strong> Node.js avec Express.js</li>
+            <li><strong>Base de données :</strong> SQLite pour la portabilité</li>
+            <li><strong>Frontend :</strong> Interface moderne basée sur HTML5, CSS3 et JavaScript</li>
+            <li><strong>Format cible :</strong> FHIR R4 (v4.0.1) conforme aux spécifications ANS</li>
+            <li><strong>Sécurité :</strong> JWT + clés API + HTTPS</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div id="parser" class="documentation-section">
+        <h2>Fonctionnement du Parser HL7</h2>
+        <p>Le parser HL7 est le composant qui analyse les messages HL7 v2.5 et les transforme en structure de données exploitable. Il s'agit d'une implémentation optimisée qui extrait la hiérarchie complète des données HL7.</p>
+        
+        <h3>Processus d'analyse</h3>
+        <p>Le parser fonctionne en plusieurs phases :</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Identification des séparateurs</div>
+            <div class="step-description">Le parser détecte automatiquement les séparateurs utilisés dans le message (champ, composant, répétition, échappement) à partir de l'en-tête MSH.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Découpage en segments</div>
+            <div class="step-description">Le message est divisé en segments (lignes) identifiés par leur code de 3 caractères (MSH, PID, PV1, etc.).</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Analyse des champs</div>
+            <div class="step-description">Chaque segment est divisé en champs selon le séparateur principal (généralement |).</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">Décomposition hiérarchique</div>
+            <div class="step-description">Les champs complexes sont décomposés en composants, sous-composants et répétitions selon les séparateurs secondaires (^, &, ~).</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <div class="step-title">Construction de l'arbre de données</div>
+            <div class="step-description">Une structure de données hiérarchique est générée, permettant l'accès aux éléments via des chemins logiques.</div>
+          </div>
+        </div>
+        
+        <h3>Exemple de code du parser</h3>
+        <pre class="code-block">/**
+ * Parse un message HL7 et extrait tous les segments et champs
+ * @param {string} hl7Message - Message HL7 au format texte
+ * @returns {Object} Structure contenant tous les segments et leurs champs
+ */
+function parseHL7Message(hl7Message) {
+  // Nettoyer le message (retirer les caractères de contrôle)
+  const cleanedMessage = hl7Message.replace(/\r/g, '\n').replace(/\n+/g, '\n');
+  
+  // Découper en segments
+  const segments = cleanedMessage.split('\n').filter(line => line.trim().length > 0);
+  
+  // Résultat
+  const parsedMessage = {};
+  
+  // Extraire les séparateurs à partir du segment MSH
+  const fieldSeparator = segments[0].charAt(3) || '|';
+  const componentSeparator = segments[0].charAt(4) || '^';
+  const repetitionSeparator = segments[0].charAt(5) || '~';
+  const escapeChar = segments[0].charAt(6) || '\\';
+  const subcomponentSeparator = segments[0].charAt(7) || '&';
+  
+  // Parcourir tous les segments
+  segments.forEach(segment => {
+    // Récupérer le type de segment (MSH, PID, etc.)
+    const segmentType = segment.substring(0, 3);
+    
+    // Découper le segment en champs
+    const fields = segment.split(fieldSeparator);
+    
+    // Cas spécial pour MSH (le séparateur est considéré comme le champ 2)
+    if (segmentType === 'MSH') {
+      fields[1] = fieldSeparator;
+    }
+    
+    // Traiter chaque champ pour extraire les composants
+    const parsedFields = fields.map(field => 
+      parseComponent(field, componentSeparator, subcomponentSeparator, repetitionSeparator)
+    );
+    
+    // Ajouter le segment au résultat
+    if (!parsedMessage[segmentType]) {
+      parsedMessage[segmentType] = [];
+    }
+    parsedMessage[segmentType].push(parsedFields);
+  });
+  
+  return parsedMessage;
+}</pre>
+        
+        <h3>Optimisations spécifiques</h3>
+        <p>Notre parser intègre plusieurs optimisations pour gérer les spécificités françaises :</p>
+        <ul>
+          <li><strong>Détection intelligente des prénoms composés</strong> dans les champs PID-5, conformément aux recommandations de l'ANS.</li>
+          <li><strong>Support des accents et caractères spéciaux</strong> fréquents dans les noms français (é, è, ê, à, ç, etc.).</li>
+          <li><strong>Gestion des exceptions</strong> pour les structures non-standard parfois rencontrées dans les SIH français.</li>
+          <li><strong>Analyse contextuelle</strong> pour déterminer le bon type d'identifiant (IPP, INS, INS-C) selon les OIDs français.</li>
+        </ul>
+      </div>
+      
+      <div id="message-types" class="documentation-section">
+        <h2>Types de Messages HL7 supportés</h2>
+        <p>FHIRHub est conçu pour prendre en charge différents types de messages HL7, avec une prise en charge complète des messages ADT et une extension progressive vers d'autres types.</p>
+        
+        <h3>Implémentation des types de messages</h3>
+        <p>L'implémentation des types de messages est modularisée à travers le système de mappeurs spécialisés qui sont automatiquement sélectionnés selon le type de message détecté.</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Types de messages pris en charge</div>
+          <table class="terminology-mapping">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Statut</th>
+                <th>Ressources FHIR générées</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>ADT</strong></td>
+                <td>Admission, Discharge, Transfer</td>
+                <td><span style="color: #28a745;">Implémenté</span></td>
+                <td>Patient, Encounter, Location, EpisodeOfCare</td>
+              </tr>
+              <tr>
+                <td><strong>ORU</strong></td>
+                <td>Observation Results Unsolicited</td>
+                <td><span style="color: #ffc107;">Documentation</span></td>
+                <td>Patient, Observation, DiagnosticReport, Specimen</td>
+              </tr>
+              <tr>
+                <td><strong>SIU</strong></td>
+                <td>Scheduling Information Unsolicited</td>
+                <td><span style="color: #ffc107;">Documentation</span></td>
+                <td>Patient, Appointment, Schedule, Slot</td>
+              </tr>
+              <tr>
+                <td><strong>MDM</strong></td>
+                <td>Medical Document Management</td>
+                <td><span style="color: #ffc107;">Documentation</span></td>
+                <td>Patient, DocumentReference, Binary</td>
+              </tr>
+              <tr>
+                <td><strong>ORM</strong></td>
+                <td>Order Message</td>
+                <td><span style="color: #ffc107;">Documentation</span></td>
+                <td>Patient, ServiceRequest, Task</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h3>Détails d'implémentation ADT</h3>
+        <p>Le type ADT (Admission, Discharge, Transfer) est entièrement implémenté avec prise en charge des événements suivants :</p>
+        <ul>
+          <li><strong>ADT^A01</strong> - Admission d'un patient</li>
+          <li><strong>ADT^A02</strong> - Transfert d'un patient</li>
+          <li><strong>ADT^A03</strong> - Sortie d'un patient</li>
+          <li><strong>ADT^A04</strong> - Inscription d'un patient en consultation externe</li>
+          <li><strong>ADT^A05</strong> - Pré-admission d'un patient</li>
+          <li><strong>ADT^A08</strong> - Mise à jour des informations patient</li>
+          <li><strong>ADT^A11</strong> - Annulation d'admission</li>
+          <li><strong>ADT^A13</strong> - Annulation de sortie</li>
+          <li><strong>ADT^A28</strong> - Création d'un nouveau patient</li>
+          <li><strong>ADT^A31</strong> - Mise à jour des informations patient</li>
+          <li><strong>ADT^A40</strong> - Fusion d'identités patient</li>
+        </ul>
+        
+        <h4>Architecture du mapper ADT</h4>
+        <pre class="code-block">// Traitement spécifique pour messages ADT
+function processADTMessage(parsedMessage, bundle) {
+  const eventType = parsedMessage.trigger;
+  
+  // Patient à partir de PID
+  if (parsedMessage.segments.PID && parsedMessage.segments.PID.length > 0) {
+    const patient = mapPIDToPatient(parsedMessage.segments.PID[0], parsedMessage);
+    addResourceToBundle(bundle, patient);
+    
+    // Encounter/EpisodeOfCare selon le type d'événement
+    if (['A01', 'A02', 'A03', 'A04', 'A05', 'A06', 'A08', 'A13'].includes(eventType)) {
+      if (parsedMessage.segments.PV1 && parsedMessage.segments.PV1.length > 0) {
+        const encounter = mapPV1ToEncounter(parsedMessage.segments.PV1[0], patient, parsedMessage);
+        addResourceToBundle(bundle, encounter);
+      }
+    }
+    
+    // Cas particulier des fusions d'identité (A40)
+    if (eventType === 'A40') {
+      processMergePatient(parsedMessage, bundle, patient);
+    }
+  }
+}</pre>v>
+        
+        <div class="info-box">
+          <p><strong>Comment contribuer :</strong> Pour ajouter la prise en charge d'un nouveau type de message, consultez la documentation dans le dossier correspondant. Chaque dossier contient des informations détaillées sur les mappings entre les segments HL7 et les ressources FHIR, ainsi que les exigences pour l'implémentation.</p>
+        </div>
+      </div>
+      
+      <div id="converter" class="documentation-section">
+        <h2>Convertisseur HL7 vers FHIR</h2>
+        <p>Le convertisseur prend les données structurées par le parser HL7 et les transforme en ressources FHIR R4 conformes aux spécifications françaises.</p>
+        
+        <h3>Principes de conversion</h3>
+        <p>La conversion suit plusieurs principes fondamentaux :</p>
+        <ul>
+          <li><strong>Conservation complète de l'information</strong> : aucune donnée n'est perdue pendant la conversion.</li>
+          <li><strong>Conformité stricte</strong> aux profils FHIR français de l'ANS.</li>
+          <li><strong>Traçabilité</strong> : chaque élément FHIR peut être relié à son origine dans le message HL7.</li>
+          <li><strong>Enrichissement contextuel</strong> : ajout d'informations déduites du contexte pour améliorer l'interopérabilité.</li>
+        </ul>
+        
+        <h3>Processus de conversion</h3>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Identification du type de message</div>
+            <div class="step-description">Détermination du type d'événement (ADT, ORU, SIU, etc.) pour adapter le processus de conversion.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Extraction des entités principales</div>
+            <div class="step-description">Création des ressources primaires comme Patient, Encounter, Organization à partir des segments PID, PV1, MSH.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Mappage des terminologies</div>
+            <div class="step-description">Conversion des codes HL7 en codes FHIR à l'aide des terminologies françaises de l'ANS.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">Établissement des relations</div>
+            <div class="step-description">Création des références entre ressources pour maintenir la cohérence du modèle.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <div class="step-title">Construction du Bundle transaction</div>
+            <div class="step-description">Assemblage de toutes les ressources dans un Bundle FHIR de type transaction.</div>
+          </div>
+        </div>
+        
+        <h3>Adaptations spécifiques pour la France</h3>
+        <div class="info-box">
+          <p>Le convertisseur intègre de nombreuses adaptations spécifiquement françaises :</p>
+          <ul>
+            <li>Structure des identifiants INS/INS-C avec les bons OIDs (1.2.250.1.213.1.4.8 et 1.2.250.1.213.1.4.2)</li>
+            <li>Gestion intelligente des établissements de santé avec les identifiants FINESS</li>
+            <li>Intégration des nomenclatures françaises pour les professions, spécialités et modes de prise en charge</li>
+            <li>Support de l'extension encounter-expectedExitDate pour les dates de sortie prévue</li>
+            <li>Structuration des adresses selon le format postal français (code postal à 5 chiffres, etc.)</li>
+          </ul>
+        </div>
+        
+        <h3>Exemple de transformation</h3>
+        <p>Voici un exemple simplifié de conversion d'un segment PID vers une ressource Patient FHIR :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">HL7 v2.5 Original</div>
+          <pre>PID|1||458722781^^^CENTRE_HOSPITALIER_DE_TEST^PI||SECLET^MARYSE BERTHE ALICE||19830711|F</pre>
+        </div>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">FHIR R4 Converti</div>
+          <pre>{
+  "resourceType": "Patient",
+  "id": "patient-458722781",
+  "identifier": [
+    {
+      "value": "458722781",
+      "system": "urn:oid:1.2.250.1.71.4.2.7",
+      "type": {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+            "code": "PI",
+            "display": "Identifiant patient interne"
+          }
+        ]
+      },
+      "assigner": { "display": "CENTRE_HOSPITALIER_DE_TEST" }
+    }
+  ],
+  "name": [
+    {
+      "use": "official",
+      "family": "SECLET",
+      "given": ["MARYSE", "BERTHE", "ALICE"]
+    }
+  ],
+  "gender": "female",
+  "birthDate": "1983-07-11"
+}</pre>
+        </div>
+      </div>
+      
+      <div id="patient-viewer" class="documentation-section">
+        <h2>Visualiseur Patient</h2>
+        <p>Le Visualiseur Patient est un outil complet permettant de rechercher, visualiser et analyser les informations médicales des patients à partir de ressources FHIR. Cette interface intuitive rassemble tous les aspects d'un dossier patient dans une vue clinique structurée.</p>
+        
+        <h3>Fonctionnalités principales</h3>
+        <p>Le visualiseur patient offre plusieurs onglets permettant de consulter différents aspects des données du patient :</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Informations personnelles</div>
+            <div class="step-description">Données démographiques, contacts, identifiants et détails administratifs du patient.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Observations cliniques</div>
+            <div class="step-description">Résultats de laboratoire, signes vitaux et autres observations médicales, présentés sous forme de tableau avec valeurs et interprétations.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Conditions & Problèmes</div>
+            <div class="step-description">Diagnostics, pathologies et problèmes médicaux identifiés, avec détails sur leur statut et gravité.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">Traitements médicamenteux</div>
+            <div class="step-description">Médicaments prescrits, posologies, voies d'administration et historique des prescriptions.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <div class="step-title">Consultations & Hospitalisations</div>
+            <div class="step-description">Historique des visites médicales, admissions, consultations et séjours hospitaliers.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">6</div>
+          <div class="step-content">
+            <div class="step-title">Chronologie médicale</div>
+            <div class="step-description">Vue temporelle de tous les événements médicaux du patient, permettant d'identifier les tendances et corrélations.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">7</div>
+          <div class="step-content">
+            <div class="step-title">Analyse IA</div>
+            <div class="step-description">Synthèse générée par intelligence artificielle, offrant un compte-rendu médical complet et structuré basé sur toutes les données du patient provenant de tous les onglets.</div>
+          </div>
+        </div>
+        
+        <div class="info-box">
+          <p><strong>Nouvelle fonctionnalité :</strong> L'analyse IA du visualiseur patient a été améliorée pour générer un compte rendu médical basé sur l'ensemble des données patient (informations personnelles, observations, conditions, médicaments, consultations). Cette analyse est strictement factuelle et s'appuie uniquement sur les données présentes dans le dossier patient.</p>
+        </div>
+        
+        <h3>Fonctionnalités avancées</h3>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Capacités techniques du visualiseur</div>
+          <ul>
+            <li><strong>Connexion multi-serveur :</strong> Compatible avec tout serveur FHIR R4 standard (HAPI FHIR, serveurs publics, etc.)</li>
+            <li><strong>Recherche avancée :</strong> Recherche de patients par nom, identifiant ou autres critères</li>
+            <li><strong>Identitovigilance :</strong> Effacement complet des données lors du changement de patient pour éviter les confusions</li>
+            <li><strong>Visualisation JSON :</strong> Accès aux données brutes JSON pour les utilisateurs techniques</li>
+            <li><strong>Interface adaptative :</strong> Design responsive permettant l'utilisation sur ordinateurs, tablettes et dispositifs mobiles</li>
+            <li><strong>Respect des standards :</strong> Compatible avec les ressources FHIR R4 françaises (ANS) et internationales</li>
+          </ul>
+        </div>
+        
+        <div class="info-box">
+          <p><strong>Note :</strong> Le visualiseur patient est accessible directement depuis le menu principal ou via un lien depuis d'autres sections de l'application. Il permet également la génération d'analyses IA via le bouton d'analyse situé en haut de l'interface.</p>
+        </div>
+      </div>
+      
+      <div id="terminology" class="documentation-section">
+        <h2>Gestion des Nomenclatures et Terminologies</h2>
+        <p>FHIRHub intègre un service de terminologie spécialisé pour les systèmes de codification français, basé sur les référentiels de l'ANS (Agence du Numérique en Santé).</p>
+        
+        <h3>Service de Terminologie Française</h3>
+        <p>Le service maintient une table de correspondance entre les codes HL7 et les URLs de systèmes FHIR, avec une attention particulière aux terminologies françaises.</p>
+        
+        <table class="terminology-mapping">
+          <thead>
+            <tr>
+              <th>Type de code</th>
+              <th>URL du système FHIR</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>PAYS</td>
+              <td>https://mos.esante.gouv.fr/NOS/TRE_R20-Pays/FHIR/TRE-R20-Pays</td>
+              <td>Codes des pays selon la nomenclature française</td>
+            </tr>
+            <tr>
+              <td>GENDER</td>
+              <td>https://mos.esante.gouv.fr/NOS/TRE_R303-HL7v3AdministrativeGender/FHIR/TRE-R303-HL7v3AdministrativeGender</td>
+              <td>Codes de genre administratif</td>
+            </tr>
+            <tr>
+              <td>ENCOUNTER_TYPE</td>
+              <td>https://mos.esante.gouv.fr/NOS/TRE_R305-TypeRencontre/FHIR/TRE-R305-TypeRencontre</td>
+              <td>Types de rencontre médicale</td>
+            </tr>
+            <tr>
+              <td>PROFESSION</td>
+              <td>https://mos.esante.gouv.fr/NOS/TRE_G15-ProfessionSante/FHIR/TRE-G15-ProfessionSante</td>
+              <td>Professions de santé</td>
+            </tr>
+            <tr>
+              <td>SPECIALITE</td>
+              <td>https://mos.esante.gouv.fr/NOS/TRE_R38-SpecialiteOrdinale/FHIR/TRE-R38-SpecialiteOrdinale</td>
+              <td>Spécialités médicales ordinales</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <h3>OIDs français</h3>
+        <p>Le système gère également les OIDs (Object Identifiers) spécifiques au système de santé français :</p>
+        
+        <table class="terminology-mapping">
+          <thead>
+            <tr>
+              <th>Type d'identifiant</th>
+              <th>OID</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>INS</td>
+              <td>1.2.250.1.213.1.4.8</td>
+              <td>Identifiant National de Santé (sécurisé)</td>
+            </tr>
+            <tr>
+              <td>INS-C</td>
+              <td>1.2.250.1.213.1.4.2</td>
+              <td>Identifiant National de Santé (calculé)</td>
+            </tr>
+            <tr>
+              <td>RPPS</td>
+              <td>1.2.250.1.71.4.2.1</td>
+              <td>Répertoire Partagé des Professionnels de Santé</td>
+            </tr>
+            <tr>
+              <td>ADELI</td>
+              <td>1.2.250.1.71.4.2.1</td>
+              <td>Automatisation Des Listes (professions de santé)</td>
+            </tr>
+            <tr>
+              <td>FINESS</td>
+              <td>1.2.250.1.71.4.2.2</td>
+              <td>Fichier National des Établissements Sanitaires et Sociaux</td>
+            </tr>
+            <tr>
+              <td>IPP</td>
+              <td>1.2.250.1.71.4.2.7</td>
+              <td>Identifiant Permanent du Patient</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <h3>Fonctionnement hors-ligne et mise à jour</h3>
+        <p>FHIRHub est conçu pour fonctionner entièrement hors-ligne avec des terminologies préchargées. Ces terminologies peuvent être mises à jour via les fonctionnalités d'administration lorsqu'une connexion Internet est disponible.</p>
+        
+        <div class="warning-box">
+          <p><strong>Note importante :</strong> Par défaut, FHIRHub inclut les terminologies françaises les plus récentes publiées par l'ANS. Assurez-vous de maintenir ces terminologies à jour pour garantir la conformité avec les dernières exigences réglementaires.</p>
+        </div>
+
+        <h3>Interface de gestion des nomenclatures</h3>
+        <p>L'application dispose d'une <a href="/terminologies.html">interface de gestion des nomenclatures</a> qui permet de :</p>
+        <ul>
+          <li>Importer des fichiers JSON contenant des terminologies depuis l'API ANS</li>
+          <li>Prévisualiser et vérifier le contenu des fichiers de terminologie</li>
+          <li>Gérer les descriptions et mettre à jour les fichiers existants</li>
+          <li>Exporter l'ensemble des terminologies pour sauvegarde ou migration</li>
+          <li>Visualiser des statistiques sur les nomenclatures chargées</li>
+        </ul>
+        
+        <p>Cette interface est accessible uniquement aux administrateurs et permet une gestion centralisée des terminologies françaises utilisées lors de la conversion des messages HL7 vers FHIR.</p>
+      </div>
+      
+      <div id="workflows" class="documentation-section">
+        <h2>Système de Workflows</h2>
+        <p>FHIRHub intègre un système de workflows visuels permettant de créer des processus personnalisés pour le traitement des messages HL7 et des ressources FHIR, adapté à chaque application.</p>
+        
+        <h3>Présentation de l'éditeur de workflow</h3>
+        <p>L'éditeur de workflow est un outil visuel intégré qui permet de créer des flux de traitement complexes sans écrire de code. Il offre une interface intuitive avec des nœuds interconnectables représentant différentes actions et conditions.</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Éditeur visuel intuitif</div>
+            <div class="step-description">Interface en glisser-déposer pour créer et connecter des nœuds sur une grille, avec redimensionnement des éléments à la souris.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Nœuds spécialisés</div>
+            <div class="step-description">Une bibliothèque de nœuds personnalisés pour l'analyse HL7, la conversion FHIR, les notifications, les transformations de données, etc.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Configuration par application</div>
+            <div class="step-description">Possibilité de créer des workflows distincts pour chaque application enregistrée dans FHIRHub.</div>
+          </div>
+        </div>
+        
+        <h3>Types de nœuds disponibles</h3>
+        <p>Le système de workflows propose plusieurs catégories de nœuds pour construire des processus complets :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Catégories de nœuds</div>
+          <ul>
+            <li><strong>Entrées/Sorties :</strong> Réception de messages HL7, envoi de ressources FHIR, génération de fichiers, etc.</li>
+            <li><strong>Transformation :</strong> Conversion HL7 vers FHIR, filtrage de données, agrégation, etc.</li>
+            <li><strong>Logique :</strong> Conditions, branches, jonctions, boucles, etc.</li>
+            <li><strong>Intégration :</strong> Appels API REST, messagerie, notifications, etc.</li>
+            <li><strong>Analyse :</strong> Validation de messages, extraction de métriques, journalisation, etc.</li>
+          </ul>
+        </div>
+        
+        <h3>Configuration et déploiement</h3>
+        <p>Les workflows sont sauvegardés dans la base de données et associés à une application spécifique. Lorsqu'un message est reçu via l'API de cette application, le workflow correspondant est automatiquement exécuté pour traiter le message selon les règles définies.</p>
+        
+        <div class="info-box">
+          <p><strong>Note :</strong> Pour accéder à l'éditeur de workflow, cliquez sur "Workflows" dans le menu principal, puis sélectionnez l'application pour laquelle vous souhaitez créer ou modifier un workflow.</p>
+        </div>
+      </div>
+      
+      <div id="ai-integration" class="documentation-section">
+        <h2>IA & Assistance intelligente</h2>
+        <p>FHIRHub intègre des fonctionnalités d'intelligence artificielle pour faciliter l'utilisation du système, aider à résoudre les problèmes et analyser les données des patients.</p>
+        
+        <h3>Chatbot de support</h3>
+        <p>Un chatbot intelligent est disponible sur le tableau de bord pour répondre aux questions sur l'utilisation de FHIRHub, la conversion HL7-FHIR et les problèmes courants. Ce chatbot utilise les modèles d'IA configurés dans les paramètres.</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Assistance contextuelle</div>
+            <div class="step-description">Le chatbot comprend le contexte de votre demande et peut fournir des explications spécifiques sur les fonctionnalités de FHIRHub.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Documentation intelligente</div>
+            <div class="step-description">Accès à toute la documentation technique à travers une interface conversationnelle simple.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Diagnostic assisté</div>
+            <div class="step-description">Aide à identifier et résoudre les problèmes de conversion ou de configuration.</div>
+          </div>
+        </div>
+        
+        <h3>Analyse patient par IA</h3>
+        <p>Le visualiseur patient intègre un module d'analyse par IA, permettant de générer un compte-rendu médical complet basé sur toutes les données du patient (informations personnelles, consultations, observations, médicaments, conditions, etc.).</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Fonctionnalités de l'analyse IA</div>
+          <ul>
+            <li><strong>Synthèse du dossier médical :</strong> Génération d'un résumé complet des informations médicales du patient</li>
+            <li><strong>Mise en relation des données :</strong> L'IA analyse et met en relation les informations des différents onglets</li>
+            <li><strong>Contextualisation :</strong> Les données sont présentées de façon chronologique et cliniquement pertinente</li>
+            <li><strong>Analyse strictement factuelle :</strong> Basée uniquement sur les données présentes, sans ajout d'informations extérieures</li>
+            <li><strong>Mode dégradé :</strong> Génération d'un rapport basique en cas d'indisponibilité du service IA</li>
+          </ul>
+        </div>
+        
+        <h3>Configuration des fournisseurs d'IA</h3>
+        <p>FHIRHub prend en charge plusieurs fournisseurs d'IA pour alimenter ses fonctionnalités d'assistance et d'analyse :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Fournisseurs d'IA pris en charge</div>
+          <ul>
+            <li><strong>Mistral AI :</strong> Service d'IA français avec des modèles performants (mistral-large-2411) et compatibles RGPD</li>
+            <li><strong>Ollama :</strong> Modèles locaux (installation locale requise, idéal pour les environnements isolés et le fonctionnement hors-ligne)</li>
+          </ul>
+        </div>
+        
+        <div class="warning-box">
+          <p><strong>Important :</strong> En mode analyse patient, l'IA traite les données de santé issues des ressources FHIR de manière sécurisée et strictement factuelle. Aucune donnée n'est conservée, et l'analyse est générée sans extrapolation.</p>
+        </div>
+        
+        <h3>Paramétrage de l'IA</h3>
+        <p>Les administrateurs peuvent configurer les services d'IA dans la section "Paramètres IA" accessible depuis le menu principal. Cette configuration inclut :</p>
+        <ul>
+          <li>Sélection du fournisseur d'IA préféré</li>
+          <li>Gestion des clés API (stockées de manière sécurisée dans la base de données SQLite)</li>
+          <li>Configuration des paramètres de modèle (température, longueur maximale, etc.)</li>
+          <li>Options de confidentialité et restrictions d'accès</li>
+          <li>Test de connexion aux différents fournisseurs</li>
+        </ul>
+      </div>
+      
+      <div id="api" class="documentation-section">
+        <h2>Architecture et Implémentation des APIs</h2>
+        <p>FHIRHub expose un ensemble complet d'APIs RESTful pour l'intégration et l'automatisation. Cette documentation présente l'architecture technique et l'implémentation des APIs du système, avec des exemples de code pour les développeurs.</p>
+        
+        <div class="info-box">
+          <p><strong>Documentation interactive :</strong> Une documentation API interactive détaillée est disponible à l'adresse <a href="/api-reference.html" target="_blank">/api-reference.html</a>. Les exemples de code ci-dessous sont disponibles pour référence rapide.</p>
+        </div>
+        
+        <h3>Architecture des APIs</h3>
+        <p>L'ensemble des APIs de FHIRHub est construit sur une architecture modulaire utilisant Express.js. Voici les principales caractéristiques techniques :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Caractéristiques techniques des APIs</div>
+          <ul>
+            <li><strong>Framework :</strong> Express.js avec routage modularisé</li>
+            <li><strong>Format d'échange :</strong> JSON avec support des erreurs standardisées</li>
+            <li><strong>Authentification :</strong> Double mécanisme JWT + API Keys</li>
+            <li><strong>Validation :</strong> Validation des entrées via middleware</li>
+            <li><strong>Documentation :</strong> Spécification OpenAPI/Swagger intégrée</li>
+            <li><strong>Rate limiting :</strong> Limitation de débit configurable par application</li>
+            <li><strong>CORS :</strong> Configuration avancée avec support des origins personnalisés</li>
+            <li><strong>Journalisation :</strong> Traçage et métriques précises des appels</li>
+          </ul>
+        </div>
+        
+        <h3>Structure du middleware d'authentification</h3>
+        <p>Le code ci-dessous montre l'implémentation du middleware d'authentification combiné qui supporte à la fois les clés API et les jetons JWT :</p>
+        
+        <pre class="code-block">/**
+ * Middleware d'authentification combiné supportant JWT et clés API
+ * Peut être configuré pour exiger l'un, l'autre ou les deux
+ */
+const combinedAuthMiddleware = (options = {}) => {
+  // Options par défaut
+  const config = {
+    requireJWT: false,         // Exiger un JWT valide
+    requireApiKey: false,      // Exiger une clé API valide
+    requireEither: true,       // Exiger au moins l'un des deux
+    requireAdmin: false,       // Exiger le rôle admin
+    allowedRoles: []           // Rôles autorisés
+  };
+  
+  // Fusionner avec les options fournies
+  Object.assign(config, options);
+  
+  return async (req, res, next) => {
+    let jwtValid = false;
+    let apiKeyValid = false;
+    
+    // Vérification du JWT (token)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.substring(7);
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'votre-clé-secrète');
+        
+        // Récupérer les infos utilisateur
+        const user = await dbService.get('SELECT * FROM users WHERE id = ?', [decoded.userId]);
+        if (user) {
+          req.user = user;
+          jwtValid = true;
+          
+          // Vérifier les rôles si nécessaire
+          if (config.requireAdmin && user.role !== 'admin') {
+            return res.status(403).json({
+              success: false,
+              message: 'Accès réservé aux administrateurs'
+            });
+          }
+          
+          if (config.allowedRoles.length > 0 && !config.allowedRoles.includes(user.role)) {
+            return res.status(403).json({
+              success: false,
+              message: 'Rôle utilisateur non autorisé'
+            });
+          }
+        }
+      } catch (error) {
+        // Ne pas retourner d'erreur ici, on va vérifier la clé API ensuite
+      }
+    }
+    
+    // Vérification de la clé API
+    const apiKey = req.headers['x-api-key'];
+    if (apiKey) {
+      try {
+        // Requête complexe pour récupérer toutes les infos en une seule fois
+        const keyData = await dbService.get(`
+          SELECT ak.*, a.name as app_name
+          FROM api_keys ak
+          JOIN applications a ON ak.application_id = a.id
+          WHERE ak.key = ? AND ak.is_active = 1
+        `, [apiKey]);
+        
+        if (keyData) {
+          // La clé existe et est active
+          req.apiKey = keyData;
+          req.application = { 
+            id: keyData.application_id, 
+            name: keyData.app_name 
+          };
+          apiKeyValid = true;
+          
+          // Si pas d'user via JWT, associer l'user de l'application
+          if (!jwtValid && keyData.application_id) {
+            const appCreator = await dbService.get('SELECT created_by FROM applications WHERE id = ?', [keyData.application_id]);
+            if (appCreator && appCreator.created_by) {
+              const appUser = await dbService.get('SELECT * FROM users WHERE id = ?', [appCreator.created_by]);
+              if (appUser) {
+                req.user = appUser;
+                console.log('[AUTH] API Key associée à l\'utilisateur', appUser.username, '(ID:', appUser.id, ')');
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('[AUTH] Erreur de vérification de clé API:', error);
+      }
+    }
+    
+    // Appliquer la logique d'autorisation selon la configuration
+    if (config.requireJWT && !jwtValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token JWT valide requis'
+      });
+    }
+    
+    if (config.requireApiKey && !apiKeyValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Clé API valide requise'
+      });
+    }
+    
+    if (config.requireEither && !jwtValid && !apiKeyValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Authentification requise (JWT ou clé API)'
+      });
+    }
+    
+    // Tout est bon, continuer
+    next();
+  };
+};</pre>
+        
+        <h3>Catalogue des APIs par catégorie</h3>
+        <p>Nous organisons les APIs en catégories fonctionnelles pour une meilleure clarté :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">API d'Authentification</div>
+          <ul>
+            <li><strong>POST /api/login</strong> - Authentification des utilisateurs et génération de JWT</li>
+            <li><strong>POST /api/logout</strong> - Invalidation des jetons actifs</li>
+            <li><strong>GET /api/user</strong> - Récupération des informations de l'utilisateur authentifié</li>
+          </ul>
+        </div>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">API de Conversion - Core</div>
+          <ul>
+            <li><strong>POST /api/convert</strong> - Conversion HL7 v2.5 → FHIR R4 (format JSON)</li>
+            <li><strong>POST /api/convert/raw</strong> - Conversion de texte HL7 pur (format text/plain)</li>
+            <li><strong>POST /api/convert/validate</strong> - Validation syntaxique des messages HL7</li>
+            <li><strong>POST /api/convert/file</strong> - Conversion de fichiers HL7 (multipart/form-data)</li>
+            <li><strong>GET /api/convert/options</strong> - Options de conversion disponibles</li>
+          </ul>
+        </div>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">API de Terminologie</div>
+          <ul>
+            <li><strong>GET /api/terminology/french</strong> - Nomenclatures françaises disponibles</li>
+            <li><strong>GET /api/terminology/files</strong> - Fichiers de terminologie chargés</li>
+            <li><strong>POST /api/terminology/refresh</strong> - Rafraîchir le cache de terminologies</li>
+            <li><strong>POST /api/terminology/analyze</strong> - Analyse statistique des terminologies</li>
+            <li><strong>POST /api/terminology/import</strong> - Import de nouveaux fichiers</li>
+            <li><strong>GET /api/terminology/files/:filename</strong> - Accès à un fichier spécifique</li>
+            <li><strong>DELETE /api/terminology/files/:filename</strong> - Suppression de fichier</li>
+            <li><strong>POST /api/terminology/export</strong> - Export au format ZIP</li>
+          </ul>
+        </div>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">API de Gestion des Applications</div>
+          <ul>
+            <li><strong>GET /api/applications</strong> - Liste des applications</li>
+            <li><strong>POST /api/applications</strong> - Création d'application</li>
+            <li><strong>GET /api/applications/:id</strong> - Détails d'une application</li>
+            <li><strong>PUT /api/applications/:id</strong> - Mise à jour d'application</li>
+            <li><strong>DELETE /api/applications/:id</strong> - Suppression d'application</li>
+            <li><strong>GET /api/applications/:id/stats</strong> - Statistiques d'utilisation</li>
+          </ul>
+        </div>
+        
+        <h3>Implémentation d'API : Exemple du convertisseur HL7</h3>
+        <p>L'implémentation de l'API de conversion montre l'architecture en couches et la gestion d'erreurs :</p>
+        
+        <pre class="code-block">/**
+ * Contrôleur de l'API de conversion HL7 → FHIR
+ * Route: POST /api/convert
+ */
+async function convertHL7ToFHIRHandler(req, res) {
+  const startTime = performance.now();
+  const { hl7Message, options = {} } = req.body;
+  
+  // Valider l'entrée
+  if (!hl7Message) {
+    return res.status(400).json({
+      success: false, 
+      message: 'Le message HL7 est requis'
+    });
+  }
+  
+  // Fusionner avec les options par défaut
+  const conversionOptions = {
+    includeOriginalMessage: false,  // Ne pas inclure le message d'origine dans la réponse
+    outputFormat: 'R4',             // Format FHIR R4 par défaut
+    useFrenchTerminology: true,     // Utiliser les terminologies françaises
+    validateOutput: true,           // Valider la conformité FHIR du résultat
+    ...options
+  };
+  
+  try {
+    // 1. Vérifier le cache
+    const messageHash = createHash('sha256').update(hl7Message).digest('hex');
+    const cachedResult = await conversionCache.get(messageHash);
+    
+    if (cachedResult) {
+      // Enregistrer l'utilisation du cache pour les statistiques
+      await logConversionStats({
+        source: req.user ? 'user' : 'api',
+        user_id: req.user ? req.user.id : null,
+        application_id: req.application ? req.application.id : null,
+        api_key_id: req.apiKey ? req.apiKey.id : null,
+        is_cached: true,
+        processing_time: 0,
+        resource_count: cachedResult.entry ? cachedResult.entry.length : 0
+      });
+      
+      return res.json({
+        success: true,
+        message: 'Conversion réussie (depuis cache)',
+        data: cachedResult,
+        metadata: {
+          fromCache: true,
+          processingTime: 0,
+          resourceCount: cachedResult.entry ? cachedResult.entry.length : 0
+        }
+      });
+    }
+    
+    // 2. Parser le message HL7
+    const parsedMessage = hl7Parser.parseHL7(hl7Message);
+    
+    // 3. Identifier le type de message
+    const messageType = hl7Parser.getMessageType(parsedMessage);
+    if (!messageType) {
+      throw new Error('Type de message HL7 non reconnu ou non supporté');
+    }
+    
+    // 4. Convertir en FHIR selon le type de message
+    const converter = getConverterForMessageType(messageType);
+    const fhirBundle = await converter.convert(parsedMessage, conversionOptions);
+    
+    // 5. Valider le bundle FHIR produit si demandé
+    if (conversionOptions.validateOutput) {
+      const validationResult = validateFHIRBundle(fhirBundle);
+      if (!validationResult.valid) {
+        console.warn('Avertissements de validation FHIR:', validationResult.warnings);
+      }
+    }
+    
+    // 6. Mettre en cache le résultat
+    await conversionCache.set(messageHash, fhirBundle);
+    
+    // 7. Enregistrer les statistiques
+    const endTime = performance.now();
+    const processingTime = Math.round(endTime - startTime);
+    
+    await logConversionStats({
+      source: req.user ? 'user' : 'api',
+      user_id: req.user ? req.user.id : null,
+      application_id: req.application ? req.application.id : null,
+      api_key_id: req.apiKey ? req.apiKey.id : null,
+      is_cached: false,
+      processing_time: processingTime,
+      resource_count: fhirBundle.entry ? fhirBundle.entry.length : 0,
+      message_type: messageType
+    });
+    
+    // 8. Envoyer la réponse
+    return res.json({
+      success: true,
+      message: 'Conversion réussie',
+      data: fhirBundle,
+      metadata: {
+        fromCache: false,
+        processingTime: processingTime,
+        messageType: messageType,
+        resourceCount: fhirBundle.entry ? fhirBundle.entry.length : 0
+      }
+    });
+    
+  } catch (error) {
+    console.error('Erreur lors de la conversion HL7 → FHIR:', error);
+    
+    // Journaliser l'erreur pour analyse
+    await logConversionError({
+      source: req.user ? 'user' : 'api',
+      user_id: req.user ? req.user.id : null,
+      application_id: req.application ? req.application.id : null,
+      error_message: error.message,
+      stack_trace: error.stack,
+      input_sample: hl7Message.substring(0, 200) // Ne stocker qu'un extrait
+    });
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la conversion',
+      error: error.message,
+      errorType: error.name,
+      errorDetails: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+}</pre>
+
+        <h3>Authentification et Sécurité</h3>
+        <p>FHIRHub implémente deux mécanismes d'authentification complémentaires :</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Authentification par clé API</div>
+            <div class="step-description">Les clés API sont générées de manière cryptographiquement sécurisée (UUID v4), puis hachées (bcrypt) pour un stockage sécurisé. Chaque clé est associée à une application et peut avoir des quotas d'utilisation personnalisés.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Authentification par JWT</div>
+            <div class="step-description">Les jetons JWT sont générés lors de la connexion utilisateur et contiennent l'ID utilisateur et les rôles. Ils sont signés avec un secret sécurisé et ont une durée de validité configurable.</div>
+          </div>
+        </div>
+        
+        <div class="tip-box">
+          <p><strong>Conseil pour les développeurs:</strong> Pour bénéficier d'une meilleure traçabilité, utilisez la combinaison des deux méthodes d'authentification : le JWT pour identifier l'utilisateur et la clé API pour identifier l'application cliente.</p>
+        </div>
+        
+        <h3>Exemples d'utilisation des API</h3>
+        
+        <div class="code-tabs">
+          <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab(event, 'curl-tab')">cURL</button>
+            <button class="tab-button" onclick="switchTab(event, 'js-tab')">JavaScript</button>
+            <button class="tab-button" onclick="switchTab(event, 'python-tab')">Python</button>
+          </div>
+          
+          <div id="curl-tab" class="tab-content" style="display: block;">
+            <h4>Conversion avec options avancées (POST /api/convert)</h4>
+            <pre class="code-block">curl -X POST "http://localhost:5000/api/convert" \
+     -H "Content-Type: application/json" \
+     -H "X-API-KEY: your-api-key" \
+     -d '{
+  "hl7Message": "MSH|^~\\&|SENDING_APP|SENDING_FACILITY|RECEIVING_APP|RECEIVING_FACILITY|20230801101530||ADT^A01|20230801101530|P|2.5|||||FRA|UNICODE UTF-8|||LAB_HL7_V2\nPID|1||458722781^^^CENTRE_HOSPITALIER_DE_TEST^PI||SECLET^MARYSE BERTHE ALICE||19830711|F",
+  "options": {
+    "useFrenchTerminology": true,
+    "includeOriginalMessage": true,
+    "validateOutput": true,
+    "includeMessageHeader": true
+  }
+}'</pre>
+            
+            <h4>Authentification et accès à une API protégée</h4>
+            <pre class="code-block">curl -X POST "http://localhost:5000/api/login" \
+     -H "Content-Type: application/json" \
+     -d '{"username": "admin", "password": "admin123"}' \
+     -s | jq -r '.token' > token.txt
+
+TOKEN=$(cat token.txt)
+
+curl -X GET "http://localhost:5000/api/users" \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "X-API-KEY: dev-key"</pre>
+            
+            <h4>Exécuter un workflow (POST /api/workflows/execute/:id)</h4>
+            <pre class="code-block">curl -X POST "http://localhost:5000/api/workflows/execute/1" \
+     -H "Content-Type: application/json" \
+     -H "X-API-KEY: your-api-key" \
+     -d '{
+  "input": {
+    "hl7Message": "MSH|^~\\&|SENDING_APP|SENDING_FACILITY|RECEIVING_APP|RECEIVING_FACILITY|20230801101530||ADT^A01|20230801101530|P|2.5|||||FRA|UNICODE UTF-8|||LAB_HL7_V2\nPID|1||458722781^^^CENTRE_HOSPITALIER_DE_TEST^PI||SECLET^MARYSE BERTHE ALICE||19830711|F"
+  },
+  "params": {
+    "destination": "http://fhir-server.example.com/fhir"
+  }
+}'</pre>
+          </div>
+          
+          <div id="js-tab" class="tab-content" style="display: none;">
+            <h4>Client API complet</h4>
+            <pre class="code-block">/**
+ * Client API FHIRHub pour JavaScript
+ * Implémentation complète avec gestion des jetons et options avancées
+ */
+class FHIRHubClient {
+  constructor(options = {}) {
+    this.baseUrl = options.baseUrl || 'http://localhost:5000';
+    this.apiKey = options.apiKey;
+    this.token = options.token;
+    this.autoRefresh = options.autoRefresh !== false;
+    this.onTokenRefresh = options.onTokenRefresh || null;
+  }
+  
+  // Définir la clé API
+  setApiKey(apiKey) {
+    this.apiKey = apiKey;
+  }
+  
+  // Définir le token JWT
+  setToken(token) {
+    this.token = token;
+  }
+  
+  // Obtenir les headers d'authentification
+  getAuthHeaders() {
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (this.apiKey) {
+      headers['X-API-KEY'] = this.apiKey;
+    }
+    
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    
+    return headers;
+  }
+  
+  // Login et génération de token
+  async login(username, password) {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.token) {
+        this.token = result.token;
+        if (this.onTokenRefresh) {
+          this.onTokenRefresh(this.token);
+        }
+      }
+      
+      return result;
+    } catch (error) {
+      console.error('Erreur lors de la connexion:', error);
+      throw error;
+    }
+  }
+  
+  // Conversion HL7 vers FHIR
+  async convertHL7ToFHIR(hl7Message, options = {}) {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/convert`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ hl7Message, options })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur lors de la conversion:', error);
+      throw error;
+    }
+  }
+  
+  // Récupération des statistiques
+  async getStats() {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/stats`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques:', error);
+      throw error;
+    }
+  }
+  
+  // Exemple d'utilisation des workflows
+  async executeWorkflow(workflowId, input, params = {}) {
+    try {
+      const response = await fetch(`${this.baseUrl}/api/workflows/execute/${workflowId}`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        body: JSON.stringify({ input, params })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error ${response.status}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Erreur lors de l'exécution du workflow ${workflowId}:`, error);
+      throw error;
+    }
+  }
+}
+
+// Exemple d'utilisation
+const client = new FHIRHubClient({
+  baseUrl: 'http://localhost:5000',
+  apiKey: 'your-api-key',
+  onTokenRefresh: (token) => localStorage.setItem('jwt_token', token)
+});
+
+// Connexion et conversion
+async function demoUsage() {
+  try {
+    // Se connecter
+    await client.login('admin', 'admin123');
+    console.log('Connecté avec succès!');
+    
+    // Convertir un message HL7
+    const hl7Message = `MSH|^~\\&|SENDING_APP|SENDING_FACILITY|RECEIVING_APP|RECEIVING_FACILITY|20230801101530||ADT^A01|20230801101530|P|2.5|||||FRA|UNICODE UTF-8|||LAB_HL7_V2
+PID|1||458722781^^^CENTRE_HOSPITALIER_DE_TEST^PI||SECLET^MARYSE BERTHE ALICE||19830711|F`;
+    
+    const result = await client.convertHL7ToFHIR(hl7Message, {
+      useFrenchTerminology: true,
+      includeOriginalMessage: true
+    });
+    
+    console.log(`Conversion réussie: ${result.data.entry.length} ressources FHIR générées`);
+    console.log('Patient ID:', result.data.entry[0].resource.id);
+    
+    // Statistiques du système
+    const stats = await client.getStats();
+    console.log(`Total des conversions: ${stats.conversions}`);
+    console.log(`Temps moyen de traitement: ${stats.conversionStats.avgTime}ms`);
+    
+  } catch (error) {
+    console.error('Erreur dans la démonstration:', error);
+  }
+}
+
+// Exécuter la démo
+demoUsage();</pre>
+          </div>
+          
+          <div id="python-tab" class="tab-content" style="display: none;">
+            <h4>Client API Python avec contexte</h4>
+            <pre class="code-block">import requests
+import json
+from typing import Dict, Any, Optional, List, Union
+import logging
+from datetime import datetime
+
+class FHIRHubClient:
+    """
+    Client Python pour l'API FHIRHub
+    
+    Fournit une interface Pythonique pour interagir avec l'API FHIRHub,
+    avec gestion de l'authentification et journalisation.
+    """
+    
+    def __init__(self, base_url: str = "http://localhost:5000", 
+                 api_key: Optional[str] = None,
+                 token: Optional[str] = None,
+                 log_level: int = logging.INFO):
+        """
+        Initialise le client API
+        
+        Args:
+            base_url: URL de base de l'API FHIRHub
+            api_key: Clé API optionnelle
+            token: Token JWT optionnel
+            log_level: Niveau de journalisation (logging.INFO par défaut)
+        """
+        self.base_url = base_url.rstrip('/')
+        self.api_key = api_key
+        self.token = token
+        
+        # Configuration de la journalisation
+        self.logger = logging.getLogger("fhirhub_client")
+        self.logger.setLevel(log_level)
+        
+        # Créer un handler si aucun n'existe
+        if not self.logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+    
+    def _get_headers(self) -> Dict[str, str]:
+        """
+        Construit les en-têtes HTTP avec authentification
+        
+        Returns:
+            Dict[str, str]: En-têtes HTTP
+        """
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        
+        if self.api_key:
+            headers['X-API-KEY'] = self.api_key
+            
+        if self.token:
+            headers['Authorization'] = f'Bearer {self.token}'
+            
+        return headers
+    
+    def login(self, username: str, password: str) -> Dict[str, Any]:
+        """
+        S'authentifie auprès de l'API et récupère un token JWT
+        
+        Args:
+            username: Nom d'utilisateur
+            password: Mot de passe
+            
+        Returns:
+            Dict[str, Any]: Résultat contenant le token JWT
+            
+        Raises:
+            requests.HTTPError: En cas d'erreur HTTP
+            ValueError: En cas d'erreur d'authentification
+        """
+        self.logger.info(f"Tentative de connexion pour l'utilisateur {username}")
+        
+        try:
+            response = requests.post(
+                f"{self.base_url}/api/login",
+                json={"username": username, "password": password}
+            )
+            response.raise_for_status()
+            
+            result = response.json()
+            if "token" in result:
+                self.token = result["token"]
+                self.logger.info("Authentification réussie")
+            
+            return result
+        
+        except requests.HTTPError as e:
+            self.logger.error(f"Erreur HTTP lors de la connexion: {e}")
+            raise
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la connexion: {e}")
+            raise ValueError(f"Erreur d'authentification: {str(e)}")
+    
+    def convert_hl7_to_fhir(self, hl7_message: str, options: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Convertit un message HL7 en FHIR
+        
+        Args:
+            hl7_message: Message HL7 à convertir
+            options: Options de conversion
+            
+        Returns:
+            Dict[str, Any]: Bundle FHIR et métadonnées
+            
+        Raises:
+            requests.HTTPError: En cas d'erreur HTTP
+            ValueError: En cas d'erreur de conversion
+        """
+        url = f"{self.base_url}/api/convert"
+        headers = self._get_headers()
+        payload = {"hl7Message": hl7_message}
+        
+        if options:
+            payload["options"] = options
+        
+        self.logger.info("Envoi d'une requête de conversion HL7→FHIR")
+        self.logger.debug(f"Payload: {json.dumps(payload)[:200]}...")
+        
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            
+            result = response.json()
+            
+            if result.get("success"):
+                metadata = result.get("metadata", {})
+                self.logger.info(f"Conversion réussie en {metadata.get('processingTime', '?')}ms")
+                self.logger.info(f"Ressources générées: {metadata.get('resourceCount', '?')}")
+                return result
+            else:
+                error_msg = result.get("message", "Erreur inconnue")
+                self.logger.error(f"Échec de conversion: {error_msg}")
+                raise ValueError(error_msg)
+                
+        except requests.HTTPError as e:
+            self.logger.error(f"Erreur HTTP lors de la conversion: {e}")
+            
+            # Essayer d'extraire les détails d'erreur
+            try:
+                error_details = e.response.json()
+                self.logger.error(f"Détails de l'erreur: {error_details}")
+            except:
+                pass
+                
+            raise
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la conversion: {e}")
+            raise
+    
+    def get_workflows(self) -> List[Dict[str, Any]]:
+        """
+        Récupère la liste des workflows disponibles
+        
+        Returns:
+            List[Dict[str, Any]]: Liste des workflows
+            
+        Raises:
+            requests.HTTPError: En cas d'erreur HTTP
+        """
+        url = f"{self.base_url}/api/workflows"
+        headers = self._get_headers()
+        
+        self.logger.info("Récupération des workflows")
+        
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            
+            result = response.json()
+            workflows = result.get("data", [])
+            
+            self.logger.info(f"{len(workflows)} workflows récupérés")
+            return workflows
+            
+        except requests.HTTPError as e:
+            self.logger.error(f"Erreur HTTP lors de la récupération des workflows: {e}")
+            raise
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la récupération des workflows: {e}")
+            raise
+    
+    def execute_workflow(self, workflow_id: int, 
+                         input_data: Dict[str, Any], 
+                         params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Exécute un workflow spécifique
+        
+        Args:
+            workflow_id: ID du workflow à exécuter
+            input_data: Données d'entrée pour le workflow
+            params: Paramètres supplémentaires
+            
+        Returns:
+            Dict[str, Any]: Résultat de l'exécution
+            
+        Raises:
+            requests.HTTPError: En cas d'erreur HTTP
+            ValueError: En cas d'erreur d'exécution
+        """
+        url = f"{self.base_url}/api/workflows/execute/{workflow_id}"
+        headers = self._get_headers()
+        
+        payload = {
+            "input": input_data
+        }
+        
+        if params:
+            payload["params"] = params
+        
+        self.logger.info(f"Exécution du workflow {workflow_id}")
+        
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            
+            result = response.json()
+            
+            if result.get("success"):
+                self.logger.info(f"Workflow {workflow_id} exécuté avec succès")
+                return result
+            else:
+                error_msg = result.get("message", "Erreur inconnue")
+                self.logger.error(f"Échec d'exécution du workflow: {error_msg}")
+                raise ValueError(error_msg)
+                
+        except requests.HTTPError as e:
+            self.logger.error(f"Erreur HTTP lors de l'exécution du workflow: {e}")
+            raise
+        except Exception as e:
+            self.logger.error(f"Erreur lors de l'exécution du workflow: {e}")
+            raise
+
+# Exemple d'utilisation
+if __name__ == "__main__":
+    # Configurer la journalisation
+    logging.basicConfig(level=logging.INFO)
+    
+    # Message HL7 de test
+    hl7_message = """MSH|^~\\&|SENDING_APP|SENDING_FACILITY|RECEIVING_APP|RECEIVING_FACILITY|20230801101530||ADT^A01|20230801101530|P|2.5|||||FRA|UNICODE UTF-8|||LAB_HL7_V2
+PID|1||458722781^^^CENTRE_HOSPITALIER_DE_TEST^PI||SECLET^MARYSE BERTHE ALICE||19830711|F"""
+    
+    try:
+        # Créer le client
+        client = FHIRHubClient(api_key="your-api-key")
+        
+        # Exemple de connexion
+        # user_data = client.login("admin", "admin123")
+        # print(f"Token JWT: {client.token[:20]}...")
+        
+        # Conversion HL7 vers FHIR
+        result = client.convert_hl7_to_fhir(hl7_message, {
+            "useFrenchTerminology": True,
+            "validateOutput": True
+        })
+        
+        # Afficher des informations sur le bundle
+        fhir_bundle = result["data"]
+        print(f"Bundle généré avec {len(fhir_bundle['entry'])} ressources")
+        
+        # Identifiant du patient
+        patient_resource = next((entry["resource"] for entry in fhir_bundle["entry"] 
+                               if entry["resource"]["resourceType"] == "Patient"), None)
+        if patient_resource:
+            print(f"Patient ID: {patient_resource['id']}")
+            
+        # Sauvegarder le résultat
+        output_file = f"fhir_bundle_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(fhir_bundle, f, ensure_ascii=False, indent=2)
+            
+        print(f"Bundle FHIR sauvegardé dans {output_file}")
+            
+    except Exception as e:
+        print(f"Erreur: {e}")</pre>
+          </div>
+        </div>
+        
+        <script>
+          function switchTab(event, tabId) {
+            // Masquer tous les contenus d'onglets
+            const tabContents = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabContents.length; i++) {
+              tabContents[i].style.display = "none";
+            }
+            
+            // Désactiver tous les boutons d'onglets
+            const tabButtons = document.getElementsByClassName("tab-button");
+            for (let i = 0; i < tabButtons.length; i++) {
+              tabButtons[i].className = tabButtons[i].className.replace(" active", "");
+            }
+            
+            // Afficher le contenu d'onglet actif et activer le bouton correspondant
+            document.getElementById(tabId).style.display = "block";
+            event.currentTarget.className += " active";
+          }
+        </script>
+      </div>
+      
+      <div id="cache" class="documentation-section">
+        <h2>Système de Cache Intelligent</h2>
+        <p>FHIRHub intègre un système de cache intelligent pour optimiser les performances lors de la conversion de messages HL7 vers FHIR. Ce système permet de réduire drastiquement le temps de traitement pour les messages identiques ou similaires.</p>
+        
+        <h3>Architecture du système de cache</h3>
+        <p>Le cache fonctionne à deux niveaux :</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Cache mémoire (LRU)</div>
+            <div class="step-description">Stockage en mémoire vive des 500 dernières conversions avec une stratégie Least Recently Used pour optimiser l'utilisation de la mémoire.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Cache persistant sur disque</div>
+            <div class="step-description">Sauvegarde sur disque pour conserver les résultats des conversions entre les redémarrages du serveur.</div>
+          </div>
+        </div>
+        
+        <h3>Fonctionnement du cache</h3>
+        <p>Le système utilise un hachage SHA-256 du message HL7 comme clé pour retrouver rapidement les résultats des conversions précédentes.</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Performance</div>
+          <ul>
+            <li><strong>Sans cache :</strong> ~10-50ms par conversion selon la complexité du message</li>
+            <li><strong>Avec cache mémoire :</strong> &lt;1ms (presque instantané)</li>
+            <li><strong>Avec cache disque :</strong> ~2-5ms</li>
+          </ul>
+        </div>
+        
+        <p>Le système de cache intelligent assure des performances optimales pour toutes les conversions.</p>
+        
+        <h3>API de gestion du cache</h3>
+        <div class="tech-spec">
+          <div class="tech-spec-title">Endpoints pour le cache</div>
+          <ul>
+            <li><strong>GET /api/cache/stats</strong> - Statistiques du cache (taille, hits, misses)</li>
+            <li><strong>POST /api/cache/clear</strong> - Vider le cache (admin uniquement)</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div id="database" class="documentation-section">
+        <h2>Structure de la Base de Données</h2>
+        <p>FHIRHub utilise SQLite comme système de gestion de base de données pour garantir une portabilité maximale sans dépendance externe.</p>
+        
+        <h3>Schéma de la base de données</h3>
+        <p>La base de données est organisée en plusieurs tables qui stockent l'ensemble des données nécessaires au fonctionnement de l'application :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Tables principales</div>
+          <ul>
+            <li><strong>users</strong> - Informations utilisateurs (admin, user)</li>
+            <li><strong>applications</strong> - Applications enregistrées dans le système</li>
+            <li><strong>api_keys</strong> - Clés API associées aux applications</li>
+            <li><strong>conversion_logs</strong> - Historique des conversions HL7 vers FHIR</li>
+            <li><strong>system_metrics</strong> - Métriques système (CPU, mémoire)</li>
+            <li><strong>notifications</strong> - Notifications système</li>
+            <li><strong>api_activity_logs</strong> - Journaux d'activité des API</li>
+            <li><strong>api_usage_limits</strong> - Limites d'utilisation des API</li>
+            <li><strong>ai_providers</strong> - Configuration des fournisseurs d'IA (Mistral, Ollama)</li>
+          </ul>
+        </div>
+        
+        <p>Le schéma est conçu pour optimiser les performances tout en maintenant la cohérence des données à travers l'application.</p>
+        
+        <h3>Gestion des données</h3>
+        <p>La base de données est automatiquement initialisée lors du premier démarrage de l'application. Des sauvegardes automatiques sont effectuées quotidiennement dans le dossier <code>data/backups</code>.</p>
+        
+        <div class="info-box">
+          <p><strong>Note :</strong> Par défaut, les logs de conversion sont conservés pendant 30 jours maximum pour éviter une croissance excessive de la base de données.</p>
+        </div>
+      </div>
+      
+      <div id="docker" class="documentation-section">
+        <h2>Déploiement avec Docker</h2>
+        <p>FHIRHub offre une solution de déploiement basée sur Docker qui facilite l'installation, la maintenance et les mises à jour de l'application.</p>
+        
+        <h3>Architecture Docker</h3>
+        <p>L'architecture Docker de FHIRHub s'appuie sur des volumes persistants pour garantir la pérennité des données :</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Volumes persistants</div>
+            <div class="step-description">Les données essentielles (base de données, cache, logs, terminologies) sont stockées dans des volumes persistants indépendants du conteneur.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Script d'initialisation</div>
+            <div class="step-description">Le script <code>docker-init.sh</code> automatise la configuration pour un déploiement rapide et simplifié.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Configuration par environnement</div>
+            <div class="step-description">Les variables d'environnement permettent de personnaliser le déploiement selon les besoins (ports, chemins, secrets).</div>
+          </div>
+        </div>
+        
+        <div class="info-box">
+          <p><strong>Note importante :</strong> La configuration Docker a été optimisée pour réduire la complexité et les dépendances. Les outils de monitoring comme Prometheus et Grafana ont été supprimés de la configuration pour simplifier le déploiement et réduire la consommation de ressources.</p>
+        </div>
+        
+        <h3>Méthodes de déploiement</h3>
+        <pre class="code-block"># Méthode rapide (recommandée)
+./docker-init.sh
+docker-compose -f docker-compose.prod.yml up -d
+
+# Accès à l'application
+http://localhost:5000  # Identifiants : admin / admin123</pre>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Fonctionnalités Docker</div>
+          <ul>
+            <li><strong>Sauvegarde automatique</strong> des données dans des volumes persistants</li>
+            <li><strong>Multi-environnement</strong> avec configurations développement et production</li>
+            <li><strong>Mises à jour simplifiées</strong> sans perte de données</li>
+            <li><strong>Support HTTPS</strong> via configuration avec reverse proxy</li>
+          </ul>
+        </div>
+        
+        <p>L'approche Docker garantit un déploiement cohérent et reproductible dans tous les environnements.</p>
+      </div>
+      
+      <div id="terminology-page" class="documentation-section">
+        <h2>Gestion des Nomenclatures Médicales</h2>
+        <p>FHIRHub propose une interface complète pour gérer les nomenclatures médicales françaises nécessaires à la conversion précise des messages HL7 vers FHIR, accessible via le menu "Nomenclatures".</p>
+        
+        <h3>Fonctionnement de la page des nomenclatures</h3>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Tableau de bord des terminologies</div>
+            <div class="step-description">La page affiche les statistiques clés : version des terminologies françaises, date de dernière mise à jour, nombre de systèmes de codes et d'OIDs disponibles pour la conversion.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Importation de fichiers</div>
+            <div class="step-description">L'interface permet d'importer des fichiers JSON contenant des ValueSets, CodeSystems ou OIDs par simple glisser-déposer ou sélection de fichier. Le système analyse automatiquement le contenu et l'intègre aux mappings existants.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Gestion des fichiers</div>
+            <div class="step-description">Visualisation, édition de description et suppression des fichiers importés (à l'exception des fichiers système protégés). Les fichiers de nomenclature importés sont immédiatement disponibles pour la conversion.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">Utilisation dans le convertisseur</div>
+            <div class="step-description">Lors de la conversion HL7 vers FHIR, le système consulte automatiquement tous les fichiers de nomenclature pour enrichir les ressources FHIR avec les codes et systèmes français appropriés.</div>
+          </div>
+        </div>
+        
+        <h3>Types de fichiers supportés</h3>
+        <div class="tech-spec">
+          <div class="tech-spec-title">Formats de fichiers de nomenclature</div>
+          <ul>
+            <li><strong>ValueSets FHIR</strong> - Ensembles de valeurs validées pour différents concepts médicaux</li>
+            <li><strong>CodeSystems FHIR</strong> - Systèmes de codification avec les codes et leurs définitions</li>
+            <li><strong>Bundles FHIR</strong> - Collections de ressources FHIR de terminologie</li>
+            <li><strong>Fichiers OIDs</strong> - Mappings des identifiants d'objets utilisés dans le système de santé français</li>
+          </ul>
+        </div>
+        
+        <h3>Processus d'utilisation des fichiers</h3>
+        <p>Lorsqu'un fichier de nomenclature est importé :</p>
+        <ol>
+          <li>Le système analyse son contenu pour déterminer s'il contient des ValueSets, CodeSystems ou OIDs</li>
+          <li>Les éléments sont extraits et intégrés dans la base de connaissances du convertisseur</li>
+          <li>Pendant la conversion, pour chaque code HL7 rencontré, le système recherche dans tous les fichiers de nomenclature importés pour trouver les correspondances FHIR</li>
+          <li>Si une correspondance est trouvée, la ressource FHIR est enrichie avec non seulement le code, mais aussi ses métadonnées (système, version, libellé)</li>
+        </ol>
+        
+        <div class="warning-box">
+          <p><strong>Important :</strong> Les fichiers système (ans_oids.json, ans_common_codes.json, ans_terminology_systems.json) sont protégés et ne peuvent pas être supprimés car ils contiennent les mappings fondamentaux pour la conversion.</p>
+        </div>
+        
+        <p>Le système de terminologie est hautement extensible et permet d'ajouter facilement de nouveaux mappings pour d'autres systèmes de santé régionaux.</p>
+      </div>
+      
+      <div id="nomenclatures-medicales" class="documentation-section">
+        <h2>Gestion des Nomenclatures Médicales</h2>
+        <p>FHIRHub intègre un système complet de gestion des nomenclatures médicales françaises, essentiel pour assurer la conformité avec les standards de l'ANS (Agence du Numérique en Santé) et faciliter l'interopérabilité dans l'écosystème de santé français.</p>
+        
+        <div class="info-box">
+          <p><strong>Fonctionnement hors-ligne garanti :</strong> Toutes les terminologies sont préchargées dans l'application, permettant une utilisation complète sans connexion Internet et sans appels vers des serveurs de terminologie externes.</p>
+        </div>
+        
+        <h3>Nomenclatures prises en charge</h3>
+        <p>FHIRHub intègre nativement les principales nomenclatures médicales utilisées dans le système de santé français :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Principales terminologies intégrées</div>
+          <table class="terminology-mapping">
+            <thead>
+              <tr>
+                <th>Terminologie</th>
+                <th>Description</th>
+                <th>Utilisation dans FHIRHub</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>CIM-10</strong></td>
+                <td>Classification Internationale des Maladies, 10ème révision</td>
+                <td>Codage des diagnostics et pathologies</td>
+              </tr>
+              <tr>
+                <td><strong>CCAM</strong></td>
+                <td>Classification Commune des Actes Médicaux</td>
+                <td>Codage des actes médicaux</td>
+              </tr>
+              <tr>
+                <td><strong>LOINC</strong></td>
+                <td>Logical Observation Identifiers Names and Codes</td>
+                <td>Codage des observations biologiques et examens</td>
+              </tr>
+              <tr>
+                <td><strong>ATC</strong></td>
+                <td>Anatomical Therapeutic Chemical</td>
+                <td>Classification des médicaments</td>
+              </tr>
+              <tr>
+                <td><strong>UCD</strong></td>
+                <td>Unité Commune de Dispensation</td>
+                <td>Identification des médicaments en France</td>
+              </tr>
+              <tr>
+                <td><strong>SNOMED CT</strong></td>
+                <td>Systematized Nomenclature of Medicine — Clinical Terms</td>
+                <td>Terminologie clinique (version française)</td>
+              </tr>
+              <tr>
+                <td><strong>RPPS</strong></td>
+                <td>Répertoire Partagé des Professionnels de Santé</td>
+                <td>Identification des professionnels de santé</td>
+              </tr>
+              <tr>
+                <td><strong>FINESS</strong></td>
+                <td>Fichier National des Établissements Sanitaires et Sociaux</td>
+                <td>Identification des établissements de santé</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <h3>Architecture du système de terminologies</h3>
+        <p>Le système de gestion des terminologies s'articule autour de plusieurs composants techniques :</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Fichiers de terminologie préchargés</div>
+            <div class="step-description">Stockés dans le répertoire <span class="code-highlight">french_terminology/</span>, ces fichiers JSON contiennent les mappings entre codes et libellés.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Service d'adaptation terminologique</div>
+            <div class="step-description">Le module <span class="code-highlight">french_terminology_adapter.js</span> fournit des fonctions de conversion entre les différents systèmes de codage.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Cache de terminologie</div>
+            <div class="step-description">Optimise les performances en stockant les résultats de recherche fréquents en mémoire.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <div class="step-title">API de recherche terminologique</div>
+            <div class="step-description">Endpoints RESTful pour rechercher des codes et leurs descriptions (/api/terminology).</div>
+          </div>
+        </div>
+        
+        <h3>Exemple d'implémentation</h3>
+        <pre class="code-block">/**
+ * Recherche un code dans la terminologie spécifiée
+ * @param {string} system - Système de terminologie (ex: "CIM-10", "CCAM")
+ * @param {string} code - Code à rechercher
+ * @returns {Promise} Informations sur le code trouvé
+ */
+async function findCodeInTerminology(system, code) {
+  // Vérifier dans le cache d'abord
+  const cacheKey = `${system}:${code}`;
+  if (terminologyCache.has(cacheKey)) {
+    return terminologyCache.get(cacheKey);
+  }
+  
+  // Construire le chemin du fichier selon le système
+  const systemFileName = getSystemFileName(system);
+  const filePath = path.join(__dirname, 'french_terminology', systemFileName);
+  
+  try {
+    // Lire le fichier de terminologie
+    const terminologyData = JSON.parse(await fs.promises.readFile(filePath, 'utf8'));
+    
+    // Rechercher le code
+    const codeEntry = terminologyData.concepts.find(entry => entry.code === code);
+    
+    if (codeEntry) {
+      // Mettre en cache pour les futures requêtes
+      terminologyCache.set(cacheKey, codeEntry);
+      return codeEntry;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error(`Erreur lors de la recherche du code ${code} dans ${system}:`, error);
+    return null;
+  }
+}</pre>
+        
+        <h3>Interface de gestion des terminologies</h3>
+        <p>L'interface web <strong>terminologies.html</strong> offre une gestion complète des nomenclatures médicales directement via le navigateur. Cette interface présente les fonctionnalités suivantes :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Fonctionnalités de l'interface de terminologies</div>
+          <ul>
+            <li><strong>Consultation</strong> de toutes les terminologies chargées avec nombre d'entrées et date de mise à jour</li>
+            <li><strong>Recherche</strong> de codes spécifiques dans chaque terminologie avec affichage des libellés</li>
+            <li><strong>Import</strong> de nouvelles terminologies par glisser-déposer de fichiers JSON</li>
+            <li><strong>Export</strong> des terminologies existantes au format JSON pour sauvegarde ou partage</li>
+            <li><strong>Mise à jour</strong> des terminologies existantes avec conservation de l'historique des versions</li>
+          </ul>
+        </div>
+        
+        <h3>Architecture technique des terminologies</h3>
+        <p>Le système de gestion des terminologies est basé sur une architecture en plusieurs couches :</p>
+        
+        <ol>
+          <li><strong>Stockage des fichiers</strong> : Les fichiers JSON dans le répertoire <span class="code-highlight">french_terminology/</span> contiennent les mappings.</li>
+          <li><strong>Base de données SQLite</strong> : Table <span class="code-highlight">terminology_versions</span> qui trace l'historique des mises à jour.</li>
+          <li><strong>Cache en mémoire</strong> : Structure de données optimisée pour les recherches fréquentes.</li>
+          <li><strong>API REST</strong> : Endpoints pour manipuler les terminologies via <span class="code-highlight">/api/terminology/</span>.</li>
+        </ol>
+        
+        <h3>Traitement des fichiers de terminologie</h3>
+        <p>Lorsqu'un fichier de terminologie est importé depuis l'interface, le processus suivant s'exécute :</p>
+        
+        <pre class="code-block">/**
+ * Traite un fichier de terminologie importé via l'interface web
+ * @param {File} file - Fichier JSON importé
+ * @param {string} system - Système de terminologie (ex: "CIM-10")
+ * @returns {Promise} Résultat du traitement
+ */
+async function processTerminologyFile(file, system) {
+  try {
+    // 1. Validation du format du fichier
+    const content = await readFileAsText(file);
+    const terminologyData = JSON.parse(content);
+    
+    if (!validateTerminologyFormat(terminologyData)) {
+      throw new Error("Format de fichier invalide");
+    }
+    
+    // 2. Extraction des métadonnées
+    const metadata = {
+      system: system,
+      version: terminologyData.version || "1.0.0",
+      count: terminologyData.concepts?.length || 0,
+      lastUpdated: new Date().toISOString(),
+      description: terminologyData.description || ""
+    };
+    
+    // 3. Sauvegarde dans le système de fichiers
+    const fileName = getSystemFileName(system);
+    const filePath = path.join(TERMINOLOGY_DIR, fileName);
+    
+    // 4. Sauvegarde de la version précédente
+    if (fs.existsSync(filePath)) {
+      const backupPath = filePath + '.bak';
+      fs.copyFileSync(filePath, backupPath);
+    }
+    
+    // 5. Écriture du nouveau fichier
+    await fs.promises.writeFile(filePath, JSON.stringify(terminologyData, null, 2));
+    
+    // 6. Mise à jour des métadonnées en base
+    await updateTerminologyMetadata(metadata);
+    
+    // 7. Invalidation du cache
+    terminologyCache.clear();
+    
+    return { success: true, metadata };
+  } catch (error) {
+    console.error(`Erreur lors du traitement du fichier: ${error.message}`);
+    return { success: false, error: error.message };
+  }
+}</pre>
+        
+        <div class="info-box">
+          <p><strong>Sécurité :</strong> Le système vérifie l'intégrité de chaque fichier importé pour garantir la conformité avec le schéma requis. Si le fichier est corrompu ou mal formaté, l'import est rejeté avec un message d'erreur explicite.</p>
+        </div>
+        
+        <h3>Structure des fichiers de terminologie</h3>
+        <p>Les fichiers de terminologie suivent une structure JSON standardisée :</p>
+        
+        <pre class="code-block">{
+  "system": "CIM-10",               // Identifiant du système de terminologie
+  "version": "2021",                // Version de la terminologie
+  "description": "Classification Internationale des Maladies", // Description
+  "url": "http://hl7.org/fhir/sid/icd-10-fr", // URL canonique FHIR
+  "lastUpdated": "2023-05-15T14:30:00Z", // Date de mise à jour
+  "concepts": [                     // Liste des concepts
+    {
+      "code": "A01.0",              // Code unique
+      "display": "Fièvre typhoïde", // Libellé principal
+      "definition": "Infection due à Salmonella typhi", // Définition détaillée
+      "category": "infectious",     // Catégorie (facultatif)
+      "properties": {               // Propriétés spécifiques (facultatif)
+        "billable": true,
+        "severity": "moderate"
+      }
+    },
+    // Autres concepts...
+  ]
+}</pre>
+        
+        <h3>Comportement en cas de modification</h3>
+        <p>Le système gère différents scénarios lors de la manipulation des terminologies :</p>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Mise à jour d'une terminologie existante</div>
+            <div class="step-description">
+              La version précédente est automatiquement sauvegardée avec l'extension .bak, les références dans la base de données sont mises à jour, et le cache est invalidé pour prendre en compte les nouvelles données.
+            </div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Suppression d'une terminologie</div>
+            <div class="step-description">
+              Une suppression ne détruit jamais définitivement une terminologie système. Pour les terminologies protégées (ANS, CIM-10, CCAM, etc.), un message d'erreur est affiché. Pour les terminologies personnalisées, le fichier est désactivé mais conservé avec un suffixe .disabled.
+            </div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <div class="step-title">Restauration d'une version précédente</div>
+            <div class="step-description">
+              L'interface permet de restaurer des versions précédentes à partir des sauvegardes automatiques, avec un historique complet des modifications accessibles dans la table terminology_versions.
+            </div>
+          </div>
+        </div>
+        
+        <div class="warning-box">
+          <p><strong>Important :</strong> Les terminologies système (CIM-10, CCAM, LOINC, etc.) sont protégées contre la suppression définitive. Même en cas de tentative de suppression via l'API, ces fichiers sont automatiquement restaurés au prochain démarrage de l'application à partir des fichiers .protected conservés dans le répertoire de sauvegarde.</p>
+        </div>
+        
+        <div class="tip-box">
+          <p><strong>Astuce :</strong> Pour les déploiements en environnement sécurisé sans accès Internet, vous pouvez précharger les fichiers de terminologie et les inclure dans votre package d'installation.</p>
+        </div>
+        
+        <h3>Extension du système de terminologie</h3>
+        <p>Le système de terminologie peut être étendu pour prendre en charge des nomenclatures spécifiques à un établissement ou à une région :</p>
+        
+        <ol>
+          <li>Créez un nouveau fichier JSON dans le format standard dans le répertoire <span class="code-highlight">french_terminology/</span>.</li>
+          <li>Ajoutez une entrée dans le fichier <span class="code-highlight">ans_terminology_systems.json</span> pour référencer votre nouvelle terminologie.</li>
+          <li>Redémarrez l'application pour charger la nouvelle terminologie.</li>
+        </ol>
+      </div>
+      
+      <div id="prerequites" class="documentation-section">
+        <h2>Prérequis et installation</h2>
+        <p>FHIRHub est conçu pour être facilement déployable avec un minimum de dépendances.</p>
+        
+        <h3>Configuration requise</h3>
+        <ul>
+          <li><strong>Node.js</strong> version 18.x ou 20.x (v20.15.1 recommandée) - attention, problèmes connus avec Node.js v22</li>
+          <li><strong>SQLite3</strong> (inclus, ne nécessite pas d'installation séparée)</li>
+          <li><strong>OS :</strong> Windows, macOS ou Linux</li>
+          <li><strong>RAM :</strong> 2 Go minimum, 4 Go recommandé</li>
+          <li><strong>Espace disque :</strong> 200 Mo minimum</li>
+          <li><strong>Navigateur :</strong> Chrome, Firefox, Edge ou Safari récent</li>
+        </ul>
+        
+        <h3>Installation</h3>
+        <p>L'installation de FHIRHub est simple et ne nécessite que quelques étapes :</p>
+        
+        <ol>
+          <li>Décompressez l'archive dans le dossier de votre choix</li>
+          <li>Ouvrez un terminal dans ce dossier</li>
+          <li>Exécutez <code>npm install</code> pour installer les dépendances</li>
+          <li>Exécutez <code>bash start.sh</code> pour démarrer le serveur</li>
+          <li>Accédez à <code>http://localhost:5000</code> dans votre navigateur</li>
+        </ol>
+        
+        <div class="info-box">
+          <p><strong>Note :</strong> Lors du premier démarrage, le système crée automatiquement un utilisateur administrateur avec les identifiants par défaut : <code>admin / admin123</code>. Ce mot de passe standardisé est utilisé pour toutes les interfaces du système.</p>
+        </div>
+        
+        <h3>Stockage et sauvegarde des données</h3>
+        <p>Toutes les données de FHIRHub sont stockées dans le dossier du projet, ce qui garantit leur portabilité et une sauvegarde simplifiée :</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Organisation du stockage des données</div>
+          <ul>
+            <li><strong>Base de données :</strong> <code>storage/db/fhirhub.db</code> (SQLite) - contient utilisateurs, applications, clés API, logs de conversion</li>
+            <li><strong>Cache de conversion :</strong> <code>storage/data/cache</code> - stockage temporaire des conversions récentes</li>
+            <li><strong>Terminologies :</strong> <code>french_terminology/</code> - nomenclatures médicales préchargées</li>
+            <li><strong>Fichiers annexes :</strong> <code>storage/assets/</code> - pièces jointes et documents</li>
+            <li><strong>Logs système :</strong> <code>logs/</code> - journaux d'activité et de diagnostic</li>
+          </ul>
+        </div>
+        
+        <p>Cette organisation garantit qu'aucune donnée n'est perdue lors des mises à jour, puisque tout est contenu dans le dossier du projet. Pour réaliser une sauvegarde complète, il suffit de copier le dossier <code>storage/</code>.</p>
+        
+        <div class="info-box">
+          <p><strong>Avantage :</strong> La portabilité du système est maximale grâce à l'utilisation de SQLite et au stockage autonome dans le dossier du projet, sans dépendances externes.</p>
+        </div>
+      </div>
+      
+      <a href="#" class="back-to-top">
+        <i class="fas fa-arrow-up"></i>
+      </a>
+    </div>
+  </div>
+  
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-text">
+        &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+      </div>
+      <ul class="footer-links">
+      </ul>
+    </div>
+  </footer>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Vérifier l'authentification
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      // Gestion du bouton de déconnexion
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login.html';
+        });
+      }
+      
+      // Navigation fluide
+      const sectionNavLinks = document.querySelectorAll('.section-nav a');
+      if (sectionNavLinks.length > 0) {
+        sectionNavLinks.forEach(anchor => {
+          anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Mise à jour des classes actives
+            document.querySelectorAll('.section-nav a').forEach(a => a.classList.remove('active'));
+            this.classList.add('active');
+            
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+              window.scrollTo({
+                top: targetElement.offsetTop - 100,
+                behavior: 'smooth'
+              });
+            }
+          });
+        });
+      }
+      
+      // Bouton retour en haut
+      const backToTopButton = document.querySelector('.back-to-top');
+      
+      if (backToTopButton) {
+        window.addEventListener('scroll', () => {
+          if (window.pageYOffset > 300) {
+            backToTopButton.classList.add('visible');
+          } else {
+            backToTopButton.classList.remove('visible');
+          }
+        });
+        
+        backToTopButton.addEventListener('click', e => {
+          e.preventDefault();
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          });
+        });
+      }
+      
+      // Détecter la section active pendant le défilement
+      const sections = document.querySelectorAll('.documentation-section');
+      const navLinks = document.querySelectorAll('.section-nav a');
+      
+      // N'ajouter l'événement de défilement que si les sections et liens existent
+      if (sections.length > 0 && navLinks.length > 0) {
+        window.addEventListener('scroll', () => {
+          let current = '';
+          
+          sections.forEach(section => {
+            const sectionTop = section.offsetTop - 150;
+            const sectionHeight = section.clientHeight;
+            
+            if (window.pageYOffset >= sectionTop) {
+              current = section.getAttribute('id');
+            }
+          });
+          
+          navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('href') && link.getAttribute('href').substring(1) === current) {
+              link.classList.add('active');
+            }
+          });
+        });
+      }
+      
+      // Gestionnaire pour les boîtes dépliables
+      const collapsibles = document.querySelectorAll('.collapsible');
+      
+      if (collapsibles.length > 0) {
+        collapsibles.forEach(coll => {
+          coll.addEventListener('click', function() {
+            this.classList.toggle('active');
+            const content = this.nextElementSibling;
+            
+            if (content) {
+              if (content.style.maxHeight) {
+                content.style.maxHeight = null;
+                const icon = this.querySelector('i');
+                if (icon) {
+                  icon.className = 'fas fa-chevron-down';
+                }
+              } else {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                const icon = this.querySelector('i');
+                if (icon) {
+                  icon.className = 'fas fa-chevron-up';
+                }
+              }
+            }
+          });
+        });
+      }
+      
+      // Ajout d'ancres aux titres de sections pour faciliter le partage
+      document.querySelectorAll('.documentation-section h2, .documentation-section h3').forEach(heading => {
+        if (!heading.id) {
+          // Générer un ID à partir du texte du titre
+          const id = heading.textContent
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '');
+            
+          heading.id = id;
+          
+          // Ajouter une ancre cliquable
+          const anchor = document.createElement('a');
+          anchor.className = 'header-anchor';
+          anchor.href = `#${id}`;
+          anchor.innerHTML = ' <i class="fas fa-link" style="font-size: 0.7em; opacity: 0.3;"></i>';
+          anchor.title = 'Lien direct vers cette section';
+          
+          heading.appendChild(anchor);
+        }
+      });
+    });
+  </script>
+  
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-text">
+        &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+        <div class="footer-version">Version: <span class="version-text">Chargement...</span></div>
+      </div>
+      <ul class="footer-links">
+      </ul>
+    </div>
+  </footer>
+  
+  <!-- Script pour gérer la version dans le footer -->
+  <script src="/js/footer-version.js"></script>
+</body>
+</html>

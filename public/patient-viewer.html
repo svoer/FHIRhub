@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Visualiseur Patient - FHIRHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/sidebar-menu.css">
+    <link rel="stylesheet" href="/css/fhir-browser.css">
+    <link rel="stylesheet" href="/css/support-chatbot.css">
+    <link rel="stylesheet" href="/css/ai-indicator.css">
+    
+    <!-- Scripts -->
+    <script src="/js/support-chatbot.js" defer></script>
+    <script src="/js/ai-provider-indicator.js" defer></script>
+    <script src="/js/include-sidebar.js" defer></script>
+    <script src="/js/sidebar-menu.js" defer></script>
+    <script src="/js/patient-viewer.js" defer></script>
+</head>
+<body>
+    <div class="container">
+      <h1>Visualiseur Patient</h1>
+      
+      <div class="app">
+        <!-- Panel du serveur avec dégradé rouge-orange amélioré -->
+        <div class="server-panel" style="background: linear-gradient(135deg, #e83e28, #fd7e30); box-shadow: 0 5px 15px rgba(232, 62, 40, 0.2); border-radius: 10px; padding: 20px 25px; margin-bottom: 25px;">
+          <div class="server-title" style="font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-server" style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;"></i> 
+            <span>Serveur FHIR connecté</span>
+          </div>
+          <div class="server-info">
+            <label for="serverSelect" style="display: block; margin-bottom: 10px; font-weight: 500;">Choisir le serveur FHIR :</label>
+            <select id="serverSelect" style="background-color: rgba(255,255,255,0.2); color: white; padding: 12px 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.3); width: 100%; font-weight: 500; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+              <option value="https://hapi.fhir.org/baseR4" style="background-color: white; color: black;">HAPI FHIR Public (R4)</option>
+              <option value="http://localhost:8080/fhir" style="background-color: white; color: black;">HAPI FHIR Local</option>
+            </select>
+          </div>
+        </div>
+      
+        <!-- Container de recherche amélioré (design 2025) -->
+        <div class="patient-search-container" style="background-color: white; border-radius: 12px; padding: 25px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 25px;">
+          <div class="patient-search-header" style="margin-bottom: 20px;">
+            <h2 class="patient-search-title" style="color: #e83e28; font-size: 1.5rem; margin: 0 0 10px 0; display: flex; align-items: center; gap: 10px;">
+              <i class="fas fa-user-circle" style="color: white; background: linear-gradient(135deg, #e83e28, #fd7e30); padding: 10px; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 10px rgba(232, 62, 40, 0.2);"></i> 
+              Recherche de patient
+            </h2>
+            <p class="patient-search-subtitle" style="margin: 0; color: #666; font-size: 0.95rem;">Entrez le nom du patient pour commencer votre recherche. La recherche se fait d'abord par nom de famille.</p>
+          </div>
+          
+          <div class="search-input-group" style="position: relative; margin-bottom: 20px;">
+            <i class="fas fa-search" style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+            <input type="text" id="patientSearch" placeholder="Nom complet ou partiel du patient (ex: Mustermann)" 
+                  style="width: 100%; padding: 15px 15px 15px 45px; border-radius: 8px; border: 1px solid #ddd; box-shadow: 0 2px 10px rgba(0,0,0,0.03); font-size: 1rem; transition: all 0.3s ease;">
+          </div>
+          
+          <div class="search-buttons" style="display: flex; gap: 10px;">
+            <button id="searchPatientBtn" class="btn-gradient-primary" 
+                   style="background: linear-gradient(135deg, #e83e28, #fd7e30); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(232, 62, 40, 0.2); transition: all 0.3s ease; cursor: pointer;">
+              <i class="fas fa-search"></i> Rechercher
+            </button>
+            <button id="clearSearchBtn" class="btn-outline-secondary"
+                   style="background: transparent; color: #666; border: 1px solid #ddd; padding: 12px 20px; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; cursor: pointer;">
+              <i class="fas fa-times"></i> Effacer
+            </button>
+          </div>
+          
+          <div id="serverStatus" class="status-display" style="display: none;"></div>
+          
+          <div class="patient-select-group" style="margin-top: 20px;">
+            <label for="patientSelect" style="display: block; margin-bottom: 10px; font-weight: 500; color: #555;">Patients trouvés :</label>
+            <select id="patientSelect" class="patient-select" style="width: 100%; padding: 15px; border-radius: 8px; border: 1px solid #ddd; appearance: none; background: white url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 9l6 6 6-6\"/></svg>') no-repeat right 15px center; background-size: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
+              <option value="">-- Sélectionnez un patient --</option>
+            </select>
+            
+            <div class="search-buttons" style="margin-top: 20px; display: flex; justify-content: flex-end;">
+              <button id="loadPatientBtn" class="btn-gradient-primary" style="background: linear-gradient(135deg, #e83e28, #fd7e30); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 500; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(232, 62, 40, 0.2); transition: all 0.3s ease; cursor: pointer;">
+                <i class="fas fa-user"></i> Charger le patient
+              </button>
+            </div>
+          </div>
+        </div>
+                
+        <div id="patientContainer" class="patient-data-section" style="display: none; background-color: white; border-radius: 12px; padding: 0; box-shadow: 0 5px 20px rgba(0,0,0,0.05); margin-bottom: 25px; overflow: hidden;">
+            <div id="patientHeader" class="patient-header" style="background: linear-gradient(135deg, #e83e28, #fd7e30); border-radius: 0; padding: 30px; color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div class="patient-info">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                            <div style="background: rgba(255,255,255,0.2); width: 50px; height: 50px; border-radius: 25px; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-user-circle" style="font-size: 24px;"></i>
+                            </div>
+                            <h3 id="patientName" style="margin: 0; font-size: 1.6rem; font-weight: 600;">Nom du patient</h3>
+                        </div>
+                        <div id="patientDetails" style="font-size: 1rem; opacity: 0.9; margin-left: 65px;">Détails du patient</div>
+                    </div>
+                    <div class="patient-actions">
+                        <button id="analyzeAIBtn" class="btn-gradient-primary" style="background: rgba(255,255,255,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.3); padding: 12px 20px; border-radius: 8px; color: white; font-weight: 500; display: flex; align-items: center; gap: 10px; transition: all 0.3s ease; cursor: pointer;">
+                          <i class="fas fa-microchip"></i> Analyse IA intelligente
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tabs-container" style="margin-top: 0; padding: 20px;">
+                <div class="tabs" style="display: flex; gap: 2px; border-bottom: 1px solid #eee; margin-bottom: 20px; padding-bottom: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
+                    <div class="tab active" data-tab="summary" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px 8px 0 0; background: linear-gradient(135deg, #e83e28, #fd7e30); color: white; font-weight: 500; cursor: pointer; white-space: nowrap;">
+                        <i class="fas fa-clipboard-list"></i> Résumé
+                    </div>
+                    <div class="tab" data-tab="conditions" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px 8px 0 0; background: #f5f5f5; color: #555; font-weight: 500; cursor: pointer; white-space: nowrap;">
+                        <i class="fas fa-heartbeat" style="color: #e83e28;"></i> Conditions
+                    </div>
+                    <div class="tab" data-tab="observations" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px 8px 0 0; background: #f5f5f5; color: #555; font-weight: 500; cursor: pointer; white-space: nowrap;">
+                        <i class="fas fa-vial" style="color: #fd7e30;"></i> Observations
+                    </div>
+                    <div class="tab" data-tab="medications" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px 8px 0 0; background: #f5f5f5; color: #555; font-weight: 500; cursor: pointer; white-space: nowrap;">
+                        <i class="fas fa-pills" style="color: #e83e28;"></i> Médications
+                    </div>
+                    <div class="tab" data-tab="encounters" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px 8px 0 0; background: #f5f5f5; color: #555; font-weight: 500; cursor: pointer; white-space: nowrap;">
+                        <i class="fas fa-hospital" style="color: #fd7e30;"></i> Consultations
+                    </div>
+                    <div class="tab" data-tab="timeline" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px 8px 0 0; background: #f5f5f5; color: #555; font-weight: 500; cursor: pointer; white-space: nowrap;">
+                        <i class="fas fa-calendar-alt" style="color: #e83e28;"></i> Chronologie
+                    </div>
+                    <div class="tab" data-tab="json" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 8px 8px 0 0; background: #f5f5f5; color: #555; font-weight: 500; cursor: pointer; white-space: nowrap;">
+                        <i class="fas fa-code" style="color: #fd7e30;"></i> JSON
+                    </div>
+                </div>
+                
+                <div class="tab-content active" id="summary" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                    <div id="aiAnalysis" style="margin-bottom: 20px; display: none;"></div>
+                    <div id="summaryContent"></div>
+                </div>
+                
+                <div class="tab-content" id="conditions" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
+                    <div id="conditionsContent">
+                        <div class="loading-resources" style="text-align: center; padding: 30px 20px;">
+                            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 15px; color: #666;">Chargement des conditions médicales...</p>
+                        </div>
+                        <div class="no-resources" style="text-align: center; padding: 30px 20px; display: none;">
+                            <i class="fas fa-heartbeat" style="font-size: 2rem; color: #e83e28; margin-bottom: 15px;"></i>
+                            <h3>Conditions médicales</h3>
+                            <p style="color: #666;">Ce patient n'a pas de conditions médicales enregistrées dans le système.</p>
+                        </div>
+                        <div class="resources-list" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="observations" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
+                    <div id="observationsContent">
+                        <div class="loading-resources" style="text-align: center; padding: 30px 20px;">
+                            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #fd7e30; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 15px; color: #666;">Chargement des observations cliniques...</p>
+                        </div>
+                        <div class="no-resources" style="text-align: center; padding: 30px 20px; display: none;">
+                            <i class="fas fa-vial" style="font-size: 2rem; color: #fd7e30; margin-bottom: 15px;"></i>
+                            <h3>Observations cliniques</h3>
+                            <p style="color: #666;">Ce patient n'a pas d'observations cliniques enregistrées dans le système.</p>
+                        </div>
+                        <div class="resources-list" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="medications" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
+                    <div id="medicationsContent">
+                        <div class="loading-resources" style="text-align: center; padding: 30px 20px;">
+                            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 15px; color: #666;">Chargement des médicaments...</p>
+                        </div>
+                        <div class="no-resources" style="text-align: center; padding: 30px 20px; display: none;">
+                            <i class="fas fa-pills" style="font-size: 2rem; color: #e83e28; margin-bottom: 15px;"></i>
+                            <h3>Médicaments</h3>
+                            <p style="color: #666;">Ce patient n'a pas de médicaments enregistrés dans le système.</p>
+                        </div>
+                        <div class="resources-list" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="encounters" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
+                    <div id="encountersContent">
+                        <div class="loading-resources" style="text-align: center; padding: 30px 20px;">
+                            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #fd7e30; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 15px; color: #666;">Chargement des consultations...</p>
+                        </div>
+                        <div class="no-resources" style="text-align: center; padding: 30px 20px; display: none;">
+                            <i class="fas fa-hospital" style="font-size: 2rem; color: #fd7e30; margin-bottom: 15px;"></i>
+                            <h3>Consultations</h3>
+                            <p style="color: #666;">Ce patient n'a pas de consultations enregistrées dans le système.</p>
+                        </div>
+                        <div class="resources-list" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="timeline" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
+                    <div id="timelineContent">
+                        <div class="loading-resources" style="text-align: center; padding: 30px 20px;">
+                            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 15px; color: #666;">Génération de la chronologie...</p>
+                        </div>
+                        <div class="no-resources" style="text-align: center; padding: 30px 20px; display: none;">
+                            <i class="fas fa-calendar-alt" style="font-size: 2rem; color: #e83e28; margin-bottom: 15px;"></i>
+                            <h3>Chronologie</h3>
+                            <p style="color: #666;">Ce patient n'a pas d'événements chronologiques enregistrés dans le système.</p>
+                        </div>
+                        <div class="resources-list" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="json" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
+                    <h3 style="margin-top: 0; color: #fd7e30;">Données JSON brutes</h3>
+                    <pre id="jsonContent" style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></pre>
+                </div>
+            </div>
+        </div>
+      </div>
+        
+      <footer>
+          <p>&copy; 2025 FHIRHub - Plateforme d'interopérabilité HL7 FHIR</p>
+      </footer>
+    </div>
+    
+    <!-- Script déplacé vers /js/patient-viewer.js -->
+    <script>
+        // La logique a été déplacée vers /js/patient-viewer.js
+        /*document.addEventListener('DOMContentLoaded', function() {
+            // Variables globales
+            const serverSelect = document.getElementById('serverSelect');
+            const patientSearch = document.getElementById('patientSearch');
+            const searchPatientBtn = document.getElementById('searchPatientBtn');
+            const patientSelect = document.getElementById('patientSelect');
+            const loadPatientBtn = document.getElementById('loadPatientBtn');
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            
+            let patientData = null;
+            
+            // Navigation par onglets
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Désactiver tous les onglets
+                    tabs.forEach(t => {
+                        t.classList.remove('active');
+                        // Réinitialiser le style
+                        t.style.background = '#f5f5f5';
+                        t.style.color = '#555';
+                    });
+                    
+                    // Désactiver tous les contenus
+                    tabContents.forEach(c => {
+                        c.classList.remove('active');
+                        c.style.display = 'none';
+                    });
+                    
+                    // Activer l'onglet sélectionné
+                    this.classList.add('active');
+                    // Appliquer le style actif (dégradé rouge-orange)
+                    this.style.background = 'linear-gradient(135deg, #e83e28, #fd7e30)';
+                    this.style.color = 'white';
+                    
+                    // Activer le contenu correspondant
+                    const tabId = this.getAttribute('data-tab');
+                    const activeTab = document.getElementById(tabId);
+                    activeTab.classList.add('active');
+                    activeTab.style.display = 'block';
+                });
+            });
+            
+            // Fonction pour formater le nom du patient
+            function formatPatientName(nameArray) {
+                if (!nameArray || nameArray.length === 0) {
+                    return 'Patient sans nom';
+                }
+                
+                const name = nameArray[0];
+                const given = name.given || [];
+                const family = name.family || '';
+                
+                return `${given.join(' ')} ${family}`.trim();
+            }
+            
+            // Fonction pour les messages d'état
+            function showStatus(message, type = 'info') {
+                const statusElement = document.getElementById('serverStatus');
+                statusElement.innerHTML = message;
+                statusElement.className = 'status-display ' + type;
+                statusElement.style.display = 'block';
+            }
+            
+            // Rechercher des patients (version simple mais fiable)
+            function searchPatients() {
+                const serverUrl = serverSelect.value;
+                const searchTerm = patientSearch.value.trim();
+                
+                if (!searchTerm) {
+                    alert('Veuillez entrer un nom de patient');
+                    return;
+                }
+                
+                showStatus('<i class="fas fa-spinner fa-spin"></i> Recherche en cours...', 'info');
+                
+                // Version simplifiée et éprouvée de la recherche
+                let searchUrl = `${serverUrl}/Patient?family=${encodeURIComponent(searchTerm)}&_count=50`;
+                
+                // Essayer une première recherche par nom de famille
+                fetch(searchUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur serveur: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Si pas de résultats avec 'family', essayer avec 'name'
+                        if (!data.entry || data.entry.length === 0) {
+                            console.log('Pas de résultats avec family, tentative avec name');
+                            searchUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchTerm)}&_count=50`;
+                            return fetch(searchUrl).then(response => response.json());
+                        }
+                        return data;
+                    })
+                    .then(data => {
+                        // Traiter les résultats
+                        if (data.entry && data.entry.length > 0) {
+                            // Vider le sélecteur de patients
+                            patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
+                            
+                            // Ajouter les patients trouvés
+                            data.entry.forEach(entry => {
+                                if (entry.resource && entry.resource.resourceType === 'Patient') {
+                                    const patient = entry.resource;
+                                    const name = formatPatientName(patient.name);
+                                    
+                                    const option = document.createElement('option');
+                                    option.value = patient.id;
+                                    option.textContent = `${name} (${patient.gender || '?'})`;
+                                    option.dataset.patient = JSON.stringify(patient);
+                                    
+                                    patientSelect.appendChild(option);
+                                }
+                            });
+                            
+                            showStatus(`<i class="fas fa-check-circle"></i> ${data.entry.length} patients trouvés`, 'success');
+                            
+                            // Auto-sélectionner si un seul résultat
+                            if (data.entry.length === 1) {
+                                patientSelect.selectedIndex = 1; // Premier patient
+                            }
+                        } else {
+                            patientSelect.innerHTML = '<option value="">-- Aucun patient trouvé --</option>';
+                            showStatus('<i class="fas fa-exclamation-circle"></i> Aucun patient trouvé', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur recherche:', error);
+                        patientSelect.innerHTML = '<option value="">-- Erreur de recherche --</option>';
+                        showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${error.message}`, 'error');
+                    });
+            }
+            
+            // Effacer la recherche
+            function clearSearch() {
+                patientSearch.value = '';
+                patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
+                document.getElementById('serverStatus').style.display = 'none';
+                document.getElementById('patientContainer').style.display = 'none';
+            }
+            
+            // Charger les détails d'un patient et ses ressources associées
+            function loadPatient() {
+                if (!patientSelect.value) {
+                    alert('Veuillez sélectionner un patient');
+                    return;
+                }
+                
+                const patientId = patientSelect.value;
+                const server = serverSelect.value;
+                
+                try {
+                    const selectedOption = patientSelect.options[patientSelect.selectedIndex];
+                    patientData = JSON.parse(selectedOption.dataset.patient);
+                    
+                    // Afficher les détails
+                    document.getElementById('patientName').textContent = formatPatientName(patientData.name);
+                    document.getElementById('patientDetails').textContent = 
+                        `ID: ${patientData.id} | Genre: ${patientData.gender || 'Non spécifié'} | Naissance: ${patientData.birthDate || 'Non spécifiée'}`;
+                    
+                    // Afficher le conteneur de patient
+                    document.getElementById('patientContainer').style.display = 'block';
+                    
+                    // Charger toutes les ressources associées au patient
+                    loadPatientConditions(patientId, server);
+                    loadPatientObservations(patientId, server);
+                    loadPatientMedications(patientId, server);
+                    loadPatientEncounters(patientId, server);
+                    generateTimeline(patientId, server);
+                    
+                    // Résumé amélioré
+                    document.getElementById('summaryContent').innerHTML = `
+                        <div class="patient-summary">
+                            <h3 style="color: #e83e28; margin-top: 0; font-size: 1.3rem; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;">Résumé du patient</h3>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
+                                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 3px solid #e83e28;">
+                                    <h4 style="margin-top: 0; font-size: 1.1rem; color: #555;">Informations démographiques</h4>
+                                    <div style="margin-top: 12px;">
+                                        <p style="margin: 8px 0; display: flex; justify-content: space-between;">
+                                            <span style="font-weight: 500; color: #666;">Identifiant:</span> 
+                                            <span style="color: #333;">${patientData.id}</span>
+                                        </p>
+                                        <p style="margin: 8px 0; display: flex; justify-content: space-between;">
+                                            <span style="font-weight: 500; color: #666;">Nom complet:</span> 
+                                            <span style="color: #333;">${formatPatientName(patientData.name)}</span>
+                                        </p>
+                                        <p style="margin: 8px 0; display: flex; justify-content: space-between;">
+                                            <span style="font-weight: 500; color: #666;">Genre:</span> 
+                                            <span style="color: #333;">${patientData.gender || 'Non spécifié'}</span>
+                                        </p>
+                                        <p style="margin: 8px 0; display: flex; justify-content: space-between;">
+                                            <span style="font-weight: 500; color: #666;">Date de naissance:</span> 
+                                            <span style="color: #333;">${patientData.birthDate || 'Non spécifiée'}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 3px solid #fd7e30;">
+                                    <h4 style="margin-top: 0; font-size: 1.1rem; color: #555;">Coordonnées</h4>
+                                    <div style="margin-top: 12px;">
+                                        <p style="color: #777; font-style: italic;">
+                                            ${patientData.telecom ? 
+                                              `<ul style="padding-left: 20px; margin: 10px 0;">
+                                                ${patientData.telecom.map(t => `<li>${t.system}: ${t.value}</li>`).join('')}
+                                               </ul>` 
+                                              : 'Aucune information de contact disponible'}
+                                        </p>
+                                        <p style="color: #777; font-style: italic; margin-top: 15px;">
+                                            ${patientData.address ? 
+                                              `<strong>Adresse:</strong><br>${patientData.address.map(a => 
+                                                `${a.line ? a.line.join(', ') : ''}<br>
+                                                 ${a.postalCode || ''} ${a.city || ''}<br>
+                                                 ${a.country || ''}`).join('<br>')}` 
+                                              : 'Aucune adresse disponible'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="margin-top: 25px; background: rgba(232, 62, 40, 0.05); padding: 15px; border-radius: 8px; text-align: center;">
+                                <p style="margin: 0; color: #666;">
+                                    <i class="fas fa-info-circle" style="color: #fd7e30;"></i> 
+                                    Pour voir toutes les données détaillées du patient, utilisez les onglets ci-dessus.
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Afficher les données JSON
+                    document.getElementById('jsonContent').textContent = JSON.stringify(patientData, null, 2);
+                    
+                    showStatus('<i class="fas fa-check-circle"></i> Patient chargé avec succès', 'success');
+                } catch (error) {
+                    console.error('Erreur de chargement:', error);
+                    showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${error.message}`, 'error');
+                }
+            }
+            
+            // Événements
+            searchPatientBtn.addEventListener('click', searchPatients);
+            clearSearchBtn.addEventListener('click', clearSearch);
+            loadPatientBtn.addEventListener('click', loadPatient);
+            
+            // Fonction pour générer un résumé patient factuel pour l'IA
+            function generatePatientSummary(patient) {
+                // Calculer l'âge approximatif si la date de naissance est disponible
+                let ageInfo = "âge non disponible";
+                if (patient.birthDate) {
+                    const birthYear = new Date(patient.birthDate).getFullYear();
+                    const currentYear = new Date().getFullYear();
+                    const age = currentYear - birthYear;
+                    ageInfo = `${age} ans`;
+                }
+                
+                // Obtenir les informations démographiques de façon factuelle
+                const gender = patient.gender === 'male' ? 'masculin' : 
+                               patient.gender === 'female' ? 'féminin' : 'non spécifié';
+                
+                // Vérifier quelles informations sont réellement disponibles
+                const hasName = patient.name && patient.name.length > 0;
+                const hasGender = patient.gender ? true : false;
+                const hasBirthDate = patient.birthDate ? true : false;
+                const hasAddress = patient.address && patient.address.length > 0;
+                const hasTelecom = patient.telecom && patient.telecom.length > 0;
+                
+                // Calculer le pourcentage d'informations disponibles de façon factuelle
+                const totalFields = 5; // name, gender, birthDate, address, telecom
+                const availableFields = [hasName, hasGender, hasBirthDate, hasAddress, hasTelecom].filter(v => v).length;
+                const completionPercent = Math.round((availableFields / totalFields) * 100);
+                
+                // Créer une description synthétique factuelle
+                const patientName = formatPatientName(patient.name);
+                
+                return `
+                    <div style="background: rgba(232, 62, 40, 0.05); padding: 20px; border-radius: 10px;">
+                        <h4 style="color: #e83e28; margin-top: 0;">Informations disponibles</h4>
+                        <p>
+                            Identifiant: <strong>${patient.id}</strong><br>
+                            Nom: <strong>${patientName}</strong><br>
+                            Genre: ${gender}<br>
+                            Date de naissance: ${patient.birthDate || 'Non disponible'} (${ageInfo})
+                        </p>
+                        
+                        <h4 style="color: #fd7e30; margin-bottom: 10px;">Analyse technique du dossier</h4>
+                        <p>
+                            <i class="fas fa-clipboard-check" style="color: #fd7e30;"></i> 
+                            <strong>${completionPercent}%</strong> des informations démographiques de base sont complétées.
+                        </p>
+                        
+                        <div style="display: flex; margin: 15px 0;">
+                            <div style="flex: 1; text-align: center; padding: 10px; background: ${hasName ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}; border-radius: 4px; margin-right: 5px;">
+                                <i class="fas ${hasName ? 'fa-check' : 'fa-times'}" style="color: ${hasName ? '#28a745' : '#dc3545'};"></i><br>
+                                <span style="font-size: 0.9em;">Nom</span>
+                            </div>
+                            <div style="flex: 1; text-align: center; padding: 10px; background: ${hasGender ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}; border-radius: 4px; margin-right: 5px;">
+                                <i class="fas ${hasGender ? 'fa-check' : 'fa-times'}" style="color: ${hasGender ? '#28a745' : '#dc3545'};"></i><br>
+                                <span style="font-size: 0.9em;">Genre</span>
+                            </div>
+                            <div style="flex: 1; text-align: center; padding: 10px; background: ${hasBirthDate ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}; border-radius: 4px; margin-right: 5px;">
+                                <i class="fas ${hasBirthDate ? 'fa-check' : 'fa-times'}" style="color: ${hasBirthDate ? '#28a745' : '#dc3545'};"></i><br>
+                                <span style="font-size: 0.9em;">Naissance</span>
+                            </div>
+                            <div style="flex:.85; text-align: center; padding: 10px; background: ${hasAddress ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}; border-radius: 4px; margin-right: 5px;">
+                                <i class="fas ${hasAddress ? 'fa-check' : 'fa-times'}" style="color: ${hasAddress ? '#28a745' : '#dc3545'};"></i><br>
+                                <span style="font-size: 0.9em;">Adresse</span>
+                            </div>
+                            <div style="flex: .85; text-align: center; padding: 10px; background: ${hasTelecom ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}; border-radius: 4px;">
+                                <i class="fas ${hasTelecom ? 'fa-check' : 'fa-times'}" style="color: ${hasTelecom ? '#28a745' : '#dc3545'};"></i><br>
+                                <span style="font-size: 0.9em;">Contact</span>
+                            </div>
+                        </div>
+                        
+                        <div style="background: rgba(253, 126, 48, 0.1); padding: 10px; border-radius: 6px; margin-top: 15px; text-align: center;">
+                            <p style="margin: 0; font-style: italic; color: #666;">
+                                Cette analyse est purement factuelle, basée uniquement sur les données disponibles dans le dossier.
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Analyse IA (utilise le fournisseur d'IA actif)
+            document.getElementById('analyzeAIBtn').addEventListener('click', function() {
+                if (!patientData) {
+                    alert('Veuillez charger un patient d\'abord');
+                    return;
+                }
+                
+                const aiAnalysisDiv = document.getElementById('aiAnalysis');
+                aiAnalysisDiv.style.display = 'block';
+                
+                // Montrer d'abord un indicateur de chargement
+                aiAnalysisDiv.innerHTML = `
+                    <div style="text-align: center; padding: 30px;">
+                        <div style="display: inline-block; width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <p style="margin-top: 15px; color: #666;">Analyse IA en cours...</p>
+                    </div>
+                    <style>
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    </style>
+                `;
+                
+                // Appel API au backend pour utiliser le fournisseur d'IA actif
+                fetch('/api/ai/analyze-patient', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patientId: patientData.id,
+                        serverUrl: serverSelect.value,
+                        patientData: patientData
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        aiAnalysisDiv.innerHTML = data.analysis || generatePatientSummary(patientData);
+                    } else {
+                        // En cas d'erreur, utiliser l'analyse locale comme fallback
+                        console.error('Erreur d\'analyse IA:', data.error);
+                        aiAnalysisDiv.innerHTML = generatePatientSummary(patientData);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de l\'appel IA:', error);
+                    aiAnalysisDiv.innerHTML = generatePatientSummary(patientData);
+                });
+            });
+            
+            // Permettre la recherche avec la touche Entrée
+            patientSearch.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    searchPatients();
+                }
+            });
+        });*/
+    </script>
+</body>
+</html>

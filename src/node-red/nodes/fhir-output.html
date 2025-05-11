@@ -1,0 +1,53 @@
+<!--
+  Nœud de sortie FHIR pour Node-RED
+-->
+
+<script type="text/javascript">
+    RED.nodes.registerType('fhirhub-fhir-output', {
+        category: 'fhirhub',
+        color: '#1D3557',
+        defaults: {
+            name: { value: "" }
+        },
+        inputs: 1,
+        outputs: 0,
+        icon: "font-awesome/fa-sign-out",
+        label: function() {
+            return this.name || "FHIR Output";
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "FHIR Output"
+    });
+</script>
+
+<script type="text/html" data-template-name="fhirhub-fhir-output">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Nom</label>
+        <input type="text" id="node-input-name" placeholder="Nom">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="fhirhub-fhir-output">
+    <p>Ce nœud représente le point final d'un workflow de traitement FHIR.</p>
+    <h3>Entrées</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">object</span></dt>
+        <dd>Les données FHIR à traiter (si aucune propriété fhir n'est présente).</dd>
+        <dt>fhir <span class="property-type">object</span></dt>
+        <dd>Les données FHIR à traiter (prioritaire sur payload si présent).</dd>
+    </dl>
+    <h3>Détails</h3>
+    <p>Ce nœud est généralement utilisé comme point final des workflows pour traiter les
+    données FHIR résultant d'une conversion ou d'une transformation.</p>
+    <p>Il affiche des informations sur le type de ressource et le nombre de ressources
+    contenues dans les données FHIR.</p>
+    <p>Dans des implémentations plus avancées, ce nœud pourrait:</p>
+    <ul>
+        <li>Enregistrer les données FHIR dans une base de données</li>
+        <li>Envoyer les données FHIR à un serveur externe</li>
+        <li>Valider les données FHIR selon des profils spécifiques</li>
+        <li>Générer des notifications basées sur le contenu FHIR</li>
+    </ul>
+</script>

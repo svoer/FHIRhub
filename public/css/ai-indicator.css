@@ -1,0 +1,137 @@
+/**
+ * Styles pour l'indicateur de fournisseur d'IA actif
+ * Affiche visuellement le statut du fournisseur d'IA dans l'interface utilisateur
+ */
+
+.ai-provider-indicator {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-right: 20px;
+}
+
+#ai-provider-badge {
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#ai-provider-badge:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+#ai-provider-badge i {
+  margin-right: 6px;
+  font-size: 1rem;
+}
+
+#ai-provider-badge .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4CAF50; /* Vert pour actif */
+  margin-right: 8px;
+}
+
+#ai-provider-badge.inactive .dot {
+  background-color: #F44336; /* Rouge pour inactif */
+}
+
+#ai-provider-badge.loading .dot {
+  background-color: #FFC107; /* Jaune pour chargement */
+  animation: pulse 1.5s infinite;
+}
+
+#ai-provider-model {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  margin-left: 5px;
+}
+
+/* Animation de pulsation pour indiquer le chargement */
+@keyframes pulse {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+/* Style pour le tooltip */
+.ai-tooltip {
+  position: absolute;
+  background: #333;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: none;
+  max-width: 250px;
+  top: 45px;
+  right: 20px;
+}
+
+.ai-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 15px;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #333;
+}
+
+.ai-provider-indicator:hover .ai-tooltip {
+  display: block;
+}
+
+/* Style pour les détails dans le tooltip */
+.ai-tooltip-details {
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-tooltip-detail {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 3px;
+  font-size: 0.7rem;
+}
+
+.ai-tooltip-label {
+  color: #aaa;
+  margin-right: 10px;
+}
+
+/* Responsive pour écrans plus petits */
+@media (max-width: 768px) {
+  #ai-provider-badge {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+  
+  #ai-provider-badge i {
+    margin-right: 4px;
+    font-size: 0.8rem;
+  }
+  
+  .ai-provider-indicator {
+    margin-right: 10px;
+  }
+}

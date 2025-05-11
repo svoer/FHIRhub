@@ -1,0 +1,79 @@
+<!-- Header fixe avec menu hamburger et recherche -->
+<header class="header">
+  <div class="container">
+    <!-- Bouton menu hamburger -->
+    <button id="menu-toggle" class="menu-toggle" title="Menu">
+      <i class="fas fa-bars"></i>
+    </button>
+    
+    <!-- Logo -->
+    <div class="logo">
+      <img src="/img/flame-icon-white.svg" alt="FHIRHub Logo">
+      <span>FHIRHub</span>
+    </div>
+    
+    <!-- Indicateur de fournisseur d'IA actif -->
+    <div class="ai-provider-indicator">
+      <div id="ai-provider-badge" title="Fournisseur d'IA actif">
+        <i class="fas fa-robot"></i>
+        <span id="ai-provider-name">Chargement...</span>
+      </div>
+      <!-- Le tooltip sera créé dynamiquement par le JavaScript -->
+    </div>
+    
+    <!-- Barre de recherche globale (désactivée pour l'instant) -->
+    <div class="logo-spacer"></div>
+    
+    <!-- Contrôles utilisateur -->
+    <div class="user-controls">
+      <a href="/user-profile.html" class="user-profile" title="Mon profil">
+        <i class="fas fa-user-circle"></i>
+        <span class="user-name">Admin</span>
+        <i class="fas fa-cog user-settings-icon"></i>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- Menu latéral -->
+<aside id="sidebar" class="sidebar">
+  <!-- Menu de navigation hiérarchique -->
+  <ul class="nav-menu">
+    <li class="nav-category">Principal</li>
+    <li><a href="/dashboard.html" data-page="dashboard"><i class="fas fa-chart-line"></i> Tableau de bord <button class="favorite-btn" data-url="/dashboard.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    
+    <li class="nav-category">Conversion</li>
+    <li><a href="/convert.html" data-page="convert"><i class="fas fa-exchange-alt"></i> HL7 vers FHIR <button class="favorite-btn" data-url="/convert.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    
+    <li class="nav-category">FHIR</li>
+    <li><a href="/direct-fhir.html" data-page="direct-fhir"><i class="fas fa-search"></i> Explorateur FHIR <button class="favorite-btn" data-url="/direct-fhir.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    <li><a href="/patient-viewer.html" data-page="patient-viewer"><i class="fas fa-user-md"></i> Visualiseur Patient <button class="favorite-btn" data-url="/patient-viewer.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    <li><a href="/fhir-settings.html" data-page="fhir-settings"><i class="fas fa-cog"></i> Configuration FHIR <button class="favorite-btn" data-url="/fhir-settings.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    
+    <li class="nav-category">Administration</li>
+    <li><a href="/applications.html" data-page="applications"><i class="fas fa-th"></i> Applications <button class="favorite-btn" data-url="/applications.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    <li><a href="/api-keys.html" data-page="api-keys"><i class="fas fa-key"></i> Clés API <button class="favorite-btn" data-url="/api-keys.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    <li><a href="/users.html" data-page="users"><i class="fas fa-users"></i> Utilisateurs <button class="favorite-btn" data-url="/users.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    
+    <li class="nav-category">Configuration</li>
+    <li><a href="/terminologies.html" data-page="terminologies"><i class="fas fa-book-medical"></i> Terminologies <button class="favorite-btn" data-url="/terminologies.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    <li><a href="/ai-providers.html" data-page="ai-providers"><i class="fas fa-sliders-h"></i> Paramètres IA <button class="favorite-btn" data-url="/ai-providers.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    
+    <li class="nav-category">Ressources</li>
+    <li><a href="/documentation.html" data-page="documentation"><i class="fas fa-file-alt"></i> Documentation <button class="favorite-btn" data-url="/documentation.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    <li><a href="/api-reference.html" data-page="api-reference"><i class="fas fa-code"></i> API Reference <button class="favorite-btn" data-url="/api-reference.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    <li><a href="/faq.html" data-page="faq"><i class="fas fa-question-circle"></i> FAQ <button class="favorite-btn" data-url="/faq.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
+    
+    <li class="favorites-divider"><i class="fas fa-star"></i> Favoris</li>
+    <ul id="favorites-list" class="favorites-list">
+      <!-- Les favoris seront ajoutés ici dynamiquement -->
+      <li><p class="no-favorites">Aucun favori</p></li>
+    </ul>
+    <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
+  </ul>
+</aside>
+
+<!-- Bouton mobile pour ouvrir le sidebar -->
+<div id="sidebar-toggle-mobile" class="sidebar-toggle-mobile">
+  <i class="fas fa-bars"></i>
+</div>

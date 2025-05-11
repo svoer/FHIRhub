@@ -1,0 +1,152 @@
+/* Personnalisation Node-RED pour FHIRHub */
+
+/* En-tête */
+.red-ui-header {
+    background: linear-gradient(135deg, #e63946, #f4a261) !important;
+    color: white !important;
+    border-bottom: none !important;
+}
+
+/* Logo et titre */
+.red-ui-header-logo {
+    filter: brightness(2); /* Rendre le logo plus blanc */
+}
+
+.red-ui-header .red-ui-header-logo span {
+    color: white !important;
+    font-weight: bold;
+}
+
+/* Palette */
+.red-ui-palette-category {
+    border-radius: 6px;
+    margin-bottom: 10px;
+}
+
+.red-ui-palette-category.palette-category-fhirhub > .palette-header {
+    background: linear-gradient(135deg, #e63946, #f4a261) !important;
+    color: white !important;
+    border: none !important;
+    font-weight: bold;
+    border-radius: 6px 6px 0 0;
+}
+
+/* Nœuds FHIRHub */
+.red-ui-node.red-ui-node-type-fhirhub-hl7-input .red-ui-node-icon-container {
+    background: #e63946 !important;
+}
+
+.red-ui-node.red-ui-node-type-fhirhub-fhir-converter .red-ui-node-icon-container {
+    background: #457b9d !important;
+}
+
+.red-ui-node.red-ui-node-type-fhirhub-fhir-output .red-ui-node-icon-container {
+    background: #1d3557 !important;
+}
+
+.red-ui-node.red-ui-node-type-fhirhub-segment-extractor .red-ui-node-icon-container {
+    background: #a8dadc !important;
+}
+
+.red-ui-node.red-ui-node-type-fhirhub-fhir-validator .red-ui-node-icon-container {
+    background: #f1faee !important;
+    color: #1d3557;
+}
+
+/* Boutons et actions */
+.red-ui-button {
+    border-radius: 4px !important;
+}
+
+.red-ui-button.primary {
+    background: #e63946 !important;
+    border-color: #c1121f !important;
+}
+
+.red-ui-button.primary:hover {
+    background: #c1121f !important;
+}
+
+/* Onglets */
+.red-ui-tabs ul li.active a {
+    border-top-color: #e63946 !important;
+}
+
+/* Thème général */
+.red-ui-search-result-node.selected {
+    background: rgba(230, 57, 70, 0.1) !important;
+    border-color: #e63946 !important;
+}
+
+.red-ui-workspace-chart .red-ui-workspace-chart-grid-h,
+.red-ui-workspace-chart .red-ui-workspace-chart-grid-v {
+    border-color: rgba(29, 53, 87, 0.1) !important;
+}
+
+/* Dialogue de propriétés */
+.red-ui-editor-dialog-box {
+    border-top: 4px solid #e63946 !important;
+    border-radius: 6px !important;
+}
+
+/* Widgets personnalisés */
+.red-ui-typedInput {
+    border-radius: 4px !important;
+}
+
+.red-ui-typedInput.input-error {
+    border-color: #e63946 !important;
+}
+
+/* Styles pour les fils de connexion entre nœuds */
+.red-ui-flow-link {
+    stroke: #457b9d !important;
+    stroke-width: 2px !important;
+}
+
+.red-ui-flow-link-active {
+    stroke: #e63946 !important;
+    stroke-width: 3px !important;
+}
+
+/* Info panel */
+.red-ui-sidebar-info dt {
+    color: #e63946 !important;
+}
+
+/* Tooltip personnalisé */
+.red-ui-tooltip {
+    background: #1d3557 !important;
+    border-color: #457b9d !important;
+}
+
+/* Barre de notification */
+.red-ui-notification {
+    border-left: 5px solid #e63946 !important;
+}
+
+/* État des déploiements */
+#red-ui-header-button-deploy {
+    background: #e63946 !important;
+    border-color: #c1121f !important;
+}
+
+#red-ui-header-button-deploy.disabled {
+    background: #f1faee !important;
+    color: #457b9d !important;
+}
+
+/* Footer */
+.red-ui-footer {
+    border-top: 1px solid rgba(29, 53, 87, 0.1) !important;
+}
+
+/* Styles pour les contextes */
+.red-ui-context-panel .debug-message {
+    border-left: 3px solid #e63946 !important;
+}
+
+/* Mode sombre pour les éditeurs */
+.ace_editor.ace-monokai {
+    background-color: #2c3e50 !important;
+}

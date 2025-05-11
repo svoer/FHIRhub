@@ -1,0 +1,481 @@
+/**
+ * Styles améliorés pour le navigateur FHIR Pro
+ * Optimisés pour une meilleure expérience utilisateur et gestion des états d'erreur
+ */
+
+/* Style pour les types de ressources prioritaires */
+.resource-type-item.priority .resource-type-link {
+  border-left: 3px solid var(--red-dark);
+}
+
+/* Styles pour les ressources avec comptage */
+.resource-count.loading {
+  background-color: #f5f5f5;
+  color: #888;
+  animation: pulse 1.5s infinite;
+}
+
+.resource-count.error {
+  background-color: rgba(244, 67, 54, 0.1);
+  color: #f44336;
+}
+
+.resource-count.unknown {
+  background-color: rgba(255, 152, 0, 0.1);
+  color: #ff9800;
+}
+
+/* Animation de pulsation pour les compteurs en cours de chargement */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
+/* Amélioration de l'affichage des ressources */
+.result-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.result-item.loading::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--red-medium), transparent);
+  animation: loadingBar 2s infinite;
+}
+
+@keyframes loadingBar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Meilleure visualisation des erreurs de serveur */
+.server-error-banner {
+  background: linear-gradient(135deg, #ffebee, #ffcdd2);
+  border-left: 4px solid #f44336;
+  color: #c62828;
+  padding: 10px 15px;
+  margin: 10px 0;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.server-error-banner i {
+  font-size: 1.2rem;
+}
+
+.server-warning-banner {
+  background: linear-gradient(135deg, #fff8e1, #ffecb3);
+  border-left: 4px solid #ffc107;
+  color: #ff8f00;
+  padding: 10px 15px;
+  margin: 10px 0;
+  border-radius: 5px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Indicateur de ressource navigable, même sans comptage précis */
+.resource-navigable-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4caf50;
+  margin-right: 6px;
+}
+
+/* Styles améliorés pour le menu déroulant des ressources */
+select.form-control {
+  position: relative;
+  width: 100%;
+  height: auto;
+  padding: 12px 15px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234a5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* Forcer l'apparence native dans les navigateurs qui l'imposent */
+@supports (-moz-appearance:none) {
+  select.form-control {
+    text-indent: 0.01px;
+    text-overflow: '';
+    padding-right: 30px;
+  }
+}
+
+/* Styles pour les options et les groupes d'options */
+select option, select optgroup {
+  font-size: 14px;
+}
+
+select optgroup {
+  font-weight: bold;
+  color: #f44336;
+  background-color: #fff5f5;
+  padding: 8px;
+}
+
+select optgroup option {
+  font-weight: normal;
+  color: #2d3748;
+  background-color: white;
+  padding-left: 15px;
+  margin: 4px 0;
+}
+
+/* Amélioration des contrôles de formulaire */
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.control-group label {
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 4px;
+}
+
+.param-pair {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.param-pair .param-name,
+.param-pair .param-value {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Boutons d'action */
+.action-buttons {
+  display: flex;
+  gap: 15px;
+  margin-top: 15px;
+  justify-content: flex-start;
+  width: 100%;
+}
+
+.btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 120px;
+  height: 46px;
+}
+
+/* Styles pour le visualiseur patient */
+.patient-resources-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+.patient-resource-card {
+  flex: 1;
+  min-width: 250px;
+  max-width: 100%;
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+
+.patient-resource-card:hover {
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.patient-resource-title {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #2d3748;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.patient-resource-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  background-color: var(--red-medium);
+  color: white;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0 8px;
+}
+
+.status-display {
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  animation: fadeInRight 0.3s ease;
+}
+
+@keyframes fadeInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.status-display.loading {
+  background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+  color: #2563EB;
+  border-left: 4px solid #3B82F6;
+}
+
+.status-display.success {
+  background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+  color: #16A34A;
+  border-left: 4px solid #22C55E;
+}
+
+.status-display.error {
+  background: linear-gradient(135deg, #FEF2F2, #FEE2E2);
+  color: #DC2626;
+  border-left: 4px solid #EF4444;
+}
+
+.status-display.warning {
+  background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
+  color: #D97706;
+  border-left: 4px solid #F59E0B;
+}
+
+/* Amélioration des styles pour le patient-viewer */
+.patient-search-container {
+  background: linear-gradient(135deg, #fff, #f9fafb);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  margin-bottom: 25px;
+  border: 1px solid #edf2f7;
+}
+
+.patient-search-header {
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+  padding-bottom: 15px;
+}
+
+.patient-search-title {
+  color: #e83e28;
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.patient-search-title i {
+  color: #fd7e30;
+}
+
+.patient-search-subtitle {
+  color: #718096;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+.server-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  font-weight: 500;
+  margin-bottom: 15px;
+}
+
+.server-title i {
+  font-size: 1.1rem;
+}
+
+.server-info {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 12px;
+  backdrop-filter: blur(2px);
+  font-size: 0.9rem;
+}
+
+.search-input-group {
+  display: flex;
+  align-items: center;
+  position: relative;
+  margin-bottom: 15px;
+}
+
+.search-input-group input {
+  padding-left: 40px;
+  height: 50px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  width: 100%;
+}
+
+.search-input-group input:focus {
+  border-color: #e83e28;
+  box-shadow: 0 0 0 3px rgba(232, 62, 40, 0.15);
+}
+
+.search-input-group i {
+  position: absolute;
+  left: 15px;
+  color: #718096;
+  font-size: 1.1rem;
+}
+
+.search-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.btn-gradient-primary {
+  background: linear-gradient(135deg, #e83e28, #fd7e30);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(232, 62, 40, 0.2);
+}
+
+.btn-gradient-primary:hover {
+  background: linear-gradient(135deg, #d03a25, #ea7329);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(232, 62, 40, 0.25);
+}
+
+.btn-outline-secondary {
+  background: transparent;
+  color: #4a5568;
+  border: 2px solid #e2e8f0;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.patient-select-group {
+  margin: 25px 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 15px;
+  background-color: #f8fafc;
+}
+
+.patient-select-group label {
+  font-weight: 500;
+  color: #2d3748;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.patient-select {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+
+.patient-select:focus {
+  border-color: #e83e28;
+  box-shadow: 0 0 0 3px rgba(232, 62, 40, 0.15);
+  outline: none;
+}
+
+.patient-select option {
+  padding: 10px;
+}
+
+.patient-data-section {
+  background-color: white;
+  border-radius: 12px;
+  padding: 25px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  margin-top: 30px;
+  border: 1px solid #edf2f7;
+}
+
+.patient-data-title {
+  color: var(--red-dark);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}

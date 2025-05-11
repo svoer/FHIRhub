@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Explorateur FHIR - FHIRHub</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/sidebar-menu.css">
+    <link rel="stylesheet" href="/css/fhir-browser.css">
+    
+    <!-- Inclusions du chatbot de support -->
+    <link rel="stylesheet" href="/css/support-chatbot.css">
+    <script src="/js/support-chatbot.js" defer></script>
+    
+    <!-- Inclusion du menu latéral avec version corrigée -->
+    <script src="/js/include-sidebar.js" defer></script>
+    <script src="/js/sidebar-menu.js" defer></script>
+    <!-- Script d'optimisation pour la navigation FHIR -->
+    <script src="/js/fhir-browser-optimization.js" defer></script>
+    
+    <style>
+        /* Design UX 2025 pour l'explorateur FHIR */
+        .main-content {
+            padding: 20px;
+        }
+        
+        .app {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .fhir-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+            margin-bottom: 20px;
+            transition: box-shadow 0.3s ease;
+        }
+        
+        .fhir-container:hover {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+        
+        .header-panel {
+            background: linear-gradient(135deg, #e83e28, #fd7e30);
+            color: white;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-panel h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 500;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at top right, rgba(255,255,255,0.2), transparent 70%);
+            z-index: 0;
+        }
+        
+        .tab-nav {
+            display: flex;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .tab-button {
+            padding: 15px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-weight: 500;
+            color: #4a5568;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .tab-button::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #e83e28, #fd7e30);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+        }
+        
+        .tab-button:hover {
+            color: #e83e28;
+        }
+        
+        .tab-button.active {
+            color: #e83e28;
+        }
+        
+        .tab-button.active::after {
+            width: 100%;
+        }
+        
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .server-selector {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .server-select {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            background-color: #fff;
+        }
+        
+        .server-select:focus {
+            border-color: #e83e28;
+            box-shadow: 0 0 0 3px rgba(232, 62, 40, 0.1);
+            outline: none;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-width: 120px;
+            height: 46px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #e83e28, #fd7e30);
+            color: white;
+            box-shadow: 0 4px 10px rgba(232, 62, 40, 0.2);
+        }
+        
+        .btn-primary:hover {
+            box-shadow: 0 6px 15px rgba(232, 62, 40, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background-color: #718096;
+            color: white;
+            box-shadow: 0 4px 10px rgba(113, 128, 150, 0.2);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 6px 15px rgba(113, 128, 150, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* Style pour les résultats de connexion */
+        #connectionStatus {
+            margin: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all 0.5s ease;
+            padding: 0 20px;
+        }
+        
+        #connectionStatus.visible {
+            padding: 20px;
+            max-height: 500px;
+            margin: 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .success-content {
+            background-color: #f0fff4;
+            border: 1px solid #c6f6d5;
+            border-left: 4px solid #48bb78;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .error-content {
+            background-color: #fff5f5;
+            border: 1px solid #fed7d7;
+            border-left: 4px solid #f56565;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .server-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .server-detail-item {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #4a5568;
+            margin-bottom: 5px;
+            display: block;
+        }
+        
+        /* Zone de recherche */
+        .search-container {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .search-title {
+            font-size: 1.2rem;
+            color: #2d3748;
+            margin: 0 0 20px 0;
+        }
+        
+        .search-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+        
+        .control-group label {
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 4px;
+        }
+        
+        .form-control {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: #e83e28;
+            box-shadow: 0 0 0 3px rgba(232, 62, 40, 0.1);
+            outline: none;
+        }
+        
+        /* Styles spécifiques pour améliorer le select */
+        select.form-control {
+            position: relative;
+            width: 100%;
+            height: auto;
+            padding: 12px 15px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234a5568' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+        
+        /* Forcer l'apparence native dans les navigateurs qui l'imposent */
+        @supports (-moz-appearance:none) {
+            select.form-control {
+                text-indent: 0.01px;
+                text-overflow: '';
+                padding-right: 30px;
+            }
+        }
+        
+        /* Styles pour les options et les groupes d'options */
+        select option, select optgroup {
+            font-size: 14px;
+        }
+        
+        select optgroup {
+            font-weight: bold;
+            color: #e83e28;
+            background-color: #fff5f5;
+            padding: 8px;
+        }
+        
+        select optgroup option {
+            font-weight: normal;
+            color: #2d3748;
+            background-color: white;
+            padding-left: 15px;
+            margin: 4px 0;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            justify-content: flex-start;
+            width: 100%;
+        }
+        
+        /* Paramètres avancés */
+        .advanced-search {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        .advanced-search-title {
+            font-size: 1.1rem;
+            color: #4a5568;
+            margin: 0 0 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .params-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .param-pair {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+            margin-bottom: 8px;
+            width: 100%;
+        }
+        
+        .param-pair .param-name,
+        .param-pair .param-value {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .remove-param {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 50%;
+            background-color: #e83e28;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .remove-param:hover {
+            background-color: #fd7e30;
+            transform: scale(1.1);
+        }
+        
+        /* Résultats */
+        .results-container {
+            padding: 20px;
+        }
+        
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .results-title {
+            font-size: 1.2rem;
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .results-count {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+        
+        .resource-list {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        .resource-item {
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .resource-item:last-child {
+            border-bottom: none;
+        }
+        
+        .resource-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .resource-item.active {
+            background-color: #ebf8ff;
+            border-left: 4px solid #e83e28;
+            padding-left: 11px;
+        }
+        
+        .resource-info {
+            flex: 1;
+        }
+        
+        .resource-title {
+            font-weight: 500;
+            color: #2d3748;
+            margin: 0 0 5px 0;
+        }
+        
+        .resource-subtitle {
+            color: #718096;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+        
+        .resource-type {
+            padding: 4px 8px;
+            background-color: rgba(232, 62, 40, 0.1);
+            color: #e83e28;
+            border-radius: 16px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+        
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .page-button {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+            background-color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .page-button.active {
+            background: linear-gradient(135deg, #e83e28, #fd7e30);
+            color: white;
+            border-color: transparent;
+        }
+        
+        .page-button:hover:not(.active) {
+            border-color: #e83e28;
+            color: #e83e28;
+        }
+        
+        /* Détails de la ressource */
+        .details-container {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .details-header {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .details-title {
+            font-size: 1.1rem;
+            color: #2d3748;
+            margin: 0;
+        }
+        
+        .resource-detail {
+            padding: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Menlo', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            background-color: #fff;
+            color: #2d3748;
+        }
+        
+        /* Swagger */
+        .swagger-container {
+            height: 700px;
+            overflow: hidden;
+        }
+        
+        .swagger-container iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        
+        /* Barre d'état */
+        .status-bar {
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            color: #718096;
+            font-size: 0.9rem;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status-bar::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4a5568;
+        }
+        
+        .status-bar.success::before {
+            background-color: #48bb78;
+        }
+        
+        .status-bar.error::before {
+            background-color: #f56565;
+        }
+        
+        .status-bar.warning::before {
+            background-color: #ed8936;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .control-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .control-group label {
+                margin-bottom: 8px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .server-selector {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout-container">
+        <div id="sidebar" class="sidebar"></div>
+        
+        <div class="main-content">
+            <h1 class="page-title">Explorateur FHIR Direct</h1>
+            
+            <div class="app">
+                <!-- Onglets de navigation -->
+                <div class="tab-nav">
+                    <button class="tab-button active" data-tab="explorer">
+                        <i class="fas fa-search"></i> Explorateur FHIR
+                    </button>
+                    <button class="tab-button" data-tab="swagger">
+                        <i class="fas fa-book"></i> Documentation Swagger
+                    </button>
+                </div>
+                
+                <!-- Contenu de l'explorateur -->
+                <div id="explorer-tab" class="tab-content active">
+                    <div class="fhir-container">
+                        <div class="header-panel">
+                            <h3>Explorez les données FHIR à partir des serveurs HAPI FHIR</h3>
+                        </div>
+                        
+                        <div class="server-selector">
+                            <label for="serverSelect" class="server-label">Serveur FHIR :</label>
+                            <select id="serverSelect" class="server-select">
+                                <option value="https://hapi.fhir.org/baseR4" style="background-color: white; color: black;">HAPI FHIR Public (R4)</option>
+                                <option value="http://localhost:8080/fhir" style="background-color: white; color: black;">HAPI FHIR Local</option>
+                            </select>
+                            <button id="testConnection" class="btn btn-primary">
+                                <i class="fas fa-plug"></i> Tester la connexion
+                            </button>
+                        </div>
+                        
+                        <!-- Zone de résultat de test de connexion -->
+                        <div id="connectionStatus"></div>
+                        
+                        <div class="search-container">
+                            <h3 class="search-title">Recherche de ressources</h3>
+                            
+                            <div class="search-controls">
+                                <div class="control-group">
+                                    <label for="resourceType">Type de ressource :</label>
+                                    <select id="resourceType" class="form-control" size="1" data-dropup-auto="false">
+                                        <option value="" disabled selected>Chargement des ressources...</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="control-group">
+                                    <label for="searchInput">Critères :</label>
+                                    <input type="text" id="searchInput" class="form-control" placeholder="Recherche (ex: name=smith)">
+                                </div>
+                                
+                                <div class="action-buttons">
+                                    <button id="searchButton" class="btn btn-primary">
+                                        <i class="fas fa-search"></i> Rechercher
+                                    </button>
+                                    <button id="clearButton" class="btn btn-secondary">
+                                        <i class="fas fa-times"></i> Effacer
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="advanced-search">
+                                <h4 class="advanced-search-title">
+                                    <i class="fas fa-sliders-h"></i> Paramètres de recherche avancée
+                                </h4>
+                                <div id="searchParams" class="params-container">
+                                    <!-- Paramètres dynamiques générés par JavaScript -->
+                                </div>
+                                <button id="addParam" class="btn btn-secondary">
+                                    <i class="fas fa-plus"></i> Ajouter un paramètre
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="results-container">
+                            <div class="results-header">
+                                <h3 class="results-title">Résultats</h3>
+                                <div id="resultsCount" class="results-count"></div>
+                            </div>
+                            
+                            <div class="resource-list" id="resourceList">
+                                <!-- Ressources générées par JavaScript -->
+                                <div style="text-align: center; padding: 30px; color: #718096;">
+                                    <i class="fas fa-search" style="font-size: 36px; margin-bottom: 15px; opacity: 0.5;"></i>
+                                    <p>Effectuez une recherche pour voir les résultats</p>
+                                </div>
+                            </div>
+                            
+                            <div id="pagination" class="pagination">
+                                <!-- Pagination générée par JavaScript -->
+                            </div>
+                            
+                            <div class="details-container">
+                                <div class="details-header">
+                                    <h3 class="details-title">Détails de la ressource</h3>
+                                </div>
+                                <div id="resourceDetail" class="resource-detail">
+                                    Sélectionnez une ressource pour voir les détails
+                                </div>
+                            </div>
+                            
+                            <div id="statusBar" class="status-bar">
+                                Prêt à explorer les données FHIR
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contenu Swagger -->
+                <div id="swagger-tab" class="tab-content">
+                    <div class="fhir-container">
+                        <div class="header-panel">
+                            <h3>Documentation FHIR API (Swagger)</h3>
+                        </div>
+                        
+                        <div class="server-selector">
+                            <label for="swaggerServerSelect" class="server-label">Serveur Swagger :</label>
+                            <select id="swaggerServerSelect" class="server-select">
+                                <option value="https://hapi.fhir.org/baseR4/swagger-ui/">HAPI FHIR Public (R4)</option>
+                                <option value="http://localhost:8080/fhir/swagger-ui/">HAPI FHIR Local</option>
+                            </select>
+                            <button id="loadSwagger" class="btn btn-primary">
+                                <i class="fas fa-code"></i> Charger
+                            </button>
+                        </div>
+                        
+                        <div class="swagger-container">
+                            <iframe id="swaggerFrame" src="https://hapi.fhir.org/baseR4/swagger-ui/" title="Documentation FHIR Swagger"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Pied de page avec version -->
+    <script src="/js/footer-version.js"></script>
+    
+    <script>
+        // Script moderne pour l'explorateur FHIR avec UX améliorée
+        document.addEventListener('DOMContentLoaded', function() {
+            // Éléments DOM
+            const serverSelect = document.getElementById('serverSelect');
+            const testConnectionBtn = document.getElementById('testConnection');
+            const connectionStatus = document.getElementById('connectionStatus');
+            const resourceTypeSelect = document.getElementById('resourceType');
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
+            const clearButton = document.getElementById('clearButton');
+            const addParamButton = document.getElementById('addParam');
+            const searchParams = document.getElementById('searchParams');
+            const resourceList = document.getElementById('resourceList');
+            const resourceDetail = document.getElementById('resourceDetail');
+            const pagination = document.getElementById('pagination');
+            const statusBar = document.getElementById('statusBar');
+            const resultsCount = document.getElementById('resultsCount');
+            
+            // Variables globales
+            let currentPage = 1;
+            let totalPages = 1;
+            let searchHistory = [];
+            let selectedResource = null;
+            let lastSearchResult = null; // Pour stocker la dernière réponse de l'API
+            const pageSize = 50; // Nombre de résultats par page
+            
+            // Gestion des onglets
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Désactiver tous les onglets
+                    document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    // Activer l'onglet cliqué
+                    this.classList.add('active');
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+            
+            // Écouteur d'événements pour le changement de serveur
+            serverSelect.addEventListener('change', function() {
+                // Charger les types de ressources du nouveau serveur
+                loadResourceTypes();
+            });
+            
+            // Test de connexion au serveur FHIR
+            testConnectionBtn.addEventListener('click', function() {
+                // Changer l'apparence du bouton pour indiquer le chargement
+                testConnectionBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Test en cours...';
+                testConnectionBtn.disabled = true;
+                
+                // Préparer le conteneur de statut
+                connectionStatus.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <div style="width: 20px; height: 20px; border: 2px solid #f44336; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <span>Test de connexion en cours...</span>
+                    </div>
+                `;
+                connectionStatus.className = 'visible';
+                
+                // URL du serveur sélectionné
+                const serverUrl = serverSelect.value;
+                
+                // Tester la connexion
+                fetch(`${serverUrl}/metadata`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Réinitialiser le bouton
+                        testConnectionBtn.innerHTML = '<i class="fas fa-plug"></i> Tester la connexion';
+                        testConnectionBtn.disabled = false;
+                        
+                        // Connexion réussie
+                        const fhirVersion = data.fhirVersion || 'Inconnu';
+                        const resourceCount = data.rest && data.rest[0] && data.rest[0].resource ? data.rest[0].resource.length : 0;
+                        
+                        connectionStatus.innerHTML = `
+                            <div class="success-content">
+                                <h4 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-check-circle" style="color: #48bb78;"></i>
+                                    Connexion au serveur réussie
+                                </h4>
+                                <div class="server-details">
+                                    <div class="server-detail-item">
+                                        <span class="detail-label">Version FHIR</span>
+                                        <span>${fhirVersion}</span>
+                                    </div>
+                                    <div class="server-detail-item">
+                                        <span class="detail-label">Types de ressources</span>
+                                        <span>${resourceCount}</span>
+                                    </div>
+                                    <div class="server-detail-item">
+                                        <span class="detail-label">Statut</span>
+                                        <span style="display: flex; align-items: center; gap: 5px;">
+                                            <span style="display: inline-block; width: 8px; height: 8px; background-color: #48bb78; border-radius: 50%;"></span>
+                                            En ligne
+                                        </span>
+                                    </div>
+                                </div>
+                                <p style="margin-top: 15px; margin-bottom: 0; color: #718096;">
+                                    Le serveur est prêt pour les requêtes FHIR. Utilisez le formulaire de recherche ci-dessous.
+                                </p>
+                            </div>
+                        `;
+                        
+                        // Mettre à jour la barre d'état
+                        updateStatusBar('Connexion au serveur FHIR établie avec succès', 'success');
+                        
+                        // Charger les types de ressources disponibles
+                        loadResourceTypes();
+                    })
+                    .catch(error => {
+                        // Réinitialiser le bouton
+                        testConnectionBtn.innerHTML = '<i class="fas fa-plug"></i> Tester la connexion';
+                        testConnectionBtn.disabled = false;
+                        
+                        // Échec de connexion
+                        connectionStatus.innerHTML = `
+                            <div class="error-content">
+                                <h4 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-exclamation-triangle" style="color: #f56565;"></i>
+                                    Erreur de connexion au serveur
+                                </h4>
+                                <p style="margin-bottom: 10px;">${error.message}</p>
+                                <div>
+                                    <p style="font-weight: 500; margin-bottom: 5px;">Suggestions :</p>
+                                    <ul style="margin-top: 0; padding-left: 20px; color: #718096;">
+                                        <li>Vérifiez que le serveur est en ligne et accessible</li>
+                                        <li>Vérifiez que l'URL du serveur est correcte</li>
+                                        <li>Vérifiez que le serveur prend en charge FHIR</li>
+                                        <li>Si vous utilisez le serveur local, assurez-vous qu'il est démarré</li>
+                                    </ul>
+                                </div>
+                                <div style="text-align: right; margin-top: 10px;">
+                                    <button onclick="document.getElementById('testConnection').click()" style="background-color: #f56565; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">
+                                        <i class="fas fa-sync-alt"></i> Réessayer
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Mettre à jour la barre d'état
+                        updateStatusBar(`Erreur de connexion: ${error.message}`, 'error');
+                    });
+            });
+            
+            // Recherche de ressources
+            searchButton.addEventListener('click', function() {
+                performSearch(1);
+            });
+            
+            // Touche Entrée pour lancer la recherche
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch(1);
+                }
+            });
+            
+            // Effacer les résultats
+            clearButton.addEventListener('click', function() {
+                searchInput.value = '';
+                resourceList.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: #718096;">
+                        <i class="fas fa-search" style="font-size: 36px; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <p>Effectuez une recherche pour voir les résultats</p>
+                    </div>
+                `;
+                resourceDetail.textContent = 'Sélectionnez une ressource pour voir les détails';
+                pagination.innerHTML = '';
+                resultsCount.textContent = '';
+                clearParamRows();
+                updateStatusBar('Recherche effacée', 'info');
+            });
+            
+            // Ajouter un paramètre de recherche
+            addParamButton.addEventListener('click', function() {
+                addParamRow();
+            });
+            
+            // Serveur Swagger
+            const swaggerServerSelect = document.getElementById('swaggerServerSelect');
+            const loadSwaggerButton = document.getElementById('loadSwagger');
+            const swaggerFrame = document.getElementById('swaggerFrame');
+            
+            loadSwaggerButton.addEventListener('click', function() {
+                loadSwaggerButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Chargement...';
+                loadSwaggerButton.disabled = true;
+                
+                swaggerFrame.src = swaggerServerSelect.value;
+                
+                // Réinitialiser le bouton après chargement
+                swaggerFrame.onload = function() {
+                    loadSwaggerButton.innerHTML = '<i class="fas fa-code"></i> Charger';
+                    loadSwaggerButton.disabled = false;
+                    updateStatusBar('Documentation Swagger chargée avec succès', 'success');
+                };
+                
+                swaggerFrame.onerror = function() {
+                    loadSwaggerButton.innerHTML = '<i class="fas fa-code"></i> Charger';
+                    loadSwaggerButton.disabled = false;
+                    updateStatusBar('Erreur lors du chargement de Swagger', 'error');
+                };
+            });
+            
+            // Fonction pour ajouter une ligne de paramètre
+            function addParamRow() {
+                const paramRow = document.createElement('div');
+                paramRow.className = 'param-pair';
+                paramRow.innerHTML = `
+                    <input type="text" placeholder="Paramètre" class="param-name form-control">
+                    <input type="text" placeholder="Valeur" class="param-value form-control">
+                    <button class="remove-param"><i class="fas fa-minus"></i></button>
+                `;
+                
+                // Gestion de l'événement pour supprimer la ligne
+                paramRow.querySelector('.remove-param').addEventListener('click', function() {
+                    // Animation de suppression
+                    paramRow.style.opacity = '0';
+                    paramRow.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        searchParams.removeChild(paramRow);
+                    }, 300);
+                });
+                
+                // Ajouter la ligne au conteneur
+                searchParams.appendChild(paramRow);
+                
+                // Animation d'apparition
+                paramRow.style.opacity = '0';
+                paramRow.style.transform = 'translateY(10px)';
+                setTimeout(() => {
+                    paramRow.style.opacity = '1';
+                    paramRow.style.transform = 'translateY(0)';
+                }, 10);
+            }
+            
+            // Effacer les lignes de paramètres
+            function clearParamRows() {
+                while (searchParams.firstChild) {
+                    searchParams.removeChild(searchParams.firstChild);
+                }
+                addParamRow();
+            }
+            
+            // Effectuer une recherche
+            function performSearch(page, directUrl = null) {
+                // Afficher un indicateur de chargement
+                resourceList.innerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; padding: 30px;">
+                        <div style="width: 40px; height: 40px; border: 3px solid #f9f9f9; border-top: 3px solid #f44336; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <span style="margin-left: 15px; color: #718096;">Chargement des résultats...</span>
+                    </div>
+                    <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+                `;
+                resourceDetail.textContent = 'Chargement...';
+                
+                let searchUrl;
+                
+                // Si une URL directe est fournie (liens de pagination), l'utiliser
+                if (directUrl) {
+                    searchUrl = directUrl;
+                    // Ajouter format JSON si nécessaire
+                    if (searchUrl.indexOf('_format') === -1) {
+                        searchUrl += (searchUrl.indexOf('?') !== -1 ? '&' : '?') + '_format=json';
+                    }
+                } else {
+                    // URL du serveur sélectionné
+                    const serverUrl = serverSelect.value;
+                    
+                    // Construire l'URL de recherche
+                    const resourceType = resourceTypeSelect.value;
+                    searchUrl = `${serverUrl}/${resourceType}?_format=json&_count=${pageSize}`;
+                    
+                    // Ajouter les critères de recherche
+                    if (searchInput.value.trim()) {
+                        searchUrl += `&${searchInput.value.trim()}`;
+                    }
+                    
+                    // Ajouter les paramètres avancés
+                    const paramRows = searchParams.querySelectorAll('.param-pair');
+                    paramRows.forEach(row => {
+                        const paramName = row.querySelector('.param-name').value.trim();
+                        const paramValue = row.querySelector('.param-value').value.trim();
+                        
+                        if (paramName && paramValue) {
+                            searchUrl += `&${paramName}=${encodeURIComponent(paramValue)}`;
+                        }
+                    });
+                    
+                    // Pagination
+                    if (page > 1) {
+                        searchUrl += `&_page=${page}`;
+                    }
+                }
+                
+                // Mettre à jour la barre d'état
+                updateStatusBar(`Recherche en cours: ${directUrl ? 'page ' + page : resourceTypeSelect.value}...`, 'info');
+                
+                // Exécuter la requête
+                fetch(searchUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Stocker la réponse complète pour la pagination
+                        lastSearchResult = data;
+                        // Afficher les résultats
+                        displaySearchResults(data, page);
+                        updateStatusBar(`Recherche terminée avec succès`, 'success');
+                    })
+                    .catch(error => {
+                        resourceList.innerHTML = `
+                            <div style="text-align: center; padding: 30px; color: #f56565;">
+                                <i class="fas fa-exclamation-circle" style="font-size: 36px; margin-bottom: 15px;"></i>
+                                <p>Erreur lors de la recherche: ${error.message}</p>
+                            </div>
+                        `;
+                        pagination.innerHTML = '';
+                        resultsCount.textContent = '';
+                        updateStatusBar(`Erreur de recherche: ${error.message}`, 'error');
+                    });
+            }
+            
+            // Afficher les résultats de la recherche
+            function displaySearchResults(data, currentPage) {
+                // Vider la liste des ressources
+                resourceList.innerHTML = '';
+                
+                // Vérifier si la réponse contient des entrées
+                const entries = data.entry || [];
+                const total = data.total || entries.length;
+                
+                // Afficher le nombre total de résultats
+                resultsCount.textContent = `${total} résultat(s) trouvé(s)`;
+                
+                if (entries.length === 0) {
+                    resourceList.innerHTML = `
+                        <div style="text-align: center; padding: 30px; color: #718096;">
+                            <i class="fas fa-search" style="font-size: 36px; margin-bottom: 15px; opacity: 0.5;"></i>
+                            <p>Aucun résultat trouvé</p>
+                        </div>
+                    `;
+                    pagination.innerHTML = '';
+                    return;
+                }
+                
+                // Créer une entrée pour chaque ressource trouvée
+                entries.forEach((entry, index) => {
+                    const resource = entry.resource;
+                    const resourceType = resource.resourceType;
+                    
+                    // Créer l'élément de liste avec délai d'animation
+                    const resourceItem = document.createElement('div');
+                    resourceItem.className = 'resource-item';
+                    resourceItem.style.opacity = '0';
+                    resourceItem.style.transform = 'translateY(10px)';
+                    resourceItem.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    
+                    // Déterminer les informations à afficher selon le type de ressource
+                    let title = '';
+                    let subtitle = '';
+                    
+                    switch (resourceType) {
+                        case 'Patient':
+                            title = resource.name ? 
+                                resource.name.map(n => `${n.family || ''}, ${n.given ? n.given.join(' ') : ''}`).join('; ') : 
+                                'Patient sans nom';
+                            subtitle = `ID: ${resource.id} | Genre: ${resource.gender || 'Non spécifié'}`;
+                            if (resource.birthDate) subtitle += ` | Naissance: ${resource.birthDate}`;
+                            break;
+                        case 'Observation':
+                            title = resource.code ? 
+                                (resource.code.text || resource.code.coding?.map(c => c.display).join(', ') || 'Observation') : 
+                                'Observation';
+                            subtitle = `Date: ${resource.effectiveDateTime || 'Non spécifiée'} | Statut: ${resource.status || ''}`;
+                            break;
+                        case 'Condition':
+                            title = resource.code ? 
+                                (resource.code.text || resource.code.coding?.map(c => c.display).join(', ') || 'Condition') : 
+                                'Condition';
+                            subtitle = `Début: ${resource.onsetDateTime || 'Non spécifié'} | Statut: ${resource.clinicalStatus?.coding?.[0]?.display || ''}`;
+                            break;
+                        default:
+                            title = `${resourceType} ${resource.id}`;
+                            subtitle = `Dernière mise à jour: ${resource.meta?.lastUpdated || 'Inconnue'}`;
+                    }
+                    
+                    resourceItem.innerHTML = `
+                        <div class="resource-info">
+                            <div class="resource-title">${title}</div>
+                            <div class="resource-subtitle">${subtitle}</div>
+                        </div>
+                        <div class="resource-type">${resourceType}</div>
+                    `;
+                    
+                    // Ajouter un gestionnaire d'événements pour afficher les détails
+                    resourceItem.addEventListener('click', function() {
+                        // Supprimer la classe active de tous les éléments
+                        document.querySelectorAll('.resource-item').forEach(item => {
+                            item.classList.remove('active');
+                        });
+                        
+                        // Ajouter la classe active à l'élément courant
+                        this.classList.add('active');
+                        
+                        // Afficher les détails de la ressource
+                        displayResourceDetails(resource);
+                    });
+                    
+                    // Ajouter l'élément à la liste
+                    resourceList.appendChild(resourceItem);
+                    
+                    // Animation d'apparition avec délai
+                    setTimeout(() => {
+                        resourceItem.style.opacity = '1';
+                        resourceItem.style.transform = 'translateY(0)';
+                    }, index * 30);
+                });
+                
+                // Créer la pagination
+                createPagination(total, currentPage, pageSize);
+            }
+            
+            // Afficher les détails d'une ressource
+            function displayResourceDetails(resource) {
+                const formattedJson = JSON.stringify(resource, null, 2);
+                resourceDetail.textContent = formattedJson;
+                
+                // Mettre à jour la barre d'état
+                updateStatusBar(`Affichage des détails de la ressource ${resource.resourceType}/${resource.id}`, 'info');
+            }
+            
+            // Créer la pagination
+            function createPagination(total, currentPage, pageSize) {
+                // Créer les boutons de pagination
+                let paginationHtml = '';
+                let hasLinks = false;
+                let nextLink = null;
+                let prevLink = null;
+                
+                // Vérifier si la réponse contient des liens de pagination
+                if (lastSearchResult && lastSearchResult.link && Array.isArray(lastSearchResult.link)) {
+                    lastSearchResult.link.forEach(link => {
+                        if (link.relation === 'next') {
+                            nextLink = link.url;
+                            hasLinks = true;
+                        } else if (link.relation === 'previous' || link.relation === 'prev') {
+                            prevLink = link.url;
+                            hasLinks = true;
+                        }
+                    });
+                }
+                
+                // Si le serveur utilise des liens au lieu d'une pagination standard
+                if (hasLinks) {
+                    // Bouton précédent basé sur le lien
+                    paginationHtml += `
+                        <button class="page-button ${!prevLink ? 'disabled' : ''}" 
+                            ${prevLink ? 'data-link="' + prevLink + '"' : ''} 
+                            ${!prevLink ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                    `;
+                    
+                    paginationHtml += `<span class="page-info">Page ${currentPage}</span>`;
+                    
+                    // Bouton suivant basé sur le lien
+                    paginationHtml += `
+                        <button class="page-button ${!nextLink ? 'disabled' : ''}" 
+                            ${nextLink ? 'data-link="' + nextLink + '"' : ''} 
+                            ${!nextLink ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    `;
+                } else {
+                    // Pagination standard basée sur le nombre total d'items
+                    
+                    // Calculer le nombre total de pages
+                    totalPages = Math.ceil(total / pageSize);
+                    
+                    // Si une seule page, ne pas afficher la pagination
+                    if (totalPages <= 1) {
+                        pagination.innerHTML = '';
+                        return;
+                    }
+                    
+                    // Bouton précédent
+                    paginationHtml += `
+                        <button class="page-button ${currentPage === 1 ? 'disabled' : ''}" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                    `;
+                    
+                    // Afficher un nombre limité de pages
+                    const maxPagesToShow = 5;
+                    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+                    
+                    // Ajuster si nécessaire
+                    if (endPage - startPage + 1 < maxPagesToShow) {
+                        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                    }
+                    
+                    // Première page si nécessaire
+                    if (startPage > 1) {
+                        paginationHtml += `<button class="page-button" data-page="1">1</button>`;
+                        if (startPage > 2) {
+                            paginationHtml += `<span class="page-ellipsis">...</span>`;
+                        }
+                    }
+                    
+                    // Pages numérotées
+                    for (let i = startPage; i <= endPage; i++) {
+                        paginationHtml += `<button class="page-button ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                    }
+                    
+                    // Dernière page si nécessaire
+                    if (endPage < totalPages) {
+                        if (endPage < totalPages - 1) {
+                            paginationHtml += `<span class="page-ellipsis">...</span>`;
+                        }
+                        paginationHtml += `<button class="page-button" data-page="${totalPages}">${totalPages}</button>`;
+                    }
+                    
+                    // Bouton suivant
+                    paginationHtml += `
+                        <button class="page-button ${currentPage === totalPages ? 'disabled' : ''}" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    `;
+                }
+                
+                // Ajouter le HTML à l'élément de pagination
+                pagination.innerHTML = paginationHtml;
+                
+                // Ajouter les gestionnaires d'événements
+                pagination.querySelectorAll('.page-button:not(.disabled)').forEach(button => {
+                    button.addEventListener('click', function() {
+                        // Vérifier s'il s'agit d'un lien direct ou d'une page numérotée
+                        const directLink = this.getAttribute('data-link');
+                        if (directLink) {
+                            // Incrémenter ou décrémenter la page selon la direction du bouton
+                            const newPage = this.innerHTML.includes('fa-chevron-left') ? 
+                                currentPage - 1 : currentPage + 1;
+                            performSearch(newPage, directLink);
+                        } else {
+                            // Pagination standard
+                            const page = parseInt(this.getAttribute('data-page'));
+                            performSearch(page);
+                        }
+                    });
+                });
+            }
+            
+            // Mettre à jour la barre d'état
+            function updateStatusBar(message, type = 'info') {
+                statusBar.textContent = message;
+                statusBar.className = 'status-bar';
+                
+                if (type) {
+                    statusBar.classList.add(type);
+                }
+                
+                // Animation de mise à jour
+                statusBar.style.opacity = '0';
+                setTimeout(() => {
+                    statusBar.style.opacity = '1';
+                    statusBar.style.transition = 'opacity 0.3s ease';
+                }, 10);
+            }
+            
+            // Charger les types de ressources disponibles
+            function loadResourceTypes() {
+                const serverUrl = serverSelect.value;
+                const select = document.getElementById('resourceType');
+                
+                // Afficher un message de chargement
+                select.innerHTML = '<option value="" disabled selected>Chargement des ressources...</option>';
+                
+                // Récupérer les métadonnées du serveur (capability statement)
+                fetch(`${serverUrl}/metadata?_format=json`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Récupérer les types de ressources disponibles
+                        const resourceTypes = [];
+                        if (data.rest && data.rest.length > 0 && data.rest[0].resource) {
+                            data.rest[0].resource.forEach(resource => {
+                                if (resource.type) {
+                                    resourceTypes.push(resource.type);
+                                }
+                            });
+                        }
+                        
+                        // Si aucun type de ressource n'a été trouvé, utiliser une liste prédéfinie
+                        if (resourceTypes.length === 0) {
+                            console.warn('Aucun type de ressource trouvé dans le capability statement, utilisation d\'une liste prédéfinie');
+                            resourceTypes.push('Patient', 'Observation', 'Condition', 'MedicationRequest', 'Encounter', 
+                                        'Procedure', 'DiagnosticReport', 'AllergyIntolerance', 'Immunization', 
+                                        'Practitioner', 'Organization');
+                        }
+                        
+                        // Organiser les ressources par catégories pour faciliter la recherche
+                        const resourceCategories = {
+                            "Clinique": [
+                                "Patient", "Observation", "Condition", "MedicationRequest", "MedicationAdministration",
+                                "MedicationDispense", "MedicationStatement", "Procedure", "Encounter", "AllergyIntolerance",
+                                "CarePlan", "CareTeam", "DiagnosticReport", "FamilyMemberHistory", "Goal",
+                                "Immunization", "ImmunizationRecommendation", "NutritionOrder", "ServiceRequest"
+                            ],
+                            "Identification": [
+                                "Person", "Practitioner", "PractitionerRole", "Organization", "OrganizationAffiliation", 
+                                "RelatedPerson", "Group", "Location", "HealthcareService"
+                            ],
+                            "Workflow": [
+                                "Appointment", "AppointmentResponse", "Schedule", "Slot", "Task", "VerificationResult"
+                            ],
+                            "Documentation": [
+                                "DocumentReference", "DocumentManifest", "Composition", "QuestionnaireResponse", "Questionnaire"
+                            ],
+                            "Financier": [
+                                "Coverage", "CoverageEligibilityRequest", "CoverageEligibilityResponse", "Claim", "ClaimResponse",
+                                "Invoice", "PaymentNotice", "PaymentReconciliation"
+                            ],
+                            "Autre": [] // Pour les autres ressources qui ne rentrent pas dans les catégories précédentes
+                        };
+                        
+                        // Trier les ressources par catégorie
+                        const categorizedResources = {};
+                        resourceTypes.forEach(resourceType => {
+                            let categorized = false;
+                            for (const category in resourceCategories) {
+                                if (resourceCategories[category].includes(resourceType)) {
+                                    if (!categorizedResources[category]) {
+                                        categorizedResources[category] = [];
+                                    }
+                                    categorizedResources[category].push(resourceType);
+                                    categorized = true;
+                                    break;
+                                }
+                            }
+                            if (!categorized) {
+                                if (!categorizedResources["Autre"]) {
+                                    categorizedResources["Autre"] = [];
+                                }
+                                categorizedResources["Autre"].push(resourceType);
+                            }
+                        });
+                        
+                        // Trier les ressources par ordre alphabétique au sein de chaque catégorie
+                        for (const category in categorizedResources) {
+                            categorizedResources[category].sort();
+                        }
+                        
+                        // Mettre à jour le menu déroulant avec des groupes
+                        select.innerHTML = '';
+                        
+                        // Ajouter les options groupées par catégorie
+                        for (const category in categorizedResources) {
+                            if (categorizedResources[category].length > 0) {
+                                const optgroup = document.createElement('optgroup');
+                                optgroup.label = category;
+                                
+                                categorizedResources[category].forEach(resourceType => {
+                                    const option = document.createElement('option');
+                                    option.value = resourceType;
+                                    option.textContent = resourceType;
+                                    optgroup.appendChild(option);
+                                });
+                                
+                                select.appendChild(optgroup);
+                            }
+                        }
+                        
+                        // Sélectionner "Patient" par défaut si disponible
+                        if (resourceTypes.includes('Patient')) {
+                            select.value = 'Patient';
+                        } else if (resourceTypes.length > 0) {
+                            select.value = resourceTypes[0];
+                        }
+                        
+                        updateStatusBar(`${resourceTypes.length} types de ressources chargés à partir du serveur`, 'success');
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des types de ressources:', error);
+                        
+                        // En cas d'erreur, utiliser une liste prédéfinie
+                        const defaultTypes = ['Patient', 'Observation', 'Condition', 'MedicationRequest', 'Encounter', 
+                                        'Procedure', 'DiagnosticReport', 'AllergyIntolerance', 'Immunization', 
+                                        'Practitioner', 'Organization'];
+                        
+                        select.innerHTML = '';
+                        defaultTypes.forEach(type => {
+                            const option = document.createElement('option');
+                            option.value = type;
+                            option.textContent = type;
+                            select.appendChild(option);
+                        });
+                        
+                        select.value = 'Patient';
+                        
+                        updateStatusBar(`Erreur lors du chargement des types de ressources: ${error.message}`, 'warning');
+                    });
+            }
+            
+            // Initialisation
+            function init() {
+                // Ajouter une première ligne de paramètre
+                addParamRow();
+                
+                // Charger les types de ressources
+                loadResourceTypes();
+                
+                // Message initial
+                updateStatusBar('Prêt à explorer les données FHIR', 'info');
+            }
+            
+            // Démarrer l'application
+            init();
+        });
+    </script>
+</body>
+</html>

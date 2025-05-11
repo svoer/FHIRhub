@@ -1,0 +1,15 @@
+{
+    "name": "node-red-fhirhub",
+    "version": "1.0.0",
+    "description": "Nœuds Node-RED personnalisés pour FHIRHub",
+    "author": "FHIRHub Team",
+    "license": "Proprietary",
+    "node-red": {
+        "nodes": {
+            "hl7-input": "nodes/hl7-input.js",
+            "fhir-converter": "nodes/fhir-converter.js",
+            "segment-extractor": "nodes/segment-extractor.js",
+            "fhir-output": "nodes/fhir-output.js"
+        }
+    }
+}

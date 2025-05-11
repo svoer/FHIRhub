@@ -1,0 +1,105 @@
+version: '3.8'
+
+# Utilisation de volumes nommés pour isoler complètement les données
+volumes:
+  fhirhub_db:
+    name: fhirhub_db
+  fhirhub_data:
+    name: fhirhub_data
+  fhirhub_logs:
+    name: fhirhub_logs
+  fhirhub_backups:
+    name: fhirhub_backups
+  fhirhub_terminology:
+    name: fhirhub_terminology
+  # Volume pour le serveur HAPI FHIR intégré
+  fhirhub_fhir_data:
+    name: fhirhub_fhir_data
+
+services:
+  # Application principale FHIRHub optimisée
+  fhirhub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fhirhub
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DB_PATH=/app/storage/db/fhirhub.db
+      - DB_PERSISTENT=true
+      - SESSION_SECRET=fhirhub_production_secure_session_key
+      - METRICS_ENABLED=false
+      - LOG_LEVEL=info
+      - DOCKER_ENV=true
+      - HAPI_FHIR_SERVER=http://hapifhir:8080/fhir
+      - BYPASS_AUTH=false
+    volumes:
+      # Utilisation de volumes nommés pour une meilleure isolation et portabilité
+      - fhirhub_db:/app/storage/db:rw
+      - fhirhub_data:/app/storage/data:rw
+      - fhirhub_logs:/app/storage/logs:rw
+      - fhirhub_backups:/app/storage/backups:rw
+      - fhirhub_terminology:/app/french_terminology:rw
+      # Dossiers mappés pour faciliter l'import/export de données (optionnel, peuvent être commentés)
+      - ./import:/app/import:ro
+      - ./export:/app/export:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - fhirhub-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Serveur HAPI FHIR intégré à FHIRHub
+  hapifhir:
+    image: hapiproject/hapi:latest
+    container_name: fhirhub-hapi
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - hapi.fhir.default_encoding=JSON
+      - hapi.fhir.allow_external_references=true
+      - hapi.fhir.allow_multiple_delete=true
+      - hapi.fhir.allow_placeholder_references=true
+      - hapi.fhir.narrative_enabled=false
+      - hapi.fhir.advanced_lucene_indexing=false
+      - spring.datasource.url=jdbc:h2:/data/hapi
+      - spring.datasource.username=sa
+      - spring.datasource.password=
+      - spring.datasource.driverClassName=org.h2.Driver
+      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+      - spring.jpa.hibernate.ddl-auto=update
+      - logging.level.ca.uhn.fhir.jpa.search=ERROR
+      - JAVA_OPTS=-Xmx1024m -Dfile.encoding=UTF-8
+    volumes:
+      - fhirhub_fhir_data:/data:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/fhir/metadata"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - fhirhub-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+# Définition des réseaux
+networks:
+  fhirhub-network:
+    driver: bridge

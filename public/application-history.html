@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historique des conversions - FHIRHub</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/admin.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.0.0"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        /* Styles pour les modals et détails de conversion */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 800px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .detail-item {
+            padding: 10px;
+            background-color: rgba(245, 245, 245, 0.7);
+            border-radius: 6px;
+        }
+
+        .detail-label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .detail-value {
+            display: block;
+            font-size: 1.1em;
+        }
+
+        .detail-section {
+            margin-bottom: 25px;
+        }
+
+        .detail-section h3 {
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            color: #333;
+        }
+
+        .code-block {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: monospace;
+            border: 1px solid #e0e0e0;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .code-block.error {
+            background-color: rgba(255, 0, 0, 0.05);
+            border-color: rgba(255, 0, 0, 0.2);
+            color: #d32f2f;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, #ff5e62, #ff9966);
+            padding: 10px 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-logo {
+            height: 30px;
+            margin-right: 10px;
+        }
+        
+        .navbar-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .main-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            color: #333;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            color: #333;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eaeaea;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            color: #333;
+        }
+
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-box {
+            flex: 1;
+            min-width: 100px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eaeaea;
+            max-height: 300px;
+        }
+
+        .conversion-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .conversion-table th, .conversion-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #f2f2f2;
+        }
+
+        .conversion-table thead {
+            background-color: #f0f0f0;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .conversion-table tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .status-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .status-error {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .pagination button {
+            background: linear-gradient(135deg, #ff5e62, #ff9966);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin: 0 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #ff5258, #ff8c59);
+            box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        }
+
+        .pagination button:disabled {
+            background: #e0e0e0;
+            color: #a0a0a0;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #5a6268;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        /* Styles pour le modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #555;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .detail-item {
+            border: 1px solid #f0f0f0;
+            padding: 12px;
+            border-radius: 6px;
+        }
+
+        .detail-label {
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .detail-value {
+            display: block;
+            color: #333;
+        }
+
+        .detail-section {
+            margin-bottom: 25px;
+        }
+
+        .detail-section h3 {
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+            color: #333;
+        }
+
+        .code-block {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-x: auto;
+            margin: 0;
+            border: 1px solid #e9ecef;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .code-block.error {
+            background-color: #fff5f5;
+            border-color: #ffebeb;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header fixe -->
+    <header class="navbar">
+        <div class="navbar-brand">
+            <img src="/img/flame-icon-white.svg" alt="FHIRHub Logo" class="navbar-logo">
+            <span class="navbar-title">FHIRHub</span>
+        </div>
+        <div class="navbar-menu" style="display: flex; gap: 15px;">
+            <a href="/dashboard.html" style="color: white; text-decoration: none; font-weight: 500; padding: 5px 10px;">Tableau de bord</a>
+            <a href="/applications.html" style="color: white; text-decoration: none; font-weight: 500; padding: 5px 10px; background-color: rgba(255,255,255,0.2); border-radius: 4px;">Applications</a>
+            <a href="/api-keys.html" style="color: white; text-decoration: none; font-weight: 500; padding: 5px 10px;">Clés API</a>
+            <a href="/users.html" style="color: white; text-decoration: none; font-weight: 500; padding: 5px 10px;">Utilisateurs</a>
+            <a href="/logout" id="logoutBtn" style="color: white; text-decoration: none; font-weight: 500; padding: 5px 10px; margin-left: auto;">Déconnexion</a>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <p><a href="/applications.html" class="back-link" style="font-size: 14px; background-color: #f5f5f5; padding: 8px 12px; border-radius: 4px; display: inline-block; margin: 10px 0;">← Retour à la liste des applications</a></p>
+        
+        <div class="card">
+            <h2 id="app-name" style="margin-top: 0; margin-bottom: 5px;"></h2>
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-value" id="total-conversions">0</div>
+                    <div class="stat-label">Total</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="success-rate">0%</div>
+                    <div class="stat-label">Réussite</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="avg-time">0ms</div>
+                    <div class="stat-label">Temps moyen</div>
+                </div>
+            </div>
+        </div>
+
+        <table class="conversion-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Statut</th>
+                    <th>Temps</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="conversions-table-body">
+                <!-- Les conversions seront ajoutées ici dynamiquement -->
+            </tbody>
+        </table>
+
+        <div class="pagination">
+            <button id="prev-page" disabled>Précédent</button>
+            <span id="page-info">Page 1</span>
+            <button id="next-page">Suivant</button>
+        </div>
+    </div>
+
+    <!-- Template pour le modal de détails -->
+    <div id="conversion-details-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Détails de la conversion</h2>
+            <div id="conversion-details-content"></div>
+        </div>
+    </div>
+    
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-text">
+                &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+                <div class="footer-version">Version: <span class="version-text">Chargement...</span></div>
+            </div>
+            <ul class="footer-links">
+            </ul>
+        </div>
+    </footer>
+    
+    <!-- Script pour gérer la version dans le footer -->
+    <script src="/js/footer-version.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Charger les composants d'interface
+        document.addEventListener('DOMContentLoaded', function() {
+            
+            // Récupérer l'ID de l'application depuis l'URL (format /application-history.html?id=X)
+            const urlParams = new URLSearchParams(window.location.search);
+            const appId = urlParams.get('id');
+            
+            // Stocker l'ID de l'application dans une variable globale pour y accéder partout
+            window.appId = appId;
+            
+            console.log("ID d'application détecté:", appId);
+            
+            if (!appId) {
+                alert('ID d\'application manquant. Redirection vers la liste des applications.');
+                window.location.href = '/applications.html';
+                return;
+            }
+            
+            // Charger les données de l'application
+            fetchApplicationData(appId);
+            
+            // Charger les conversions
+            fetchConversions(appId, 1);
+            
+            // Effectuer le calcul des statistiques directement depuis l'historique
+            fetchConversionsForStats(appId);
+            
+            // Configurer la pagination
+            document.getElementById('prev-page').addEventListener('click', function() {
+                const currentPage = parseInt(this.dataset.currentPage);
+                if (currentPage > 1) {
+                    fetchConversions(appId, currentPage - 1);
+                }
+            });
+            
+            document.getElementById('next-page').addEventListener('click', function() {
+                const currentPage = parseInt(this.dataset.currentPage);
+                const totalPages = parseInt(this.dataset.totalPages);
+                if (currentPage < totalPages) {
+                    fetchConversions(appId, currentPage + 1);
+                }
+            });
+        });
+
+        // Récupérer les données de l'application
+        function fetchApplicationData(appId) {
+            fetch(`/api/applications/${appId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const app = data.data;
+                        document.getElementById('app-name').textContent = app.name;
+                        document.getElementById('app-description').textContent = app.description || 'Aucune description';
+                        
+                        // Récupérer les statistiques de conversion
+                        fetchApplicationStats(appId);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération des données de l\'application:', error);
+                });
+        }
+
+        // Récupérer les statistiques de conversion pour l'application
+        function fetchApplicationStats(appId) {
+            // Variable globale pour utilisation dans d'autres fonctions
+            window.appId = appId;
+            
+            console.log("Démarrage du calcul des statistiques pour l'application ID:", appId);
+            
+            // Aller directement chercher l'historique pour calculer les statistiques
+            // Cela contourne les problèmes d'API qui retournent des statistiques à zéro
+            fetchConversionsForStats(appId);
+            
+            /*
+            fetch(`/api/applications/${appId}/stats`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.data;
+                        console.log("Réponse des statistiques complète:", stats);
+                        
+                        // Vérifier si les statistiques générales sont à zéro
+                        const generalStats = stats.general || {};
+                        if (!generalStats.total || generalStats.total === 0) {
+                            console.log("Statistiques à zéro détectées, calcul depuis l'historique");
+                            // Si les statistiques sont à zéro, calculer à partir de l'historique
+                            fetchConversionsForStats(appId);
+                        } else {
+                            displayStats(generalStats);
+                            
+                            // Si le graphique d'activité existe
+                            if (document.getElementById('activity-chart')) {
+                                createActivityChart(stats.daily);
+                            }
+                        }
+                    } else {
+                        // En cas d'erreur, calculer depuis l'historique
+                        fetchConversionsForStats(appId);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération des statistiques:', error);
+                    
+                    // En cas d'erreur, essayons de récupérer les statistiques directement depuis l'historique
+                    fetchConversionsForStats(appId);
+                });
+            */
+        }
+        
+        // Récupérer toutes les conversions pour calculer les statistiques manuellement
+        function fetchConversionsForStats(appId) {
+            console.log("Récupération des conversions pour le calcul des statistiques, appId:", appId);
+            
+            fetch(`/api/applications/${appId}/conversions?limit=1000&include_null=true`)
+                .then(response => {
+                    console.log("Réponse brute des conversions:", response);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log("Données des conversions complètes:", data);
+                    
+                    if (data.success && data.data && data.data.conversions) {
+                        const conversions = data.data.conversions;
+                        console.log("Nombre de conversions trouvées:", conversions.length);
+                        
+                        if (conversions.length > 0) {
+                            // Calculer manuellement les statistiques
+                            const total = conversions.length;
+                            // Force le statut à 'success' si undefined ou null
+                            // Cela assure la compatibilité avec d'anciens formats de données
+                            const successCount = conversions.filter(c => 
+                                c.status === 'success' || c.status === 'Succès' || c.status === undefined
+                            ).length;
+                            
+                            let avgProcessingTime = 0;
+                            if (total > 0) {
+                                const totalTime = conversions.reduce((sum, c) => {
+                                    const time = parseInt(c.processing_time) || 0;
+                                    console.log(`Conversion ID ${c.id}: temps de traitement = ${time}ms`);
+                                    return sum + time;
+                                }, 0);
+                                avgProcessingTime = totalTime / total;
+                            }
+                            
+                            const stats = {
+                                total: total,
+                                success_count: successCount,
+                                error_count: total - successCount,
+                                avg_processing_time: avgProcessingTime
+                            };
+                            
+                            console.log("Statistiques calculées manuellement:", stats);
+                            
+                            // Mettre à jour directement les valeurs dans l'interface
+                            document.getElementById('total-conversions').textContent = stats.total;
+                            document.getElementById('success-rate').textContent = `${Math.round((stats.success_count / stats.total) * 100)}%`;
+                            document.getElementById('avg-time').textContent = `${Math.round(stats.avg_processing_time)}ms`;
+                            
+                            // Puis, appeler displayStats pour la mise à jour complète
+                            displayStats(stats);
+                        } else {
+                            console.log("Aucune conversion trouvée pour cette application");
+                        }
+                    } else {
+                        console.error("Format de données invalide dans la réponse des conversions:", data);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération des conversions pour les statistiques:', error);
+                });
+        }
+
+        // Afficher les statistiques générales
+        function displayStats(generalStats) {
+            if (!generalStats) {
+                console.warn("Aucune statistique générale reçue");
+                return;
+            }
+            
+            console.log("Statistiques générales reçues:", generalStats);
+            
+            // Mise à jour directe des statistiques dans l'interface
+            document.getElementById('total-conversions').textContent = generalStats.total || 0;
+            
+            const successRate = generalStats.total > 0 
+                ? Math.round((generalStats.success_count / generalStats.total) * 100) 
+                : 0;
+            document.getElementById('success-rate').textContent = `${successRate}%`;
+            
+            const avgTime = generalStats.avg_processing_time 
+                ? Math.round(generalStats.avg_processing_time) 
+                : 0;
+            document.getElementById('avg-time').textContent = `${avgTime}ms`;
+        }
+
+        // Créer le graphique d'activité
+        function createActivityChart(dailyStats) {
+            if (!dailyStats || dailyStats.length === 0) return;
+            
+            const dates = dailyStats.map(day => day.date);
+            const successCounts = dailyStats.map(day => day.success_count);
+            const errorCounts = dailyStats.map(day => day.error_count);
+            
+            const ctx = document.getElementById('activity-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: dates,
+                    datasets: [
+                        {
+                            label: 'Conversions réussies',
+                            data: successCounts,
+                            backgroundColor: '#28a745',
+                            borderColor: '#28a745',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Conversions échouées',
+                            data: errorCounts,
+                            backgroundColor: '#dc3545',
+                            borderColor: '#dc3545',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Récupérer les conversions avec pagination
+        function fetchConversions(appId, page, limit = 10) {
+            fetch(`/api/applications/${appId}/conversions?page=${page}&limit=${limit}&include_null=true`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayConversions(data.data.conversions);
+                        updatePagination(page, data.data.totalPages, appId);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération des conversions:', error);
+                });
+        }
+
+        // Afficher les conversions dans le tableau
+        function displayConversions(conversions) {
+            const tableBody = document.getElementById('conversions-table-body');
+            tableBody.innerHTML = '';
+            
+            if (!conversions || conversions.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="6" style="text-align: center;">Aucune conversion trouvée</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            // Récupérer l'ID de l'application depuis l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const appId = urlParams.get('id');
+            
+            conversions.forEach(conversion => {
+                const row = document.createElement('tr');
+                // Déterminer le type basé sur la présence d'un message d'entrée
+                const type = conversion.input_message || conversion.hl7_content ? 'HL7' : 'API';
+                
+                row.innerHTML = `
+                    <td>${conversion.id}</td>
+                    <td>${formatDate(conversion.timestamp || conversion.created_at)}</td>
+                    <td>${type}</td>
+                    <td>
+                        <span class="status-badge ${conversion.status === 'success' ? 'status-success' : 'status-error'}">
+                            ${conversion.status === 'success' ? 'Succès' : 'Échec'}
+                        </span>
+                    </td>
+                    <td>${conversion.processing_time || 0} ms</td>
+                    <td>
+                        <button style="padding: 6px 12px; background: linear-gradient(135deg, #ff5e62, #ff9966); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" data-id="${conversion.id}" data-app-id="${appId}">Détails</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Ajouter des gestionnaires d'événements pour les boutons Détails
+            document.querySelectorAll('button[data-id]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const conversionId = this.getAttribute('data-id');
+                    const appId = this.getAttribute('data-app-id');
+                    showConversionDetails(appId, conversionId);
+                });
+            });
+        }
+
+        // Mettre à jour la pagination
+        function updatePagination(currentPage, totalPages, appId) {
+            const prevBtn = document.getElementById('prev-page');
+            const nextBtn = document.getElementById('next-page');
+            const pageInfo = document.getElementById('page-info');
+            
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = currentPage >= totalPages;
+            
+            pageInfo.textContent = `Page ${currentPage} sur ${totalPages}`;
+            
+            prevBtn.dataset.currentPage = currentPage;
+            nextBtn.dataset.currentPage = currentPage;
+            prevBtn.dataset.totalPages = totalPages;
+            nextBtn.dataset.totalPages = totalPages;
+        }
+
+        // Afficher les détails d'une conversion
+        function showConversionDetails(appId, conversionId) {
+            fetch(`/api/applications/${appId}/conversions/${conversionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const conversion = data.data;
+                        const modal = document.getElementById('conversion-details-modal');
+                        const content = document.getElementById('conversion-details-content');
+                        const closeBtn = document.querySelector('.close');
+                        
+                        // Ajouter l'événement pour fermer la boîte de dialogue
+                        closeBtn.onclick = function() {
+                            modal.style.display = "none";
+                        }
+                        
+                        // Fermer la boîte de dialogue lors d'un clic en dehors
+                        window.onclick = function(event) {
+                            if (event.target == modal) {
+                                modal.style.display = "none";
+                            }
+                        }
+                        
+                        let detailsHtml = `
+                            <div class="details-grid">
+                                <div class="detail-item">
+                                    <span class="detail-label">ID:</span>
+                                    <span class="detail-value">${conversion.id}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Date:</span>
+                                    <span class="detail-value">${formatDate(conversion.timestamp || conversion.created_at)}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Type:</span>
+                                    <span class="detail-value">${conversion.input_message ? 'HL7' : 'API'}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Statut:</span>
+                                    <span class="detail-value status-badge ${conversion.status === 'success' ? 'status-success' : 'status-error'}">
+                                        ${conversion.status === 'success' ? 'Succès' : 'Échec'}
+                                    </span>
+                                </div>
+                                <div class="detail-item">
+                                    <span class="detail-label">Temps de traitement:</span>
+                                    <span class="detail-value">${conversion.processing_time || 0} ms</span>
+                                </div>
+                            </div>
+                            <div class="detail-section">
+                                <h3>Message HL7 d'entrée</h3>
+                                <pre class="code-block">${conversion.input_message || conversion.hl7_content || 'Non disponible'}</pre>
+                            </div>
+                        `;
+                        
+                        if (conversion.output_message || conversion.fhir_content) {
+                            detailsHtml += `
+                                <div class="detail-section">
+                                    <h3>Ressources FHIR générées</h3>
+                                    <pre class="code-block">${formatJSON(conversion.output_message || conversion.fhir_content)}</pre>
+                                </div>
+                            `;
+                        }
+                        
+                        if (conversion.error_message) {
+                            detailsHtml += `
+                                <div class="detail-section">
+                                    <h3>Message d'erreur</h3>
+                                    <pre class="code-block error">${conversion.error_message}</pre>
+                                </div>
+                            `;
+                        }
+                        
+                        content.innerHTML = detailsHtml;
+                        modal.style.display = 'block';
+                        
+                        // Fermer le modal
+                        document.querySelector('.close').addEventListener('click', function() {
+                            modal.style.display = 'none';
+                        });
+                        
+                        // Fermer le modal en cliquant en dehors
+                        window.addEventListener('click', function(event) {
+                            if (event.target === modal) {
+                                modal.style.display = 'none';
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération des détails de la conversion:', error);
+                });
+        }
+
+        // Formater une date
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            
+            // Créer une date à partir de la chaîne
+            const date = new Date(dateString);
+            
+            // Vérifier si la date est valide
+            if (isNaN(date.getTime())) {
+                console.warn(`Date invalide: ${dateString}`);
+                return dateString; // Retourner la chaîne originale en cas d'échec
+            }
+            
+            // Le serveur stocke les dates en UTC
+            // Utiliser directement le fuseau horaire 'Europe/Paris' sans ajout manuel d'heures
+            // cela prendra automatiquement en compte l'heure d'été/hiver
+            return date.toLocaleString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: 'Europe/Paris' // Fuseau horaire français (UTC+1 en hiver, UTC+2 en été)
+            });
+        }
+
+        // Formater du JSON
+        function formatJSON(jsonString) {
+            try {
+                const obj = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+                return JSON.stringify(obj, null, 2);
+            } catch (e) {
+                return jsonString || 'Non disponible';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+te mode 100644 storage/data/.gitkeep
+ create mode 100644 storage/data/ai_responses/.gitkeep
+ create mode 100644 storage/data/cache/.gitkeep
+ create mode 100644 storage/data/cache/95943ff48c71314eba296edfe289cc91d1c57156fd08dfbd51bc06af9461e837.json
+ create mode 100644 storage/db/.gitkeep
+ create mode 100644 storage/db/fhirhub.db-shm
+ create mode 100644 storage/db/fhirhub.db-wal
+ create mode 100644 swagger.js
+ create mode 100644 test-ollama.js
+ create mode 100644 tsconfig.json
+ create mode 100644 update_conversion_logs_schema.js
+ create mode 100644 utils/aiProviderService.js
+ create mode 100644 utils/aiService.js
+ create mode 100644 utils/auth.js
+ create mode 100644 utils/directMistralClient.js
+ create mode 100644 utils/fhirClient.js
+ create mode 100644 utils/fhirService.js
+ create mode 100644 utils/fhirValidator.js
+ create mode 100644 utils/logger.js
+ create mode 100644 utils/mistralClient.js
+ create mode 100644 utils/ollamaClient.js
+ create mode 100644 uv.lock
+ create mode 100644 volumes/app/.gitkeep
+ create mode 100644 volumes/backups/.gitkeep
+ create mode 100644 volumes/data/.gitkeep
+ create mode 100644 volumes/db/.gitkeep
+Enumerating objects: 1075, done.
+Counting objects: 100% (1075/1075), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (1047/1047), done.
+Writing objects: 100% (1075/1075), 207.10 MiB | 4.94 MiB/s, done.
+Total 1075 (delta 16), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (16/16), done.
+remote: error: Trace: 921f9e15bdb1f16dba4cef1bf1fcfb56e2b34682d0b1afdc255f2dd133425d85
+remote: error: See https://gh.io/lfs for more information.
+remote: error: File .git_backup_with_large_files/objects/32/d21c73d9b7ab72a03e27a02fac4472afae6119 is 197.06 MB; this exceeds GitHub's file size limit of 100.00 MB
+remote: error: GH001: Large files detected. You may want to try Git Large File Storage - https://git-lfs.github.com.
+To https://github.com/svoer/FHIRhub.git
+ ! [remote rejected] main -> main (pre-receive hook declined)
+error: failed to push some refs to 'https://github.com/svoer/FHIRhub.git'
+~/workspace$ 

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Convertir HL7 vers FHIR - FHIRHub</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/sidebar-menu.css">
+  <link rel="stylesheet" href="/css/ai-indicator.css">
+  
+  <!-- Inclusions du chatbot de support -->
+  <link rel="stylesheet" href="/css/support-chatbot.css">
+  <script src="/js/support-chatbot.js" defer></script>
+  
+  <!-- Inclusion de l'indicateur de fournisseur d'IA -->
+  <script src="/js/ai-provider-indicator.js" defer></script>
+  
+  <!-- Inclusion du menu latéral -->
+  <script src="/js/include-sidebar.js" defer></script>
+  <script src="/js/sidebar-menu.js" defer></script>
+</head>
+<body>
+  <!-- Le menu latéral sera chargé par include-sidebar.js -->
+  <div id="sidebar-container"></div>
+
+  <div class="main-content">
+    <div class="container">
+      <h1>Convertir HL7 v2.5 vers FHIR R4</h1>
+      
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Conversion</h2>
+          <button id="convertBtn" class="btn btn-primary">Convertir</button>
+        </div>
+        
+        <div id="convertAlert" class="alert alert-danger hidden"></div>
+        
+        <div class="converter-container">
+          <div>
+            <h3>Message HL7 v2.5</h3>
+            <textarea id="hl7Input" class="form-control hl7-input" placeholder="Saisissez ou collez ici votre message HL7 v2.5">MSH|^~\&|SENDING_APP|SENDING_FACILITY|RECEIVING_APP|RECEIVING_FACILITY|20230801101530||ADT^A01|20230801101530|P|2.5|||||FRA|UNICODE UTF-8|||LAB_HL7_V2
+PID|1||458722781^^^CENTRE_HOSPITALIER_DE_TEST^PI||SECLET^MARYSE BERTHE ALICE||19830711|F|||123 AVENUE DES HÔPITAUX^^PARIS^^75001^FRANCE^H||0123456789^PRN^CP~email@test.fr^NET^^|||||78123456789|||||||||^FR-LYON^N</textarea>
+          </div>
+          
+          <div>
+            <h3>Résultat FHIR R4</h3>
+            <textarea id="fhirOutput" class="form-control fhir-output" readonly></textarea>
+            <button id="copyBtn" class="btn btn-secondary copy-btn">Copier</button>
+          </div>
+        </div>
+        
+        <div class="logs-container">
+          <div class="logs-title">Logs de conversion</div>
+          <div id="logsContent"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Vérifier l'authentification
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+        return;
+      }
+      
+      // Gestion de la déconnexion - avec vérification de l'existence du bouton
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login.html';
+        });
+      } else {
+        console.warn("Bouton de déconnexion non trouvé. L'événement sera géré par include-sidebar.js");
+      }
+      
+      // Gestion de la conversion
+      document.getElementById('convertBtn').addEventListener('click', convertHl7ToFhir);
+      
+      // Gestion de la copie du résultat
+      document.getElementById('copyBtn').addEventListener('click', copyFhirOutput);
+    });
+    
+    function addLogEntry(message, type = 'info') {
+      const logsContent = document.getElementById('logsContent');
+      const logEntry = document.createElement('div');
+      logEntry.className = `log-entry log-${type}`;
+      
+      // Ajouter l'horodatage
+      const now = new Date();
+      const timestamp = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+      
+      logEntry.textContent = `[${timestamp}] ${message}`;
+      logsContent.appendChild(logEntry);
+      
+      // Faire défiler vers le bas
+      logsContent.scrollTop = logsContent.scrollHeight;
+    }
+    
+    function convertHl7ToFhir() {
+      const hl7Input = document.getElementById('hl7Input').value.trim();
+      const fhirOutput = document.getElementById('fhirOutput');
+      const convertAlert = document.getElementById('convertAlert');
+      
+      // Masquer l'alerte précédente
+      convertAlert.classList.add('hidden');
+      
+      if (!hl7Input) {
+        convertAlert.textContent = 'Veuillez saisir un message HL7.';
+        convertAlert.classList.remove('hidden');
+        return;
+      }
+      
+      // Afficher un log de début de conversion
+      addLogEntry('Début de la conversion HL7 vers FHIR');
+      
+      // Appeler l'API de conversion
+      fetch('/api/convert', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-KEY': 'dev-key'
+        },
+        body: JSON.stringify({ hl7Message: hl7Input })
+      })
+      .then(response => response.json())
+      .then(data => {
+        // L'API renvoie directement le bundle FHIR, pas d'enveloppe success/data
+        if (data && data.resourceType === 'Bundle') {
+          // Formater le JSON pour l'affichage
+          const formattedJson = JSON.stringify(data, null, 2);
+          fhirOutput.value = formattedJson;
+          
+          // Ajouter un log de succès
+          addLogEntry('Conversion réussie', 'success');
+          
+          // Compter les ressources dans le bundle
+          const resourceCount = data.entry ? data.entry.length : 0;
+          addLogEntry(`Bundle généré avec ${resourceCount} ressource(s)`, 'info');
+        } else if (data.success) {
+          // Format de réponse avec enveloppe success/data (pour compatibilité)
+          const formattedJson = JSON.stringify(data.data, null, 2);
+          fhirOutput.value = formattedJson;
+          
+          // Ajouter un log de succès
+          addLogEntry('Conversion réussie', 'success');
+          
+          // Compter les ressources dans le bundle
+          const resourceCount = data.data.entry ? data.data.entry.length : 0;
+          addLogEntry(`Bundle généré avec ${resourceCount} ressource(s)`, 'info');
+        } else {
+          // Afficher l'erreur
+          convertAlert.textContent = data.message || 'Erreur lors de la conversion.';
+          convertAlert.classList.remove('hidden');
+          
+          // Ajouter un log d'erreur
+          addLogEntry(`Erreur: ${data.message || 'Erreur lors de la conversion'}`, 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Erreur lors de la conversion:', error);
+        convertAlert.textContent = 'Une erreur est survenue lors de la conversion.';
+        convertAlert.classList.remove('hidden');
+        
+        // Ajouter un log d'erreur
+        addLogEntry(`Erreur technique: ${error.message}`, 'error');
+      });
+    }
+    
+    function copyFhirOutput() {
+      const fhirOutput = document.getElementById('fhirOutput');
+      
+      // Sélectionner le texte
+      fhirOutput.select();
+      fhirOutput.setSelectionRange(0, 999999); // Pour les navigateurs mobiles
+      
+      // Copier le texte
+      navigator.clipboard.writeText(fhirOutput.value)
+        .then(() => {
+          // Ajouter un log
+          addLogEntry('Résultat copié dans le presse-papiers', 'success');
+        })
+        .catch(err => {
+          console.error('Erreur lors de la copie:', err);
+          addLogEntry('Erreur lors de la copie', 'error');
+        });
+    }
+  </script>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-text">
+        &copy; 2025 FHIRHub - Service de conversion HL7 vers FHIR
+        <div class="footer-version">Version: <span class="version-text">Chargement...</span></div>
+      </div>
+      <ul class="footer-links">
+      </ul>
+    </div>
+  </footer>
+  
+  <!-- Script pour gérer la version dans le footer -->
+  <script src="/js/footer-version.js"></script>
+</body>
+</html>

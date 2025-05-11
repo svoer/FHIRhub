@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FHIRHub - Redirection vers le Tableau de Bord</title>
+    <meta http-equiv="refresh" content="0;url=/dashboard.html">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #ff7043, #f44336);
+            color: white;
+            text-align: center;
+        }
+        
+        .redirect-container {
+            max-width: 500px;
+            padding: 20px;
+        }
+        
+        h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        
+        .loader {
+            border: 5px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 5px solid #fff;
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        a {
+            color: white;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="redirect-container">
+        <div class="loader"></div>
+        <h1>Redirection vers le Tableau de Bord FHIRHub</h1>
+        <p>Vous allez être redirigé automatiquement vers le tableau de bord principal.</p>
+        <p>Si la redirection ne fonctionne pas, <a href="/dashboard.html">cliquez ici</a>.</p>
+    </div>
+    
+    <script>
+        // Redirection JavaScript en plus de la redirection HTML pour plus de fiabilité
+        window.location.href = "/dashboard.html";
+    </script>
+</body>
+</html>

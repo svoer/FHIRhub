@@ -1,0 +1,46 @@
+<!--
+  Nœud d'entrée HL7 pour Node-RED
+-->
+
+<script type="text/javascript">
+    RED.nodes.registerType('fhirhub-hl7-input', {
+        category: 'fhirhub',
+        color: '#E63946',
+        defaults: {
+            name: { value: "" }
+        },
+        inputs: 0,
+        outputs: 1,
+        icon: "font-awesome/fa-sign-in",
+        label: function() {
+            return this.name || "HL7 Input";
+        },
+        labelStyle: function() {
+            return this.name ? "node_label_italic" : "";
+        },
+        paletteLabel: "HL7 Input"
+    });
+</script>
+
+<script type="text/html" data-template-name="fhirhub-hl7-input">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Nom</label>
+        <input type="text" id="node-input-name" placeholder="Nom">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="fhirhub-hl7-input">
+    <p>Ce nœud est un point d'entrée pour les messages HL7 dans un workflow FHIRHub.</p>
+    <h3>Sorties</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">string</span></dt>
+        <dd>Le message HL7 d'origine.</dd>
+        <dt>hl7 <span class="property-type">string</span></dt>
+        <dd>Le message HL7 à traiter (identique au payload).</dd>
+    </dl>
+    <h3>Détails</h3>
+    <p>Ce nœud est généralement utilisé comme point de départ pour les workflows de traitement de messages HL7.
+    Il peut être déclenché manuellement ou par un autre nœud qui lui envoie un message.</p>
+    <p>Lorsqu'il est déclenché, le nœud transmet le message HL7 reçu aux nœuds suivants dans le workflow
+    pour traitement ultérieur, comme l'extraction de segments spécifiques ou la conversion en FHIR.</p>
+</script>
