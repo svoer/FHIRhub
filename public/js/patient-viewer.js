@@ -308,80 +308,32 @@ document.addEventListener('DOMContentLoaded', function() {
         const patientId = patientSelect.value;
         const server = serverSelect.value;
         
-        console.log(`Chargement du patient ${patientId} depuis le serveur ${server}`);
-        
         try {
             const selectedOption = patientSelect.options[patientSelect.selectedIndex];
             patientData = JSON.parse(selectedOption.dataset.patient);
             
             // Afficher les détails
             document.getElementById('patientName').textContent = formatPatientName(patientData.name);
-            
-            // Format plus détaillé pour l'en-tête du patient
-            let patientDetails = '';
-            
-            if (patientData.gender) {
-                patientDetails += `<span style="margin-right: 15px;"><i class="fas ${patientData.gender === 'male' ? 'fa-male' : patientData.gender === 'female' ? 'fa-female' : 'fa-user'}" style="margin-right: 5px;"></i> ${patientData.gender === 'male' ? 'Homme' : patientData.gender === 'female' ? 'Femme' : patientData.gender}</span>`;
-            }
-            
-            if (patientData.birthDate) {
-                const birthDate = new Date(patientData.birthDate);
-                const today = new Date();
-                const age = today.getFullYear() - birthDate.getFullYear();
-                const formattedDate = birthDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                patientDetails += `<span style="margin-right: 15px;"><i class="fas fa-birthday-cake" style="margin-right: 5px;"></i> ${formattedDate} (${age} ans)</span>`;
-            }
-            
-            if (patientData.telecom && patientData.telecom.length > 0) {
-                const phone = patientData.telecom.find(t => t.system === 'phone');
-                if (phone) {
-                    patientDetails += `<span style="margin-right: 15px;"><i class="fas fa-phone" style="margin-right: 5px;"></i> ${phone.value}</span>`;
-                }
-                
-                const email = patientData.telecom.find(t => t.system === 'email');
-                if (email) {
-                    patientDetails += `<span style="margin-right: 15px;"><i class="fas fa-envelope" style="margin-right: 5px;"></i> ${email.value}</span>`;
-                }
-            }
-            
-            document.getElementById('patientDetails').innerHTML = patientDetails || `ID: ${patientData.id}`;
+            document.getElementById('patientDetails').textContent = 
+                `ID: ${patientData.id} | Genre: ${patientData.gender || 'Non spécifié'} | Naissance: ${patientData.birthDate || 'Non spécifiée'}`;
             
             // Afficher le conteneur de patient
             document.getElementById('patientContainer').style.display = 'block';
             
-            // Charger toutes les ressources associées au patient en parallèle
-            // Utiliser Promise.allSettled pour continuer même si certaines requêtes échouent
-            const loadingPromises = [
-                { name: 'Conditions', promise: loadPatientConditions(patientId, server) },
-                { name: 'Observations', promise: loadPatientObservations(patientId, server) },
-                { name: 'Médicaments', promise: loadPatientMedications(patientId, server) },
-                { name: 'Consultations', promise: loadPatientEncounters(patientId, server) },
-                { name: 'Praticiens', promise: loadPatientPractitioners(patientId, server) },
-                { name: 'Organisations', promise: loadPatientOrganizations(patientId, server) },
-                { name: 'Personnes liées', promise: loadPatientRelatedPersons(patientId, server) },
-                { name: 'Couvertures', promise: loadPatientCoverage(patientId, server) },
-                { name: 'Chronologie', promise: generateTimeline(patientId, server) },
-                { name: 'Bundle', promise: loadPatientBundle(patientId, server) }
-            ];
+            // Charger toutes les ressources associées au patient
+            loadPatientConditions(patientId, server);
+            loadPatientObservations(patientId, server);
+            loadPatientMedications(patientId, server);
+            loadPatientEncounters(patientId, server);
+            loadPatientPractitioners(patientId, server);
+            loadPatientOrganizations(patientId, server);
+            loadPatientRelatedPersons(patientId, server);
+            loadPatientCoverage(patientId, server);
+            generateTimeline(patientId, server);
+            loadPatientBundle(patientId, server);
             
-            // Afficher un résumé global des résultats du chargement
-            Promise.allSettled(loadingPromises.map(item => item.promise))
-                .then(results => {
-                    const summary = loadingPromises.map((item, index) => {
-                        const result = results[index];
-                        return {
-                            name: item.name,
-                            status: result.status,
-                            error: result.status === 'rejected' ? result.reason?.message : null
-                        };
-                    });
-                    
-                    console.log('Résultats du chargement des ressources:', summary);
-                })
-                .finally(() => {
-                    // Mettre à jour l'onglet JSON
-                    updateJsonView();
-                });
+            // Mettre à jour l'onglet JSON
+            updateJsonView();
             
             // Résumé amélioré avec checkboxes et résumé clinique non-IA
             document.getElementById('summaryContent').innerHTML = `
@@ -453,22 +405,21 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonctions pour charger les ressources liées au patient
     function loadPatientConditions(patientId, serverUrl) {
-        return new Promise((resolve, reject) => {
-            const container = document.querySelector('#conditionsContent');
-            const loadingSection = container.querySelector('.loading-resources');
-            const noResourcesSection = container.querySelector('.no-resources');
-            const resourcesList = container.querySelector('.resources-list');
-            
-            // Réinitialiser les données des conditions
-            conditionsData = [];
-            
-            loadingSection.style.display = 'block';
-            noResourcesSection.style.display = 'none';
-            resourcesList.style.display = 'none';
-            
-            // URL de la requête FHIR avec format correct pour référence patient (limite augmentée à 100)
-            const url = `${serverUrl}/Condition?subject=Patient/${patientId}&_sort=-recorded-date&_count=100`;
-            console.log(`Chargement des conditions depuis: ${url}`);
+        const container = document.querySelector('#conditionsContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
+        
+        // Réinitialiser les données des conditions
+        conditionsData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
+        
+        // URL de la requête FHIR (limite augmentée à 1000 pour avoir toutes les données)
+        const url = `${serverUrl}/Condition?patient=${patientId}&_sort=-recorded-date&_count=1000`;
+        console.log(`Chargement des conditions depuis: ${url}`);
         
         // Utiliser XMLHttpRequest pour une meilleure compatibilité et gestion d'erreurs
         const xhr = new XMLHttpRequest();
@@ -534,53 +485,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch (error) {
                     console.error('Erreur parsing JSON conditions:', error);
                     noResourcesSection.style.display = 'block';
-                    reject(error);
                 }
             } else {
                 console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
                 noResourcesSection.style.display = 'block';
-                reject(new Error(`Problème de récupération des conditions: ${xhr.status}`));
             }
-            resolve(conditionsData);
         };
         
         xhr.onerror = function() {
             console.error(`Erreur réseau lors de la récupération des conditions: ${url}`);
             loadingSection.style.display = 'none';
             noResourcesSection.style.display = 'block';
-            reject(new Error("Erreur réseau lors de la récupération des conditions"));
         };
         
         xhr.send();
-        });  // Fermeture de la Promise
     }
     
     function loadPatientObservations(patientId, serverUrl) {
-        return new Promise((resolve, reject) => {
-            const container = document.querySelector('#observationsContent');
-            const loadingSection = container.querySelector('.loading-resources');
-            const noResourcesSection = container.querySelector('.no-resources');
-            const resourcesList = container.querySelector('.resources-list');
-            
-            // Réinitialiser les données des observations
-            observationsData = [];
-            
-            loadingSection.style.display = 'block';
-            noResourcesSection.style.display = 'none';
-            resourcesList.style.display = 'none';
-            
-            // URL de la requête FHIR avec format correct pour référence patient (limite à 100)
-            const url = `${serverUrl}/Observation?subject=Patient/${patientId}&_sort=-date&_count=100`;
-            console.log(`Chargement des observations depuis: ${url}`);
-            
-            // Exécuter la requête FHIR pour récupérer les observations
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erreur de récupération des observations: ${response.status}`);
-                    }
-                    return response.json();
-                })
+        const container = document.querySelector('#observationsContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
+        
+        // Réinitialiser les données des observations
+        observationsData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
+        
+        // Exécuter la requête FHIR pour récupérer les observations (limite augmentée à 1000 pour avoir toutes les données)
+        fetch(`${serverUrl}/Observation?patient=${patientId}&_sort=-date&_count=1000`)
+            .then(response => response.json())
             .then(data => {
                 loadingSection.style.display = 'none';
                 
@@ -638,40 +574,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Erreur lors du chargement des observations:', error);
                 loadingSection.style.display = 'none';
                 noResourcesSection.style.display = 'block';
-                reject(error);
-            })
-            .finally(() => {
-                resolve(observationsData);
             });
-        });
     }
     
     function loadPatientMedications(patientId, serverUrl) {
-        return new Promise((resolve, reject) => {
-            const container = document.querySelector('#medicationsContent');
-            const loadingSection = container.querySelector('.loading-resources');
-            const noResourcesSection = container.querySelector('.no-resources');
-            const resourcesList = container.querySelector('.resources-list');
-            
-            // Réinitialiser les données des médicaments
-            medicationsData = [];
-            
-            loadingSection.style.display = 'block';
-            noResourcesSection.style.display = 'none';
-            resourcesList.style.display = 'none';
-            
-            // URL de la requête FHIR avec format correct pour référence patient
-            const url = `${serverUrl}/MedicationRequest?subject=Patient/${patientId}&_sort=-date&_count=100`;
-            console.log(`Chargement des médicaments depuis: ${url}`);
-            
-            // Exécuter la requête FHIR pour récupérer les médicaments
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erreur de récupération des médicaments: ${response.status}`);
-                    }
-                    return response.json();
-                })
+        const container = document.querySelector('#medicationsContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
+        
+        // Réinitialiser les données des médicaments
+        medicationsData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
+        
+        // Exécuter la requête FHIR pour récupérer les médicaments (limite augmentée à 1000 pour avoir toutes les données)
+        fetch(`${serverUrl}/MedicationRequest?patient=${patientId}&_sort=-date&_count=1000`)
+            .then(response => response.json())
             .then(data => {
                 loadingSection.style.display = 'none';
                 
@@ -731,40 +652,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Erreur lors du chargement des médicaments:', error);
                 loadingSection.style.display = 'none';
                 noResourcesSection.style.display = 'block';
-                reject(error);
-            })
-            .finally(() => {
-                resolve(medicationsData);
             });
-        });
     }
     
     function loadPatientEncounters(patientId, serverUrl) {
-        return new Promise((resolve, reject) => {
-            const container = document.querySelector('#encountersContent');
-            const loadingSection = container.querySelector('.loading-resources');
-            const noResourcesSection = container.querySelector('.no-resources');
-            const resourcesList = container.querySelector('.resources-list');
-            
-            // Réinitialiser les données des consultations
-            encountersData = [];
-            
-            loadingSection.style.display = 'block';
-            noResourcesSection.style.display = 'none';
-            resourcesList.style.display = 'none';
-            
-            // URL de la requête FHIR avec format correct pour référence patient
-            const url = `${serverUrl}/Encounter?subject=Patient/${patientId}&_sort=-date&_count=100`;
-            console.log(`Chargement des consultations depuis: ${url}`);
-            
-            // Exécuter la requête FHIR pour récupérer les consultations
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erreur de récupération des consultations: ${response.status}`);
-                    }
-                    return response.json();
-                })
+        const container = document.querySelector('#encountersContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
+        
+        // Réinitialiser les données des consultations
+        encountersData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
+        
+        // Exécuter la requête FHIR pour récupérer les consultations (limite augmentée à 1000 pour avoir toutes les données)
+        fetch(`${serverUrl}/Encounter?patient=${patientId}&_sort=-date&_count=1000`)
+            .then(response => response.json())
             .then(data => {
                 loadingSection.style.display = 'none';
                 
@@ -826,12 +732,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Erreur lors du chargement des consultations:', error);
                 loadingSection.style.display = 'none';
                 noResourcesSection.style.display = 'block';
-                reject(error);
-            })
-            .finally(() => {
-                resolve(encountersData);
             });
-        });
     }
     
     // Fonctions pour charger les ressources supplémentaires
@@ -1151,21 +1052,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const bundleInfo = document.getElementById('bundleInfo');
         const bundleResourcesList = document.getElementById('bundleResourcesList');
         
-        // Afficher un indicateur de chargement
-        bundleInfo.innerHTML = `
-            <div style="text-align: center; padding: 20px;">
-                <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="margin-top: 15px; color: #666;">Chargement du bundle patient...</p>
-            </div>
-        `;
-        
-        // Construction d'une URL qui récupère le patient et toutes ses références
-        // Cette URL est compatible avec la plupart des serveurs FHIR
-        const bundleUrl = `${serverUrl}/Patient/${patientId}?_include=Patient:organization&_include=Patient:general-practitioner&_revinclude=Condition:subject&_revinclude=Observation:subject&_revinclude=MedicationRequest:subject&_revinclude=Encounter:subject&_revinclude=Coverage:beneficiary&_revinclude=RelatedPerson:patient&_format=json`;
-        
-        console.log(`Chargement du bundle depuis: ${bundleUrl}`);
-        
-        fetch(bundleUrl)
+        // URL arbitraire pour simuler la récupération d'un bundle de transaction/création
+        // Dans un cas réel, cette URL proviendrait d'une API ou d'un stockage précédent
+        fetch(`${serverUrl}/Patient/${patientId}?_include=*`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération du bundle: ${response.status}`);
@@ -1511,13 +1400,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             };
             
-            // Récupérer toutes les ressources pour la chronologie avec les formats corrects pour les références patient
-            console.log(`Génération de la chronologie pour le patient ${patientId}`);
+            // Récupérer toutes les ressources pour la chronologie (consultations, médicaments, observations, etc.)
+            // Utiliser _count=1000 pour récupérer beaucoup plus de résultats (presque tous)
             Promise.all([
-                fetchSafely(`${serverUrl}/Encounter?subject=Patient/${patientId}&_count=100`),
-                fetchSafely(`${serverUrl}/Observation?subject=Patient/${patientId}&_count=100`),
-                fetchSafely(`${serverUrl}/MedicationRequest?subject=Patient/${patientId}&_count=100`),
-                fetchSafely(`${serverUrl}/Condition?subject=Patient/${patientId}&_count=100`)
+                fetchSafely(`${serverUrl}/Encounter?patient=${patientId}&_count=1000`),
+                fetchSafely(`${serverUrl}/Observation?patient=${patientId}&_count=1000`),
+                fetchSafely(`${serverUrl}/MedicationRequest?patient=${patientId}&_count=1000`),
+                fetchSafely(`${serverUrl}/Condition?patient=${patientId}&_count=1000`)
             ])
         .then(([encounters, observations, medications, conditions]) => {
             loadingSection.style.display = 'none';
@@ -1661,35 +1550,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     </details>
                 </div>
             `;
-            
-            // Résoudre la promesse avec les données de la chronologie
-            const timelineData = {
-                entries: timelineEntries,
-                count: timelineEntries.length
-            };
-            resolve(timelineData);
-        })
-        .catch(error => {
-            console.error('Erreur dans generateTimeline:', error);
-            // Afficher un message d'erreur dans l'interface
-            const container = document.querySelector('#timelineContent');
-            if (container) {
-                const noResourcesSection = container.querySelector('.no-resources');
-                if (noResourcesSection) {
-                    noResourcesSection.style.display = 'block';
-                    noResourcesSection.innerHTML = `
-                        <div class="alert alert-danger">
-                            <h4>Erreur critique</h4>
-                            <p>Une erreur est survenue lors de la génération de la chronologie.</p>
-                            <details>
-                                <summary>Détails techniques</summary>
-                                <pre>${error.message || 'Erreur inconnue'}</pre>
-                            </details>
-                        </div>
-                    `;
-                }
-            }
-            reject(error);
         });
     } catch (error) {
         console.error('Exception globale dans generateTimeline:', error);
@@ -1715,14 +1575,12 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (displayError) {
             console.error('Impossible d\'afficher le message d\'erreur:', displayError);
         }
-        reject(error);
     }
-});
-}
-
-// Fonctions utilitaires
-function getObservationValue(observation) {
-    if (observation.valueQuantity) {
+    }
+    
+    // Fonctions utilitaires
+    function getObservationValue(observation) {
+        if (observation.valueQuantity) {
             return `${observation.valueQuantity.value} ${observation.valueQuantity.unit || ''}`;
         } else if (observation.valueCodeableConcept) {
             return observation.valueCodeableConcept.coding?.[0]?.display || observation.valueCodeableConcept.text || 'Non spécifiée';
