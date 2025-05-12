@@ -98,7 +98,9 @@
               <i class="fas fa-sync-alt" style="margin: auto; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></i>
             </button>
             
-            <span style="margin-left: 5px;">Dernière mise à jour: <span id="statsUpdateTime"></span></span>
+            <div style="margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: 0.9em;">
+              <span>Mise à jour: <span id="statsUpdateTime"></span></span>
+            </div>
           </div>
           <!-- Les boutons sont maintenant sticky (fixés) en haut lors du défilement -->
         </div>
@@ -727,9 +729,12 @@
       
       const widgets = Array.from(systemMetricsDiv.querySelectorAll('.metric-container'));
       
-      // Assurez-vous que tous les widgets ont un ID unique
+      // Assurez-vous que tous les widgets ont un ID unique en se basant sur l'attribut data-metric-id
       widgets.forEach((widget, index) => {
-        if (!widget.id) {
+        const metricId = widget.getAttribute('data-metric-id');
+        if (!widget.id && metricId) {
+          widget.id = `widget-${metricId}`;
+        } else if (!widget.id) {
           widget.id = `widget-${index}`;
         }
         
@@ -739,17 +744,38 @@
           header.addEventListener('mousedown', function(e) {
             if (e.target.tagName.toLowerCase() === 'button') return; // Ne pas déclencher le glisser si on clique sur un bouton
             
+            e.preventDefault(); // Empêcher la sélection de texte
+            
+            // Créer un clone fantôme pour le positionnement
+            const ghost = widget.cloneNode(true);
+            ghost.style.opacity = '0.5';
+            ghost.style.position = 'absolute';
+            ghost.style.zIndex = '999';
+            ghost.style.pointerEvents = 'none'; // Empêcher les événements sur le fantôme
+            
+            // Ajouter un placeholder à l'emplacement original
+            const placeholder = document.createElement('div');
+            placeholder.classList.add('widget-placeholder');
+            placeholder.style.height = widget.offsetHeight + 'px';
+            placeholder.style.marginBottom = '15px';
+            placeholder.style.border = '2px dashed #ccc';
+            placeholder.style.borderRadius = '8px';
+            placeholder.style.backgroundColor = 'rgba(200, 200, 200, 0.2)';
+            
+            // Insérer le placeholder et le fantôme
+            widget.parentNode.insertBefore(placeholder, widget);
+            document.body.appendChild(ghost);
+            
             const rect = widget.getBoundingClientRect();
             const offsetX = e.clientX - rect.left;
             const offsetY = e.clientY - rect.top;
             
-            widget.classList.add('dragging');
+            // Cacher temporairement le widget original
+            widget.style.display = 'none';
             
             const moveAt = function(pageX, pageY) {
-              widget.style.position = 'absolute';
-              widget.style.zIndex = '1000';
-              widget.style.left = pageX - offsetX + 'px';
-              widget.style.top = pageY - offsetY + 'px';
+              ghost.style.left = pageX - offsetX + 'px';
+              ghost.style.top = pageY - offsetY + 'px';
             };
             
             moveAt(e.clientX, e.clientY);
@@ -758,7 +784,11 @@
               moveAt(event.clientX, event.clientY);
               
               // Déterminer si le widget est au-dessus d'un autre widget
+              // Masquer temporairement le fantôme pour déterminer l'élément en dessous
+              ghost.style.display = 'none';
               const elemBelow = document.elementFromPoint(event.clientX, event.clientY);
+              ghost.style.display = 'block';
+              
               const widgetBelow = elemBelow ? elemBelow.closest('.metric-container') : null;
               
               if (widgetBelow && widgetBelow !== widget) {
@@ -767,9 +797,9 @@
                 const middleY = rectBelow.top + rectBelow.height / 2;
                 
                 if (event.clientY < middleY) {
-                  systemMetricsDiv.insertBefore(widget, widgetBelow);
+                  systemMetricsDiv.insertBefore(placeholder, widgetBelow);
                 } else {
-                  systemMetricsDiv.insertBefore(widget, widgetBelow.nextSibling);
+                  systemMetricsDiv.insertBefore(placeholder, widgetBelow.nextSibling);
                 }
               }
             };
@@ -780,14 +810,25 @@
               document.removeEventListener('mousemove', onMouseMove);
               document.removeEventListener('mouseup', onMouseUp);
               
-              widget.classList.remove('dragging');
-              widget.style.position = '';
-              widget.style.left = '';
-              widget.style.top = '';
-              widget.style.zIndex = '';
+              // Restaurer le widget à sa place dans le flux du document
+              if (placeholder.parentNode) {
+                systemMetricsDiv.insertBefore(widget, placeholder);
+                placeholder.parentNode.removeChild(placeholder);
+              } else {
+                // Si pour une raison quelconque le placeholder n'est plus dans le DOM
+                systemMetricsDiv.appendChild(widget);
+              }
+              
+              // Supprimer le fantôme
+              if (ghost.parentNode) {
+                ghost.parentNode.removeChild(ghost);
+              }
+              
+              // Restaurer l'affichage du widget
+              widget.style.display = '';
               
               // Sauvegarder la nouvelle disposition
-              saveWidgetLayout();
+              setTimeout(saveWidgetLayout, 100); // Petit délai pour s'assurer que le DOM est stable
             }, { once: true });
           });
         }
