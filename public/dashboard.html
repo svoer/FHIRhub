@@ -1647,6 +1647,17 @@
         const noDataMsg = document.getElementById('noDataMessage');
         const chartCanvas = document.getElementById('messageTypesChart');
         
+        // IMPORTANT: Détruire toujours le graphique existant avant de récupérer de nouvelles données
+        // Cela évite l'erreur "Canvas is already in use" de Chart.js
+        if (window.messageTypesChart) {
+          try {
+            window.messageTypesChart.destroy();
+          } catch (e) {
+            console.warn("Erreur lors de la destruction du graphique:", e);
+          }
+          window.messageTypesChart = null;
+        }
+        
         // Nous utilisons le chemin relatif pour éviter les problèmes CORS
         fetch('/api/message-types', {
           method: 'GET',
@@ -1688,18 +1699,11 @@
               values.push(item.count);
             });
             
+            // S'assurer que le canvas est prêt à recevoir un nouveau graphique
             const messageTypesCtx = chartCanvas.getContext('2d');
             
-            // Mise à jour du graphique des types de messages
-            if (window.messageTypesChart) {
-              // Mettre à jour les données du graphique existant sans le détruire
-              window.messageTypesChart.data.labels = labels;
-              window.messageTypesChart.data.datasets[0].data = values;
-              window.messageTypesChart.update();
-              console.log("Graphique des types de messages HL7 mis à jour avec les données réelles");
-            } else {
-              // Création d'un nouveau graphique avec les données réelles si aucun n'existe
-              window.messageTypesChart = new Chart(messageTypesCtx, {
+            // Création d'un nouveau graphique (puisque nous avons détruit l'ancien au début)
+            window.messageTypesChart = new Chart(messageTypesCtx, {
                 type: 'bar',
                 data: {
                   labels: labels,
@@ -1763,11 +1767,7 @@
               chartCanvas.style.opacity = '0.2';
             }
             
-            // Détruire le graphique s'il existe pour éviter les données fantômes
-            if (window.messageTypesChart) {
-              window.messageTypesChart.destroy();
-              window.messageTypesChart = null;
-            }
+            // Pas besoin de détruire le graphique ici car nous l'avons déjà fait au début
           }
         })
         .catch(error => {
@@ -1784,11 +1784,7 @@
             chartCanvas.style.opacity = '0.2';
           }
           
-          // Détruire le graphique s'il existe pour éviter les données fantômes
-          if (window.messageTypesChart) {
-            window.messageTypesChart.destroy();
-            window.messageTypesChart = null;
-          }
+          // Pas besoin de détruire le graphique ici car nous l'avons déjà fait au début
         });
       }
       
