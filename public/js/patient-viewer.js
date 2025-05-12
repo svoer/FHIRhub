@@ -49,9 +49,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function setupEventListeners() {
         // Bouton de recherche patient
-        const searchButton = document.getElementById('searchButton');
+        const searchButton = document.getElementById('searchPatientBtn');
         if (searchButton) {
             searchButton.addEventListener('click', searchPatients);
+        } else {
+            console.error("Élément searchPatientBtn non trouvé dans le DOM");
         }
         
         // Champ de recherche avec Enter
@@ -63,6 +65,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     searchPatients();
                 }
             });
+        } else {
+            console.error("Élément patientSearch non trouvé dans le DOM");
         }
         
         // Sélection d'un patient dans la liste déroulante
@@ -71,22 +75,31 @@ document.addEventListener('DOMContentLoaded', function() {
             patientSelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
                 if (selectedOption && selectedOption.value) {
-                    document.getElementById('patientId').value = selectedOption.value;
-                    loadPatient();
+                    const patientIdField = document.getElementById('patientId');
+                    if (patientIdField) {
+                        patientIdField.value = selectedOption.value;
+                        loadPatient();
+                    }
                 }
             });
+        } else {
+            console.error("Élément patientSelect non trouvé dans le DOM");
         }
         
         // Bouton d'effacement de recherche
-        const clearSearchButton = document.getElementById('clearSearchButton');
+        const clearSearchButton = document.getElementById('clearSearchBtn');
         if (clearSearchButton) {
             clearSearchButton.addEventListener('click', clearSearch);
+        } else {
+            console.error("Élément clearSearchBtn non trouvé dans le DOM");
         }
         
         // Bouton de chargement direct via ID
-        const loadButton = document.getElementById('loadButton');
+        const loadButton = document.getElementById('loadPatientBtn');
         if (loadButton) {
             loadButton.addEventListener('click', loadPatient);
+        } else {
+            console.error("Élément loadPatientBtn non trouvé dans le DOM");
         }
         
         // Options d'affichage
