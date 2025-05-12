@@ -2183,27 +2183,86 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // On récupère directement le bundle associé au patient, incluant les références
+        // Méthode principale: Utiliser l'opération $everything pour tout récupérer en une seule requête
         fetch(`${serverUrl}/Patient/${patientId}/$everything?_count=100&_include=*`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Erreur de récupération du bundle: ${response.status}`);
+                    throw new Error(`Erreur avec $everything: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
-                // Stocker le bundle pour référence future
+                console.log("Bundle récupéré via $everything:", data);
                 bundleData = data;
                 processBundle(data);
             })
             .catch(error => {
-                console.error('Erreur lors du chargement du bundle:', error);
+                console.warn('Échec de $everything, tentative avec méthode alternative:', error);
+                // Méthode de secours: Récupérer les ressources type par type
+                fetchResourcesManually(patientId);
+            });
+            
+        // Fonction qui récupère manuellement les ressources clés
+        async function fetchResourcesManually(patientId) {
+            try {
+                // Créer un nouveau bundle pour stocker toutes les ressources
+                let bundle = {
+                    resourceType: "Bundle",
+                    type: "collection",
+                    id: `manual-${Date.now()}`,
+                    entry: []
+                };
+                
+                // Récupérer d'abord le patient lui-même
+                const patientResponse = await fetch(`${serverUrl}/Patient/${patientId}`);
+                if (patientResponse.ok) {
+                    const patient = await patientResponse.json();
+                    bundle.entry.push({ resource: patient });
+                    
+                    // Afficher un message indiquant l'utilisation de la méthode alternative
+                    console.log("Patient récupéré, maintenant chargement des ressources associées...");
+                    showStatus("Chargement alternatif des ressources...", "info");
+                }
+                
+                // Récupérer toutes les ressources associées
+                const resourceTypes = [
+                    "Condition", "Observation", "MedicationRequest", 
+                    "Encounter", "Practitioner", "Organization",
+                    "RelatedPerson", "Coverage"
+                ];
+                
+                for (const type of resourceTypes) {
+                    try {
+                        const response = await fetch(`${serverUrl}/${type}?patient=${patientId}`);
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.entry && data.entry.length > 0) {
+                                bundle.entry = bundle.entry.concat(data.entry);
+                                console.log(`Ajout de ${data.entry.length} ressources de type ${type}`);
+                            }
+                        }
+                    } catch (e) {
+                        console.warn(`Erreur lors de la récupération des ${type}:`, e);
+                    }
+                }
+                
+                // Si nous avons trouvé des ressources, traiter le bundle
+                if (bundle.entry.length > 0) {
+                    console.log("Bundle créé manuellement avec " + bundle.entry.length + " ressources");
+                    bundleData = bundle;
+                    processBundle(bundle);
+                } else {
+                    throw new Error("Aucune ressource trouvée");
+                }
+            } catch (error) {
+                console.error("Échec de la récupération manuelle des ressources:", error);
                 if (loadingSection) loadingSection.style.display = 'none';
                 if (noResourcesSection) {
                     noResourcesSection.style.display = 'block';
                     if (bundleInfo) bundleInfo.innerHTML = `Erreur: ${error.message}`;
                 }
-            });
+            }
+        }
             
         // Fonction interne pour traiter et afficher le bundle
         function processBundle(data) {
