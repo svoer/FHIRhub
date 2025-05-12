@@ -988,7 +988,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         `${a.line ? a.line.join(', ') : ''}<br>
                                          ${a.postalCode || ''} ${a.city || ''}<br>
                                          ${a.country || ''}`
-                                      ).join('<br><br>')}` 
+                                      ).join('<br><br>')}`
                                       : 'Aucune adresse disponible'}
                                 </p>
                             </div>
