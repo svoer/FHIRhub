@@ -1179,11 +1179,11 @@ Les caractéristiques techniques incluent:
 FHIRHub implémente un éditeur de processus visuel personnalisé pour configurer des chaînes de traitement:
 
 ```javascript
-class WorkflowEngine {
+class ProcessEngine {
   constructor(db) {
     this.db = db;
     this.registeredNodeTypes = new Map();
-    this.activeWorkflows = new Map();
+    this.activeProcesses = new Map();
     
     // Enregistrer les types de nœuds disponibles
     this.registerCoreNodeTypes();
@@ -1273,26 +1273,26 @@ class WorkflowEngine {
     this.registeredNodeTypes.set(type, handlers);
   }
   
-  // Exécute un workflow complet
-  async executeWorkflow(workflowId, inputData) {
-    const workflow = await this.getWorkflow(workflowId);
+  // Exécute un processus complet
+  async executeProcess(processId, inputData) {
+    const process = await this.getProcess(processId);
     
-    if (!workflow) {
-      throw new Error(`Workflow ${workflowId} not found`);
+    if (!process) {
+      throw new Error(`Processus ${processId} not found`);
     }
     
-    if (!workflow.is_active) {
-      throw new Error(`Workflow ${workflowId} is not active`);
+    if (!process.is_active) {
+      throw new Error(`Processus ${processId} is not active`);
     }
     
     // Convertir JSON en objet
-    const flowData = JSON.parse(workflow.flow_json);
+    const flowData = JSON.parse(process.flow_json);
     
     // Trouver le nœud de départ
     const startNode = flowData.nodes.find(node => node.type === 'start');
     
     if (!startNode) {
-      throw new Error('No start node found in workflow');
+      throw new Error('No start node found in process');
     }
     
     // Initialiser le contexte d'exécution
