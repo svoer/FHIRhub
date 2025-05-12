@@ -88,9 +88,16 @@
         <div class="card-header" style="position: sticky; top: 0; background: white; z-index: 999; padding: 15px; border-bottom: 1px solid #eee;">
           <h2 class="card-title">Statistiques de conversion</h2>
           <div class="refresh-info" style="position: sticky; top: 0; display: flex; align-items: center; padding: 5px 0;">
+            <!-- Bouton rouge pour réinitialiser les statistiques -->
             <button id="resetStatsBtn" class="btn-reset" title="Remise à zéro du système" style="position: sticky; top: 15px; right: 15px; display: inline-flex !important; visibility: visible !important; z-index: 9999; background: linear-gradient(135deg, #d63031 0%, #be2323 100%); color: white; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-right: 10px; border: 3px solid #fff; font-size: 18px; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease;">
               <i class="fas fa-undo-alt" style="margin: auto; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></i>
             </button>
+            
+            <!-- Bouton vert pour rafraîchir les données -->
+            <button id="refreshStatsBtn" class="btn-refresh" title="Rafraîchir les données" style="position: sticky; top: 15px; right: 15px; display: inline-flex !important; visibility: visible !important; z-index: 9999; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-right: 10px; border: 3px solid #fff; font-size: 18px; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+              <i class="fas fa-sync-alt" style="margin: auto; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></i>
+            </button>
+            
             <span style="margin-left: 5px;">Dernière mise à jour: <span id="statsUpdateTime"></span></span>
           </div>
           <!-- Les boutons sont maintenant sticky (fixés) en haut lors du défilement -->
@@ -277,19 +284,41 @@
       // Le bouton de rafraîchissement a été supprimé et remplacé par l'icône de synchronisation
       // dans l'en-tête, qui s'actualise automatiquement grâce à l'intervalle défini
       
-      // Ajouter le gestionnaire d'événement pour le bouton de réinitialisation
+      // Configuration des boutons d'actions
       const resetStatsBtn = document.getElementById('resetStatsBtn');
+      const refreshStatsBtn = document.getElementById('refreshStatsBtn');
       const resetConfirmModal = document.getElementById('resetConfirmModal');
       const cancelResetBtn = document.getElementById('cancelResetBtn');
       const confirmResetBtn = document.getElementById('confirmResetBtn');
       
-      // Fonction pour afficher la boîte de dialogue de confirmation
+      // Fonction pour afficher la boîte de dialogue de confirmation de réinitialisation
       function showResetConfirmation() {
         resetConfirmModal.style.display = 'block';
       }
       
+      // Fonction pour rafraîchir les statistiques manuellement
+      function refreshStats() {
+        console.log("Rafraîchissement manuel des statistiques...");
+        // Ajouter un effet visuel de rotation pour l'icône
+        const refreshIcon = refreshStatsBtn.querySelector('i');
+        refreshIcon.classList.add('fa-spin');
+        
+        // Appeler la fonction de mise à jour des données
+        fetchAndUpdateCharts();
+        
+        // Arrêter la rotation après un délai
+        setTimeout(() => {
+          refreshIcon.classList.remove('fa-spin');
+        }, 1000);
+      }
+      
+      // Ajouter les gestionnaires d'événements aux boutons
       if (resetStatsBtn) {
         resetStatsBtn.addEventListener('click', showResetConfirmation);
+      }
+      
+      if (refreshStatsBtn) {
+        refreshStatsBtn.addEventListener('click', refreshStats);
       }
       
       // Le gestionnaire d'événement pour le bouton flottant est supprimé
