@@ -6,6 +6,16 @@
 // Stockage global des références aux instances de graphiques
 const charts = window.charts || {};
 
+// Déclaration globale de la fonction initializeAllCharts pour qu'elle soit accessible
+window.initializeAllCharts = function() {
+  // Le corps de la fonction sera défini plus tard
+  console.log("Référence à initializeAllCharts utilisée avant sa définition complète");
+  // La véritable implémentation sera appelée
+  if (typeof initializeAllChartsImpl === 'function') {
+    initializeAllChartsImpl();
+  }
+};
+
 // S'assurer que Chart.js est disponible avant d'initialiser les graphiques
 document.addEventListener('DOMContentLoaded', function() {
   console.log("DOM chargé, initialisation des graphiques simples...");
@@ -13,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Attendre que Chart.js soit chargé
   if (typeof Chart !== 'undefined') {
     // Initialiser les graphiques
-    setTimeout(initializeAllCharts, 500);
+    setTimeout(window.initializeAllCharts, 500);
   } else {
     console.error("Chart.js n'est pas chargé, attente...");
     
@@ -22,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (typeof Chart !== 'undefined') {
         clearInterval(checkChartJs);
         console.log("Chart.js chargé, initialisation des graphiques...");
-        initializeAllCharts();
+        window.initializeAllCharts();
       }
     }, 100);
   }
@@ -63,7 +73,8 @@ const colors = {
 };
 
 // Fonction qui initialise tous les graphiques
-function initializeAllCharts() {
+// Fonction d'implémentation réelle
+function initializeAllChartsImpl() {
   console.log("Initialisation de tous les graphiques avec simple-charts.js");
   
   try {
