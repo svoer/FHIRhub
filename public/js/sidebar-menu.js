@@ -243,7 +243,7 @@ function getIconForUrl(url) {
     '/fhir-browser.html': 'fas fa-search',
     '/fhir-settings.html': 'fas fa-cog',
     '/terminologies.html': 'fas fa-book-medical',
-    '/workflows.html': 'fas fa-project-diagram',
+    '/processus.html': 'fas fa-project-diagram',
     '/ai-settings.html': 'fas fa-robot',
     '/documentation.html': 'fas fa-file-alt',
     '/api-docs/': 'fas fa-code'
