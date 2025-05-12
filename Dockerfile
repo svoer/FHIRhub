@@ -56,5 +56,12 @@ USER fhirhub
 # Utiliser tini comme init pour une meilleure gestion des signaux
 ENTRYPOINT ["/sbin/tini", "--"]
 
+# Créer un répertoire pour HAPI FHIR
+RUN mkdir -p /app/hapi-fhir
+
+# Copier et rendre exécutable le script de démarrage Docker
+COPY docker-startup.sh /app/
+RUN chmod +x /app/docker-startup.sh
+
 # Script de démarrage
-CMD ["node", "app.js"]
+CMD ["/app/docker-startup.sh"]
