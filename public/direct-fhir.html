@@ -1526,6 +1526,12 @@
                 // Charger les types de ressources
                 loadResourceTypes();
                 
+                // Initialiser le gestionnaire d'onglets
+                initTabs();
+                
+                // Initialiser l'onglet de push de bundle
+                initBundlePushTab();
+                
                 // Message initial
                 updateStatusBar('Prêt à explorer les données FHIR', 'info');
             }
