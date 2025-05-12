@@ -1,0 +1,87 @@
+Uncaught SyntaxError: missing ) after argument listUnderstand this error
+simple-charts.js:11 DOM chargé, initialisation des graphiques simples...
+simple-charts.js:842 DOM chargé, initialisation des graphiques simples...
+include-sidebar.js:6 Démarrage de l'inclusion du menu latéral (version fixe)...
+include-sidebar.js:20 Chargement du menu latéral...
+sidebar-menu.js:310 Élément sidebar non trouvé. Le menu latéral pourrait ne pas fonctionner correctement.
+(anonymous) @ sidebar-menu.js:310Understand this warning
+support-chatbot.js:212 Fournisseur d'IA chargé: Deepseek
+support-chatbot.js:84 Chatbot FHIRHub initialisé avec succès.
+include-sidebar.js:65 Menu latéral récupéré avec succès, injection...
+include-sidebar.js:103 Menu latéral chargé avec succès
+ai-provider-indicator.js:8 Initialisation de l'indicateur de fournisseur d'IA...
+ai-provider-indicator.js:151 Fournisseur d'IA actif détecté: Deepseek, Modèle: DeepSeek Reasoner
+include-sidebar.js:124 Configuration de l'interactivité du menu latéral...
+include-sidebar.js:138 Événement de bascule du menu configuré
+include-sidebar.js:151 Événement de menu mobile configuré
+include-sidebar.js:160 Chemin actuel: /dashboard.html
+include-sidebar.js:166 Vérification du lien: /dashboard.html
+include-sidebar.js:171 Page active trouvée: /dashboard.html
+include-sidebar.js:166 Vérification du lien: /convert.html
+include-sidebar.js:166 Vérification du lien: /direct-fhir.html
+include-sidebar.js:166 Vérification du lien: /patient-viewer.html
+include-sidebar.js:166 Vérification du lien: /fhir-settings.html
+include-sidebar.js:166 Vérification du lien: /applications.html
+include-sidebar.js:166 Vérification du lien: /api-keys.html
+include-sidebar.js:166 Vérification du lien: /users.html
+include-sidebar.js:166 Vérification du lien: /terminologies.html
+include-sidebar.js:166 Vérification du lien: /ai-providers.html
+include-sidebar.js:166 Vérification du lien: /documentation.html
+include-sidebar.js:166 Vérification du lien: /api-reference.html
+include-sidebar.js:166 Vérification du lien: /faq.html
+include-sidebar.js:166 Vérification du lien: #
+include-sidebar.js:178 Page active marquée dans le menu
+include-sidebar.js:244 Événements de favoris configurés
+include-sidebar.js:345 Événement de déconnexion configuré
+include-sidebar.js:350 Configuration de l'interactivité terminée
+simple-charts.js:67 Initialisation de tous les graphiques avec simple-charts.js
+simple-charts.js:83 État des canvas: Object
+simple-charts.js:117 Création du graphique mémoire...
+simple-charts.js:119 Graphique mémoire créé avec succès
+simple-charts.js:127 Création du graphique de tendance de conversion...
+simple-charts.js:129 Graphique de tendance de conversion créé avec succès
+simple-charts.js:147 Création du graphique de taux de succès...
+simple-charts.js:149 Graphique de taux de succès créé avec succès
+simple-charts.js:157 Création du graphique de types de messages...
+simple-charts.js:159 Graphique de types de messages créé avec succès
+simple-charts.js:166 Récupération initiale des données...
+simple-charts.js:206 Récupération des données pour les graphiques...
+simple-charts.js:175 Configuration de la mise à jour périodique des graphiques...
+simple-charts.js:186 Vérification de l'état des graphiques après initialisation: Object
+simple-charts.js:67 Initialisation de tous les graphiques avec simple-charts.js
+simple-charts.js:83 État des canvas: Object
+4simple-charts.js:96 Destruction du graphique existant: [object HTMLCanvasElement]
+simple-charts.js:117 Création du graphique mémoire...
+simple-charts.js:119 Graphique mémoire créé avec succès
+simple-charts.js:127 Création du graphique de tendance de conversion...
+simple-charts.js:129 Graphique de tendance de conversion créé avec succès
+simple-charts.js:147 Création du graphique de taux de succès...
+simple-charts.js:149 Graphique de taux de succès créé avec succès
+simple-charts.js:157 Création du graphique de types de messages...
+simple-charts.js:159 Graphique de types de messages créé avec succès
+simple-charts.js:166 Récupération initiale des données...
+simple-charts.js:206 Récupération des données pour les graphiques...
+simple-charts.js:175 Configuration de la mise à jour périodique des graphiques...
+simple-charts.js:186 Vérification de l'état des graphiques après initialisation: Object
+simple-charts.js:320 Données de types de messages HL7 reçues: Array(1)
+simple-charts.js:768 Graphique des types de messages HL7 mis à jour avec les données réelles
+simple-charts.js:245 Données reçues pour les graphiques: Object
+simple-charts.js:414 Temps gagné en heures: 0.3
+simple-charts.js:265 Données fraîches reçues via fetchStats modifié: Object
+simple-charts.js:245 Données reçues pour les graphiques: Object
+simple-charts.js:414 Temps gagné en heures: 0.3
+simple-charts.js:265 Données fraîches reçues via fetchStats modifié: Object
+simple-charts.js:320 Données de types de messages HL7 reçues: Array(1)
+simple-charts.js:768 Graphique des types de messages HL7 mis à jour avec les données réelles
+support-chatbot.js:177 Événements du chatbot attachés avec succès
+2simple-charts.js:206 Récupération des données pour les graphiques...
+simple-charts.js:320 Données de types de messages HL7 reçues: [{…}]
+simple-charts.js:768 Graphique des types de messages HL7 mis à jour avec les données réelles
+simple-charts.js:245 Données reçues pour les graphiques: {conversions: 22, timestamp: 1747046374094, uptime: 1873.494317346, memory: {…}, timeSavedHours: 0.3, …}
+simple-charts.js:414 Temps gagné en heures: 0.3
+simple-charts.js:265 Données fraîches reçues via fetchStats modifié: {conversions: 22, timestamp: 1747046374094, uptime: 1873.494317346, memory: {…}, timeSavedHours: 0.3, …}
+simple-charts.js:245 Données reçues pour les graphiques: {conversions: 22, timestamp: 1747046374099, uptime: 1873.499657085, memory: {…}, timeSavedHours: 0.3, …}
+simple-charts.js:414 Temps gagné en heures: 0.3
+simple-charts.js:265 Données fraîches reçues via fetchStats modifié: {conversions: 22, timestamp: 1747046374099, uptime: 1873.499657085, memory: {…}, timeSavedHours: 0.3, …}
+simple-charts.js:320 Données de types de messages HL7 reçues: [{…}]
+simple-charts.js:768 Graphique des types de messages HL7 mis à jour avec les données réel
