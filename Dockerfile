@@ -35,7 +35,11 @@ RUN mkdir -p /app/data \
              /app/data/conversions \
              /app/data/history \
              /app/data/outputs \
-             /app/data/test
+             /app/data/test \
+             /app/src
+
+# Créer un fichier index.js vide dans le dossier src pour éviter l'erreur "Cannot find module './src/index'"
+RUN echo "// Module FHIRHub - Fichier de compatibilité\nmodule.exports = {};" > /app/src/index.js
 
 # S'assurer que les permissions sont correctes pour l'utilisateur non-root
 RUN chmod -R 777 /app/storage /app/data
