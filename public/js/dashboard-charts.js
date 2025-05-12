@@ -39,7 +39,7 @@ const chartColors = {
 };
 
 // Stockage des références aux instances de graphiques
-window.charts = window.charts || {
+let charts = {
   resourceDist: null,
   successRate: null,
   messageTypes: null,
@@ -80,8 +80,7 @@ window.addEventListener('load', function() {
 });
 
 // Fonction pour mettre à jour tous les graphiques dynamiques avec les données actuelles
-// Utilisation interne uniquement - la version exportée est window.updateAllCharts
-function _updateAllChartsInternal(statsData) {
+function updateAllCharts(statsData) {
   if (!statsData) {
     console.warn('Données de statistiques non disponibles pour la mise à jour des graphiques');
     return;
@@ -886,9 +885,7 @@ function updateConversionTrendChart(lastConversionTime) {
 }
 
 // Fonction centrale de mise à jour de tous les graphiques
-// Fonctions globales exportées pour être utilisées depuis l'extérieur
-// Ces fonctions sont appelées par le code en dehors de ce fichier, elles doivent rester disponibles
-window.updateAllCharts = function(statsData) {
+function updateAllCharts(statsData) {
   console.log("Mise à jour de tous les graphiques avec les données fraîches:", statsData);
   
   // Mise à jour du graphique de distribution des ressources FHIR
@@ -909,163 +906,7 @@ window.updateAllCharts = function(statsData) {
   if (statsData.conversionStats && statsData.conversionStats.lastTime) {
     updateConversionTrendChart(statsData.conversionStats.lastTime);
   }
-};
-
-// Fonction pour réinitialiser tous les graphiques
-window.resetAllCharts = function() {
-  console.log("Réinitialisation de tous les graphiques...");
-  
-  // S'assurer que charts est accessible
-  if (!window.charts) {
-    console.warn("Objet charts non disponible pour la réinitialisation");
-    return;
-  }
-  
-  // Approche 1: Détruire et recréer tous les graphiques
-  try {
-    // Détruire les graphiques existants s'ils existent
-    Object.keys(window.charts).forEach(key => {
-      const chart = window.charts[key];
-      if (chart && typeof chart.destroy === 'function') {
-        console.log(`Destruction du graphique ${key}`);
-        chart.destroy();
-        window.charts[key] = null;
-      }
-    });
-    
-    console.log("Tous les graphiques ont été réinitialisés avec succès");
-    
-    // Re-initialiser les graphiques si nécessaire
-    setTimeout(() => {
-      if (typeof initializeAllCharts === 'function') {
-        initializeAllCharts();
-      }
-    }, 500);
-    
-    return true;
-  } catch (error) {
-    console.error("Erreur lors de la réinitialisation des graphiques:", error);
-    return false;
-  }
 }
-
-// Fonction globale pour initialiser tous les graphiques
-window.initializeAllCharts = function() {
-  console.log("Initialisation de tous les graphiques depuis dashboard-charts.js");
-  
-  // Vérifier si les éléments canvas existent
-  const initializeChart = (canvasId, chartType, config, chartKey) => {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) {
-      console.warn(`Canvas ${canvasId} non trouvé, graphique ${chartKey} non initialisé`);
-      return false;
-    }
-    
-    try {
-      // Détruire le graphique existant s'il existe
-      if (window.charts[chartKey] && typeof window.charts[chartKey].destroy === 'function') {
-        window.charts[chartKey].destroy();
-      }
-      
-      // Créer un nouveau graphique
-      window.charts[chartKey] = new Chart(canvas, {
-        type: chartType,
-        data: config.data || {},
-        options: config.options || {}
-      });
-      
-      console.log(`Graphique ${chartKey} initialisé avec succès`);
-      return true;
-    } catch (error) {
-      console.error(`Erreur lors de l'initialisation du graphique ${chartKey}:`, error);
-      return false;
-    }
-  };
-  
-  // Initialiser chaque graphique individuellement avec des configurations par défaut
-  // Si nécessaire, ces configurations peuvent être ajustées selon les besoins
-  
-  const initializedCharts = {
-    resourceDist: initializeChart('resourceDistributionChart', 'doughnut', {
-      data: {
-        labels: ['Patient', 'Observation', 'Condition', 'Autre'],
-        datasets: [{
-          data: [0, 0, 0, 0],
-          backgroundColor: chartColors.redGradient,
-          borderColor: chartColors.redGradientBorders
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
-    }, 'resourceDist'),
-    
-    successRate: initializeChart('successRateChart', 'doughnut', {
-      data: {
-        labels: ['Succès', 'Échec'],
-        datasets: [{
-          data: [100, 0],
-          backgroundColor: chartColors.successError,
-          borderColor: chartColors.successErrorBorders
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
-    }, 'successRate'),
-    
-    messageTypes: initializeChart('messageTypesChart', 'bar', {
-      data: {
-        labels: ['ADT^A01'],
-        datasets: [{
-          data: [0],
-          backgroundColor: chartColors.redGradient[0],
-          borderColor: chartColors.redGradientBorders[0]
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
-    }, 'messageTypes'),
-    
-    conversionTrend: initializeChart('conversionTrendChart', 'line', {
-      data: {
-        labels: ['', '', '', '', ''],
-        datasets: [{
-          data: [0, 0, 0, 0, 0],
-          backgroundColor: chartColors.conversion.background,
-          borderColor: chartColors.conversion.border,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
-    }, 'conversionTrend')
-  };
-  
-  // Vérifier si tous les graphiques ont été initialisés avec succès
-  const allInitialized = Object.values(initializedCharts).every(Boolean);
-  console.log(`Initialisation des graphiques ${allInitialized ? 'réussie' : 'partiellement réussie'}`);
-  
-  // Mettre à jour les graphiques avec les données actuelles
-  fetch('/api/stats?t=' + Date.now(), { 
-    headers: { 'Cache-Control': 'no-cache' }
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (typeof window.updateAllCharts === 'function') {
-      window.updateAllCharts(data);
-    }
-  })
-  .catch(error => console.error("Erreur lors de la récupération des statistiques initiales:", error));
-  
-  return allInitialized;
-};
 
 // Initialisation automatique des graphiques au chargement de la page
 // et ajout d'une fonction pour appeler explicitement fetchStats

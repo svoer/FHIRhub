@@ -1224,43 +1224,6 @@ app.get('/api/stats', (req, res) => {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-  // Vérifier si une réinitialisation des stats est demandée
-  if (req.query.reset === 'true') {
-    console.log('[STATS] Réinitialisation des statistiques demandée via paramètre reset=true');
-    try {
-      // Vider la table des logs de conversion
-      db.prepare(`DELETE FROM conversion_logs`).run();
-      
-      // Réinitialiser la séquence d'auto-increment
-      try {
-        db.prepare(`DELETE FROM sqlite_sequence WHERE name = 'conversion_logs'`).run();
-      } catch (seqErr) {
-        console.log(`[RESET] Note: La table sqlite_sequence n'existe peut-être pas ou n'a pas d'entrée pour conversion_logs`);
-      }
-      
-      // Retourner des statistiques vides
-      return res.json({
-        conversions: 0,
-        timestamp: Date.now(),
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-        timeSavedHours: 0,
-        conversionStats: {
-          avgTime: 0,
-          minTime: 0,
-          maxTime: 0,
-          avgResources: 0,
-          lastTime: 0,
-          lastResources: 0
-        },
-        applicationStats: []
-      });
-    } catch (resetErr) {
-      console.error('[STATS] Erreur lors de la réinitialisation des statistiques:', resetErr);
-      // Continuer avec la récupération normale des statistiques
-    }
-  }
-  
   try {
     // Générer un timestamp unique pour garantir des données fraîches à chaque requête
     const timestamp = new Date().getTime();
@@ -1500,33 +1463,6 @@ const aiFhirAnalyzeRoutes = require('./routes/ai-fhir-analyze'); // Analyse FHIR
 // Enregistrement des routes
 app.use('/api/applications', applicationsRoutes);
 app.use('/applications', applicationViewsRoutes);  // Nouveau router pour les vues des applications
-// Route directe pour le comptage des clés API
-app.get('/api/api-keys/count', (req, res) => {
-  try {
-    const result = db.prepare('SELECT COUNT(*) as count FROM api_keys').get();
-    
-    // Si reset est demandé, retourner 0
-    if (req.query.reset === 'true') {
-      return res.json({
-        success: true,
-        count: 0
-      });
-    }
-    
-    res.json({
-      success: true,
-      count: result ? result.count : 0
-    });
-  } catch (error) {
-    console.error('[API] Erreur lors du comptage des clés API:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur de comptage des clés API',
-      count: 0
-    });
-  }
-});
-
 app.use('/api/api-keys', apiKeysRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/auth', authRoutes);

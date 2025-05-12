@@ -4,17 +4,7 @@
  */
 
 // Stockage global des références aux instances de graphiques
-const charts = window.charts || {};
-
-// Déclaration globale de la fonction initializeAllCharts pour qu'elle soit accessible
-window.initializeAllCharts = function() {
-  // Le corps de la fonction sera défini plus tard
-  console.log("Référence à initializeAllCharts utilisée avant sa définition complète");
-  // La véritable implémentation sera appelée
-  if (typeof initializeAllChartsImpl === 'function') {
-    initializeAllChartsImpl();
-  }
-};
+const charts = {};
 
 // S'assurer que Chart.js est disponible avant d'initialiser les graphiques
 document.addEventListener('DOMContentLoaded', function() {
@@ -23,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Attendre que Chart.js soit chargé
   if (typeof Chart !== 'undefined') {
     // Initialiser les graphiques
-    setTimeout(window.initializeAllCharts, 500);
+    setTimeout(initializeAllCharts, 500);
   } else {
     console.error("Chart.js n'est pas chargé, attente...");
     
@@ -32,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (typeof Chart !== 'undefined') {
         clearInterval(checkChartJs);
         console.log("Chart.js chargé, initialisation des graphiques...");
-        window.initializeAllCharts();
+        initializeAllCharts();
       }
     }, 100);
   }
@@ -73,8 +63,7 @@ const colors = {
 };
 
 // Fonction qui initialise tous les graphiques
-// Fonction d'implémentation réelle
-function initializeAllChartsImpl() {
+function initializeAllCharts() {
   console.log("Initialisation de tous les graphiques avec simple-charts.js");
   
   try {
@@ -84,34 +73,17 @@ function initializeAllChartsImpl() {
       return;
     }
     
-    // Fonction pour obtenir un élément canvas avec plusieurs IDs alternatifs possibles
-    function getCanvasElement(primaryId, alternativeIds = []) {
-      let element = document.getElementById(primaryId);
-      if (!element && alternativeIds.length > 0) {
-        // Si l'élément principal n'est pas trouvé, essayer les alternatives
-        for (const altId of alternativeIds) {
-          element = document.getElementById(altId);
-          if (element) {
-            console.log(`Canvas ${primaryId} non trouvé, utilisation de l'alternative ${altId}`);
-            break;
-          }
-        }
-      }
-      return element;
-    }
-
     // Vérifier que les éléments canvas existent
-    const memoryCanvas = getCanvasElement('memoryChart');
-    const conversionTrendCanvas = getCanvasElement('conversionTrendChart');
-    // Note: Le graphique de distribution des ressources a été supprimé du HTML selon les commentaires
-    // const resourceDistCanvas = getCanvasElement('resourceDistChart', ['resourceDistributionChart']);
-    const successRateCanvas = getCanvasElement('successRateChart');
-    const messageTypesCanvas = getCanvasElement('messageTypesChart');
+    const memoryCanvas = document.getElementById('memoryChart');
+    const conversionTrendCanvas = document.getElementById('conversionTrendChart');
+    const resourceDistCanvas = document.getElementById('resourceDistChart');
+    const successRateCanvas = document.getElementById('successRateChart');
+    const messageTypesCanvas = document.getElementById('messageTypesChart');
     
     console.log("État des canvas:", {
       memory: memoryCanvas ? "OK" : "Manquant",
       conversionTrend: conversionTrendCanvas ? "OK" : "Manquant",
-      // resourceDist: "Supprimé du HTML",
+      resourceDist: resourceDistCanvas ? "OK" : "Manquant",
       successRate: successRateCanvas ? "OK" : "Manquant",
       messageTypes: messageTypesCanvas ? "OK" : "Manquant"
     });
@@ -130,11 +102,11 @@ function initializeAllChartsImpl() {
     }
     
     // Nettoyer les graphiques existants qui pourraient causer des conflits
-    if (memoryCanvas) safeDestroyChart(memoryCanvas.id);
-    if (conversionTrendCanvas) safeDestroyChart(conversionTrendCanvas.id);
-    // resourceDistCanvas a été supprimé du HTML
-    if (successRateCanvas) safeDestroyChart(successRateCanvas.id);
-    if (messageTypesCanvas) safeDestroyChart(messageTypesCanvas.id);
+    if (memoryCanvas) safeDestroyChart(memoryCanvas);
+    if (conversionTrendCanvas) safeDestroyChart(conversionTrendCanvas);
+    if (resourceDistCanvas) safeDestroyChart(resourceDistCanvas);
+    if (successRateCanvas) safeDestroyChart(successRateCanvas);
+    if (messageTypesCanvas) safeDestroyChart(messageTypesCanvas);
     
     // Réinitialiser l'objet charts pour s'assurer qu'on part d'un état propre
     Object.keys(charts).forEach(key => delete charts[key]);
@@ -640,8 +612,6 @@ function updateResourceDistChart(resourceData) {
 
 // Cette fonction n'était pas définie dans ce fichier, mais est appelée par la fonction resetStats dans dashboard.html
 function resetAllCharts() {
-  // Exposer la fonction globalement via window pour permettre l'accès depuis dashboard.html
-  window.resetAllCharts = resetAllCharts;
   console.log("Réinitialisation de tous les graphiques demandée");
   
   // Réinitialiser le graphique de mémoire

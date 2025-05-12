@@ -7,38 +7,6 @@ const authCombined = require('../middleware/authCombined');
 
 /**
  * @swagger
- * /api/api-keys/count:
- *   get:
- *     summary: Obtenir le nombre de clés API
- *     description: Retourne le nombre total de clés API dans le système
- *     tags: [API Keys]
- *     responses:
- *       200:
- *         description: Nombre de clés API récupéré avec succès
- *       500:
- *         description: Erreur serveur
- */
-router.get('/count', (req, res) => {
-  try {
-    const db = req.app.locals.db;
-    const result = db.prepare('SELECT COUNT(*) as count FROM api_keys').get();
-    
-    res.json({
-      success: true,
-      count: result ? result.count : 0
-    });
-  } catch (error) {
-    console.error('[API] Erreur lors du comptage des clés API:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Erreur de comptage des clés API',
-      count: 0
-    });
-  }
-});
-
-/**
- * @swagger
  * tags:
  *   name: API Keys
  *   description: Gestion des clés API

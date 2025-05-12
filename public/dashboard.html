@@ -14,10 +14,7 @@
   <link rel="stylesheet" href="/css/metrics-dashboard.css">
   <link rel="stylesheet" href="/css/ai-indicator.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/js/simple-charts-fixed.js" defer></script>
-  <!-- Les graphiques ont été entièrement refactorés dans simple-charts-fixed.js -->
-  <!-- <script src="/js/simple-charts.js" defer></script> -->
-  <!-- <script src="/js/dashboard-charts.js" defer></script> -->
+  <script src="/js/simple-charts.js" defer></script>
   
   <!-- Inclusions du chatbot de support -->
   <link rel="stylesheet" href="/css/support-chatbot.css">
@@ -91,57 +88,14 @@
         <div class="card-header" style="position: sticky; top: 0; background: white; z-index: 999; padding: 15px; border-bottom: 1px solid #eee;">
           <h2 class="card-title">Statistiques de conversion</h2>
           <div class="refresh-info" style="position: sticky; top: 0; display: flex; align-items: center; padding: 5px 0;">
-            <style>
-              /* Style pour les deux boutons */
-              .btn-action {
-                position: sticky;
-                top: 15px;
-                display: inline-flex !important;
-                visibility: visible !important;
-                z-index: 9999;
-                color: white;
-                border-radius: 50%;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-                margin-right: 10px;
-                border: 3px solid #fff;
-                align-items: center;
-                justify-content: center;
-                transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-                cursor: pointer;
-              }
-              
-              /* Effet de survol pour les deux boutons */
-              .btn-action:hover {
-                transform: scale(1.1);
-                box-shadow: 0 6px 12px rgba(0,0,0,0.5);
-                filter: brightness(1.2);
-              }
-              
-              /* Style spécifique pour le bouton rouge (Reset) */
-              .btn-reset {
-                background: linear-gradient(135deg, #d63031 0%, #be2323 100%);
-                width: 35px;  /* Taille réduite */
-                height: 35px; /* Taille réduite */
-                font-size: 16px; /* Taille réduite */
-              }
-              
-              /* Style spécifique pour le bouton vert (Refresh) */
-              .btn-refresh {
-                background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-              }
-            </style>
-            
-            <!-- Bouton vert pour rafraîchir les données (maintenant à gauche) -->
-            <button id="refreshStatsBtn" class="btn-action btn-refresh" title="Rafraîchir les données">
-              <i class="fas fa-sync-alt" style="margin: auto; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></i>
+            <!-- Bouton rouge pour réinitialiser les statistiques -->
+            <button id="resetStatsBtn" class="btn-reset" title="Remise à zéro du système" style="position: sticky; top: 15px; right: 15px; display: inline-flex !important; visibility: visible !important; z-index: 9999; background: linear-gradient(135deg, #d63031 0%, #be2323 100%); color: white; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-right: 10px; border: 3px solid #fff; font-size: 18px; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+              <i class="fas fa-undo-alt" style="margin: auto; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></i>
             </button>
             
-            <!-- Bouton rouge pour réinitialiser les statistiques (maintenant à droite) -->
-            <button id="resetStatsBtn" class="btn-action btn-reset" title="Remise à zéro du système">
-              <i class="fas fa-undo-alt" style="margin: auto; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></i>
+            <!-- Bouton vert pour rafraîchir les données -->
+            <button id="refreshStatsBtn" class="btn-refresh" title="Rafraîchir les données" style="position: sticky; top: 15px; right: 15px; display: inline-flex !important; visibility: visible !important; z-index: 9999; background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-right: 10px; border: 3px solid #fff; font-size: 18px; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+              <i class="fas fa-sync-alt" style="margin: auto; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></i>
             </button>
             
             <div style="margin-left: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; font-size: 0.9em;">
@@ -352,27 +306,7 @@
         refreshIcon.classList.add('fa-spin');
         
         // Appeler la fonction de mise à jour des données
-        if (typeof window.fetchAndUpdateCharts === 'function') {
-          console.log("Utilisation de window.fetchAndUpdateCharts");
-          window.fetchAndUpdateCharts();
-        } else {
-          console.warn("La fonction fetchAndUpdateCharts n'est pas disponible globalement, recherche d'alternatives...");
-          
-          // Tentative d'utiliser la fonction depuis simple-charts.js
-          fetch('/api/stats?t=' + Date.now(), { 
-            headers: { 'Cache-Control': 'no-cache' }
-          })
-          .then(response => response.json())
-          .then(data => {
-            console.log("Données rafraîchies récupérées directement:", data);
-            if (typeof window.updateAllCharts === 'function') {
-              window.updateAllCharts(data);
-            } else {
-              console.error("Aucune fonction de mise à jour des graphiques n'est disponible");
-            }
-          })
-          .catch(error => console.error("Erreur lors du rafraîchissement manuel:", error));
-        }
+        fetchAndUpdateCharts();
         
         // Arrêter la rotation après un délai
         setTimeout(() => {
@@ -382,17 +316,11 @@
       
       // Ajouter les gestionnaires d'événements aux boutons
       if (resetStatsBtn) {
-        console.log("Attachement du gestionnaire d'événement au bouton Reset");
         resetStatsBtn.addEventListener('click', showResetConfirmation);
-      } else {
-        console.error("Bouton de réinitialisation non trouvé dans le DOM");
       }
       
       if (refreshStatsBtn) {
-        console.log("Attachement du gestionnaire d'événement au bouton Refresh");
         refreshStatsBtn.addEventListener('click', refreshStats);
-      } else {
-        console.error("Bouton de rafraîchissement non trouvé dans le DOM");
       }
       
       // Le gestionnaire d'événement pour le bouton flottant est supprimé
@@ -576,26 +504,7 @@
         safeSetText('#resourceCount .counter', "0");
         
         // Réinitialiser les graphiques immédiatement de façon complète
-        console.log("Tentative de réinitialisation des graphiques...");
-        if (typeof window.resetAllCharts === 'function') {
-          console.log("Utilisation de window.resetAllCharts");
-          window.resetAllCharts();
-        } else if (typeof resetAllCharts === 'function') {
-          console.log("Utilisation de resetAllCharts local");
-          resetAllCharts();
-        } else {
-          console.warn("Fonction resetAllCharts non disponible, tentative d'utiliser une approche alternative");
-          // Approche alternative pour réinitialiser les graphiques
-          if (window.charts) {
-            console.log("Réinitialisation par objet charts global");
-            Object.keys(window.charts).forEach(key => {
-              const chart = window.charts[key];
-              if (chart && typeof chart.destroy === 'function') {
-                chart.destroy();
-              }
-            });
-          }
-        }
+        resetAllCharts();
         
         // Afficher un indicateur de chargement
         const loadingDiv = document.createElement('div');
@@ -1695,17 +1604,6 @@
         const noDataMsg = document.getElementById('noDataMessage');
         const chartCanvas = document.getElementById('messageTypesChart');
         
-        // IMPORTANT: Détruire toujours le graphique existant avant de récupérer de nouvelles données
-        // Cela évite l'erreur "Canvas is already in use" de Chart.js
-        if (window.messageTypesChart) {
-          try {
-            window.messageTypesChart.destroy();
-          } catch (e) {
-            console.warn("Erreur lors de la destruction du graphique:", e);
-          }
-          window.messageTypesChart = null;
-        }
-        
         // Nous utilisons le chemin relatif pour éviter les problèmes CORS
         fetch('/api/message-types', {
           method: 'GET',
@@ -1747,11 +1645,18 @@
               values.push(item.count);
             });
             
-            // S'assurer que le canvas est prêt à recevoir un nouveau graphique
             const messageTypesCtx = chartCanvas.getContext('2d');
             
-            // Création d'un nouveau graphique (puisque nous avons détruit l'ancien au début)
-            window.messageTypesChart = new Chart(messageTypesCtx, {
+            // Mise à jour du graphique des types de messages
+            if (window.messageTypesChart) {
+              // Mettre à jour les données du graphique existant sans le détruire
+              window.messageTypesChart.data.labels = labels;
+              window.messageTypesChart.data.datasets[0].data = values;
+              window.messageTypesChart.update();
+              console.log("Graphique des types de messages HL7 mis à jour avec les données réelles");
+            } else {
+              // Création d'un nouveau graphique avec les données réelles si aucun n'existe
+              window.messageTypesChart = new Chart(messageTypesCtx, {
                 type: 'bar',
                 data: {
                   labels: labels,
@@ -1815,7 +1720,11 @@
               chartCanvas.style.opacity = '0.2';
             }
             
-            // Pas besoin de détruire le graphique ici car nous l'avons déjà fait au début
+            // Détruire le graphique s'il existe pour éviter les données fantômes
+            if (window.messageTypesChart) {
+              window.messageTypesChart.destroy();
+              window.messageTypesChart = null;
+            }
           }
         })
         .catch(error => {
@@ -1832,7 +1741,11 @@
             chartCanvas.style.opacity = '0.2';
           }
           
-          // Pas besoin de détruire le graphique ici car nous l'avons déjà fait au début
+          // Détruire le graphique s'il existe pour éviter les données fantômes
+          if (window.messageTypesChart) {
+            window.messageTypesChart.destroy();
+            window.messageTypesChart = null;
+          }
         });
       }
       
