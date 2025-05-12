@@ -350,6 +350,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Stocker le bundle pour l'onglet détaillé
                         bundleData = bundle;
                         
+                        // Mettre à jour l'affichage du bundle dans l'onglet Bundle
+                        loadPatientBundle(patientId, server, bundle);
+                        
                         // Répartir les ressources dans les onglets appropriés
                         if (resourcesByType.Condition) {
                             conditionsData = resourcesByType.Condition;
@@ -1615,7 +1618,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    function loadPatientBundle(patientId, serverUrl) {
+    function loadPatientBundle(patientId, serverUrl, preloadedBundle = null) {
         const container = document.querySelector('#bundleContent');
         const bundleInfo = document.getElementById('bundleInfo');
         const bundleResourcesList = document.getElementById('bundleResourcesList');
@@ -1626,7 +1629,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (noResourcesSection) noResourcesSection.style.display = 'none';
         if (bundleResourcesList) bundleResourcesList.innerHTML = '';
         
-        // On récupère directement le bundle associé au patient, incluant les références
+        // Si on a déjà un bundle préchargé, on l'utilise directement
+        if (preloadedBundle) {
+            processBundle(preloadedBundle);
+            return;
+        }
+        
+        // Sinon, on récupère directement le bundle associé au patient, incluant les références
         fetch(`${serverUrl}/Patient/${patientId}/$everything?_count=100&_include=*`)
             .then(response => {
                 if (!response.ok) {
@@ -1635,26 +1644,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
+                processBundle(data);
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement du bundle:', error);
+                if (loadingSection) loadingSection.style.display = 'none';
+                if (noResourcesSection) noResourcesSection.style.display = 'block';
+            });
+            
+        // Fonction pour traiter le bundle reçu
+        function processBundle(data) {
                 // Stocker le bundle pour référence future
                 bundleData = data;
                 
                 if (loadingSection) loadingSection.style.display = 'none';
                 
-                // Afficher les informations sur le bundle
-                if (data.resourceType === 'Bundle') {
-                    const resourceCount = data.entry ? data.entry.length : 0;
-                    const resourceTypes = data.entry ? 
-                        [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
-                    
-                    bundleInfo.innerHTML = `
-                        <p><strong>Type de bundle:</strong> ${data.type || 'Inconnu'}</p>
-                        <p><strong>Identifiant:</strong> ${data.id || 'Non spécifié'}</p>
-                        <p><strong>Nombre de ressources:</strong> ${resourceCount}</p>
-                        <p><strong>Types de ressources:</strong> ${resourceTypes.join(', ') || 'Aucun'}</p>
-                    `;
-                    
-                    if (resourceCount > 0) {
-                        // Grouper les ressources par type
+                // Utiliser la fonction updateBundleView pour afficher le bundle proprement
+                updateBundleView(data);
+                
+                // Éviter les affichages en double, le reste est géré par updateBundleView
                         const resourcesByType = {};
                         data.entry.forEach(entry => {
                             if (entry.resource && entry.resource.resourceType) {
