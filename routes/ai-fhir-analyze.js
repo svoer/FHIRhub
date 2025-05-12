@@ -151,7 +151,32 @@ router.post('/analyze-patient', async (req, res) => {
                 throw new Error('Aucun fournisseur d\'IA actif configuré');
             }
             
-            // Construire le prompt pour l'IA
+            // Extraire les données des différentes sections si disponibles
+            let patientInfo = patientSummary;
+            let conditions = [];
+            let observations = [];
+            let medications = [];
+            let encounters = [];
+            
+            // Si les données sont structurées avec des sections distinctes (envoi depuis patient-viewer.js)
+            if (patientSummary.patient && typeof patientSummary.patient === 'object') {
+                console.log('[AI-Analyze] Données reçues avec structure complète');
+                patientInfo = patientSummary.patient;
+                conditions = patientSummary.conditions || [];
+                observations = patientSummary.observations || [];
+                medications = patientSummary.medications || [];
+                encounters = patientSummary.encounters || [];
+                
+                // Log détaillé des données disponibles pour le débogage
+                console.log('[AI-Analyze] Statistiques des données reçues:');
+                console.log(`  - Patient: ${patientInfo ? 'Présent' : 'Manquant'}`);
+                console.log(`  - Conditions: ${conditions.length} éléments`);
+                console.log(`  - Observations: ${observations.length} éléments`);
+                console.log(`  - Médicaments: ${medications.length} éléments`);
+                console.log(`  - Consultations: ${encounters.length} éléments`);
+            }
+            
+            // Construire le prompt pour l'IA avec toutes les données disponibles
             const prompt = `Tu es un assistant médical qui analyse des données FHIR de patient.
                 
 En tant qu'expert médical, analyse ces données de patient et génère un rapport médical complet comprenant:
@@ -161,11 +186,28 @@ En tant qu'expert médical, analyse ces données de patient et génère un rappo
 4. Une synthèse des résultats de laboratoire et observations
 5. L'historique des consultations et hospitalisations
 6. Une synthèse chronologique des événements majeurs
+7. Des recommandations médicales basées sur l'ensemble des données
 
-Voici les données FHIR du patient sous format JSON:
-${JSON.stringify(patientSummary, null, 2)}
+Voici les données FHIR du patient sous format JSON, incluant les informations des différentes sections (patient, conditions, observations, médicaments, consultations):
+
+INFORMATIONS PATIENT:
+${JSON.stringify(patientInfo, null, 2)}
+
+CONDITIONS MÉDICALES (${conditions.length}):
+${JSON.stringify(conditions, null, 2)}
+
+OBSERVATIONS ET RÉSULTATS DE LABORATOIRE (${observations.length}):
+${JSON.stringify(observations, null, 2)}
+
+MÉDICAMENTS (${medications.length}):
+${JSON.stringify(medications, null, 2)}
+
+CONSULTATIONS ET HOSPITALISATIONS (${encounters.length}):
+${JSON.stringify(encounters, null, 2)}
                 
-Réponds avec un rapport HTML bien structuré pour faciliter la lecture. Utilise les éléments HTML comme <div>, <h3>, <ul>, <li>, <p> avec des styles CSS en ligne pour créer un rapport visuellement organisé. Utilise des tableaux pour regrouper les données quand c'est pertinent.`;
+Réponds avec un rapport HTML bien structuré pour faciliter la lecture. Utilise les éléments HTML comme <div>, <h3>, <ul>, <li>, <p> avec des styles CSS en ligne pour créer un rapport visuellement organisé. Utilise des tableaux pour regrouper les données quand c'est pertinent.
+
+Le rapport doit obligatoirement intégrer et analyser toutes les sections de données disponibles (pas seulement les données de base du patient).`;
             
             // Utiliser notre service d'IA unifié
             console.log("[AI-Analyze] Génération de l'analyse avec le service d'IA unifié");
