@@ -499,8 +499,21 @@ function getFhirServerUrl(serverId = null) {
   const server = getServerDetails(defaultServerId);
   
   if (!server) {
-    console.warn(`[FHIR] Serveur par défaut non trouvé, utilisation du serveur public`);
-    return 'https://hapi.fhir.org/baseR4';
+    // Si aucun serveur n'est trouvé, chercher le premier serveur actif disponible
+    const activeServer = config.servers.find(s => s.status === 'active');
+    if (activeServer) {
+      console.warn(`[FHIR] Serveur '${defaultServerId}' non trouvé, utilisation du serveur actif '${activeServer.id}'`);
+      return activeServer.url;
+    }
+    
+    // Si toujours aucun serveur actif, utiliser le premier serveur disponible
+    if (config.servers.length > 0) {
+      console.warn(`[FHIR] Aucun serveur actif trouvé, utilisation du premier serveur disponible '${config.servers[0].id}'`);
+      return config.servers[0].url;
+    }
+    
+    console.error(`[FHIR] Aucun serveur FHIR configuré`);
+    throw new Error('Aucun serveur FHIR configuré');
   }
   
   return server.url;

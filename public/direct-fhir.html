@@ -759,8 +759,7 @@
                         </div>
                         <div class="server-selector">
                             <select id="pushServerSelect" class="server-select">
-                                <option value="local">Serveur HAPI FHIR Local</option>
-                                <option value="public">Serveur HAPI FHIR Public</option>
+                                <option value="" disabled selected>Chargement des serveurs...</option>
                             </select>
                         </div>
                         <div style="padding: 20px;">
@@ -1581,6 +1580,62 @@
                 }
             }
             
+            // Fonction pour charger la liste des serveurs FHIR
+            function loadFhirServers() {
+                return fetch('/api/fhir-config/servers')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        return data && data.servers ? data.servers : [];
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des serveurs FHIR:', error);
+                        updateStatusBar(`Erreur lors du chargement des serveurs FHIR: ${error.message}`, 'error');
+                        return [];
+                    });
+            }
+            
+            // Fonction pour remplir le sélecteur de serveurs
+            function populateServerSelect(selectElement, servers, defaultServerId) {
+                // Vider le sélecteur
+                selectElement.innerHTML = '';
+                
+                // Ajouter une option par défaut si aucun serveur n'est disponible
+                if (!servers || servers.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'Aucun serveur disponible';
+                    option.disabled = true;
+                    option.selected = true;
+                    selectElement.appendChild(option);
+                    return;
+                }
+                
+                // Ajouter les options pour chaque serveur
+                servers.forEach(server => {
+                    const option = document.createElement('option');
+                    option.value = server.id;
+                    option.textContent = `${server.name} (${server.url})`;
+                    
+                    // Marquer comme sélectionné si c'est le serveur par défaut
+                    if (server.id === defaultServerId || server.isDefault) {
+                        option.selected = true;
+                    }
+                    
+                    // Ajouter une class pour les serveurs inactifs
+                    if (server.status !== 'active') {
+                        option.className = 'server-inactive';
+                        option.textContent += ' [Inactif]';
+                    }
+                    
+                    selectElement.appendChild(option);
+                });
+            }
+            
             // Initialisation de l'onglet Push Bundle
             function initBundlePushTab() {
                 // Récupération des éléments DOM pour le push de bundle
@@ -1597,11 +1652,37 @@
                     return;
                 }
                 
+                // Charger la liste des serveurs FHIR
+                loadFhirServers().then(servers => {
+                    // Trouver le serveur par défaut
+                    const defaultServer = servers.find(s => s.isDefault);
+                    const defaultServerId = defaultServer ? defaultServer.id : (servers[0] ? servers[0].id : '');
+                    
+                    // Remplir le sélecteur de serveurs
+                    populateServerSelect(pushServerSelect, servers, defaultServerId);
+                });
+                
                 // Fonction pour formater et afficher le JSON
                 function formatAndDisplayJson(json, element) {
                     try {
+                        // Vérifier si json est null ou undefined
+                        if (json === null || json === undefined) {
+                            element.innerHTML = '<p style="color: #f56565;">Erreur: Données JSON null ou undefined</p>';
+                            return;
+                        }
+                        
                         // Si c'est déjà un objet JSON, le convertir en chaîne
-                        const jsonString = typeof json === 'string' ? json : JSON.stringify(json, null, 2);
+                        let jsonString;
+                        if (typeof json === 'string') {
+                            jsonString = json;
+                        } else {
+                            try {
+                                jsonString = JSON.stringify(json, null, 2);
+                            } catch (e) {
+                                element.innerHTML = `<p style="color: #f56565;">Erreur de conversion JSON: ${e.message}</p>`;
+                                return;
+                            }
+                        }
                         
                         // Formater avec coloration syntaxique
                         const formatted = jsonString
@@ -1628,6 +1709,7 @@
                         
                         element.innerHTML = `<pre style="margin: 0;">${formatted}</pre>`;
                     } catch (error) {
+                        console.error("Erreur de formatage JSON:", error);
                         element.innerHTML = `<p style="color: #f56565;">Erreur de formatage JSON: ${error.message}</p>`;
                     }
                 }
@@ -1709,9 +1791,21 @@
                             <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
                         `;
                         
-                        // Construire l'URL de l'API selon le serveur sélectionné
+                        // Récupérer l'ID du serveur sélectionné et les options
                         const serverId = pushServerSelect.value;
                         const returnOriginal = returnOriginalCheck.checked;
+                        
+                        if (!serverId) {
+                            bundleResult.innerHTML = `
+                                <div style="padding: 10px; background-color: #fee2e2; border-radius: 4px; margin-bottom: 15px;">
+                                    <i class="fas fa-exclamation-circle" style="color: #b91c1c;"></i> 
+                                    <span style="color: #b91c1c; font-weight: 500;">Erreur</span>
+                                </div>
+                                <p>Aucun serveur FHIR n'est sélectionné. Veuillez sélectionner un serveur dans la liste déroulante.</p>
+                            `;
+                            updateStatusBar("Erreur: Aucun serveur sélectionné", "error");
+                            return;
+                        }
                         
                         // Appel à l'API pour pousser le bundle
                         fetch('/api/fhir-push-bundle', {

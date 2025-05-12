@@ -84,7 +84,25 @@ function writeConfig(config) {
 // Route pour récupérer tous les serveurs
 router.get('/servers', ensureConfigFile, (req, res) => {
   const config = readConfig();
-  res.json(config.servers);
+  
+  // Adapter le format pour s'aligner avec la structure utilisée par fhirService.js
+  const adaptedServers = config.servers.map(server => ({
+    id: server.id,
+    name: server.name,
+    url: server.url,
+    version: server.version || 'R4',
+    auth: server.auth || 'none',
+    isDefault: server.isDefault,
+    status: server.isActive ? 'active' : 'inactive',
+    // Conserver d'autres propriétés si nécessaire
+    ...server
+  }));
+  
+  // Renvoyer la configuration au format attendu par le frontend
+  res.json({
+    defaultServer: adaptedServers.find(s => s.isDefault)?.id || null,
+    servers: adaptedServers
+  });
 });
 
 // Route pour ajouter un nouveau serveur
