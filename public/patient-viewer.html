@@ -291,6 +291,15 @@
                 <div class="tab-content" id="bundle" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
                     <div id="bundleContent">
                         <h3 style="margin-top: 0; color: #fd7e30;">Ressources du Bundle</h3>
+                        <div class="loading-resources" style="text-align: center; padding: 30px 20px;">
+                            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #fd7e30; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 15px; color: #666;">Chargement des ressources du bundle...</p>
+                        </div>
+                        <div class="no-resources" style="text-align: center; padding: 30px 20px; display: none;">
+                            <i class="fas fa-box" style="font-size: 2rem; color: #fd7e30; margin-bottom: 15px;"></i>
+                            <h3>Bundle</h3>
+                            <p style="color: #666;">Aucune ressource n'a été trouvée pour ce patient.</p>
+                        </div>
                         <div class="bundle-resources-info" style="margin-bottom: 20px; padding: 15px; background-color: #f9f9f9; border-radius: 8px; border-left: 3px solid #e83e28;">
                             <h4 style="margin-top: 0; font-size: 1.1rem; color: #555;">Informations</h4>
                             <p id="bundleInfo">Aucun bundle FHIR n'a été chargé.</p>

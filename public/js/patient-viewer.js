@@ -1051,10 +1051,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const container = document.querySelector('#bundleContent');
         const bundleInfo = document.getElementById('bundleInfo');
         const bundleResourcesList = document.getElementById('bundleResourcesList');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
         
-        // URL arbitraire pour simuler la récupération d'un bundle de transaction/création
-        // Dans un cas réel, cette URL proviendrait d'une API ou d'un stockage précédent
-        fetch(`${serverUrl}/Patient/${patientId}?_include=*`)
+        if (loadingSection) loadingSection.style.display = 'block';
+        if (noResourcesSection) noResourcesSection.style.display = 'none';
+        if (bundleResourcesList) bundleResourcesList.innerHTML = '';
+        
+        // On crée une requête pour récupérer toutes les ressources associées au patient
+        fetch(`${serverUrl}/Patient/${patientId}/$everything`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération du bundle: ${response.status}`);
@@ -1065,9 +1070,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Stocker le bundle pour référence future
                 bundleData = data;
                 
+                if (loadingSection) loadingSection.style.display = 'none';
+                
                 // Afficher les informations sur le bundle
                 if (data.resourceType === 'Bundle') {
-                    // Simuler une response type "transaction-response" comme montré dans votre exemple
                     const resourceCount = data.entry ? data.entry.length : 0;
                     const resourceTypes = data.entry ? 
                         [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
