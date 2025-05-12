@@ -127,9 +127,62 @@ const chartColors = {
   }
 };
 
+// Élément spinner pour l'animation de chargement
+let refreshSpinner = null;
+
+// Fonction pour montrer l'animation de chargement
+function showLoadingAnimation() {
+  // Si l'animation existe déjà, ne pas la recréer
+  if (refreshSpinner) return;
+  
+  // Créer l'élément d'animation s'il n'existe pas
+  refreshSpinner = document.createElement('div');
+  refreshSpinner.className = 'refresh-spinner';
+  refreshSpinner.style.cssText = `
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 6px solid #f3f3f3;
+    border-top: 6px solid #e74c3c;
+    border-bottom: 6px solid #f39c12;
+    animation: spin 1s linear infinite;
+    z-index: 9999;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    background-color: white;
+  `;
+  
+  // Ajouter un style pour l'animation
+  const styleElement = document.createElement('style');
+  styleElement.textContent = `
+    @keyframes spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(styleElement);
+  
+  // Ajouter l'animation au document
+  document.body.appendChild(refreshSpinner);
+}
+
+// Fonction pour cacher l'animation de chargement
+function hideLoadingAnimation() {
+  if (refreshSpinner) {
+    document.body.removeChild(refreshSpinner);
+    refreshSpinner = null;
+  }
+}
+
 // Fonction pour récupérer et mettre à jour tous les graphiques
 function fetchAndUpdateCharts(forceReset = false) {
   console.log("Récupération des données pour les graphiques...");
+  
+  // Montrer l'animation de chargement
+  showLoadingAnimation();
   
   // Si reset est demandé, afficher une notification
   if (forceReset) {
@@ -137,12 +190,16 @@ function fetchAndUpdateCharts(forceReset = false) {
     alert("Réinitialisation des statistiques en cours...");
   }
   
+  // Ajouter un timestamp pour éviter la mise en cache
+  const timestamp = new Date().getTime();
+  
   // Récupérer les statistiques générales avec le paramètre reset si nécessaire
-  fetch('/api/stats' + (forceReset ? '?reset=true' : ''))
+  fetch('/api/stats' + (forceReset ? '?reset=true' : '') + `&t=${timestamp}`)
     .then(response => response.json())
     .then(data => {
       if (data.success === false) {
         console.error("Erreur lors de la récupération des statistiques:", data.error);
+        hideLoadingAnimation();
         return;
       }
       
@@ -151,6 +208,7 @@ function fetchAndUpdateCharts(forceReset = false) {
       
       // Si réinitialisation réussie, afficher une notification
       if (forceReset) {
+        hideLoadingAnimation();
         alert("Statistiques réinitialisées avec succès!");
         // Également réinitialiser les graphiques localement
         Object.keys(chartInstances).forEach(key => {
