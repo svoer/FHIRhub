@@ -1511,13 +1511,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             };
             
-            // Récupérer toutes les ressources pour la chronologie (consultations, médicaments, observations, etc.)
-            // Utiliser _count=1000 pour récupérer beaucoup plus de résultats (presque tous)
+            // Récupérer toutes les ressources pour la chronologie avec les formats corrects pour les références patient
+            console.log(`Génération de la chronologie pour le patient ${patientId}`);
             Promise.all([
-                fetchSafely(`${serverUrl}/Encounter?patient=${patientId}&_count=1000`),
-                fetchSafely(`${serverUrl}/Observation?patient=${patientId}&_count=1000`),
-                fetchSafely(`${serverUrl}/MedicationRequest?patient=${patientId}&_count=1000`),
-                fetchSafely(`${serverUrl}/Condition?patient=${patientId}&_count=1000`)
+                fetchSafely(`${serverUrl}/Encounter?subject=Patient/${patientId}&_count=100`),
+                fetchSafely(`${serverUrl}/Observation?subject=Patient/${patientId}&_count=100`),
+                fetchSafely(`${serverUrl}/MedicationRequest?subject=Patient/${patientId}&_count=100`),
+                fetchSafely(`${serverUrl}/Condition?subject=Patient/${patientId}&_count=100`)
             ])
         .then(([encounters, observations, medications, conditions]) => {
             loadingSection.style.display = 'none';
@@ -1661,6 +1661,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     </details>
                 </div>
             `;
+            
+            // Résoudre la promesse avec les données de la chronologie
+            const timelineData = {
+                entries: timelineEntries,
+                count: timelineEntries.length
+            };
+            resolve(timelineData);
+        })
+        .catch(error => {
+            console.error('Erreur dans generateTimeline:', error);
+            // Afficher un message d'erreur dans l'interface
+            const container = document.querySelector('#timelineContent');
+            if (container) {
+                const noResourcesSection = container.querySelector('.no-resources');
+                if (noResourcesSection) {
+                    noResourcesSection.style.display = 'block';
+                    noResourcesSection.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h4>Erreur critique</h4>
+                            <p>Une erreur est survenue lors de la génération de la chronologie.</p>
+                            <details>
+                                <summary>Détails techniques</summary>
+                                <pre>${error.message || 'Erreur inconnue'}</pre>
+                            </details>
+                        </div>
+                    `;
+                }
+            }
+            reject(error);
         });
     } catch (error) {
         console.error('Exception globale dans generateTimeline:', error);
@@ -1686,8 +1715,10 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (displayError) {
             console.error('Impossible d\'afficher le message d\'erreur:', displayError);
         }
+        reject(error);
     }
-    }
+    });
+}
     
     // Fonctions utilitaires
     function getObservationValue(observation) {
