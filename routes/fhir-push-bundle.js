@@ -7,7 +7,6 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
-const config = require('./fhir-config');
 const { getFhirServerUrl } = require('../utils/fhirService');
 const logger = require('../utils/logger');
 // Pour l'authentification, utiliser l'authentification combinée de l'app principal
