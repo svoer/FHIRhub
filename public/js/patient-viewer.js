@@ -14,19 +14,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearSearchBtn = document.getElementById('clearSearchBtn');
     const analyzeAIBtn = document.getElementById('analyzeAIBtn');
     
-    // Variables pour l'interface utilisateur uniquement
-    // Nous évitons de stocker les données médicales pour éviter toute mise en cache
-    // et garantir que toutes les requêtes passent par l'API du serveur FHIR
-    let patientDisplayData = null; // Uniquement pour l'affichage des informations de base du patient
-    
-    // Constantes pour les messages d'erreur et de statut
-    const ERROR_NETWORK = "Erreur réseau lors de la connexion au serveur FHIR";
-    const ERROR_SERVER = "Erreur de serveur FHIR";
-    const ERROR_NOT_FOUND = "Ressource non trouvée";
-    const ERROR_TIMEOUT = "Délai d'attente dépassé";
-    const STATUS_LOADING = "Chargement en cours...";
-    const STATUS_SUCCESS = "Données chargées avec succès";
-    const STATUS_NO_DATA = "Aucune donnée disponible";
+    // Stockage centralisé de toutes les données
+    let patientData = null;
+    let conditionsData = [];
+    let observationsData = [];
+    let medicationsData = [];
+    let encountersData = [];
+    // Variables pour les nouvelles ressources
+    let practitionersData = [];
+    let organizationsData = [];
+    let relatedPersonsData = [];
+    let coverageData = [];
+    let bundleData = null;
+    let lastBundleResponse = null; // Pour stocker la réponse de transaction du serveur FHIR
     
     // Navigation par onglets
     const tabs = document.querySelectorAll('.tab');
@@ -64,39 +64,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour formater le nom du patient
     function formatPatientName(nameArray) {
-        // Protection contre les valeurs null, undefined, ou non-array
-        if (!nameArray || !Array.isArray(nameArray) || nameArray.length === 0) {
+        if (!nameArray || nameArray.length === 0) {
             return 'Patient sans nom';
         }
         
-        // S'assurer que le premier élément existe
         const name = nameArray[0];
-        if (!name) {
-            return 'Patient sans nom';
-        }
         
-        try {
-            // Récupération sécurisée des propriétés
-            const family = (name.family && typeof name.family === 'string') ? name.family : '';
-            
-            // Vérification que given est un tableau avant d'utiliser join
-            const given = (name.given && Array.isArray(name.given)) ? name.given.filter(n => n) : [];
-            
-            // Formatage du nom selon les informations disponibles
-            if (family && given.length > 0) {
-                return `${family.toUpperCase()} ${given.join(' ')}`;
-            } else if (family) {
-                return family.toUpperCase();
-            } else if (given.length > 0) {
-                return given.join(' ');
-            } else if (name.text && typeof name.text === 'string') {
-                // Utiliser le texte si disponible
-                return name.text;
-            } else {
-                return 'Patient sans nom';
-            }
-        } catch (error) {
-            console.warn('Erreur lors du formatage du nom du patient:', error);
+        const family = name.family || '';
+        const given = name.given || [];
+        
+        if (family && given.length > 0) {
+            return `${family.toUpperCase()} ${given.join(' ')}`;
+        } else if (family) {
+            return family.toUpperCase();
+        } else if (given.length > 0) {
+            return given.join(' ');
+        } else {
             return 'Patient sans nom';
         }
     }
@@ -273,17 +256,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour effacer toutes les données du patient (identitovigilance)
     function clearPatientData() {
-        // Réinitialiser les variables d'affichage patient
-        patientDisplayData = null;
+        // Réinitialiser la variable globale des données patient
+        patientData = null;
         
-        // Réinitialiser les données stockées temporairement dans l'interface
+        // Vider tous les conteneurs de contenu
         document.getElementById('summaryContent').innerHTML = '';
         document.getElementById('aiAnalysis').innerHTML = '';
         document.getElementById('aiAnalysis').style.display = 'none';
         
-        console.log("IDENTITOVIGILANCE: Toutes les données du patient ont été effacées");
-        
-        // Vider tous les conteneurs d'onglets pour garantir qu'aucune donnée patient n'est affichée
+        // Vider tous les conteneurs d'onglets
         const contentContainers = [
             'conditionsContent', 
             'observationsContent', 
@@ -324,12 +305,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             const selectedOption = patientSelect.options[patientSelect.selectedIndex];
-            patientDisplayData = JSON.parse(selectedOption.dataset.patient);
+            patientData = JSON.parse(selectedOption.dataset.patient);
             
-            // Afficher les détails - uniquement pour l'interface utilisateur, pas pour le traitement
-            document.getElementById('patientName').textContent = formatPatientName(patientDisplayData.name);
+            // Afficher les détails
+            document.getElementById('patientName').textContent = formatPatientName(patientData.name);
             document.getElementById('patientDetails').textContent = 
-                `ID: ${patientDisplayData.id} | Genre: ${patientDisplayData.gender || 'Non spécifié'} | Naissance: ${patientDisplayData.birthDate || 'Non spécifiée'}`;
+                `ID: ${patientData.id} | Genre: ${patientData.gender || 'Non spécifié'} | Naissance: ${patientData.birthDate || 'Non spécifiée'}`;
             
             // Afficher le conteneur de patient
             document.getElementById('patientContainer').style.display = 'block';
@@ -337,19 +318,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Afficher un status de chargement
             showStatus('Chargement de toutes les données médicales du patient...', 'info');
             
-            // Gérer le timeout pour la requête $everything
-            const everythingTimeoutMs = 30000; // 30 secondes
-            let everythingTimedOut = false;
-            
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => {
-                    everythingTimedOut = true;
-                    reject(new Error("Timeout de la requête $everything"));
-                }, everythingTimeoutMs);
-            });
-            
             // Tenter de charger toutes les ressources en une seule requête avec $everything
-            const fetchPromise = fetch(`${server}/Patient/${patientId}/$everything`)
+            fetch(`${server}/Patient/${patientId}/$everything`)
                 .then(response => {
                     if (!response.ok) {
                         // Si $everything n'est pas supporté, on utilise l'approche traditionnelle
@@ -357,13 +327,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         throw new Error("$everything non supporté");
                     }
                     return response.json();
-                });
-                
-            // Combiner les promesses avec une course (race)
-            Promise.race([fetchPromise, timeoutPromise])
+                })
                 .then(bundle => {
-                    if (everythingTimedOut) return; // Si timeout déjà déclenché, on ignore
-                    
                     console.log("Bundle complet récupéré via $everything:", bundle);
                     showStatus('Chargement complet des données réussi via $everything', 'success');
                     
@@ -385,9 +350,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Mettre à jour tous les onglets en fonction des données disponibles
                         if (resourcesByType.Condition) {
                             conditionsData = resourcesByType.Condition;
-                            // Plutôt que d'appeler une fonction spécifique, utiliser directement le code complet ici
-                            loadPatientConditions(patientId, serverUrl, conditionsData);
-                            console.log(`${conditionsData.length} conditions chargées et stockées`);
+                            updateConditionsTab(conditionsData);
                         }
                         
                         if (resourcesByType.Observation) {
@@ -438,135 +401,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error("Erreur avec $everything:", error);
-                    
-                    // Afficher un message plus informatif selon le type d'erreur
-                    if (error.message === "Timeout de la requête $everything") {
-                        showStatus("L'opération $everything a pris trop de temps, utilisation de la méthode traditionnelle", 'warning');
-                    } else if (error.message === "$everything non supporté") {
-                        showStatus("L'opération $everything n'est pas supportée par ce serveur, utilisation de la méthode traditionnelle", 'info');
-                    } else if (error.message && error.message.includes("Failed to fetch")) {
-                        showStatus("Erreur réseau lors de la connexion au serveur FHIR, vérifiez votre connexion", 'error');
-                    } else {
-                        showStatus("Erreur lors du chargement via $everything, utilisation de la méthode traditionnelle", 'warning');
-                    }
-                    
-                    // Si nous ne sommes pas déjà en train de charger via la méthode traditionnelle
-                    if (!everythingTimedOut) {
-                        loadResourcesTraditionnally();
-                    }
+                    loadResourcesTraditionnally();
                 });
                 
             // Fonction pour charger les ressources de façon traditionnelle
             function loadResourcesTraditionnally() {
                 showStatus('Chargement individuel des ressources...', 'info');
-                
-                // Utiliser Promise.allSettled pour gérer les erreurs de manière robuste
-                // Cela permettra de récupérer les données même si certaines requêtes échouent
-                const loadPromises = [
-                    // Charger les conditions (diagnostics)
-                    new Promise(resolve => {
-                        try {
-                            loadPatientConditions(patientId, server);
-                            resolve();
-                        } catch (err) {
-                            console.warn("Erreur lors du chargement des conditions:", err);
-                            resolve();
-                        }
-                    }),
-                    
-                    // Charger les observations (résultats de laboratoire, signes vitaux)
-                    new Promise(resolve => {
-                        try {
-                            loadPatientObservations(patientId, server);
-                            resolve();
-                        } catch (err) {
-                            console.warn("Erreur lors du chargement des observations:", err);
-                            resolve();
-                        }
-                    }),
-                    
-                    // Charger les médicaments
-                    new Promise(resolve => {
-                        try {
-                            loadPatientMedications(patientId, server);
-                            resolve();
-                        } catch (err) {
-                            console.warn("Erreur lors du chargement des médicaments:", err);
-                            resolve();
-                        }
-                    }),
-                    
-                    // Charger les consultations
-                    new Promise(resolve => {
-                        try {
-                            loadPatientEncounters(patientId, server);
-                            resolve();
-                        } catch (err) {
-                            console.warn("Erreur lors du chargement des consultations:", err);
-                            resolve();
-                        }
-                    }),
-                    
-                    // Charger les praticiens
-                    new Promise(resolve => {
-                        try {
-                            loadPatientPractitioners(patientId, server);
-                            resolve();
-                        } catch (err) {
-                            console.warn("Erreur lors du chargement des praticiens:", err);
-                            resolve();
-                        }
-                    }),
-                    
-                    // Charger les organisations
-                    new Promise(resolve => {
-                        try {
-                            loadPatientOrganizations(patientId, server);
-                            resolve();
-                        } catch (err) {
-                            console.warn("Erreur lors du chargement des organisations:", err);
-                            resolve();
-                        }
-                    }),
-                    
-                    // Charger les personnes liées
-                    new Promise(resolve => {
-                        try {
-                            loadPatientRelatedPersons(patientId, server);
-                            resolve();
-                        } catch (err) {
-                            console.warn("Erreur lors du chargement des personnes liées:", err);
-                            resolve();
-                        }
-                    }),
-                    
-                    // Charger les couvertures d'assurance
-                    new Promise(resolve => {
-                        try {
-                            loadPatientCoverage(patientId, server);
-                            resolve();
-                        } catch (err) {
-                            console.warn("Erreur lors du chargement des couvertures:", err);
-                            resolve();
-                        }
-                    })
-                ];
-                
-                // Attendre que toutes les promesses soient résolues (même en cas d'erreur)
-                Promise.allSettled(loadPromises).then(() => {
-                    try {
-                        // Générer la chronologie avec les données chargées
-                        generateTimeline(patientId, server);
-                        
-                        // Charger le bundle complet
-                        loadPatientBundle(patientId, server);
-                        
-                        showStatus('Chargement terminé', 'success');
-                    } catch (err) {
-                        console.warn("Erreur lors de la finalisation du chargement:", err);
-                        showStatus('Chargement terminé avec des erreurs', 'warning');
-                    }
-                });
+                // Charger toutes les ressources associées au patient individuellement
+                loadPatientConditions(patientId, server);
+                loadPatientObservations(patientId, server);
+                loadPatientMedications(patientId, server);
+                loadPatientEncounters(patientId, server);
+                loadPatientPractitioners(patientId, server);
+                loadPatientOrganizations(patientId, server);
+                loadPatientRelatedPersons(patientId, server);
+                loadPatientCoverage(patientId, server);
+                generateTimeline(patientId, server);
+                loadPatientBundle(patientId, server);
             }
             
             // Fonction pour générer une chronologie à partir d'un bundle
@@ -924,332 +775,27 @@ document.addEventListener('DOMContentLoaded', function() {
                         } 
                         else if (type === 'Practitioner' && resource.name && resource.name.length > 0) {
                             resourceName = formatPractitionerName(resource.name);
-                            let details = [];
-                            
-                            if (resource.qualification && resource.qualification.length > 0) {
-                                const qualifications = resource.qualification.map(q => {
-                                    if (q.code && q.code.coding && q.code.coding.length > 0) {
-                                        return q.code.coding[0].display || q.code.coding[0].code;
-                                    } else if (q.code && q.code.text) {
-                                        return q.code.text;
-                                    }
-                                    return null;
-                                }).filter(q => q !== null);
-                                
-                                if (qualifications.length > 0) {
-                                    details.push(`Qualifications: ${qualifications.join(', ')}`);
-                                }
-                            }
-                            
-                            if (resource.telecom && resource.telecom.length > 0) {
-                                const telecomLabels = {
-                                    'phone': 'Tél',
-                                    'email': 'Email',
-                                    'fax': 'Fax',
-                                    'url': 'Site Web',
-                                    'sms': 'SMS',
-                                    'other': 'Autre'
-                                };
-                                
-                                const telecomInfo = resource.telecom.map(t => {
-                                    const label = telecomLabels[t.system] || t.system;
-                                    return `${label}: ${t.value}`;
-                                });
-                                
-                                if (telecomInfo.length > 0) {
-                                    details.push(telecomInfo.join(' | '));
-                                }
-                            }
-                            
-                            if (resource.address && resource.address.length > 0) {
-                                const addr = resource.address[0];
-                                let addrStr = '';
-                                
-                                if (addr.line && addr.line.length > 0) {
-                                    addrStr += addr.line.join(', ');
-                                }
-                                
-                                if (addr.city) {
-                                    if (addrStr) addrStr += ', ';
-                                    addrStr += addr.city;
-                                }
-                                
-                                if (addr.postalCode) {
-                                    if (addrStr) addrStr += ' ';
-                                    addrStr += addr.postalCode;
-                                }
-                                
-                                if (addr.country) {
-                                    if (addrStr) addrStr += ', ';
-                                    addrStr += addr.country;
-                                }
-                                
-                                if (addrStr) {
-                                    details.push(`Adresse: ${addrStr}`);
-                                }
-                            }
-                            
-                            if (resource.identifier && resource.identifier.length > 0) {
-                                resource.identifier.forEach(id => {
-                                    let idLabel = 'Identifiant';
-                                    if (id.type && id.type.coding && id.type.coding.length > 0) {
-                                        idLabel = id.type.coding[0].display || id.type.coding[0].code;
-                                    } else if (id.type && id.type.text) {
-                                        idLabel = id.type.text;
-                                    } else if (id.system) {
-                                        const parts = id.system.split('/');
-                                        idLabel = parts[parts.length - 1];
-                                    }
-                                    
-                                    details.push(`${idLabel}: ${id.value}`);
-                                });
-                            }
-                            
-                            resourceDetail = details.length > 0 ? details.join(' | ') : `ID: ${resource.id}`;
+                            resourceDetail = `ID: ${resource.id}`;
                         }
                         else if (type === 'Organization' && resource.name) {
                             resourceName = resource.name;
                             resourceDetail = `ID: ${resource.id}`;
                         }
-                        else if (type === 'Condition' && resource.code) {
-                            // Extraire le libellé de la condition
-                            if (resource.code.coding && resource.code.coding.length > 0) {
-                                resourceName = resource.code.coding[0].display || resource.code.coding[0].code;
-                            } else if (resource.code.text) {
-                                resourceName = resource.code.text;
-                            } else {
-                                resourceName = `Condition #${resource.id}`;
-                            }
-                            
-                            // Collecter les détails cliniques
-                            let details = [];
-                            
-                            // Statut clinique
-                            if (resource.clinicalStatus && resource.clinicalStatus.coding && resource.clinicalStatus.coding.length > 0) {
-                                const statusMap = {
-                                    'active': 'Active',
-                                    'recurrence': 'Récurrence',
-                                    'relapse': 'Rechute',
-                                    'inactive': 'Inactive',
-                                    'remission': 'Rémission',
-                                    'resolved': 'Résolue'
-                                };
-                                const status = resource.clinicalStatus.coding[0].code;
-                                details.push(`Statut: ${statusMap[status] || status}`);
-                            }
-                            
-                            // Statut de vérification
-                            if (resource.verificationStatus && resource.verificationStatus.coding && resource.verificationStatus.coding.length > 0) {
-                                const verificationMap = {
-                                    'unconfirmed': 'Non confirmé',
-                                    'provisional': 'Provisoire',
-                                    'differential': 'Diagnostic différentiel',
-                                    'confirmed': 'Confirmé',
-                                    'refuted': 'Réfuté',
-                                    'entered-in-error': 'Erreur de saisie'
-                                };
-                                const verification = resource.verificationStatus.coding[0].code;
-                                details.push(`Vérification: ${verificationMap[verification] || verification}`);
-                            }
-                            
-                            // Sévérité
-                            if (resource.severity && resource.severity.coding && resource.severity.coding.length > 0) {
-                                const severityMap = {
-                                    'mild': 'Légère',
-                                    'moderate': 'Modérée',
-                                    'severe': 'Sévère'
-                                };
-                                const severity = resource.severity.coding[0].code;
-                                details.push(`Sévérité: ${severityMap[severity] || severity}`);
-                            }
-                            
-                            // Catégorie
-                            if (resource.category && resource.category.length > 0 && 
-                                resource.category[0].coding && resource.category[0].coding.length > 0) {
-                                const categoryMap = {
-                                    'problem-list-item': 'Problème',
-                                    'encounter-diagnosis': 'Diagnostic',
-                                    'health-concern': 'Préoccupation de santé'
-                                };
-                                const category = resource.category[0].coding[0].code;
-                                details.push(`Catégorie: ${categoryMap[category] || category}`);
-                            }
-                            
-                            // Date de début
-                            if (resource.onsetDateTime) {
-                                details.push(`Début: ${resource.onsetDateTime.split('T')[0]}`);
-                            } else if (resource.onsetPeriod && resource.onsetPeriod.start) {
-                                details.push(`Début: ${resource.onsetPeriod.start.split('T')[0]}`);
-                            }
-                            
-                            // Date d'enregistrement
-                            if (resource.recordedDate) {
-                                details.push(`Enregistrée le: ${resource.recordedDate.split('T')[0]}`);
-                            }
-                            
-                            // Notes
-                            if (resource.note && resource.note.length > 0 && resource.note[0].text) {
-                                const noteText = resource.note[0].text;
-                                if (noteText.length > 50) {
-                                    details.push(`Note: ${noteText.substring(0, 50)}...`);
-                                } else {
-                                    details.push(`Note: ${noteText}`);
-                                }
-                            }
-                            
-                            resourceDetail = details.length > 0 ? details.join(' | ') : `ID: ${resource.id}`;
+                        else if (type === 'Condition' && resource.code && resource.code.coding && resource.code.coding.length > 0) {
+                            resourceName = resource.code.coding[0].display || resource.code.coding[0].code || `Condition #${resource.id}`;
+                            resourceDetail = `ID: ${resource.id}`;
+                            if (resource.recordedDate) resourceDetail += ` | Date: ${resource.recordedDate.split('T')[0]}`;
                         }
-                        else if (type === 'Observation' && resource.code) {
-                            // Extraire le nom de l'observation
-                            if (resource.code.coding && resource.code.coding.length > 0) {
-                                resourceName = resource.code.coding[0].display || resource.code.coding[0].code;
-                            } else if (resource.code.text) {
-                                resourceName = resource.code.text;
-                            } else {
-                                resourceName = `Observation #${resource.id}`;
-                            }
+                        else if (type === 'Observation' && resource.code && resource.code.coding && resource.code.coding.length > 0) {
+                            resourceName = resource.code.coding[0].display || resource.code.coding[0].code || `Observation #${resource.id}`;
+                            resourceDetail = `ID: ${resource.id}`;
+                            if (resource.effectiveDateTime) resourceDetail += ` | Date: ${resource.effectiveDateTime.split('T')[0]}`;
                             
-                            // Collecter les détails cliniques
-                            let details = [];
-                            
-                            // Valeur mesurée (plusieurs formats possibles)
-                            let valueStr = '';
                             if (resource.valueQuantity) {
-                                valueStr = `${resource.valueQuantity.value} ${resource.valueQuantity.unit || ''}`;
-                                details.push(`Valeur: ${valueStr}`);
-                            } else if (resource.valueString) {
-                                valueStr = resource.valueString;
-                                details.push(`Valeur: ${valueStr}`);
-                            } else if (resource.valueCodeableConcept && resource.valueCodeableConcept.coding && resource.valueCodeableConcept.coding.length > 0) {
-                                valueStr = resource.valueCodeableConcept.coding[0].display || resource.valueCodeableConcept.coding[0].code;
-                                details.push(`Valeur: ${valueStr}`);
-                            } else if (resource.valueCodeableConcept && resource.valueCodeableConcept.text) {
-                                valueStr = resource.valueCodeableConcept.text;
-                                details.push(`Valeur: ${valueStr}`);
-                            } else if (resource.valueBoolean !== undefined) {
-                                valueStr = resource.valueBoolean ? 'Positif' : 'Négatif';
-                                details.push(`Résultat: ${valueStr}`);
-                            } else if (resource.valueInteger !== undefined) {
-                                valueStr = resource.valueInteger.toString();
-                                details.push(`Valeur: ${valueStr}`);
-                            } else if (resource.valueRange) {
-                                const low = resource.valueRange.low ? resource.valueRange.low.value + (resource.valueRange.low.unit || '') : '';
-                                const high = resource.valueRange.high ? resource.valueRange.high.value + (resource.valueRange.high.unit || '') : '';
-                                valueStr = low && high ? `${low} - ${high}` : (low || high);
-                                if (valueStr) details.push(`Plage: ${valueStr}`);
-                            } else if (resource.valueRatio) {
-                                const num = resource.valueRatio.numerator ? resource.valueRatio.numerator.value + (resource.valueRatio.numerator.unit || '') : '';
-                                const denom = resource.valueRatio.denominator ? resource.valueRatio.denominator.value + (resource.valueRatio.denominator.unit || '') : '';
-                                if (num && denom) {
-                                    valueStr = `${num} / ${denom}`;
-                                    details.push(`Rapport: ${valueStr}`);
-                                }
-                            } else if (resource.component && resource.component.length > 0) {
-                                // Observation avec plusieurs composants (comme la pression artérielle)
-                                const components = resource.component.map(comp => {
-                                    let compName = '';
-                                    if (comp.code && comp.code.coding && comp.code.coding.length > 0) {
-                                        compName = comp.code.coding[0].display || comp.code.coding[0].code;
-                                    } else if (comp.code && comp.code.text) {
-                                        compName = comp.code.text;
-                                    }
-                                    
-                                    let compValue = '';
-                                    if (comp.valueQuantity) {
-                                        compValue = `${comp.valueQuantity.value} ${comp.valueQuantity.unit || ''}`;
-                                    } else if (comp.valueString) {
-                                        compValue = comp.valueString;
-                                    } else if (comp.valueCodeableConcept && comp.valueCodeableConcept.coding && comp.valueCodeableConcept.coding.length > 0) {
-                                        compValue = comp.valueCodeableConcept.coding[0].display || comp.valueCodeableConcept.coding[0].code;
-                                    }
-                                    
-                                    return compName && compValue ? `${compName}: ${compValue}` : null;
-                                }).filter(comp => comp !== null);
-                                
-                                if (components.length > 0) {
-                                    details.push(`Composants: ${components.join(', ')}`);
-                                }
+                                resourceDetail += ` | Valeur: ${resource.valueQuantity.value} ${resource.valueQuantity.unit || ''}`;
                             }
-                            
-                            // Statut
-                            if (resource.status) {
-                                const statusMap = {
-                                    'registered': 'Enregistrée',
-                                    'preliminary': 'Préliminaire',
-                                    'final': 'Finale',
-                                    'amended': 'Modifiée',
-                                    'corrected': 'Corrigée',
-                                    'cancelled': 'Annulée',
-                                    'entered-in-error': 'Erreur de saisie',
-                                    'unknown': 'Inconnue'
-                                };
-                                details.push(`Statut: ${statusMap[resource.status] || resource.status}`);
-                            }
-                            
-                            // Date effective
-                            if (resource.effectiveDateTime) {
-                                details.push(`Date: ${resource.effectiveDateTime.split('T')[0]}`);
-                            } else if (resource.effectivePeriod && resource.effectivePeriod.start) {
-                                const start = resource.effectivePeriod.start.split('T')[0];
-                                const end = resource.effectivePeriod.end ? resource.effectivePeriod.end.split('T')[0] : '';
-                                details.push(`Période: ${start}${end ? ` - ${end}` : ''}`);
-                            }
-                            
-                            // Interprétation clinique
-                            if (resource.interpretation && resource.interpretation.length > 0 &&
-                                resource.interpretation[0].coding && resource.interpretation[0].coding.length > 0) {
-                                const interpretationMap = {
-                                    'N': 'Normal',
-                                    'A': 'Anormal',
-                                    'H': 'Élevé',
-                                    'HH': 'Très élevé',
-                                    'L': 'Bas',
-                                    'LL': 'Très bas',
-                                    'U': 'Significatif'
-                                };
-                                const interpretation = resource.interpretation[0].coding[0].code;
-                                details.push(`Interprétation: ${interpretationMap[interpretation] || interpretation}`);
-                            }
-                            
-                            // Plage de référence
-                            if (resource.referenceRange && resource.referenceRange.length > 0) {
-                                const range = resource.referenceRange[0];
-                                let rangeStr = '';
-                                
-                                if (range.low && range.high) {
-                                    rangeStr = `${range.low.value}${range.low.unit ? ' ' + range.low.unit : ''} - ${range.high.value}${range.high.unit ? ' ' + range.high.unit : ''}`;
-                                } else if (range.low) {
-                                    rangeStr = `> ${range.low.value}${range.low.unit ? ' ' + range.low.unit : ''}`;
-                                } else if (range.high) {
-                                    rangeStr = `< ${range.high.value}${range.high.unit ? ' ' + range.high.unit : ''}`;
-                                } else if (range.text) {
-                                    rangeStr = range.text;
-                                }
-                                
-                                if (rangeStr) {
-                                    details.push(`Norme: ${rangeStr}`);
-                                }
-                            }
-                            
-                            // Méthode utilisée
-                            if (resource.method && resource.method.coding && resource.method.coding.length > 0) {
-                                details.push(`Méthode: ${resource.method.coding[0].display || resource.method.coding[0].code}`);
-                            }
-                            
-                            // Notes
-                            if (resource.note && resource.note.length > 0 && resource.note[0].text) {
-                                const noteText = resource.note[0].text;
-                                if (noteText.length > 50) {
-                                    details.push(`Note: ${noteText.substring(0, 50)}...`);
-                                } else {
-                                    details.push(`Note: ${noteText}`);
-                                }
-                            }
-                            
-                            resourceDetail = details.length > 0 ? details.join(' | ') : `ID: ${resource.id}`;
                         }
                         else if (type === 'MedicationRequest' && resource.medicationCodeableConcept) {
-                            // Extrait le nom du médicament
                             if (resource.medicationCodeableConcept.coding && resource.medicationCodeableConcept.coding.length > 0) {
                                 resourceName = resource.medicationCodeableConcept.coding[0].display || resource.medicationCodeableConcept.coding[0].code;
                             } else if (resource.medicationCodeableConcept.text) {
@@ -1257,303 +803,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             } else {
                                 resourceName = `Médicament #${resource.id}`;
                             }
-                            
-                            // Collecter les détails cliniques
-                            let details = [];
-                            
-                            // Date de prescription
-                            if (resource.authoredOn) {
-                                details.push(`Prescrit le: ${resource.authoredOn.split('T')[0]}`);
-                            }
-                            
-                            // Instructions de dosage
-                            if (resource.dosageInstruction && resource.dosageInstruction.length > 0) {
-                                const dosage = resource.dosageInstruction[0];
-                                
-                                // Texte d'instructions
-                                if (dosage.text) {
-                                    if (dosage.text.length > 50) {
-                                        details.push(`Dosage: ${dosage.text.substring(0, 50)}...`);
-                                    } else {
-                                        details.push(`Dosage: ${dosage.text}`);
-                                    }
-                                }
-                                
-                                // Dose structurée
-                                if (dosage.doseAndRate && dosage.doseAndRate.length > 0) {
-                                    const doseAndRate = dosage.doseAndRate[0];
-                                    
-                                    if (doseAndRate.doseQuantity) {
-                                        const dose = `${doseAndRate.doseQuantity.value} ${doseAndRate.doseQuantity.unit || ''}`;
-                                        details.push(`Dose: ${dose}`);
-                                    }
-                                    
-                                    if (doseAndRate.rateQuantity) {
-                                        const rate = `${doseAndRate.rateQuantity.value} ${doseAndRate.rateQuantity.unit || ''}`;
-                                        details.push(`Rythme: ${rate}`);
-                                    }
-                                }
-                                
-                                // Fréquence
-                                if (dosage.timing && dosage.timing.code && dosage.timing.code.coding && dosage.timing.code.coding.length > 0) {
-                                    const frequency = dosage.timing.code.coding[0].display || dosage.timing.code.coding[0].code;
-                                    details.push(`Fréquence: ${frequency}`);
-                                } else if (dosage.timing && dosage.timing.repeat) {
-                                    const repeat = dosage.timing.repeat;
-                                    let freqStr = '';
-                                    
-                                    if (repeat.frequency && repeat.period) {
-                                        const periodUnit = {
-                                            's': 'seconde',
-                                            'min': 'minute',
-                                            'h': 'heure',
-                                            'd': 'jour',
-                                            'wk': 'semaine',
-                                            'mo': 'mois',
-                                            'a': 'an'
-                                        };
-                                        freqStr = `${repeat.frequency} fois par ${repeat.period} ${periodUnit[repeat.periodUnit] || repeat.periodUnit}`;
-                                        details.push(`Fréquence: ${freqStr}`);
-                                    } else if (repeat.frequencyMax && repeat.period) {
-                                        freqStr = `Jusqu'à ${repeat.frequencyMax} fois par ${repeat.period} ${repeat.periodUnit || ''}`;
-                                        details.push(`Fréquence: ${freqStr}`);
-                                    }
-                                }
-                                
-                                // Voie d'administration
-                                if (dosage.route && dosage.route.coding && dosage.route.coding.length > 0) {
-                                    const routeMap = {
-                                        'PO': 'Orale',
-                                        'IV': 'Intraveineuse',
-                                        'IM': 'Intramusculaire',
-                                        'SC': 'Sous-cutanée',
-                                        'SL': 'Sublinguale',
-                                        'TD': 'Transdermique',
-                                        'INH': 'Inhalation'
-                                    };
-                                    const route = dosage.route.coding[0].code;
-                                    details.push(`Voie: ${routeMap[route] || dosage.route.coding[0].display || route}`);
-                                }
-                            }
-                            
-                            // Statut
-                            if (resource.status) {
-                                const statusMap = {
-                                    'active': 'Active',
-                                    'on-hold': 'En attente',
-                                    'cancelled': 'Annulée',
-                                    'completed': 'Terminée',
-                                    'entered-in-error': 'Erreur de saisie',
-                                    'stopped': 'Arrêtée',
-                                    'draft': 'Brouillon',
-                                    'unknown': 'Inconnue'
-                                };
-                                details.push(`Statut: ${statusMap[resource.status] || resource.status}`);
-                            }
-                            
-                            // Type d'intention
-                            if (resource.intent) {
-                                const intentMap = {
-                                    'proposal': 'Proposition',
-                                    'plan': 'Plan',
-                                    'order': 'Ordonnance',
-                                    'original-order': 'Ordonnance originale',
-                                    'reflex-order': 'Ordonnance réflexe',
-                                    'filler-order': "Commande d'exécution",
-                                    'instance-order': 'Ordonnance instantanée',
-                                    'option': 'Option'
-                                };
-                                details.push(`Intention: ${intentMap[resource.intent] || resource.intent}`);
-                            }
-                            
-                            // Priorité
-                            if (resource.priority) {
-                                const priorityMap = {
-                                    'routine': 'Routine',
-                                    'urgent': 'Urgent',
-                                    'asap': 'Dès que possible',
-                                    'stat': 'Immédiat'
-                                };
-                                details.push(`Priorité: ${priorityMap[resource.priority] || resource.priority}`);
-                            }
-                            
-                            // Prescripteur
-                            if (resource.requester && resource.requester.display) {
-                                details.push(`Prescripteur: ${resource.requester.display}`);
-                            }
-                            
-                            // Raison
-                            if (resource.reasonCode && resource.reasonCode.length > 0 && 
-                                resource.reasonCode[0].coding && resource.reasonCode[0].coding.length > 0) {
-                                details.push(`Raison: ${resource.reasonCode[0].coding[0].display || resource.reasonCode[0].coding[0].code}`);
-                            } else if (resource.reasonCode && resource.reasonCode.length > 0 && resource.reasonCode[0].text) {
-                                details.push(`Raison: ${resource.reasonCode[0].text}`);
-                            }
-                            
-                            // Notes
-                            if (resource.note && resource.note.length > 0 && resource.note[0].text) {
-                                const noteText = resource.note[0].text;
-                                if (noteText.length > 50) {
-                                    details.push(`Note: ${noteText.substring(0, 50)}...`);
-                                } else {
-                                    details.push(`Note: ${noteText}`);
-                                }
-                            }
-                            
-                            resourceDetail = details.length > 0 ? details.join(' | ') : `ID: ${resource.id}`;
+                            resourceDetail = `ID: ${resource.id}`;
+                            if (resource.authoredOn) resourceDetail += ` | Date: ${resource.authoredOn.split('T')[0]}`;
                         }
                         else if (type === 'Encounter') {
-                            // Extraire le type de consultation
                             if (resource.type && resource.type.length > 0 && resource.type[0].coding && resource.type[0].coding.length > 0) {
                                 resourceName = resource.type[0].coding[0].display || resource.type[0].coding[0].code;
                             } else {
                                 resourceName = `Consultation #${resource.id}`;
                             }
-                            
-                            // Collecter les détails cliniques
-                            let details = [];
-                            
-                            // Statut
-                            if (resource.status) {
-                                const statusMap = {
-                                    'planned': 'Planifiée',
-                                    'arrived': 'Arrivée',
-                                    'triaged': 'Triée',
-                                    'in-progress': 'En cours',
-                                    'onleave': 'En congé',
-                                    'finished': 'Terminée',
-                                    'cancelled': 'Annulée',
-                                    'entered-in-error': 'Erreur de saisie',
-                                    'unknown': 'Inconnue'
-                                };
-                                details.push(`Statut: ${statusMap[resource.status] || resource.status}`);
-                            }
-                            
-                            // Classe de visite
-                            if (resource.class && resource.class.code) {
-                                const classMap = {
-                                    'AMB': 'Ambulatoire',
-                                    'IMP': 'Hospitalisation',
-                                    'EMER': 'Urgence',
-                                    'HH': 'Soins à domicile',
-                                    'VR': 'Téléconsultation',
-                                    'ACUTE': 'Soins aigus',
-                                    'NONAC': 'Soins non aigus',
-                                    'OBSENC': 'Observation',
-                                    'PRENC': 'Préadmission',
-                                    'SS': 'Court séjour',
-                                    'FLD': 'Sur le terrain'
-                                };
-                                details.push(`Type: ${classMap[resource.class.code] || resource.class.code}`);
-                            }
-                            
-                            // Service
-                            if (resource.serviceType && resource.serviceType.coding && resource.serviceType.coding.length > 0) {
-                                details.push(`Service: ${resource.serviceType.coding[0].display || resource.serviceType.coding[0].code}`);
-                            }
-                            
-                            // Période
-                            if (resource.period) {
-                                if (resource.period.start && resource.period.end) {
-                                    const start = new Date(resource.period.start);
-                                    const end = new Date(resource.period.end);
-                                    const startDate = start.toLocaleDateString('fr-FR');
-                                    const endDate = end.toLocaleDateString('fr-FR');
-                                    
-                                    if (startDate === endDate) {
-                                        // Même jour, montrer l'heure
-                                        const startTime = start.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                                        const endTime = end.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                                        details.push(`Date: ${startDate} (${startTime} - ${endTime})`);
-                                    } else {
-                                        // Jours différents
-                                        details.push(`Période: ${startDate} - ${endDate}`);
-                                    }
-                                } else if (resource.period.start) {
-                                    const start = new Date(resource.period.start);
-                                    details.push(`Date: ${start.toLocaleDateString('fr-FR')}`);
-                                }
-                            }
-                            
-                            // Raison
-                            if (resource.reasonCode && resource.reasonCode.length > 0) {
-                                const reason = resource.reasonCode[0];
-                                if (reason.coding && reason.coding.length > 0) {
-                                    details.push(`Motif: ${reason.coding[0].display || reason.coding[0].code}`);
-                                } else if (reason.text) {
-                                    details.push(`Motif: ${reason.text}`);
-                                }
-                            }
-                            
-                            // Praticien (participant)
-                            if (resource.participant && resource.participant.length > 0) {
-                                const practitioners = resource.participant
-                                    .filter(p => p.individual && p.individual.display)
-                                    .map(p => {
-                                        const roleMap = {
-                                            'PPRF': 'Principal responsable',
-                                            'RP': 'Professionnel référent',
-                                            'EP': 'Praticien entrant',
-                                            'MP': 'Médecin traitant',
-                                            'SPRF': 'Remplaçant',
-                                            'ATND': 'Médecin traitant',
-                                            'CON': 'Consultant',
-                                            'PPRC': 'Professionnel principal',
-                                            'ADM': 'Médecin admettant'
-                                        };
-                                        
-                                        let roleStr = '';
-                                        if (p.type && p.type.length > 0 && p.type[0].coding && p.type[0].coding.length > 0) {
-                                            const roleCode = p.type[0].coding[0].code;
-                                            roleStr = roleMap[roleCode] || p.type[0].coding[0].display || roleCode;
-                                        }
-                                        
-                                        return roleStr ? `${p.individual.display} (${roleStr})` : p.individual.display;
-                                    });
-                                
-                                if (practitioners.length > 0) {
-                                    details.push(`Praticien: ${practitioners[0]}`);
-                                    
-                                    if (practitioners.length > 1) {
-                                        details.push(`+${practitioners.length - 1} autre(s) participant(s)`);
-                                    }
-                                }
-                            }
-                            
-                            // Lieu
-                            if (resource.location && resource.location.length > 0 && resource.location[0].location && resource.location[0].location.display) {
-                                details.push(`Lieu: ${resource.location[0].location.display}`);
-                            }
-                            
-                            // Diagnostic principal
-                            if (resource.diagnosis && resource.diagnosis.length > 0) {
-                                const sortedDiagnoses = [...resource.diagnosis].sort((a, b) => {
-                                    const rankA = a.rank || 0;
-                                    const rankB = b.rank || 0;
-                                    return rankA - rankB;
-                                });
-                                
-                                const primaryDiagnosis = sortedDiagnoses[0];
-                                if (primaryDiagnosis.condition && primaryDiagnosis.condition.display) {
-                                    details.push(`Diagnostic: ${primaryDiagnosis.condition.display}`);
-                                }
-                                
-                                if (sortedDiagnoses.length > 1) {
-                                    details.push(`+${sortedDiagnoses.length - 1} autre(s) diagnostic(s)`);
-                                }
-                            }
-                            
-                            // Notes
-                            if (resource.reasonCode && resource.reasonCode.length > 0 && resource.reasonCode[0].text) {
-                                const noteText = resource.reasonCode[0].text;
-                                if (noteText.length > 50) {
-                                    details.push(`Note: ${noteText.substring(0, 50)}...`);
-                                } else {
-                                    details.push(`Note: ${noteText}`);
-                                }
-                            }
-                            
-                            resourceDetail = details.length > 0 ? details.join(' | ') : `ID: ${resource.id}`;
+                            resourceDetail = `ID: ${resource.id}`;
+                            if (resource.period && resource.period.start) resourceDetail += ` | Début: ${resource.period.start.split('T')[0]}`;
                         }
                         else {
                             resourceName = `${type} #${resource.id}`;
@@ -1684,67 +944,18 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Fonctions pour charger les ressources liées au patient
-    function loadPatientConditions(patientId, serverUrl, conditionsData = null) {
+    function loadPatientConditions(patientId, serverUrl) {
         const container = document.querySelector('#conditionsContent');
         const loadingSection = container.querySelector('.loading-resources');
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
         
-        // Ne plus réinitialiser les données globales
-        // Utiliser uniquement les données passées en paramètre ou charger depuis l'API
+        // Réinitialiser les données des conditions
+        conditionsData = [];
         
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
-        
-        // Si des données sont déjà fournies, les utiliser directement
-        if (conditionsData && conditionsData.length > 0) {
-            // Définir la fonction updateConditionsDisplay ici si elle n'existe pas encore
-            if (typeof updateConditionsDisplay !== 'function') {
-                // Définition de la fonction manquante
-                window.updateConditionsDisplay = function(conditions) {
-                    loadingSection.style.display = 'none';
-                    
-                    if (!conditions || conditions.length === 0) {
-                        noResourcesSection.style.display = 'block';
-                        resourcesList.style.display = 'none';
-                        return;
-                    }
-                    
-                    noResourcesSection.style.display = 'none';
-                    resourcesList.style.display = 'block';
-                    
-                    // Mettre à jour le tableau des conditions
-                    const tableBody = resourcesList.querySelector('tbody');
-                    if (tableBody) {
-                        tableBody.innerHTML = '';
-                        
-                        conditions.forEach(condition => {
-                            const row = document.createElement('tr');
-                            
-                            // Extraire les détails de la condition
-                            const display = condition.code?.coding?.[0]?.display || condition.code?.text || 'Non spécifié';
-                            const status = condition.clinicalStatus?.coding?.[0]?.code || 'unknown';
-                            const recordedDate = condition.recordedDate || condition.onsetDateTime || 'Non spécifiée';
-                            
-                            // Créer la ligne
-                            row.innerHTML = `
-                                <td>${display}</td>
-                                <td>${status}</td>
-                                <td>${recordedDate}</td>
-                                <td><button class="btn btn-sm btn-outline-info view-json" data-id="${condition.id}">Voir JSON</button></td>
-                            `;
-                            
-                            tableBody.appendChild(row);
-                        });
-                    }
-                }
-            }
-            
-            // Appeler la fonction d'affichage
-            updateConditionsDisplay(conditionsData);
-            return; // Ne pas faire d'appel API si on a déjà les données
-        }
         
         // URL de la requête FHIR (limite augmentée à 1000 pour avoir toutes les données)
         const url = `${serverUrl}/Condition?patient=${patientId}&_sort=-recorded-date&_count=1000`;
@@ -1762,12 +973,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     const data = JSON.parse(xhr.responseText);
                     
                     if (data.entry && data.entry.length > 0) {
-                        // Extraire les ressources de condition
-                        const conditions = data.entry.map(entry => entry.resource);
-                        console.log(`${conditions.length} conditions chargées`);
+                        // Stocker toutes les conditions dans la variable globale
+                        conditionsData = data.entry.map(entry => entry.resource);
+                        console.log(`${conditionsData.length} conditions chargées et stockées`);
                         
-                        // Au lieu de stocker en variable globale, appeler directement la fonction d'affichage
-                        updateConditionsDisplay(conditions);
+                        resourcesList.innerHTML = '';
+                        resourcesList.style.display = 'block';
                         
                         // Créer une liste de conditions
                         const conditionsList = document.createElement('div');
@@ -2224,21 +1435,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function loadPatientRelatedPersons(patientId, serverUrl) {
-        // Protection contre les erreurs DOM
         const container = document.querySelector('#relatedContent');
-        if (!container) {
-            console.warn("Container #relatedContent non trouvé pour l'affichage des personnes liées");
-            return;
-        }
-        
         const loadingSection = container.querySelector('.loading-resources');
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
-        
-        if (!loadingSection || !noResourcesSection || !resourcesList) {
-            console.warn("Structure DOM incomplète pour l'affichage des personnes liées");
-            return;
-        }
         
         // Réinitialiser les données des personnes liées
         relatedPersonsData = [];
@@ -2247,15 +1447,8 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Gestion du timeout pour éviter les requêtes qui ne répondent pas
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondes max
-        
-        fetch(`${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`, {
-            signal: controller.signal
-        })
+        fetch(`${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`)
             .then(response => {
-                clearTimeout(timeoutId);
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération des personnes liées: ${response.status}`);
                 }
@@ -2264,132 +1457,75 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 loadingSection.style.display = 'none';
                 
-                try {
-                    if (data && data.entry && Array.isArray(data.entry) && data.entry.length > 0) {
-                        resourcesList.style.display = 'block';
-                        resourcesList.innerHTML = '';
+                if (data.entry && data.entry.length > 0) {
+                    resourcesList.style.display = 'block';
+                    resourcesList.innerHTML = '';
+                    
+                    const relatedPersons = data.entry.map(entry => entry.resource);
+                    relatedPersonsData = relatedPersons;
+                    
+                    // Créer une liste de personnes liées
+                    const relatedList = document.createElement('div');
+                    relatedList.style.display = 'grid';
+                    relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                    relatedList.style.gap = '15px';
+                    
+                    relatedPersons.forEach(person => {
+                        const personElement = document.createElement('div');
+                        personElement.style.backgroundColor = '#f9f9f9';
+                        personElement.style.borderRadius = '8px';
+                        personElement.style.padding = '15px';
+                        personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                        personElement.style.borderLeft = '3px solid #e83e28';
                         
-                        // Filtrer pour s'assurer que chaque entrée a une ressource valide
-                        const relatedPersons = data.entry
-                            .filter(entry => entry && entry.resource && entry.resource.resourceType === 'RelatedPerson')
-                            .map(entry => entry.resource);
-                            
-                        relatedPersonsData = relatedPersons;
+                        personElement.innerHTML = `
+                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-users" style="color: #e83e28;"></i> ${formatPatientName(person.name) || 'Personne sans nom'}
+                            </h4>
+                            <div style="margin-top: 10px; color: #555;">
+                                <p><strong>Identifiant:</strong> ${person.id}</p>
+                                ${person.relationship ? 
+                                  `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>` 
+                                  : ''}
+                                ${person.telecom ? 
+                                  `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>` 
+                                  : ''}
+                                ${person.address ? 
+                                  `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>` 
+                                  : ''}
+                            </div>
+                        `;
                         
-                        if (relatedPersons.length === 0) {
-                            noResourcesSection.style.display = 'block';
-                            return;
-                        }
-                        
-                        // Créer une liste de personnes liées
-                        const relatedList = document.createElement('div');
-                        relatedList.style.display = 'grid';
-                        relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                        relatedList.style.gap = '15px';
-                        
-                        relatedPersons.forEach(person => {
-                            if (!person) return; // Protection supplémentaire
-                            
-                            const personElement = document.createElement('div');
-                            personElement.style.backgroundColor = '#f9f9f9';
-                            personElement.style.borderRadius = '8px';
-                            personElement.style.padding = '15px';
-                            personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                            personElement.style.borderLeft = '3px solid #e83e28';
-                            
-                            // Construction sécurisée de l'affichage avec vérification des propriétés
-                            let displayName = 'Personne sans nom';
-                            if (person.name && Array.isArray(person.name) && person.name.length > 0) {
-                                displayName = formatPatientName(person.name) || displayName;
-                            }
-                            
-                            let relationshipStr = '';
-                            if (person.relationship && Array.isArray(person.relationship) && person.relationship.length > 0) {
-                                relationshipStr = `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>`;
-                            }
-                            
-                            let telecomStr = '';
-                            if (person.telecom && Array.isArray(person.telecom) && person.telecom.length > 0) {
-                                telecomStr = `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>`;
-                            }
-                            
-                            let addressStr = '';
-                            if (person.address && Array.isArray(person.address) && person.address.length > 0) {
-                                addressStr = `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>`;
-                            }
-                            
-                            personElement.innerHTML = `
-                                <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                    <i class="fas fa-users" style="color: #e83e28;"></i> ${displayName}
-                                </h4>
-                                <div style="margin-top: 10px; color: #555;">
-                                    <p><strong>Identifiant:</strong> ${person.id || 'Non spécifié'}</p>
-                                    ${relationshipStr}
-                                    ${telecomStr}
-                                    ${addressStr}
-                                </div>
-                            `;
-                            
-                            relatedList.appendChild(personElement);
-                        });
-                        
-                        resourcesList.appendChild(relatedList);
-                    } else {
-                        noResourcesSection.style.display = 'block';
-                    }
-                } catch (err) {
-                    console.error('Erreur lors du traitement des données des personnes liées:', err);
+                        relatedList.appendChild(personElement);
+                    });
+                    
+                    resourcesList.appendChild(relatedList);
+                } else {
                     noResourcesSection.style.display = 'block';
                 }
             })
             .catch(error => {
-                clearTimeout(timeoutId);
                 console.error('Erreur lors du chargement des personnes liées:', error);
                 loadingSection.style.display = 'none';
-                
-                // Message d'erreur plus informatif
-                if (error.name === 'AbortError') {
-                    console.warn('La requête pour les personnes liées a été abandonnée (timeout)');
-                } else if (error.message && error.message.includes('Failed to fetch')) {
-                    console.warn('Erreur réseau lors du chargement des personnes liées');
-                }
-                
                 noResourcesSection.style.display = 'block';
             });
     }
     
     function loadPatientCoverage(patientId, serverUrl) {
-        // Protection contre les erreurs DOM
         const container = document.querySelector('#coverageContent');
-        if (!container) {
-            console.warn("Container #coverageContent non trouvé pour l'affichage des couvertures");
-            return;
-        }
-        
         const loadingSection = container.querySelector('.loading-resources');
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
         
-        if (!loadingSection || !noResourcesSection || !resourcesList) {
-            console.warn("Structure DOM incomplète pour l'affichage des couvertures");
-            return;
-        }
-        
-        // Aucune mise en cache des données - API uniquement
+        // Réinitialiser les données des couvertures
+        coverageData = [];
         
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Gestion du timeout pour éviter les requêtes qui ne répondent pas
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondes max
-        
-        fetch(`${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`, {
-            signal: controller.signal
-        })
+        fetch(`${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`)
             .then(response => {
-                clearTimeout(timeoutId);
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération des couvertures: ${response.status}`);
                 }
@@ -2398,104 +1534,55 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 loadingSection.style.display = 'none';
                 
-                try {
-                    if (data && data.entry && Array.isArray(data.entry) && data.entry.length > 0) {
-                        resourcesList.style.display = 'block';
-                        resourcesList.innerHTML = '';
+                if (data.entry && data.entry.length > 0) {
+                    resourcesList.style.display = 'block';
+                    resourcesList.innerHTML = '';
+                    
+                    const coverages = data.entry.map(entry => entry.resource);
+                    coverageData = coverages;
+                    
+                    // Créer une liste de couvertures
+                    const coverageList = document.createElement('div');
+                    coverageList.style.display = 'grid';
+                    coverageList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                    coverageList.style.gap = '15px';
+                    
+                    coverages.forEach(coverage => {
+                        const coverageElement = document.createElement('div');
+                        coverageElement.style.backgroundColor = '#f9f9f9';
+                        coverageElement.style.borderRadius = '8px';
+                        coverageElement.style.padding = '15px';
+                        coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                        coverageElement.style.borderLeft = '3px solid #fd7e30';
                         
-                        // Filtrer pour s'assurer que chaque entrée a une ressource valide
-                        const coverages = data.entry
-                            .filter(entry => entry && entry.resource && entry.resource.resourceType === 'Coverage')
-                            .map(entry => entry.resource);
+                        coverageElement.innerHTML = `
+                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
+                                ${coverage.type?.coding?.[0]?.display || coverage.type?.text || 'Couverture'}
+                            </h4>
+                            <div style="margin-top: 10px; color: #555;">
+                                <p><strong>Identifiant:</strong> ${coverage.id}</p>
+                                <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
+                                ${coverage.period ? 
+                                  `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>` 
+                                  : ''}
+                                ${coverage.payor ? 
+                                  `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>` 
+                                  : ''}
+                            </div>
+                        `;
                         
-                        coverageData = coverages;
-                        
-                        if (coverages.length === 0) {
-                            noResourcesSection.style.display = 'block';
-                            return;
-                        }
-                        
-                        // Créer une liste de couvertures
-                        const coverageList = document.createElement('div');
-                        coverageList.style.display = 'grid';
-                        coverageList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                        coverageList.style.gap = '15px';
-                        
-                        coverages.forEach(coverage => {
-                            if (!coverage) return; // Protection supplémentaire
-                            
-                            const coverageElement = document.createElement('div');
-                            coverageElement.style.backgroundColor = '#f9f9f9';
-                            coverageElement.style.borderRadius = '8px';
-                            coverageElement.style.padding = '15px';
-                            coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                            coverageElement.style.borderLeft = '3px solid #fd7e30';
-                            
-                            // Construction sécurisée de l'affichage avec vérification des propriétés
-                            let typeName = 'Couverture';
-                            if (coverage.type) {
-                                if (coverage.type.coding && Array.isArray(coverage.type.coding) && coverage.type.coding.length > 0 && coverage.type.coding[0].display) {
-                                    typeName = coverage.type.coding[0].display;
-                                } else if (coverage.type.text) {
-                                    typeName = coverage.type.text;
-                                }
-                            }
-                            
-                            let periodStr = '';
-                            if (coverage.period) {
-                                try {
-                                    periodStr = `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>`;
-                                } catch (e) {
-                                    console.warn('Erreur lors du formatage de la période:', e);
-                                }
-                            }
-                            
-                            let payorStr = '';
-                            if (coverage.payor && Array.isArray(coverage.payor) && coverage.payor.length > 0) {
-                                try {
-                                    payorStr = `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>`;
-                                } catch (e) {
-                                    console.warn('Erreur lors du formatage du payeur:', e);
-                                }
-                            }
-                            
-                            coverageElement.innerHTML = `
-                                <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                    <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
-                                    ${typeName}
-                                </h4>
-                                <div style="margin-top: 10px; color: #555;">
-                                    <p><strong>Identifiant:</strong> ${coverage.id || 'Non spécifié'}</p>
-                                    <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
-                                    ${periodStr}
-                                    ${payorStr}
-                                </div>
-                            `;
-                            
-                            coverageList.appendChild(coverageElement);
-                        });
-                        
-                        resourcesList.appendChild(coverageList);
-                    } else {
-                        noResourcesSection.style.display = 'block';
-                    }
-                } catch (err) {
-                    console.error('Erreur lors du traitement des données des couvertures:', err);
+                        coverageList.appendChild(coverageElement);
+                    });
+                    
+                    resourcesList.appendChild(coverageList);
+                } else {
                     noResourcesSection.style.display = 'block';
                 }
             })
             .catch(error => {
-                clearTimeout(timeoutId);
                 console.error('Erreur lors du chargement des couvertures:', error);
                 loadingSection.style.display = 'none';
-                
-                // Message d'erreur plus informatif
-                if (error.name === 'AbortError') {
-                    console.warn('La requête pour les couvertures a été abandonnée (timeout)');
-                } else if (error.message && error.message.includes('Failed to fetch')) {
-                    console.warn('Erreur réseau lors du chargement des couvertures');
-                }
-                
                 noResourcesSection.style.display = 'block';
             });
     }
@@ -4029,24 +3116,28 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         try {
-            // Récupérer directement les données du patient depuis l'API pour l'analyse IA
-            const patientId = patientSelect.value;
-            const server = serverSelect.value;
-            
-            // Préparer l'objet pour l'appel API avec les identifiants nécessaires seulement
-            const analyzeRequest = {
-                patientId: patientId,
-                serverUrl: server,
-                // Aucune donnée patiente n'est stockée ou transmise côté client
-                // Le backend récupérera toutes les données directement depuis le serveur FHIR
+            // Créer un objet complet avec toutes les données du patient de tous les onglets
+            const completePatientData = {
+                patient: patientData,
+                conditions: conditionsData,
+                observations: observationsData,
+                medications: medicationsData,
+                encounters: encountersData
             };
             
-            console.log("Envoi de la demande d'analyse IA pour le patient:", 
-                `ID: ${patientId}, Serveur: ${server}`
+            console.log("Envoi de l'analyse IA avec données complètes:", 
+                `Patient: ${patientData ? 'OK' : 'Manquant'}, ` +
+                `Conditions: ${conditionsData.length}, ` +
+                `Observations: ${observationsData.length}, ` + 
+                `Médicaments: ${medicationsData.length}, ` +
+                `Consultations: ${encountersData.length}`
             );
             
-            // Envoi uniquement des identifiants - les données seront récupérées côté serveur
-            xhr.send(JSON.stringify(analyzeRequest));
+            xhr.send(JSON.stringify({
+                patientId: patientData.id,
+                serverUrl: serverSelect.value,
+                patientData: completePatientData
+            }));
         } catch (error) {
             showLocalAnalysis("Erreur lors de l'envoi de la requête IA");
         }
