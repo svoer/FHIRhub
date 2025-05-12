@@ -40,13 +40,11 @@ RUN mkdir -p /app/data \
 # S'assurer que les permissions sont correctes pour l'utilisateur non-root
 RUN chmod -R 777 /app/storage /app/data
 
-# Volume mounts points
-VOLUME ["/app/storage/db", "/app/storage/data", "/app/storage/logs", "/app/storage/backups"]
+# Volume mounts points (organisés selon la nouvelle structure)
+VOLUME ["/app/storage/db", "/app/storage/data", "/app/storage/logs", "/app/french_terminology"]
 
-# Exposer le port sur lequel l'application s'exécute
+# Exposer uniquement le port principal de l'application
 EXPOSE 5000
-# Exposer un port pour les métriques Prometheus
-EXPOSE 9091
 
 # Utiliser un utilisateur non-root pour plus de sécurité
 RUN addgroup -S fhirhub && adduser -S fhirhub -G fhirhub
@@ -55,9 +53,6 @@ USER fhirhub
 
 # Utiliser tini comme init pour une meilleure gestion des signaux
 ENTRYPOINT ["/sbin/tini", "--"]
-
-# Créer un répertoire pour HAPI FHIR
-RUN mkdir -p /app/hapi-fhir
 
 # Copier et rendre exécutable le script de démarrage Docker
 COPY docker-startup.sh /app/
