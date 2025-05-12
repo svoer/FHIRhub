@@ -168,12 +168,20 @@ async function getEnhancedPrompt(basePrompt, userQuery) {
     
     const relevantKnowledge = await findRelevantKnowledge(userQuery);
     const knowledgeText = formatKnowledgeForPrompt(relevantKnowledge);
+    const hasRelevantInfo = relevantKnowledge && relevantKnowledge.length > 0;
     
     const enhancedPrompt = `${basePrompt}
 
 ${knowledgeText}
 
-Utilise ces informations pour répondre à la question de l'utilisateur. Si la question n'est pas couverte par ces informations, utilise tes connaissances générales sur les systèmes de santé et FHIR pour fournir une réponse utile.`;
+INSTRUCTIONS IMPORTANTES:
+1. Réponds UNIQUEMENT en te basant sur les informations fournies ci-dessus.
+2. Si la question n'est pas couverte par ces informations, dis clairement "Je n'ai pas suffisamment d'informations dans ma base de connaissances pour répondre à cette question avec précision. Voici ce que je peux dire:" puis fournis une réponse générale sur le sujet.
+3. NE JAMAIS inventer des fonctionnalités, des processus ou des détails techniques qui ne sont pas explicitement mentionnés dans les informations fournies.
+4. Si tu n'es pas sûr, indique les limites de ta connaissance.
+5. Informe l'utilisateur que sa question sera transmise à l'équipe pour enrichir la base de connaissances si nécessaire.
+
+${hasRelevantInfo ? 'Des informations pertinentes ont été trouvées dans la base de connaissances. Utilise-les pour répondre.' : 'Aucune information spécifique n\'a été trouvée dans la base de connaissances pour cette question. Sois très prudent dans ta réponse et indique clairement les limites de tes connaissances.'}`;
     
     return enhancedPrompt;
 }
