@@ -142,10 +142,41 @@
                 </style>
                 
                 <div class="tabs-rows">
-                    <!-- Onglets simplifiés -->
+                    <!-- Première ligne d'onglets (données cliniques) -->
                     <div class="tabs-row">
                         <div class="tab active" data-tab="summary">
-                            <i class="fas fa-clipboard-list"></i> Résumé Patient
+                            <i class="fas fa-clipboard-list"></i> Résumé
+                        </div>
+                        <div class="tab" data-tab="conditions">
+                            <i class="fas fa-heartbeat" style="color: #e83e28;"></i> Conditions
+                        </div>
+                        <div class="tab" data-tab="observations">
+                            <i class="fas fa-vial" style="color: #fd7e30;"></i> Observations
+                        </div>
+                        <div class="tab" data-tab="medications">
+                            <i class="fas fa-pills" style="color: #e83e28;"></i> Médications
+                        </div>
+                        <div class="tab" data-tab="encounters">
+                            <i class="fas fa-hospital" style="color: #fd7e30;"></i> Consultations
+                        </div>
+                        <div class="tab" data-tab="timeline">
+                            <i class="fas fa-calendar-alt" style="color: #e83e28;"></i> Chronologie
+                        </div>
+                    </div>
+                    
+                    <!-- Deuxième ligne d'onglets (administratif et technique) -->
+                    <div class="tabs-row">
+                        <div class="tab" data-tab="practitioners">
+                            <i class="fas fa-user-md" style="color: #e83e28;"></i> Praticiens
+                        </div>
+                        <div class="tab" data-tab="organizations">
+                            <i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> Organisations
+                        </div>
+                        <div class="tab" data-tab="related">
+                            <i class="fas fa-users" style="color: #e83e28;"></i> Personnes liées
+                        </div>
+                        <div class="tab" data-tab="coverage">
+                            <i class="fas fa-file-medical" style="color: #fd7e30;"></i> Couverture
                         </div>
                         <div class="tab" data-tab="bundle">
                             <i class="fas fa-box" style="color: #fd7e30;"></i> Bundle
@@ -161,7 +192,20 @@
                     <div id="summaryContent"></div>
                 </div>
                 
-                <!-- Onglet conditions supprimé -->
+                <div class="tab-content" id="conditions" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
+                    <div id="conditionsContent">
+                        <div class="loading-resources" style="text-align: center; padding: 30px 20px;">
+                            <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            <p style="margin-top: 15px; color: #666;">Chargement des conditions médicales...</p>
+                        </div>
+                        <div class="no-resources" style="text-align: center; padding: 30px 20px; display: none;">
+                            <i class="fas fa-heartbeat" style="font-size: 2rem; color: #e83e28; margin-bottom: 15px;"></i>
+                            <h3>Conditions médicales</h3>
+                            <p style="color: #666;">Ce patient n'a pas de conditions médicales enregistrées dans le système.</p>
+                        </div>
+                        <div class="resources-list" style="display: none;"></div>
+                    </div>
+                </div>
                 
                 <div class="tab-content" id="observations" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
                     <div id="observationsContent">
