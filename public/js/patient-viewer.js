@@ -318,57 +318,24 @@ document.addEventListener('DOMContentLoaded', function() {
             // Afficher un status de chargement
             showStatus('Chargement de toutes les données médicales du patient...', 'info');
             
-            // Fonction pour charger toutes les données de manière efficace
-            loadPatientEverything();
-            
-            // Fonction pour récupérer toutes les données patient en une requête
-            async function fetchPatientEverything(serverUrl, patientId) {
-                try {
-                    showStatus('Chargement de toutes les données médicales via $everything...', 'info');
-                    const url = `${serverUrl}/Patient/${patientId}/$everything?_count=1000`;
-                    const response = await fetch(url);
-                    
+            // Tenter de charger toutes les ressources en une seule requête avec $everything
+            fetch(`${server}/Patient/${patientId}/$everything`)
+                .then(response => {
                     if (!response.ok) {
-                        console.warn(`L'opération $everything a échoué: ${response.status}`, 'warning');
-                        throw new Error(`$everything non supporté: ${response.status}`);
+                        // Si $everything n'est pas supporté, on utilise l'approche traditionnelle
+                        console.warn("L'opération $everything n'est pas supportée, chargement individuel des ressources");
+                        throw new Error("$everything non supporté");
                     }
-                    
-                    const bundle = await response.json();
+                    return response.json();
+                })
+                .then(bundle => {
                     console.log("Bundle complet récupéré via $everything:", bundle);
                     showStatus('Chargement complet des données réussi via $everything', 'success');
-                    return bundle;
-                } catch (error) {
-                    console.error("Erreur avec $everything:", error);
-                    showStatus('Erreur lors du chargement complet, utilisation de la méthode traditionnelle', 'warning');
-                    throw error;
-                }
-            }
-            
-            // Fonction pour grouper les ressources par type
-            function groupByType(bundle) {
-                const byType = {};
-                
-                if (bundle.entry) {
-                    bundle.entry.forEach(entry => {
-                        if (entry.resource) {
-                            const type = entry.resource.resourceType;
-                            byType[type] = byType[type] || [];
-                            byType[type].push(entry.resource);
-                        }
-                    });
-                }
-                
-                return byType;
-            }
-            
-            // Fonction pour tout charger et peupler tous les onglets
-            async function loadAllPatientData() {
-                try {
-                    // 1. Récupérer le bundle complet
-                    const bundle = await fetchPatientEverything(server, patientId);
                     
-                    // 2. Grouper les ressources par type
-                    const resourcesByType = groupByType(bundle);
+                    // Traiter le bundle et extraire les différentes ressources par type
+                    if (bundle.entry && bundle.entry.length > 0) {
+                        // Grouper les ressources par type
+                        const resourcesByType = {};
                         
                         bundle.entry.forEach(entry => {
                             if (entry.resource) {
@@ -380,13 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                         });
                         
-                        // Stocker le bundle pour l'onglet détaillé
-                        bundleData = bundle;
-                        
-                        // Mettre à jour l'affichage du bundle dans l'onglet Bundle
-                        loadPatientBundle(patientId, server, bundle);
-                        
-                        // Répartir les ressources dans les onglets appropriés
+                        // Mettre à jour tous les onglets en fonction des données disponibles
                         if (resourcesByType.Condition) {
                             conditionsData = resourcesByType.Condition;
                             updateConditionsTab(conditionsData);
@@ -407,54 +368,29 @@ document.addEventListener('DOMContentLoaded', function() {
                             updateEncountersTab(encountersData);
                         }
                         
-                        // Répartir correctement les personnes liées
-                        
-                        // Praticiens (médecins)
                         if (resourcesByType.Practitioner) {
                             practitionersData = resourcesByType.Practitioner;
                             updatePractitionersTab(practitionersData);
                         }
                         
-                        // Organisations (cliniques, hôpitaux)
                         if (resourcesByType.Organization) {
                             organizationsData = resourcesByType.Organization;
                             updateOrganizationsTab(organizationsData);
                         }
                         
-                        // Personnes liées (famille, contacts d'urgence)
                         if (resourcesByType.RelatedPerson) {
                             relatedPersonsData = resourcesByType.RelatedPerson;
                             updateRelatedPersonsTab(relatedPersonsData);
-                        } else if (patientData.contact && patientData.contact.length > 0) {
-                            // Si pas de RelatedPerson mais des contacts dans Patient
-                            const relatedFromContacts = patientData.contact.map(contact => {
-                                // Créer une ressource RelatedPerson à partir des contacts
-                                return {
-                                    resourceType: "RelatedPerson",
-                                    id: `generated-${Date.now()}-${Math.floor(Math.random()*1000)}`,
-                                    patient: {
-                                        reference: `Patient/${patientId}`
-                                    },
-                                    relationship: contact.relationship,
-                                    name: contact.name,
-                                    telecom: contact.telecom,
-                                    address: contact.address,
-                                    gender: contact.gender,
-                                    _generatedFromContact: true
-                                };
-                            });
-                            
-                            if (relatedFromContacts.length > 0) {
-                                relatedPersonsData = relatedFromContacts;
-                                updateRelatedPersonsTab(relatedPersonsData);
-                            }
                         }
                         
-                        // Couverture d'assurance
                         if (resourcesByType.Coverage) {
                             coverageData = resourcesByType.Coverage;
                             updateCoverageTab(coverageData);
                         }
+                        
+                        // Mettre à jour l'onglet bundle avec les données complètes
+                        bundleData = bundle;
+                        updateBundleView(bundle);
                         
                         // Générer la chronologie à partir des données du bundle
                         generateTimelineFromBundle(bundle);
@@ -481,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadPatientRelatedPersons(patientId, server);
                 loadPatientCoverage(patientId, server);
                 generateTimeline(patientId, server);
-                // Ne pas appeler loadPatientBundle en double car déjà chargé via $everything
+                loadPatientBundle(patientId, server);
             }
             
             // Fonction pour générer une chronologie à partir d'un bundle
@@ -1651,7 +1587,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    function loadPatientBundle(patientId, serverUrl, preloadedBundle = null) {
+    function loadPatientBundle(patientId, serverUrl) {
         const container = document.querySelector('#bundleContent');
         const bundleInfo = document.getElementById('bundleInfo');
         const bundleResourcesList = document.getElementById('bundleResourcesList');
@@ -1662,13 +1598,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (noResourcesSection) noResourcesSection.style.display = 'none';
         if (bundleResourcesList) bundleResourcesList.innerHTML = '';
         
-        // Si on a déjà un bundle préchargé, on l'utilise directement
-        if (preloadedBundle) {
-            processBundle(preloadedBundle);
-            return;
-        }
-        
-        // Sinon, on récupère directement le bundle associé au patient, incluant les références
+        // On récupère directement le bundle associé au patient, incluant les références
         fetch(`${serverUrl}/Patient/${patientId}/$everything?_count=100&_include=*`)
             .then(response => {
                 if (!response.ok) {
@@ -1677,25 +1607,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                processBundle(data);
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement du bundle:', error);
-                if (loadingSection) loadingSection.style.display = 'none';
-                if (noResourcesSection) noResourcesSection.style.display = 'block';
-            });
-            
-        // Fonction pour traiter le bundle reçu
-        function processBundle(data) {
                 // Stocker le bundle pour référence future
                 bundleData = data;
                 
                 if (loadingSection) loadingSection.style.display = 'none';
                 
-                // Utiliser la fonction updateBundleView pour afficher le bundle proprement
-                updateBundleView(data);
-                
-                // Éviter les affichages en double, le reste est géré par updateBundleView
+                // Afficher les informations sur le bundle
+                if (data.resourceType === 'Bundle') {
+                    const resourceCount = data.entry ? data.entry.length : 0;
+                    const resourceTypes = data.entry ? 
+                        [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
+                    
+                    bundleInfo.innerHTML = `
+                        <p><strong>Type de bundle:</strong> ${data.type || 'Inconnu'}</p>
+                        <p><strong>Identifiant:</strong> ${data.id || 'Non spécifié'}</p>
+                        <p><strong>Nombre de ressources:</strong> ${resourceCount}</p>
+                        <p><strong>Types de ressources:</strong> ${resourceTypes.join(', ') || 'Aucun'}</p>
+                    `;
+                    
+                    if (resourceCount > 0) {
+                        // Grouper les ressources par type
                         const resourcesByType = {};
                         data.entry.forEach(entry => {
                             if (entry.resource && entry.resource.resourceType) {
