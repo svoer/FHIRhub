@@ -27,6 +27,16 @@ rm -rf attached_assets/* 2>/dev/null
 mkdir -p attached_assets
 touch attached_assets/.gitkeep
 
+# Supprimer les fichiers de cache
+echo -e "${YELLOW}Suppression des fichiers de cache...${NC}"
+rm -rf storage/data/cache/* 2>/dev/null
+mkdir -p storage/data/cache
+touch storage/data/cache/.gitkeep
+
+# Vider les fichiers temporaires de conversion
+echo -e "${YELLOW}Nettoyage des logs de conversion...${NC}"
+find ./logs/conversions -type f -not -name ".gitkeep" -delete 2>/dev/null
+
 # Supprimer les scripts de nettoyage temporaires
 echo -e "${YELLOW}Suppression des scripts de nettoyage temporaires...${NC}"
 rm -f clean-*-backup.sh 2>/dev/null
@@ -37,13 +47,19 @@ rm -f _clean-* 2>/dev/null
 echo -e "${YELLOW}Suppression des logs temporaires...${NC}"
 find . -name "*.log" -type f -not -path "./hapi-fhir/hapi-fhir-server.log" -delete 2>/dev/null
 
+# Supprimer les fichiers temporaires IN/OUT
+echo -e "${YELLOW}Suppression des fichiers temporaires IN/OUT...${NC}"
+find . -name "*_IN_*" -o -name "*_OUT_*" -type f -delete 2>/dev/null
+
 # Récapitulatif
 echo -e "${GREEN}✓ Nettoyage terminé!${NC}"
 echo -e "${CYAN}=====================================================================${NC}"
 echo -e "${YELLOW}Dossiers nettoyés:${NC}"
 echo -e "${YELLOW}- storage/data/ai_responses/${NC}"
 echo -e "${YELLOW}- attached_assets/${NC}"
-echo -e "${YELLOW}- Fichiers temporaires divers${NC}"
+echo -e "${YELLOW}- storage/data/cache/${NC}"
+echo -e "${YELLOW}- logs/conversions/${NC}"
+echo -e "${YELLOW}- Fichiers temporaires divers (IN/OUT, logs)${NC}"
 echo -e "${CYAN}=====================================================================${NC}"
 
 exit 0
