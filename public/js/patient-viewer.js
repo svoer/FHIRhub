@@ -1366,6 +1366,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.entry && data.entry.length > 0) {
                         // Regrouper par type de ressource pour un affichage organisé
                         const resourceGroups = {};
+                        const processedResources = []; // Pour éviter les doublons
+                        const referenceMap = {}; // Stocker les ressources par référence
                         
                         // Traitement différent selon le type de bundle
                         if (data.type === 'transaction' || data.type === 'batch') {
@@ -1376,38 +1378,240 @@ document.addEventListener('DOMContentLoaded', function() {
                                     if (!resourceGroups[resourceType]) {
                                         resourceGroups[resourceType] = [];
                                     }
+                                    
+                                    // Ajouter la ressource au groupe
                                     resourceGroups[resourceType].push(entry.resource);
-                                }
-                            });
-                        } 
-                        else if (data.type === 'transaction-response' || data.type === 'batch-response') {
-                            // Dans un bundle transaction-response, nous avons seulement les références
-                            // aux ressources créées dans entry.response.location
-                            
-                            // Pour le moment, nous ne pouvons pas afficher les détails des ressources,
-                            // seulement les références à partir des identifiants générés
-                            data.entry.forEach(entry => {
-                                if (entry.response && entry.response.location) {
-                                    // Format typique: "Patient/12345/_history/1"
-                                    const parts = entry.response.location.split('/');
-                                    if (parts.length >= 2) {
-                                        const resourceType = parts[0];
-                                        const resourceId = parts[1];
-                                        
-                                        // Créer une ressource minimale pour l'affichage
-                                        const minimalResource = {
-                                            resourceType: resourceType,
-                                            id: resourceId,
-                                            _sourceType: 'reference', // Marquer comme référence seulement
-                                        };
-                                        
-                                        if (!resourceGroups[resourceType]) {
-                                            resourceGroups[resourceType] = [];
-                                        }
-                                        resourceGroups[resourceType].push(minimalResource);
+                                    
+                                    // Ajouter à la liste des ressources traitées pour référence future
+                                    processedResources.push(`${resourceType}/${entry.resource.id}`);
+                                    
+                                    // Ajouter au mapping de référence
+                                    if (entry.fullUrl) {
+                                        referenceMap[entry.fullUrl] = entry.resource;
                                     }
                                 }
                             });
+                            
+                            // Seconde passe pour résoudre les références
+                            Object.values(resourceGroups).forEach(group => {
+                                group.forEach(resource => {
+                                    resolveReferences(resource, referenceMap);
+                                });
+                            });
+                        } 
+                        else if (data.type === 'transaction-response' || data.type === 'batch-response') {
+                            showStatus('Récupération des ressources depuis le serveur FHIR...', 'info');
+                            
+                            // Trouver la ressource Patient pour utiliser l'opération $everything
+                            let patientReference = null;
+                            
+                            // Rechercher l'ID du patient dans les réponses
+                            data.entry.forEach(entry => {
+                                if (entry.response && entry.response.location && entry.response.location.startsWith('Patient/')) {
+                                    // Format typique: "Patient/12345/_history/1"
+                                    const parts = entry.response.location.split('/');
+                                    if (parts.length >= 2) {
+                                        patientReference = {
+                                            resourceType: 'Patient',
+                                            id: parts[1].split('_')[0] // Enlever la partie _history
+                                        };
+                                    }
+                                }
+                            });
+                            
+                            if (patientReference) {
+                                // Utiliser l'opération $everything pour obtenir toutes les ressources liées au patient
+                                fetch(`${serverUrl}/Patient/${patientReference.id}/$everything`)
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            // Si $everything échoue, réessayer avec une recherche par référence
+                                            if (response.status === 404 || response.status === 501) {
+                                                showStatus("L'opération $everything n'est pas supportée, utilisation d'une méthode alternative...", 'info');
+                                                return fetchResourcesManually(patientReference.id);
+                                            }
+                                            throw new Error(`L'opération $everything a échoué: ${response.status}`);
+                                        }
+                                        return response.json();
+                                    })
+                                    .then(bundle => {
+                                        if (bundle.resourceType === 'Bundle' && bundle.entry && bundle.entry.length > 0) {
+                                            // Traiter le bundle tout-en-un
+                                            bundle.entry.forEach(entry => {
+                                                if (entry.resource) {
+                                                    const resourceType = entry.resource.resourceType;
+                                                    if (!resourceGroups[resourceType]) {
+                                                        resourceGroups[resourceType] = [];
+                                                    }
+                                                    resourceGroups[resourceType].push(entry.resource);
+                                                }
+                                            });
+                                            
+                                            showStatus(`${bundle.entry.length} ressources récupérées depuis le serveur FHIR`, 'success');
+                                        } else {
+                                            showStatus('Aucune ressource associée trouvée pour ce patient', 'warning');
+                                        }
+                                        
+                                        // Mise à jour de l'affichage avec les données récupérées
+                                        updateBundleDisplay(resourceGroups, bundleResourcesList, bundleResourceTypesElement, 
+                                                          bundleResourceCountElement, bundleIdElement, bundleTypeElement,
+                                                          bundleInfoContainer, loadingSection, serverUrl);
+                                    })
+                                    .catch(error => {
+                                        console.error("Erreur lors de la récupération des données complètes:", error);
+                                        showStatus(`Erreur: ${error.message}. Utilisation d'une méthode alternative...`, 'warning');
+                                        
+                                        // En cas d'échec de $everything, récupérer manuellement
+                                        fetchResourcesManually(patientReference.id)
+                                            .then(altBundle => {
+                                                // Traitement du bundle alternatif
+                                                altBundle.entry.forEach(entry => {
+                                                    if (entry.resource) {
+                                                        const resourceType = entry.resource.resourceType;
+                                                        if (!resourceGroups[resourceType]) {
+                                                            resourceGroups[resourceType] = [];
+                                                        }
+                                                        resourceGroups[resourceType].push(entry.resource);
+                                                    }
+                                                });
+                                                
+                                                showStatus(`${altBundle.entry.length} ressources récupérées en mode alternatif`, 'success');
+                                                
+                                                // Mise à jour de l'affichage
+                                                updateBundleDisplay(resourceGroups, bundleResourcesList, bundleResourceTypesElement, 
+                                                                  bundleResourceCountElement, bundleIdElement, bundleTypeElement,
+                                                                  bundleInfoContainer, loadingSection, serverUrl);
+                                            })
+                                            .catch(altError => {
+                                                console.error("Échec de la récupération alternative:", altError);
+                                                showStatus(`Impossible de récupérer les données: ${altError.message}`, 'error');
+                                            });
+                                    });
+                            } else {
+                                // Aucun patient trouvé, récupérer chaque ressource individuellement
+                                showStatus('Aucun patient trouvé, récupération individuelle des ressources...', 'info');
+                                
+                                // Récupérer les références depuis la réponse
+                                const resourceReferences = [];
+                                data.entry.forEach(entry => {
+                                    if (entry.response && entry.response.location) {
+                                        // Format typique: "Resource/12345/_history/1"
+                                        const parts = entry.response.location.split('/');
+                                        if (parts.length >= 2) {
+                                            const resourceType = parts[0];
+                                            const resourceId = parts[1].split('_')[0]; // Enlever la partie _history
+                                            resourceReferences.push({
+                                                resourceType,
+                                                id: resourceId
+                                            });
+                                        }
+                                    }
+                                });
+                                
+                                if (resourceReferences.length === 0) {
+                                    showStatus('Aucune référence de ressource trouvée dans la réponse', 'error');
+                                    return;
+                                }
+                                
+                                // Créer un bundle avec les références
+                                const refBundle = {
+                                    resourceType: 'Bundle',
+                                    type: 'collection',
+                                    entry: []
+                                };
+                                
+                                // Récupérer toutes les ressources individuellement
+                                const promises = resourceReferences.map(ref => {
+                                    return fetch(`${serverUrl}/${ref.resourceType}/${ref.id}`)
+                                        .then(response => {
+                                            if (!response.ok) {
+                                                throw new Error(`Erreur lors de la récupération de ${ref.resourceType}/${ref.id}: ${response.status}`);
+                                            }
+                                            return response.json();
+                                        })
+                                        .then(resource => {
+                                            // Ajouter au bundle de référence
+                                            refBundle.entry.push({ resource });
+                                            
+                                            // Ajouter la ressource au groupe correspondant
+                                            const resourceType = resource.resourceType;
+                                            if (!resourceGroups[resourceType]) {
+                                                resourceGroups[resourceType] = [];
+                                            }
+                                            resourceGroups[resourceType].push(resource);
+                                            return resource;
+                                        })
+                                        .catch(error => {
+                                            console.error(`Erreur de récupération de ${ref.resourceType}/${ref.id}:`, error);
+                                            return null; // Ignorer les erreurs individuelles
+                                        });
+                                });
+                                
+                                // Attendre toutes les récupérations
+                                Promise.all(promises)
+                                    .then(results => {
+                                        const validResults = results.filter(r => r !== null);
+                                        showStatus(`${validResults.length} ressources récupérées sur ${resourceReferences.length}`, 
+                                                  validResults.length === resourceReferences.length ? 'success' : 'warning');
+                                        
+                                        // Mise à jour de l'affichage
+                                        updateBundleDisplay(resourceGroups, bundleResourcesList, bundleResourceTypesElement, 
+                                                          bundleResourceCountElement, bundleIdElement, bundleTypeElement,
+                                                          bundleInfoContainer, loadingSection, serverUrl);
+                                    })
+                                    .catch(error => {
+                                        console.error("Erreur générale lors de la récupération:", error);
+                                        showStatus(`Erreur: ${error.message}`, 'error');
+                                    });
+                            }
+                            
+                            // Fonction pour récupérer les ressources manuellement si $everything ne fonctionne pas
+                            async function fetchResourcesManually(patientId) {
+                                // Créer un bundle composite
+                                const compositeBundle = {
+                                    resourceType: 'Bundle',
+                                    type: 'collection',
+                                    entry: []
+                                };
+                                
+                                // 1. Récupérer le patient
+                                const patientResponse = await fetch(`${serverUrl}/Patient/${patientId}`);
+                                if (!patientResponse.ok) throw new Error(`Échec de récupération du patient: ${patientResponse.status}`);
+                                const patient = await patientResponse.json();
+                                compositeBundle.entry.push({ resource: patient });
+                                
+                                // 2. Récupérer les ressources associées
+                                const resourceTypes = ['Encounter', 'Observation', 'Condition', 'MedicationRequest', 
+                                                     'Procedure', 'AllergyIntolerance', 'CarePlan', 'RelatedPerson', 'Coverage'];
+                                
+                                // Récupérer chaque type en parallèle
+                                const fetchPromises = resourceTypes.map(async resourceType => {
+                                    try {
+                                        const response = await fetch(`${serverUrl}/${resourceType}?patient=${patientId}`);
+                                        if (!response.ok) return [];
+                                        
+                                        const bundle = await response.json();
+                                        return bundle.entry || [];
+                                    } catch (e) {
+                                        console.warn(`Échec de récupération pour ${resourceType}:`, e);
+                                        return [];
+                                    }
+                                });
+                                
+                                // Attendre toutes les réponses
+                                const results = await Promise.all(fetchPromises);
+                                
+                                // Fusionner les résultats
+                                results.forEach(entries => {
+                                    entries.forEach(entry => {
+                                        compositeBundle.entry.push(entry);
+                                    });
+                                });
+                                
+                                return compositeBundle;
+                            }
+                            
+                            // Sortir de la fonction, car l'affichage sera mis à jour par une promesse
+                            return;
                         }
                         else if (data.type === 'searchset') {
                             // Dans un bundle searchset, les ressources sont dans entry.resource
@@ -1436,6 +1640,327 @@ document.addEventListener('DOMContentLoaded', function() {
                             } catch (e) {
                                 console.warn("Erreur lors de l'analyse du bundle:", e);
                             }
+                        }
+                        
+                        // Fonction pour résoudre les références entre les ressources
+                        function resolveReferences(resource, referenceMap) {
+                            if (!resource || typeof resource !== 'object') return;
+                            
+                            // Parcourir toutes les propriétés
+                            for (const key in resource) {
+                                const value = resource[key];
+                                
+                                // Si c'est une référence
+                                if (key === 'reference' && typeof value === 'string' && value.startsWith('urn:uuid:')) {
+                                    // Lier directement à la ressource
+                                    const refResource = referenceMap[value];
+                                    if (refResource) {
+                                        resource._resolvedReference = refResource;
+                                    }
+                                }
+                                // Si c'est un objet, récursivement résoudre les références
+                                else if (value && typeof value === 'object') {
+                                    resolveReferences(value, referenceMap);
+                                }
+                            }
+                        }
+                        
+                        // Fonction pour mettre à jour l'affichage du bundle
+                        function updateBundleDisplay(resourceGroups, bundleResourcesList, bundleResourceTypesElement, 
+                                                    bundleResourceCountElement, bundleIdElement, bundleTypeElement,
+                                                    bundleInfoContainer, loadingSection, serverUrl) {
+                            // Masquer le chargement
+                            if (loadingSection) loadingSection.style.display = 'none';
+                            
+                            // Afficher le nombre total de ressources
+                            let totalResources = 0;
+                            let resourceTypes = [];
+                            
+                            for (const [type, resources] of Object.entries(resourceGroups)) {
+                                totalResources += resources.length;
+                                resourceTypes.push(type);
+                            }
+                            
+                            // Mettre à jour les informations du bundle
+                            bundleResourceCountElement.textContent = totalResources;
+                            bundleResourceTypesElement.textContent = resourceTypes.join(', ');
+                            
+                            // Mettre à jour l'ID du bundle et le type
+                            bundleIdElement.textContent = 'bundle-retrieved';
+                            bundleTypeElement.textContent = 'collection (récupéré)';
+                            
+                            // Afficher le conteneur
+                            bundleInfoContainer.style.display = 'block';
+                            
+                            // Nettoyer la liste existante
+                            bundleResourcesList.innerHTML = '';
+                            
+                            // Créer une section pour chaque type de ressource
+                            for (const [type, resources] of Object.entries(resourceGroups)) {
+                                const sectionElement = document.createElement('div');
+                                sectionElement.className = 'resource-type-section';
+                                sectionElement.style.marginBottom = '20px';
+                                
+                                const typeHeader = document.createElement('div');
+                                typeHeader.className = 'resource-type-header';
+                                typeHeader.style.padding = '12px 16px';
+                                typeHeader.style.backgroundColor = '#f9f9f9';
+                                typeHeader.style.borderRadius = '8px';
+                                typeHeader.style.cursor = 'pointer';
+                                typeHeader.style.display = 'flex';
+                                typeHeader.style.justifyContent = 'space-between';
+                                typeHeader.style.alignItems = 'center';
+                                
+                                // Définir une couleur différente pour chaque type de ressource
+                                let typeColor = '#e83e28';  // Couleur par défaut
+                                let typeIcon = 'cube';     // Icône par défaut
+                                
+                                switch(type) {
+                                    case 'Patient':
+                                        typeColor = '#2980b9';
+                                        typeIcon = 'user';
+                                        break;
+                                    case 'Practitioner':
+                                        typeColor = '#27ae60';
+                                        typeIcon = 'user-md';
+                                        break;
+                                    case 'Organization':
+                                        typeColor = '#f39c12';
+                                        typeIcon = 'hospital-alt';
+                                        break;
+                                    case 'Encounter':
+                                        typeColor = '#9b59b6';
+                                        typeIcon = 'stethoscope';
+                                        break;
+                                    case 'Condition':
+                                        typeColor = '#c0392b';
+                                        typeIcon = 'heartbeat';
+                                        break;
+                                    case 'Observation':
+                                        typeColor = '#1abc9c';
+                                        typeIcon = 'microscope';
+                                        break;
+                                    case 'MedicationRequest':
+                                        typeColor = '#3498db';
+                                        typeIcon = 'pills';
+                                        break;
+                                    case 'Coverage':
+                                        typeColor = '#8e44ad';
+                                        typeIcon = 'file-medical';
+                                        break;
+                                    case 'RelatedPerson':
+                                        typeColor = '#e67e22';
+                                        typeIcon = 'users';
+                                        break;
+                                }
+                                
+                                typeHeader.innerHTML = `
+                                    <span style="display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-${typeIcon}" style="color: ${typeColor};"></i>
+                                        <span style="color: ${typeColor}; font-weight: 600;">${type} (${resources.length})</span>
+                                    </span>
+                                    <i class="fas fa-chevron-down" style="color: #999;"></i>
+                                `;
+                                
+                                const typeContent = document.createElement('div');
+                                typeContent.className = 'resource-type-content';
+                                typeContent.style.padding = '0';
+                                typeContent.style.overflow = 'auto';
+                                typeContent.style.maxHeight = '400px';
+                                typeContent.style.display = 'block'; // Visible par défaut
+                                
+                                resources.forEach(resource => {
+                                    const resourceItem = document.createElement('div');
+                                    resourceItem.className = 'resource-item';
+                                    resourceItem.style.padding = '12px 16px';
+                                    resourceItem.style.borderBottom = '1px solid #f0f0f0';
+                                    
+                                    // Fonction pour afficher les détails des ressources
+                                    displayResourceDetails(resourceItem, resource, type);
+                                    
+                                    typeContent.appendChild(resourceItem);
+                                });
+                                
+                                // Comportement d'accordéon pour la section
+                                typeHeader.addEventListener('click', function() {
+                                    const isVisible = typeContent.style.display === 'block';
+                                    typeContent.style.display = isVisible ? 'none' : 'block';
+                                    
+                                    // Rotation de l'icône de chevron
+                                    const chevron = this.querySelector('.fa-chevron-down');
+                                    if (chevron) {
+                                        chevron.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+                                        chevron.style.transition = 'transform 0.3s ease';
+                                    }
+                                });
+                                
+                                sectionElement.appendChild(typeHeader);
+                                sectionElement.appendChild(typeContent);
+                                bundleResourcesList.appendChild(sectionElement);
+                            }
+                        }
+                        
+                        // Fonction pour afficher les détails d'une ressource
+                        function displayResourceDetails(resourceItem, resource, type) {
+                            let resourceName = resource.id;
+                            let resourceDetails = '';
+                            
+                            // Si c'est une référence simple (de transaction-response)
+                            if (resource._sourceType === 'reference') {
+                                resourceName = `${resource.id}`;
+                                resourceDetails = `ID: ${resource.id}`;
+                                if (resource._error) {
+                                    resourceDetails += ` | Erreur: ${resource._error}`;
+                                }
+                            }
+                            // Si c'est une ressource complète
+                            else {
+                                if (type === 'Patient' && resource.name && resource.name.length > 0) {
+                                    resourceName = formatPatientName(resource.name);
+                                    resourceDetails = `ID: ${resource.id}`;
+                                    if (resource.birthDate) {
+                                        resourceDetails += ` | Né(e) le: ${resource.birthDate}`;
+                                    }
+                                    if (resource.gender) {
+                                        let gender = resource.gender === 'male' ? 'Homme' : 
+                                                     resource.gender === 'female' ? 'Femme' : resource.gender;
+                                        resourceDetails += ` | Genre: ${gender}`;
+                                    }
+                                } 
+                                else if (type === 'Practitioner' && resource.name && resource.name.length > 0) {
+                                    resourceName = formatPractitionerName(resource.name);
+                                    resourceDetails = `ID: ${resource.id}`;
+                                    if (resource.identifier && resource.identifier.length > 0) {
+                                        const mainId = resource.identifier[0];
+                                        resourceDetails += ` | ${mainId.system ? mainId.system.split('/').pop() : 'ID'}: ${mainId.value}`;
+                                    }
+                                } 
+                                else if (type === 'Organization' && resource.name) {
+                                    resourceName = resource.name;
+                                    resourceDetails = `ID: ${resource.id}`;
+                                    if (resource.identifier && resource.identifier.length > 0) {
+                                        resourceDetails += ` | Identifiant: ${resource.identifier[0].value}`;
+                                    }
+                                } 
+                                else if (type === 'Encounter') {
+                                    resourceName = `Rencontre ${resource.id}`;
+                                    resourceDetails = `ID: ${resource.id}`;
+                                    if (resource.status) {
+                                        const statusMap = {
+                                            'planned': 'Planifiée',
+                                            'arrived': 'Arrivée',
+                                            'triaged': 'Triée',
+                                            'in-progress': 'En cours',
+                                            'onleave': 'En congé',
+                                            'finished': 'Terminée',
+                                            'cancelled': 'Annulée'
+                                        };
+                                        resourceDetails += ` | Statut: ${statusMap[resource.status] || resource.status}`;
+                                    }
+                                    if (resource.class && resource.class.code) {
+                                        const classMap = {
+                                            'AMB': 'Ambulatoire',
+                                            'IMP': 'Hospitalisation',
+                                            'EMER': 'Urgence',
+                                            'VR': 'Consultation virtuelle'
+                                        };
+                                        resourceDetails += ` | Type: ${classMap[resource.class.code] || resource.class.code}`;
+                                    }
+                                } 
+                                else if (type === 'RelatedPerson') {
+                                    if (resource.name && resource.name.length > 0) {
+                                        resourceName = formatPatientName(resource.name);
+                                    }
+                                    resourceDetails = `ID: ${resource.id}`;
+                                    if (resource.relationship && resource.relationship.length > 0) {
+                                        if (resource.relationship[0].coding) {
+                                            const rel = resource.relationship[0].coding[0];
+                                            const relationMap = {
+                                                'SPO': 'Conjoint(e)',
+                                                'CHILD': 'Enfant',
+                                                'FAMMEMB': 'Famille',
+                                                'WIFE': 'Épouse',
+                                                'HUSB': 'Époux',
+                                                'AUNT': 'Tante',
+                                                'BRO': 'Frère',
+                                                'DAU': 'Fille',
+                                                'DAUFOST': 'Fille d\'accueil',
+                                                'SIS': 'Sœur'
+                                            };
+                                            resourceDetails += ` | Relation: ${relationMap[rel.code] || rel.display || rel.code}`;
+                                        }
+                                        else if (resource.relationship[0].text) {
+                                            resourceDetails += ` | Relation: ${resource.relationship[0].text}`;
+                                        }
+                                    }
+                                } 
+                                else if (type === 'Coverage') {
+                                    resourceName = `Couverture ${resource.id}`;
+                                    resourceDetails = `ID: ${resource.id}`;
+                                    if (resource.type && resource.type.coding && resource.type.coding.length > 0) {
+                                        const coverageMap = {
+                                            'AMO': 'Assurance Maladie Obligatoire',
+                                            'AMC': 'Assurance Maladie Complémentaire'
+                                        };
+                                        const coverageType = resource.type.coding[0];
+                                        resourceDetails += ` | Type: ${coverageMap[coverageType.code] || coverageType.display || coverageType.code}`;
+                                    }
+                                    if (resource.period) {
+                                        if (resource.period.start) {
+                                            resourceDetails += ` | Début: ${resource.period.start.split('T')[0]}`;
+                                        }
+                                        if (resource.period.end) {
+                                            resourceDetails += ` | Fin: ${resource.period.end.split('T')[0]}`;
+                                        }
+                                    }
+                                }
+                                else if (type === 'PractitionerRole') {
+                                    resourceName = `Rôle ${resource.id}`;
+                                    resourceDetails = `ID: ${resource.id}`;
+                                    if (resource.code && resource.code.length > 0 && resource.code[0].coding && resource.code[0].coding.length > 0) {
+                                        resourceDetails += ` | Code: ${resource.code[0].coding[0].display || resource.code[0].coding[0].code}`;
+                                    }
+                                }
+                            }
+                            
+                            resourceItem.innerHTML = `
+                                <div style="display: flex; flex-direction: column; gap: 6px; padding: 5px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-weight: 600; color: #333;">${resourceName || resource.id}</span>
+                                        <button 
+                                            class="view-json-btn"
+                                            style="background: linear-gradient(135deg, #e83e28, #fd7e30); 
+                                                  color: white; 
+                                                  border: none; 
+                                                  border-radius: 4px; 
+                                                  padding: 4px 8px; 
+                                                  font-size: 12px;
+                                                  cursor: pointer;"
+                                                  data-resource='${JSON.stringify(resource).replace(/'/g, "&apos;")}'>
+                                            Voir JSON
+                                        </button>
+                                    </div>
+                                    <div style="color: #666; font-size: 13px;">
+                                        ${resourceDetails}
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // Ajouter l'événement pour afficher le JSON
+                            setTimeout(() => {
+                                const jsonBtn = resourceItem.querySelector('.view-json-btn');
+                                if (jsonBtn) {
+                                    jsonBtn.addEventListener('click', function() {
+                                        const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                        document.getElementById('json-content').textContent = JSON.stringify(resourceData, null, 2);
+                                        // Activer l'onglet JSON
+                                        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                        document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                        document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                        document.querySelector('#json').style.display = 'block';
+                                    });
+                                }
+                            }, 0);
                         }
                         
                         // Créer une section pour chaque type de ressource
