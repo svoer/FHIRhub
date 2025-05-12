@@ -1298,7 +1298,7 @@ class ProcessEngine {
     // Initialiser le contexte d'exécution
     const executionId = `exec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const context = {
-      workflowId,
+      processId,
       executionId,
       startTime: Date.now(),
       variables: {},
@@ -1426,20 +1426,20 @@ class ProcessEngine {
     }
   }
   
-  // Récupère un workflow depuis la base de données
-  async getWorkflow(workflowId) {
+  // Récupère un processus depuis la base de données
+  async getProcess(processId) {
     return this.db.prepare(`
       SELECT * FROM processes WHERE id = ?
-    `).get(workflowId);
+    `).get(processId);
   }
   
   // Sauvegarde les logs d'exécution
   saveExecutionLogs(context) {
     try {
       this.db.prepare(`
-        INSERT INTO workflow_executions (
+        INSERT INTO process_executions (
           id,
-          workflow_id,
+          process_id,
           status,
           start_time,
           end_time,
@@ -1450,7 +1450,7 @@ class ProcessEngine {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         context.executionId,
-        context.workflowId,
+        context.processId,
         context.status,
         new Date(context.startTime).toISOString(),
         new Date(context.endTime).toISOString(),
@@ -1460,7 +1460,7 @@ class ProcessEngine {
         context.error || null
       );
     } catch (error) {
-      console.error(`Error saving workflow execution logs: ${error.message}`);
+      console.error(`Error saving process execution logs: ${error.message}`);
     }
   }
   
