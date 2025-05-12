@@ -2324,8 +2324,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Réinitialiser les données des couvertures
-        coverageData = [];
+        // Aucune mise en cache des données - API uniquement
         
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
@@ -2348,55 +2347,104 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 loadingSection.style.display = 'none';
                 
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const coverages = data.entry.map(entry => entry.resource);
-                    coverageData = coverages;
-                    
-                    // Créer une liste de couvertures
-                    const coverageList = document.createElement('div');
-                    coverageList.style.display = 'grid';
-                    coverageList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    coverageList.style.gap = '15px';
-                    
-                    coverages.forEach(coverage => {
-                        const coverageElement = document.createElement('div');
-                        coverageElement.style.backgroundColor = '#f9f9f9';
-                        coverageElement.style.borderRadius = '8px';
-                        coverageElement.style.padding = '15px';
-                        coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        coverageElement.style.borderLeft = '3px solid #fd7e30';
+                try {
+                    if (data && data.entry && Array.isArray(data.entry) && data.entry.length > 0) {
+                        resourcesList.style.display = 'block';
+                        resourcesList.innerHTML = '';
                         
-                        coverageElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
-                                ${coverage.type?.coding?.[0]?.display || coverage.type?.text || 'Couverture'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${coverage.id}</p>
-                                <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
-                                ${coverage.period ? 
-                                  `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>` 
-                                  : ''}
-                                ${coverage.payor ? 
-                                  `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>` 
-                                  : ''}
-                            </div>
-                        `;
+                        // Filtrer pour s'assurer que chaque entrée a une ressource valide
+                        const coverages = data.entry
+                            .filter(entry => entry && entry.resource && entry.resource.resourceType === 'Coverage')
+                            .map(entry => entry.resource);
                         
-                        coverageList.appendChild(coverageElement);
-                    });
-                    
-                    resourcesList.appendChild(coverageList);
-                } else {
+                        coverageData = coverages;
+                        
+                        if (coverages.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            return;
+                        }
+                        
+                        // Créer une liste de couvertures
+                        const coverageList = document.createElement('div');
+                        coverageList.style.display = 'grid';
+                        coverageList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                        coverageList.style.gap = '15px';
+                        
+                        coverages.forEach(coverage => {
+                            if (!coverage) return; // Protection supplémentaire
+                            
+                            const coverageElement = document.createElement('div');
+                            coverageElement.style.backgroundColor = '#f9f9f9';
+                            coverageElement.style.borderRadius = '8px';
+                            coverageElement.style.padding = '15px';
+                            coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                            coverageElement.style.borderLeft = '3px solid #fd7e30';
+                            
+                            // Construction sécurisée de l'affichage avec vérification des propriétés
+                            let typeName = 'Couverture';
+                            if (coverage.type) {
+                                if (coverage.type.coding && Array.isArray(coverage.type.coding) && coverage.type.coding.length > 0 && coverage.type.coding[0].display) {
+                                    typeName = coverage.type.coding[0].display;
+                                } else if (coverage.type.text) {
+                                    typeName = coverage.type.text;
+                                }
+                            }
+                            
+                            let periodStr = '';
+                            if (coverage.period) {
+                                try {
+                                    periodStr = `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>`;
+                                } catch (e) {
+                                    console.warn('Erreur lors du formatage de la période:', e);
+                                }
+                            }
+                            
+                            let payorStr = '';
+                            if (coverage.payor && Array.isArray(coverage.payor) && coverage.payor.length > 0) {
+                                try {
+                                    payorStr = `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>`;
+                                } catch (e) {
+                                    console.warn('Erreur lors du formatage du payeur:', e);
+                                }
+                            }
+                            
+                            coverageElement.innerHTML = `
+                                <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
+                                    ${typeName}
+                                </h4>
+                                <div style="margin-top: 10px; color: #555;">
+                                    <p><strong>Identifiant:</strong> ${coverage.id || 'Non spécifié'}</p>
+                                    <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
+                                    ${periodStr}
+                                    ${payorStr}
+                                </div>
+                            `;
+                            
+                            coverageList.appendChild(coverageElement);
+                        });
+                        
+                        resourcesList.appendChild(coverageList);
+                    } else {
+                        noResourcesSection.style.display = 'block';
+                    }
+                } catch (err) {
+                    console.error('Erreur lors du traitement des données des couvertures:', err);
                     noResourcesSection.style.display = 'block';
                 }
             })
             .catch(error => {
+                clearTimeout(timeoutId);
                 console.error('Erreur lors du chargement des couvertures:', error);
                 loadingSection.style.display = 'none';
+                
+                // Message d'erreur plus informatif
+                if (error.name === 'AbortError') {
+                    console.warn('La requête pour les couvertures a été abandonnée (timeout)');
+                } else if (error.message && error.message.includes('Failed to fetch')) {
+                    console.warn('Erreur réseau lors du chargement des couvertures');
+                }
+                
                 noResourcesSection.style.display = 'block';
             });
     }
@@ -3930,21 +3978,20 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         try {
-            // Créer un objet complet avec toutes les données du patient de tous les onglets
-            const completePatientData = {
-                patient: patientData,
-                conditions: conditionsData,
-                observations: observationsData,
-                medications: medicationsData,
-                encounters: encountersData
+            // Récupérer directement les données du patient depuis l'API pour l'analyse IA
+            const patientId = patientSelect.value;
+            const server = serverSelect.value;
+            
+            // Préparer l'objet pour l'appel API avec les identifiants nécessaires seulement
+            const analyzeRequest = {
+                patientId: patientId,
+                serverUrl: server,
+                // Aucune donnée patiente n'est stockée ou transmise côté client
+                // Le backend récupérera toutes les données directement depuis le serveur FHIR
             };
             
-            console.log("Envoi de l'analyse IA avec données complètes:", 
-                `Patient: ${patientData ? 'OK' : 'Manquant'}, ` +
-                `Conditions: ${conditionsData.length}, ` +
-                `Observations: ${observationsData.length}, ` + 
-                `Médicaments: ${medicationsData.length}, ` +
-                `Consultations: ${encountersData.length}`
+            console.log("Envoi de la demande d'analyse IA pour le patient:", 
+                `ID: ${patientId}, Serveur: ${server}`
             );
             
             xhr.send(JSON.stringify({
