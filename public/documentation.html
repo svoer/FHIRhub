@@ -759,7 +759,21 @@ function processADTMessage(parsedMessage, bundle) {
           <p><strong>Important :</strong> En mode analyse patient, l'IA traite les données de santé issues des ressources FHIR de manière sécurisée et strictement factuelle. Aucune donnée n'est conservée, et l'analyse est générée sans extrapolation.</p>
         </div>
         
-        <h3>Système RAG (Retrieval-Augmented Generation)</h3>
+
+        
+        <h3>Paramétrage de l'IA</h3>
+        <p>Les administrateurs peuvent configurer les services d'IA dans la section "Paramètres IA" accessible depuis le menu principal. Cette configuration inclut :</p>
+        <ul>
+          <li>Sélection du fournisseur d'IA préféré</li>
+          <li>Gestion des clés API (stockées de manière sécurisée dans la base de données SQLite)</li>
+          <li>Configuration des paramètres de modèle (température, longueur maximale, etc.)</li>
+          <li>Options de confidentialité et restrictions d'accès</li>
+          <li>Test de connexion aux différents fournisseurs</li>
+        </ul>
+      </div>
+      
+      <div id="rag-system" class="documentation-section">
+        <h2>Système RAG (Retrieval-Augmented Generation)</h2>
         <p>FHIRHub utilise un système RAG (Génération Augmentée par Récupération) pour améliorer la précision et la pertinence des réponses du chatbot d'assistance.</p>
         
         <div class="tech-spec">
@@ -792,16 +806,6 @@ function processADTMessage(parsedMessage, bundle) {
         <div class="info-box">
           <p><strong>Documentation détaillée :</strong> Pour plus d'informations sur le système RAG et son enrichissement, consultez les documents <a href="/docs/ai-integration.md">ai-integration.md</a> et <a href="/docs/rag-knowledge-base-guide.md">rag-knowledge-base-guide.md</a>.</p>
         </div>
-        
-        <h3>Paramétrage de l'IA</h3>
-        <p>Les administrateurs peuvent configurer les services d'IA dans la section "Paramètres IA" accessible depuis le menu principal. Cette configuration inclut :</p>
-        <ul>
-          <li>Sélection du fournisseur d'IA préféré</li>
-          <li>Gestion des clés API (stockées de manière sécurisée dans la base de données SQLite)</li>
-          <li>Configuration des paramètres de modèle (température, longueur maximale, etc.)</li>
-          <li>Options de confidentialité et restrictions d'accès</li>
-          <li>Test de connexion aux différents fournisseurs</li>
-        </ul>
       </div>
       
       <div id="api" class="documentation-section">
