@@ -1,0 +1,104 @@
+{
+  "faq": [
+    {
+      "question": "Comment convertir un message HL7 vers FHIR ?",
+      "answer": "Pour convertir un message HL7 vers FHIR, accédez à la page 'Conversion' dans le menu principal. Collez votre message HL7 dans la zone de texte, sélectionnez les options de conversion souhaitées et cliquez sur le bouton 'Convertir'. Le résultat au format FHIR apparaîtra dans la zone de droite. Vous pourrez ensuite le télécharger ou l'envoyer directement à un serveur FHIR."
+    },
+    {
+      "question": "Comment puis-je configurer un fournisseur d'IA ?",
+      "answer": "Pour configurer un fournisseur d'IA, accédez à la page 'Paramètres IA' dans le menu Administration. Vous pouvez y configurer différents fournisseurs comme Mistral AI, Ollama ou DeepSeek. Pour chaque fournisseur, vous devez spécifier une clé API valide et sélectionner le modèle à utiliser. Le fournisseur marqué comme 'Actif' sera utilisé par toutes les fonctionnalités IA de l'application."
+    },
+    {
+      "question": "Comment utiliser le visualiseur patient ?",
+      "answer": "Le visualiseur patient permet d'explorer les données FHIR d'un patient. Accédez à la page 'Visualiseur Patient' depuis le menu principal. Entrez l'identifiant du patient et l'URL du serveur FHIR, puis cliquez sur 'Charger'. Vous pourrez alors consulter toutes les informations du patient réparties dans différents onglets (informations personnelles, conditions médicales, observations, médicaments, consultations). L'analyse IA disponible en bas de page fournit une synthèse intelligente de l'ensemble des données."
+    },
+    {
+      "question": "Comment puis-je explorer un serveur FHIR ?",
+      "answer": "Pour explorer un serveur FHIR, utilisez l'explorateur FHIR accessible depuis 'Explorateur FHIR' dans le menu principal. Entrez l'URL du serveur FHIR, sélectionnez le type de ressource à consulter (Patient, Observation, etc.) et cliquez sur 'Rechercher'. Vous pouvez également ajouter des paramètres de recherche avancés pour filtrer les résultats. L'explorateur affiche les ressources trouvées et permet de les consulter en détail."
+    },
+    {
+      "question": "Comment fonctionne le tableau de bord ?",
+      "answer": "Le tableau de bord offre une vue d'ensemble des activités de FHIRHub. Il affiche des statistiques sur les conversions HL7 vers FHIR (nombre total, temps moyen, etc.), la répartition des types de messages traités, et l'état du système. Vous pouvez actualiser les données en cliquant sur le bouton 'Rafraîchir' en haut à droite, ou réinitialiser les statistiques avec le bouton 'Réinitialiser' (attention, cette action est irréversible)."
+    },
+    {
+      "question": "Comment installer FHIRHub sur mon propre serveur ?",
+      "answer": "FHIRHub peut être installé de deux façons : 1) Installation directe : exécutez le script install.sh (ou install.bat sous Windows) puis démarrez l'application avec start.sh (ou start.bat). 2) Installation Docker : utilisez docker-compose up pour démarrer l'ensemble des services (FHIRHub et HAPI FHIR). Tous les fichiers de données sont stockés dans le dossier 'data' pour faciliter les sauvegardes et les mises à jour."
+    },
+    {
+      "question": "Comment ajouter des utilisateurs à FHIRHub ?",
+      "answer": "Pour ajouter des utilisateurs, accédez à la page 'Utilisateurs' dans le menu Administration. Cliquez sur 'Ajouter un utilisateur', remplissez le formulaire avec les informations requises (nom, email, mot de passe) et sélectionnez le rôle approprié (Administrateur, Utilisateur, etc.). Les administrateurs ont accès à toutes les fonctionnalités, tandis que les utilisateurs standards ont des permissions limitées selon leur rôle."
+    },
+    {
+      "question": "Comment utiliser les terminologies françaises ?",
+      "answer": "FHIRHub intègre les terminologies françaises standards conformes aux exigences de l'ANS. Ces terminologies sont automatiquement utilisées lors de la conversion de messages HL7 vers FHIR. Pour visualiser ou gérer ces terminologies, accédez à la page 'Terminologies' dans le menu Administration. Vous pouvez y voir les systèmes de codage disponibles et leur statut."
+    },
+    {
+      "question": "Comment puis-je sauvegarder mes données ?",
+      "answer": "FHIRHub stocke toutes les données dans le dossier 'data' à la racine de l'application. Pour effectuer une sauvegarde, utilisez le script backup-docker-data.sh qui crée une archive compressée de ce dossier. Pour les installations Docker, les données sont stockées dans des volumes Docker nommés, que vous pouvez sauvegarder avec les commandes Docker standards."
+    },
+    {
+      "question": "Comment générer des clés API pour l'intégration ?",
+      "answer": "Pour générer des clés API, accédez à la page 'Clés API' dans le menu Administration. Cliquez sur 'Créer une nouvelle clé', donnez-lui un nom descriptif, sélectionnez l'application associée et définissez les permissions appropriées. Une fois créée, la clé API peut être utilisée pour accéder aux endpoints de l'API FHIRHub de manière sécurisée depuis des applications externes."
+    },
+    {
+      "question": "Comment puis-je nettoyer les fichiers temporaires ?",
+      "answer": "Pour nettoyer les fichiers temporaires, utilisez le script clean-temp-files.sh qui supprime les réponses IA stockées, les assets attachés, les fichiers de cache et les logs de conversion. Ce nettoyage aide à maintenir les performances du système et à réduire l'espace disque utilisé. Le script conserve la structure des dossiers et crée des fichiers .gitkeep pour maintenir la structure du projet."
+    }
+  ],
+  "features": [
+    {
+      "name": "Conversion HL7 vers FHIR",
+      "description": "Convertit les messages HL7v2.5 en ressources FHIR R4 (v4.0.1) conformes aux spécifications de l'ANS française. Prend en charge les types de messages courants comme ADT, ORU, ORM, MDM, SIU, etc. Les ressources générées peuvent être visualisées, téléchargées ou envoyées directement à un serveur FHIR."
+    },
+    {
+      "name": "Visualiseur Patient",
+      "description": "Interface intuitive pour explorer les données FHIR d'un patient. Affiche les informations personnelles, conditions médicales, observations, médicaments, consultations et autres ressources associées dans des onglets bien organisés. Inclut une fonction d'analyse IA qui génère un rapport médical complet basé sur toutes les données disponibles."
+    },
+    {
+      "name": "Explorateur FHIR",
+      "description": "Outil pour interroger et visualiser les ressources d'un serveur FHIR. Permet la recherche par type de ressource avec des filtres avancés, l'affichage détaillé des ressources au format JSON ou dans une vue structurée, et la navigation entre les ressources liées."
+    },
+    {
+      "name": "Intégration IA",
+      "description": "Intègre plusieurs fournisseurs d'IA (Mistral, Ollama, DeepSeek) pour l'analyse des données médicales, le chatbot de support et d'autres fonctionnalités intelligentes. Le fournisseur actif peut être configuré dans les paramètres IA et est utilisé par toutes les fonctionnalités d'IA de l'application."
+    },
+    {
+      "name": "Terminologies françaises",
+      "description": "Support complet des terminologies médicales françaises conformes aux standards de l'ANS. Ces terminologies sont utilisées pour standardiser les données lors de la conversion HL7 vers FHIR, assurant la compatibilité avec les systèmes de santé français."
+    },
+    {
+      "name": "API complète",
+      "description": "API RESTful pour intégrer FHIRHub à d'autres applications. Prend en charge l'authentification par clés API et JWT, offre des endpoints pour la conversion, la recherche, la gestion des utilisateurs et plus encore. Une documentation Swagger complète est disponible dans la section 'Référence API'."
+    },
+    {
+      "name": "Tableau de bord",
+      "description": "Vue d'ensemble des activités et performances du système, incluant des statistiques sur les conversions, la répartition des types de messages et l'état du système. Les widgets sont personnalisables et les données peuvent être actualisées en temps réel."
+    },
+    {
+      "name": "Serveur HAPI FHIR intégré",
+      "description": "FHIRHub inclut un serveur HAPI FHIR qui peut être démarré automatiquement avec l'application principale. Ce serveur stocke les ressources FHIR et peut être utilisé comme destination pour les conversions ou comme source pour le visualiseur patient et l'explorateur FHIR."
+    }
+  ],
+  "commands": [
+    {
+      "name": "install.sh / install.bat",
+      "description": "Script d'installation qui configure l'environnement et télécharge les dépendances nécessaires. À exécuter une seule fois avant la première utilisation de FHIRHub."
+    },
+    {
+      "name": "start.sh / start.bat",
+      "description": "Script de démarrage qui lance l'application FHIRHub et le serveur HAPI FHIR en arrière-plan. C'est la manière recommandée de démarrer l'application en dehors de Docker."
+    },
+    {
+      "name": "docker-compose up",
+      "description": "Commande pour démarrer FHIRHub et le serveur HAPI FHIR en utilisant Docker. Les services sont configurés dans le fichier docker-compose.yml et utilisent les images Docker spécifiées."
+    },
+    {
+      "name": "clean-temp-files.sh",
+      "description": "Script qui nettoie les fichiers temporaires, les réponses IA stockées, les assets attachés et les logs de conversion pour maintenir la propreté du système."
+    },
+    {
+      "name": "backup-docker-data.sh",
+      "description": "Script qui sauvegarde les données de FHIRHub dans une archive compressée. Utile pour créer des points de restauration avant les mises à jour ou les modifications importantes."
+    }
+  ]
+}

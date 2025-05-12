@@ -30,16 +30,16 @@ try {
         getAllAIProviders: async () => []
     };
 }
-// Service de documentation pour enrichir le chatbot
-let documentationService;
+// Service de connaissances pour enrichir le chatbot
+let chatbotKnowledgeService;
 try {
-    documentationService = require('../utils/documentationService');
+    chatbotKnowledgeService = require('../utils/chatbotKnowledgeService');
 } catch (error) {
-    console.error("Erreur lors de l'importation de documentationService:", error.message);
+    console.error("Erreur lors de l'importation de chatbotKnowledgeService:", error.message);
     // Créer un objet fake pour éviter les erreurs
-    documentationService = {
-        getEnhancedSystemPrompt: async (prompt) => prompt,
-        findRelevantDocumentation: async () => "Documentation non disponible"
+    chatbotKnowledgeService = {
+        getEnhancedPrompt: async (prompt) => prompt,
+        findRelevantKnowledge: async () => []
     };
 }
 const { getActiveAIProvider } = aiProviderService;
@@ -337,9 +337,9 @@ router.post('/chat', async (req, res) => {
             const aiProvider = await getActiveAIProvider();
             const providerName = aiProvider ? aiProvider.provider_name : 'inconnu';
             
-            // Enrichir le prompt système avec la documentation pertinente
-            console.log("[DOC] Recherche d'informations pertinentes pour:", lastUserMessage.substring(0, 50), '...');
-            const enhancedSystemPrompt = await documentationService.getEnhancedSystemPrompt(
+            // Enrichir le prompt système avec les connaissances pertinentes
+            console.log("[KNOWLEDGE] Recherche d'informations pertinentes pour:", lastUserMessage.substring(0, 50), '...');
+            const enhancedSystemPrompt = await chatbotKnowledgeService.getEnhancedPrompt(
                 baseSystemMessage, 
                 lastUserMessage
             );
