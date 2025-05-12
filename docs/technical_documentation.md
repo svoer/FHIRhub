@@ -1190,7 +1190,7 @@ class ProcessEngine {
   }
   
   registerCoreNodeTypes() {
-    // Nœud d'entrée de workflow
+    // Nœud d'entrée de processus
     this.registerNodeType('start', {
       execute: async (data, context) => data,
       validateConnections: connections => connections.outputs.length > 0 && connections.inputs.length === 0
@@ -1353,7 +1353,7 @@ class ProcessEngine {
     const node = flowData.nodes.find(n => n.id === nodeId);
     
     if (!node) {
-      throw new Error(`Node ${nodeId} not found in workflow`);
+      throw new Error(`Node ${nodeId} not found in processus`);
     }
     
     // Récupérer le gestionnaire pour ce type de nœud

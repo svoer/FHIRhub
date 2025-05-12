@@ -262,7 +262,7 @@
         '/api-keys.html': { title: 'Clés API', icon: 'fas fa-key' },
         '/users.html': { title: 'Utilisateurs', icon: 'fas fa-users' },
         '/terminologies.html': { title: 'Terminologies', icon: 'fas fa-book-medical' },
-        '/workflows.html': { title: 'Workflows', icon: 'fas fa-project-diagram' },
+        '/workflows.html': { title: 'Processus', icon: 'fas fa-project-diagram' },
         '/ai-settings.html': { title: 'Paramètres IA', icon: 'fas fa-robot' },
         '/documentation.html': { title: 'Documentation', icon: 'fas fa-file-alt' },
         '/api-reference.html': { title: 'API Reference', icon: 'fas fa-code' },
