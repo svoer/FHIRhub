@@ -677,7 +677,7 @@ function processADTMessage(parsedMessage, bundle) {
         </div>
         
         <h3>Types de nœuds disponibles</h3>
-        <p>Le système de workflows propose plusieurs catégories de nœuds pour construire des processus complets :</p>
+        <p>Le système de processus propose plusieurs catégories de nœuds pour construire des chaînes de traitement complètes :</p>
         
         <div class="tech-spec">
           <div class="tech-spec-title">Catégories de nœuds</div>
@@ -691,10 +691,10 @@ function processADTMessage(parsedMessage, bundle) {
         </div>
         
         <h3>Configuration et déploiement</h3>
-        <p>Les workflows sont sauvegardés dans la base de données et associés à une application spécifique. Lorsqu'un message est reçu via l'API de cette application, le workflow correspondant est automatiquement exécuté pour traiter le message selon les règles définies.</p>
+        <p>Les processus sont sauvegardés dans la base de données et associés à une application spécifique. Lorsqu'un message est reçu via l'API de cette application, le processus correspondant est automatiquement exécuté pour traiter le message selon les règles définies.</p>
         
         <div class="info-box">
-          <p><strong>Note :</strong> Pour accéder à l'éditeur de workflow, cliquez sur "Workflows" dans le menu principal, puis sélectionnez l'application pour laquelle vous souhaitez créer ou modifier un workflow.</p>
+          <p><strong>Note :</strong> Pour accéder à l'éditeur de processus, cliquez sur "Processus" dans le menu principal, puis sélectionnez l'application pour laquelle vous souhaitez créer ou modifier un processus.</p>
         </div>
       </div>
       
@@ -756,6 +756,40 @@ function processADTMessage(parsedMessage, bundle) {
         
         <div class="warning-box">
           <p><strong>Important :</strong> En mode analyse patient, l'IA traite les données de santé issues des ressources FHIR de manière sécurisée et strictement factuelle. Aucune donnée n'est conservée, et l'analyse est générée sans extrapolation.</p>
+        </div>
+        
+        <h3>Système RAG (Retrieval-Augmented Generation)</h3>
+        <p>FHIRHub utilise un système RAG (Génération Augmentée par Récupération) pour améliorer la précision et la pertinence des réponses du chatbot d'assistance.</p>
+        
+        <div class="tech-spec">
+          <div class="tech-spec-title">Fonctionnement du système RAG</div>
+          <ul>
+            <li><strong>Base de connaissances structurée :</strong> Les informations sur FHIRHub sont stockées dans une base de connaissances JSON organisée par catégories</li>
+            <li><strong>Recherche contextuelle :</strong> Lorsqu'une question est posée, le système recherche les informations les plus pertinentes dans la base</li>
+            <li><strong>Enrichissement du prompt :</strong> Les informations récupérées sont intégrées au prompt envoyé au modèle d'IA</li>
+            <li><strong>Protection contre les hallucinations :</strong> Des instructions explicites empêchent le modèle d'inventer des réponses</li>
+            <li><strong>Indication des limites :</strong> Le système indique clairement quand il ne dispose pas d'informations suffisantes</li>
+          </ul>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <div class="step-title">Base de connaissances dynamique</div>
+            <div class="step-description">La base de connaissances peut être facilement enrichie et mise à jour via le fichier data/chatbot-knowledge.json.</div>
+          </div>
+        </div>
+        
+        <div class="workflow-step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <div class="step-title">Catégories d'informations</div>
+            <div class="step-description">La base contient des FAQ, des descriptions de fonctionnalités et des informations sur les commandes disponibles.</div>
+          </div>
+        </div>
+        
+        <div class="info-box">
+          <p><strong>Documentation détaillée :</strong> Pour plus d'informations sur le système RAG et son enrichissement, consultez les documents <a href="/docs/ai-integration.md">ai-integration.md</a> et <a href="/docs/rag-knowledge-base-guide.md">rag-knowledge-base-guide.md</a>.</p>
         </div>
         
         <h3>Paramétrage de l'IA</h3>
@@ -1156,8 +1190,8 @@ curl -X GET "http://localhost:5000/api/users" \
      -H "Authorization: Bearer $TOKEN" \
      -H "X-API-KEY: dev-key"</pre>
             
-            <h4>Exécuter un workflow (POST /api/workflows/execute/:id)</h4>
-            <pre class="code-block">curl -X POST "http://localhost:5000/api/workflows/execute/1" \
+            <h4>Exécuter un processus (POST /api/processus/execute/:id)</h4>
+            <pre class="code-block">curl -X POST "http://localhost:5000/api/processus/execute/1" \
      -H "Content-Type: application/json" \
      -H "X-API-KEY: your-api-key" \
      -d '{
