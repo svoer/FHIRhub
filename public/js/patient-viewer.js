@@ -983,13 +983,16 @@ document.addEventListener('DOMContentLoaded', function() {
                                       : 'Aucune information de contact disponible'}
                                 </p>
                                 <p style="color: #777; font-style: italic; margin-top: 15px;">
-                                    ${patientData.address ? 
-                                      `<strong>Adresse:</strong><br>${patientData.address.map(a => 
-                                        `${a.line ? a.line.join(', ') : ''}<br>
-                                         ${a.postalCode || ''} ${a.city || ''}<br>
-                                         ${a.country || ''}`
-                                      ).join('<br><br>')}`
-                                      : 'Aucune adresse disponible'}
+      ${patientData.address
+        ? `<strong>Adresse:</strong><br>${
+            patientData.address
+              .map(a =>
+                `${a.line ? a.line.join(', ') : ''}<br>
+                 ${a.postalCode || ''} ${a.city || ''}<br>
+                 ${a.country || ''}`)
+              .join('<br><br>')
+          }`
+        : 'Aucune adresse disponible'}
                                 </p>
                             </div>
                         </div>
