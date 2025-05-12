@@ -142,6 +142,39 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
     
+    // Fonction de traitement des résultats FHIR Patient
+    function processPatientResults(data) {
+        if (data.entry && data.entry.length > 0) {
+            // Vider le sélecteur de patients
+            patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
+            
+            // Ajouter les patients trouvés
+            data.entry.forEach(entry => {
+                if (entry.resource && entry.resource.resourceType === 'Patient') {
+                    const patient = entry.resource;
+                    const name = formatPatientName(patient.name);
+                    
+                    const option = document.createElement('option');
+                    option.value = patient.id;
+                    option.textContent = `${name} (${patient.gender || '?'})`;
+                    option.dataset.patient = JSON.stringify(patient);
+                    
+                    patientSelect.appendChild(option);
+                }
+            });
+            
+            showStatus(`<i class="fas fa-check-circle"></i> ${data.entry.length} patients trouvés`, 'success');
+            
+            // Auto-sélectionner si un seul résultat
+            if (data.entry.length === 1) {
+                patientSelect.selectedIndex = 1; // Premier patient
+            }
+            
+            return true;
+        }
+        return false;
+    }
+    
     // Recherche des patients avec une implémentation robuste
     function searchPatients() {
         const searchValue = patientSearch.value.trim();
@@ -162,84 +195,51 @@ document.addEventListener('DOMContentLoaded', function() {
         // Afficher l'état de chargement
         showStatus('<i class="fas fa-spinner fa-spin"></i> Recherche en cours...', 'info');
         
-        // Fonction de traitement des résultats
-        function processPatientResults(data) {
-            if (data.entry && data.entry.length > 0) {
-                // Vider le sélecteur de patients
-                patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
-                
-                // Ajouter les patients trouvés
-                data.entry.forEach(entry => {
-                    if (entry.resource && entry.resource.resourceType === 'Patient') {
-                        const patient = entry.resource;
-                        const name = formatPatientName(patient.name);
-                        
-                        const option = document.createElement('option');
-                        option.value = patient.id;
-                        option.textContent = `${name} (${patient.gender || '?'})`;
-                        option.dataset.patient = JSON.stringify(patient);
-                        
-                        patientSelect.appendChild(option);
-                    }
-                });
-                
-                showStatus(`<i class="fas fa-check-circle"></i> ${data.entry.length} patients trouvés`, 'success');
-                
-                // Auto-sélectionner si un seul résultat
-                if (data.entry.length === 1) {
-                    patientSelect.selectedIndex = 1; // Premier patient
-                }
-                
-                return true;
-            }
-            return false;
-        }
-        
-        // Fonction de recherche sécurisée avec XMLHttpRequest
-        function secureSearch(url, isSecondAttempt = false) {
-            console.log(`Recherche de patients: ${url}`);
-            
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', url);
-            
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        const data = JSON.parse(xhr.responseText);
-                        const hasResults = processPatientResults(data);
-                        
-                        // Si aucun résultat et c'est la première tentative, essayer une recherche plus large
-                        if (!hasResults && !isSecondAttempt) {
-                            const widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
-                            secureSearch(widerUrl, true);
-                        } else if (!hasResults) {
-                            patientSelect.innerHTML = '<option value="">-- Aucun patient trouvé --</option>';
-                            showStatus('<i class="fas fa-exclamation-circle"></i> Aucun patient trouvé', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Erreur parsing JSON:', error);
-                        patientSelect.innerHTML = '<option value="">-- Erreur de traitement des données --</option>';
-                        showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de traitement des données', 'error');
-                    }
-                } else {
-                    console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
-                    patientSelect.innerHTML = '<option value="">-- Erreur de communication avec le serveur --</option>';
-                    showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${xhr.status}`, 'error');
-                }
-            };
-            
-            xhr.onerror = function() {
-                console.error(`Erreur réseau lors de la récupération des patients: ${url}`);
-                patientSelect.innerHTML = '<option value="">-- Erreur de connexion --</option>';
-                showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de connexion au serveur', 'error');
-            };
-            
-            xhr.send();
-        }
-        
         // Commencer par la recherche sur le nom de famille avec un nombre élevé de résultats (contexte hospitalier)
         const initialUrl = `${serverUrl}/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
-        secureSearch(initialUrl);
+        secureSearch(initialUrl, searchValue, serverUrl, false);
+    }
+    
+    // Fonction de recherche sécurisée avec XMLHttpRequest
+    function secureSearch(url, searchValue, serverUrl, isSecondAttempt = false) {
+        console.log(`Recherche de patients: ${url}`);
+        
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+        
+        xhr.onload = function() {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    const hasResults = processPatientResults(data);
+                    
+                    // Si aucun résultat et c'est la première tentative, essayer une recherche plus large
+                    if (!hasResults && !isSecondAttempt) {
+                        const widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
+                        secureSearch(widerUrl, searchValue, serverUrl, true);
+                    } else if (!hasResults) {
+                        patientSelect.innerHTML = '<option value="">-- Aucun patient trouvé --</option>';
+                        showStatus('<i class="fas fa-exclamation-circle"></i> Aucun patient trouvé', 'error');
+                    }
+                } catch (error) {
+                    console.error('Erreur parsing JSON:', error);
+                    patientSelect.innerHTML = '<option value="">-- Erreur de traitement des données --</option>';
+                    showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de traitement des données', 'error');
+                }
+            } else {
+                console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
+                patientSelect.innerHTML = '<option value="">-- Erreur de communication avec le serveur --</option>';
+                showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${xhr.status}`, 'error');
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.error(`Erreur réseau lors de la récupération des patients: ${url}`);
+            patientSelect.innerHTML = '<option value="">-- Erreur de connexion --</option>';
+            showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de connexion au serveur', 'error');
+        };
+        
+        xhr.send();
     }
     
     // Effacer la recherche et toutes les données du patient précédent
