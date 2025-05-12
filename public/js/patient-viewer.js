@@ -1699,6 +1699,49 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Si des données sont déjà fournies, les utiliser directement
         if (conditionsData && conditionsData.length > 0) {
+            // Définir la fonction updateConditionsDisplay ici si elle n'existe pas encore
+            if (typeof updateConditionsDisplay !== 'function') {
+                // Définition de la fonction manquante
+                window.updateConditionsDisplay = function(conditions) {
+                    loadingSection.style.display = 'none';
+                    
+                    if (!conditions || conditions.length === 0) {
+                        noResourcesSection.style.display = 'block';
+                        resourcesList.style.display = 'none';
+                        return;
+                    }
+                    
+                    noResourcesSection.style.display = 'none';
+                    resourcesList.style.display = 'block';
+                    
+                    // Mettre à jour le tableau des conditions
+                    const tableBody = resourcesList.querySelector('tbody');
+                    if (tableBody) {
+                        tableBody.innerHTML = '';
+                        
+                        conditions.forEach(condition => {
+                            const row = document.createElement('tr');
+                            
+                            // Extraire les détails de la condition
+                            const display = condition.code?.coding?.[0]?.display || condition.code?.text || 'Non spécifié';
+                            const status = condition.clinicalStatus?.coding?.[0]?.code || 'unknown';
+                            const recordedDate = condition.recordedDate || condition.onsetDateTime || 'Non spécifiée';
+                            
+                            // Créer la ligne
+                            row.innerHTML = `
+                                <td>${display}</td>
+                                <td>${status}</td>
+                                <td>${recordedDate}</td>
+                                <td><button class="btn btn-sm btn-outline-info view-json" data-id="${condition.id}">Voir JSON</button></td>
+                            `;
+                            
+                            tableBody.appendChild(row);
+                        });
+                    }
+                }
+            }
+            
+            // Appeler la fonction d'affichage
             updateConditionsDisplay(conditionsData);
             return; // Ne pas faire d'appel API si on a déjà les données
         }
@@ -1719,12 +1762,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     const data = JSON.parse(xhr.responseText);
                     
                     if (data.entry && data.entry.length > 0) {
-                        // Stocker toutes les conditions dans la variable globale
-                        conditionsData = data.entry.map(entry => entry.resource);
-                        console.log(`${conditionsData.length} conditions chargées et stockées`);
+                        // Extraire les ressources de condition
+                        const conditions = data.entry.map(entry => entry.resource);
+                        console.log(`${conditions.length} conditions chargées`);
                         
-                        resourcesList.innerHTML = '';
-                        resourcesList.style.display = 'block';
+                        // Au lieu de stocker en variable globale, appeler directement la fonction d'affichage
+                        updateConditionsDisplay(conditions);
                         
                         // Créer une liste de conditions
                         const conditionsList = document.createElement('div');
