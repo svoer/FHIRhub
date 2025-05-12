@@ -274,22 +274,8 @@
       // Configurer la fonctionnalité de déplacement des widgets
       setupWidgetDragSave();
       
-      // Ajouter le gestionnaire d'événement pour le bouton de rafraîchissement
-      const refreshStatsBtn = document.getElementById('refreshStatsBtn');
-      if (refreshStatsBtn) {
-        refreshStatsBtn.addEventListener('click', function() {
-          // Ajouter une classe pour l'animation de rotation
-          this.classList.add('refreshing');
-          
-          // Rafraîchir les statistiques
-          fetchStats();
-          
-          // Retirer la classe après l'animation
-          setTimeout(() => {
-            this.classList.remove('refreshing');
-          }, 1000);
-        });
-      }
+      // Le bouton de rafraîchissement a été supprimé et remplacé par l'icône de synchronisation
+      // dans l'en-tête, qui s'actualise automatiquement grâce à l'intervalle défini
       
       // Ajouter le gestionnaire d'événement pour le bouton de réinitialisation
       const resetStatsBtn = document.getElementById('resetStatsBtn');
