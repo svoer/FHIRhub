@@ -1568,15 +1568,15 @@ class FHIRHubClient:
             self.logger.error(f"Erreur lors de la récupération des processus: {e}")
             raise
     
-    def execute_workflow(self, workflow_id: int, 
+    def execute_process(self, process_id: int, 
                          input_data: Dict[str, Any], 
                          params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Exécute un workflow spécifique
+        Exécute un processus spécifique
         
         Args:
-            workflow_id: ID du workflow à exécuter
-            input_data: Données d'entrée pour le workflow
+            process_id: ID du processus à exécuter
+            input_data: Données d'entrée pour le processus
             params: Paramètres supplémentaires
             
         Returns:
@@ -1586,7 +1586,7 @@ class FHIRHubClient:
             requests.HTTPError: En cas d'erreur HTTP
             ValueError: En cas d'erreur d'exécution
         """
-        url = f"{self.base_url}/api/workflows/execute/{workflow_id}"
+        url = f"{self.base_url}/api/processus/execute/{process_id}"
         headers = self._get_headers()
         
         payload = {
@@ -1596,7 +1596,7 @@ class FHIRHubClient:
         if params:
             payload["params"] = params
         
-        self.logger.info(f"Exécution du workflow {workflow_id}")
+        self.logger.info(f"Exécution du processus {process_id}")
         
         try:
             response = requests.post(url, headers=headers, json=payload)
@@ -1605,18 +1605,18 @@ class FHIRHubClient:
             result = response.json()
             
             if result.get("success"):
-                self.logger.info(f"Workflow {workflow_id} exécuté avec succès")
+                self.logger.info(f"Processus {process_id} exécuté avec succès")
                 return result
             else:
                 error_msg = result.get("message", "Erreur inconnue")
-                self.logger.error(f"Échec d'exécution du workflow: {error_msg}")
+                self.logger.error(f"Échec d'exécution du processus: {error_msg}")
                 raise ValueError(error_msg)
                 
         except requests.HTTPError as e:
-            self.logger.error(f"Erreur HTTP lors de l'exécution du workflow: {e}")
+            self.logger.error(f"Erreur HTTP lors de l'exécution du processus: {e}")
             raise
         except Exception as e:
-            self.logger.error(f"Erreur lors de l'exécution du workflow: {e}")
+            self.logger.error(f"Erreur lors de l'exécution du processus: {e}")
             raise
 
 # Exemple d'utilisation
