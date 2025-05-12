@@ -1317,10 +1317,10 @@ class FHIRHubClient {
     }
   }
   
-  // Exemple d'utilisation des workflows
-  async executeWorkflow(workflowId, input, params = {}) {
+  // Exemple d'utilisation des processus
+  async executeProcess(processId, input, params = {}) {
     try {
-      const response = await fetch(`${this.baseUrl}/api/workflows/execute/${workflowId}`, {
+      const response = await fetch(`${this.baseUrl}/api/processus/execute/${processId}`, {
         method: 'POST',
         headers: this.getAuthHeaders(),
         body: JSON.stringify({ input, params })
@@ -1333,7 +1333,7 @@ class FHIRHubClient {
       
       return await response.json();
     } catch (error) {
-      console.error(`Erreur lors de l'exécution du workflow ${workflowId}:`, error);
+      console.error(`Erreur lors de l'exécution du processus ${processId}:`, error);
       throw error;
     }
   }
@@ -1536,36 +1536,36 @@ class FHIRHubClient:
             self.logger.error(f"Erreur lors de la conversion: {e}")
             raise
     
-    def get_workflows(self) -> List[Dict[str, Any]]:
+    def get_processes(self) -> List[Dict[str, Any]]:
         """
-        Récupère la liste des workflows disponibles
+        Récupère la liste des processus disponibles
         
         Returns:
-            List[Dict[str, Any]]: Liste des workflows
+            List[Dict[str, Any]]: Liste des processus
             
         Raises:
             requests.HTTPError: En cas d'erreur HTTP
         """
-        url = f"{self.base_url}/api/workflows"
+        url = f"{self.base_url}/api/processus"
         headers = self._get_headers()
         
-        self.logger.info("Récupération des workflows")
+        self.logger.info("Récupération des processus")
         
         try:
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             
             result = response.json()
-            workflows = result.get("data", [])
+            processes = result.get("data", [])
             
-            self.logger.info(f"{len(workflows)} workflows récupérés")
-            return workflows
+            self.logger.info(f"{len(processes)} processus récupérés")
+            return processes
             
         except requests.HTTPError as e:
-            self.logger.error(f"Erreur HTTP lors de la récupération des workflows: {e}")
+            self.logger.error(f"Erreur HTTP lors de la récupération des processus: {e}")
             raise
         except Exception as e:
-            self.logger.error(f"Erreur lors de la récupération des workflows: {e}")
+            self.logger.error(f"Erreur lors de la récupération des processus: {e}")
             raise
     
     def execute_workflow(self, workflow_id: int, 
