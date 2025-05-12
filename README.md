@@ -49,8 +49,8 @@ bash ./install.sh
 # Télécharger les dépendances volumineuses (HAPI FHIR, terminologies françaises)
 bash ./download-dependencies.sh
 
-# Démarrer l'application
-npm start
+# Démarrer l'application (démarre automatiquement HAPI FHIR et FHIRHub)
+bash ./start.sh
 ```
 
 ### Installation Docker
@@ -60,9 +60,22 @@ npm start
 git clone https://github.com/votre-organisation/fhirhub.git
 cd fhirhub
 
-# Démarrer l'application avec Docker
+# Initialiser l'environnement Docker
+bash ./docker-init-simple.sh
+
+# Démarrer l'application avec Docker (intègre HAPI FHIR)
 docker-compose up -d
 ```
+
+### Architecture intégrée "tout-en-un"
+
+FHIRHub intègre désormais le serveur HAPI FHIR de manière transparente :
+
+- En mode standalone, `start.sh` lance automatiquement le serveur HAPI FHIR en arrière-plan
+- En mode Docker, le serveur HAPI FHIR est intégré dans le même conteneur que l'application principale
+- Les données du serveur HAPI FHIR sont stockées dans des volumes dédiés pour assurer leur persistance
+
+Cette approche simplifie considérablement le déploiement tout en maintenant une séparation logique des données pour faciliter la maintenance et les mises à jour.
 
 ## Accès à l'application
 

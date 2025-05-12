@@ -782,6 +782,14 @@ EOF
   fi
 fi
 
+# Afficher un message pour l'architecture intégrée "tout-en-un"
+echo -e "${CYAN}=====================================================================${NC}"
+echo -e "${GREEN}✅ Architecture intégrée \"tout-en-un\" activée :${NC}"
+echo -e "${GREEN}   ✓ Serveur HAPI FHIR en cours d'exécution sur: http://localhost:8080/fhir${NC}"
+echo -e "${GREEN}   ✓ Application FHIRHub prête à démarrer sur: http://localhost:5001${NC}"
+echo -e "${CYAN}=====================================================================${NC}"
+echo -e "${BLUE}Démarrage de l'application principale...${NC}"
+
 # Démarrage avec le Node.js approprié et PORT forcé à 5001
 export PORT=5001
 $NODE_CMD app.js
