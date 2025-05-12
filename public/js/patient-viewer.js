@@ -291,6 +291,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Charger les détails d'un patient et ses ressources associées
+    async function fetchPatientEverything(serverUrl, patientId) {
+        const url = `${serverUrl}/Patient/${patientId}/$everything?_count=1000`;
+        try {
+            showStatus('Récupération de toutes les données médicales...', 'info');
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`Erreur ${res.status} sur $everything`);
+            const bundle = await res.json();
+            showStatus('Données médicales complètes récupérées avec succès', 'success');
+            return bundle;
+        } catch (error) {
+            console.warn("Échec de l'opération $everything:", error);
+            throw error;
+        }
+    }
+    
+    function groupByType(bundle) {
+        const byType = {};
+        if (!bundle.entry || !Array.isArray(bundle.entry)) {
+            return byType;
+        }
+        
+        bundle.entry.forEach(entry => {
+            if (entry.resource && entry.resource.resourceType) {
+                const type = entry.resource.resourceType;
+                byType[type] = byType[type] || [];
+                byType[type].push(entry.resource);
+            }
+        });
+        
+        return byType;
+    }
+    
     function loadPatient() {
         if (!patientSelect.value) {
             alert('Veuillez sélectionner un patient');
@@ -315,110 +347,136 @@ document.addEventListener('DOMContentLoaded', function() {
             // Afficher le conteneur de patient
             document.getElementById('patientContainer').style.display = 'block';
             
-            // Afficher un status de chargement
-            showStatus('Chargement de toutes les données médicales du patient...', 'info');
+            // Fonction centralisée pour charger toutes les données
+            loadAllPatientData(server, patientId);
+        } catch (error) {
+            console.error("Erreur lors du chargement initial du patient:", error);
+            showStatus("Erreur lors du chargement du patient", 'error');
+        }
+    }
+    
+    async function loadAllPatientData(serverUrl, patientId) {
+        try {
+            // Tenter d'abord la méthode $everything
+            const bundle = await fetchPatientEverything(serverUrl, patientId);
             
-            // Tenter de charger toutes les ressources en une seule requête avec $everything
-            fetch(`${server}/Patient/${patientId}/$everything`)
-                .then(response => {
-                    if (!response.ok) {
-                        // Si $everything n'est pas supporté, on utilise l'approche traditionnelle
-                        console.warn("L'opération $everything n'est pas supportée, chargement individuel des ressources");
-                        throw new Error("$everything non supporté");
-                    }
-                    return response.json();
-                })
-                .then(bundle => {
-                    console.log("Bundle complet récupéré via $everything:", bundle);
-                    showStatus('Chargement complet des données réussi via $everything', 'success');
-                    
-                    // Traiter le bundle et extraire les différentes ressources par type
-                    if (bundle.entry && bundle.entry.length > 0) {
-                        // Grouper les ressources par type
-                        const resourcesByType = {};
-                        
-                        bundle.entry.forEach(entry => {
-                            if (entry.resource) {
-                                const type = entry.resource.resourceType;
-                                if (!resourcesByType[type]) {
-                                    resourcesByType[type] = [];
-                                }
-                                resourcesByType[type].push(entry.resource);
-                            }
-                        });
-                        
-                        // Mettre à jour tous les onglets en fonction des données disponibles
-                        if (resourcesByType.Condition) {
-                            conditionsData = resourcesByType.Condition;
-                            updateConditionsTab(conditionsData);
-                        }
-                        
-                        if (resourcesByType.Observation) {
-                            observationsData = resourcesByType.Observation;
-                            updateObservationsTab(observationsData);
-                        }
-                        
-                        if (resourcesByType.MedicationRequest) {
-                            medicationsData = resourcesByType.MedicationRequest;
-                            updateMedicationsTab(medicationsData);
-                        }
-                        
-                        if (resourcesByType.Encounter) {
-                            encountersData = resourcesByType.Encounter;
-                            updateEncountersTab(encountersData);
-                        }
-                        
-                        if (resourcesByType.Practitioner) {
-                            practitionersData = resourcesByType.Practitioner;
-                            updatePractitionersTab(practitionersData);
-                        }
-                        
-                        if (resourcesByType.Organization) {
-                            organizationsData = resourcesByType.Organization;
-                            updateOrganizationsTab(organizationsData);
-                        }
-                        
-                        if (resourcesByType.RelatedPerson) {
-                            relatedPersonsData = resourcesByType.RelatedPerson;
-                            updateRelatedPersonsTab(relatedPersonsData);
-                        }
-                        
-                        if (resourcesByType.Coverage) {
-                            coverageData = resourcesByType.Coverage;
-                            updateCoverageTab(coverageData);
-                        }
-                        
-                        // Mettre à jour l'onglet bundle avec les données complètes
-                        bundleData = bundle;
-                        updateBundleView(bundle);
-                        
-                        // Générer la chronologie à partir des données du bundle
-                        generateTimelineFromBundle(bundle);
-                    } else {
-                        showStatus('Le bundle est vide ou mal formaté, utilisation de la méthode traditionnelle', 'warning');
-                        loadResourcesTraditionnally();
-                    }
-                })
-                .catch(error => {
-                    console.error("Erreur avec $everything:", error);
-                    loadResourcesTraditionnally();
-                });
-                
-            // Fonction pour charger les ressources de façon traditionnelle
-            function loadResourcesTraditionnally() {
-                showStatus('Chargement individuel des ressources...', 'info');
-                // Charger toutes les ressources associées au patient individuellement
-                loadPatientConditions(patientId, server);
-                loadPatientObservations(patientId, server);
-                loadPatientMedications(patientId, server);
-                loadPatientEncounters(patientId, server);
-                loadPatientPractitioners(patientId, server);
-                loadPatientOrganizations(patientId, server);
-                loadPatientRelatedPersons(patientId, server);
-                loadPatientCoverage(patientId, server);
-                generateTimeline(patientId, server);
-                loadPatientBundle(patientId, server);
+            // Traiter le bundle et extraire les ressources par type
+            const resourcesByType = groupByType(bundle);
+            
+            console.log("Types de ressources trouvés:", Object.keys(resourcesByType).join(", "));
+            console.log("Ressources par type:", Object.entries(resourcesByType).map(([k, v]) => `${k}: ${v.length}`));
+            
+            // Stocker et afficher chaque type de ressource
+            if (resourcesByType.Condition) {
+                conditionsData = resourcesByType.Condition;
+                updateConditionsTab(conditionsData);
             }
+            
+            if (resourcesByType.Observation) {
+                observationsData = resourcesByType.Observation;
+                updateObservationsTab(observationsData);
+            }
+            
+            if (resourcesByType.MedicationRequest) {
+                medicationsData = resourcesByType.MedicationRequest;
+                updateMedicationsTab(medicationsData);
+            }
+            
+            if (resourcesByType.Encounter) {
+                encountersData = resourcesByType.Encounter;
+                updateEncountersTab(encountersData);
+            }
+            
+            if (resourcesByType.Practitioner) {
+                practitionersData = resourcesByType.Practitioner;
+                updatePractitionersTab(practitionersData);
+            }
+            
+            if (resourcesByType.Organization) {
+                organizationsData = resourcesByType.Organization;
+                updateOrganizationsTab(organizationsData);
+            }
+            
+            if (resourcesByType.RelatedPerson) {
+                relatedPersonsData = resourcesByType.RelatedPerson;
+                updateRelatedPersonsTab(relatedPersonsData);
+            }
+            
+            if (resourcesByType.Coverage) {
+                coverageData = resourcesByType.Coverage;
+                updateCoverageTab(coverageData);
+            }
+            
+            // Stocker le bundle complet
+            bundleData = bundle;
+            
+            // Mettre à jour l'onglet Bundle avec toutes les ressources
+            updateBundleView(bundle);
+            
+            // Générer la chronologie à partir de toutes les ressources temporelles
+            generateTimelineFromBundle(bundle);
+            
+            // Mettre à jour l'onglet JSON
+            updateJsonView();
+            
+            showStatus(`${bundle.entry ? bundle.entry.length : 0} ressources chargées avec succès`, 'success');
+            
+        } catch (error) {
+            console.error("Erreur lors du chargement via $everything:", error);
+            showStatus("Échec de $everything, chargement par ressources individuelles", 'warning');
+            
+            // Méthode de secours : chargement traditionnel par type de ressource
+            try {
+                await loadResourcesTraditionnally(serverUrl, patientId);
+            } catch (fallbackError) {
+                console.error("Échec total du chargement des données:", fallbackError);
+                showStatus("Erreur critique lors du chargement des données", 'error');
+            }
+        }
+    }
+    
+    async function loadResourcesTraditionnally(serverUrl, patientId) {
+        // Version asynchrone pour avoir une meilleure gestion des erreurs
+        showStatus('Chargement individuel des ressources...', 'info');
+        
+        try {
+            // On utilise Promise.allSettled pour continuer même si certaines requêtes échouent
+            const results = await Promise.allSettled([
+                loadPatientConditions(patientId, serverUrl),
+                loadPatientObservations(patientId, serverUrl),
+                loadPatientMedications(patientId, serverUrl),
+                loadPatientEncounters(patientId, serverUrl),
+                loadPatientPractitioners(patientId, serverUrl),
+                loadPatientOrganizations(patientId, serverUrl),
+                loadPatientRelatedPersons(patientId, serverUrl),
+                loadPatientCoverage(patientId, serverUrl)
+            ]);
+            
+            // Compter les succès et les échecs
+            const successes = results.filter(r => r.status === 'fulfilled').length;
+            const failures = results.filter(r => r.status === 'rejected').length;
+            
+            // Générer la chronologie
+            generateTimeline(patientId, serverUrl);
+            
+            // Charger le bundle manuellement
+            loadPatientBundle(patientId, serverUrl);
+            
+            // Mise à jour de l'affichage JSON
+            updateJsonView();
+            
+            // Rapport de statut
+            if (failures === 0) {
+                showStatus(`Chargement traditionnel réussi: ${successes} types de ressources chargés`, 'success');
+            } else {
+                showStatus(`Chargement partiel: ${successes} types de ressources chargés, ${failures} échecs`, 'warning');
+            }
+        } catch (error) {
+            console.error("Erreur générale lors du chargement traditionnel:", error);
+            showStatus("Erreur lors du chargement des ressources", 'error');
+            throw error;
+        }
+    }
             
             // Fonction pour générer une chronologie à partir d'un bundle
             function generateTimelineFromBundle(bundle) {
