@@ -1631,6 +1631,7 @@ app.get('/api/fhir/test-server', async (req, res) => {
 app.use('/api/patient-viewer', patientViewerRoutes);  // Visualisation des dossiers patients
 app.use('/api/fhir-search', fhirSearchRoutes);  // Recherche intelligente
 app.use('/api/fhir-ai', fhirAiRoutes);  // Intégration d'IA avec FHIR (multi-fournisseurs)
+app.use('/api/fhir-push-bundle', require('./routes/fhir-push-bundle'));  // Envoi direct de bundles FHIR vers le serveur
 // Route pour la page d'accueil de la documentation API (sans animation/clignotement)
 app.get('/api-documentation', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/api-docs-landing.html'));
