@@ -453,21 +453,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonctions pour charger les ressources liées au patient
     function loadPatientConditions(patientId, serverUrl) {
-        const container = document.querySelector('#conditionsContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
-        
-        // Réinitialiser les données des conditions
-        conditionsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
-        
-        // URL de la requête FHIR (limite augmentée à 1000 pour avoir toutes les données)
-        const url = `${serverUrl}/Condition?patient=${patientId}&_sort=-recorded-date&_count=1000`;
-        console.log(`Chargement des conditions depuis: ${url}`);
+        return new Promise((resolve, reject) => {
+            const container = document.querySelector('#conditionsContent');
+            const loadingSection = container.querySelector('.loading-resources');
+            const noResourcesSection = container.querySelector('.no-resources');
+            const resourcesList = container.querySelector('.resources-list');
+            
+            // Réinitialiser les données des conditions
+            conditionsData = [];
+            
+            loadingSection.style.display = 'block';
+            noResourcesSection.style.display = 'none';
+            resourcesList.style.display = 'none';
+            
+            // URL de la requête FHIR avec format correct pour référence patient (limite augmentée à 100)
+            const url = `${serverUrl}/Condition?subject=Patient/${patientId}&_sort=-recorded-date&_count=100`;
+            console.log(`Chargement des conditions depuis: ${url}`);
         
         // Utiliser XMLHttpRequest pour une meilleure compatibilité et gestion d'erreurs
         const xhr = new XMLHttpRequest();
@@ -533,38 +534,53 @@ document.addEventListener('DOMContentLoaded', function() {
                 } catch (error) {
                     console.error('Erreur parsing JSON conditions:', error);
                     noResourcesSection.style.display = 'block';
+                    reject(error);
                 }
             } else {
                 console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
                 noResourcesSection.style.display = 'block';
+                reject(new Error(`Problème de récupération des conditions: ${xhr.status}`));
             }
+            resolve(conditionsData);
         };
         
         xhr.onerror = function() {
             console.error(`Erreur réseau lors de la récupération des conditions: ${url}`);
             loadingSection.style.display = 'none';
             noResourcesSection.style.display = 'block';
+            reject(new Error("Erreur réseau lors de la récupération des conditions"));
         };
         
         xhr.send();
+        });  // Fermeture de la Promise
     }
     
     function loadPatientObservations(patientId, serverUrl) {
-        const container = document.querySelector('#observationsContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
-        
-        // Réinitialiser les données des observations
-        observationsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
-        
-        // Exécuter la requête FHIR pour récupérer les observations (limite augmentée à 1000 pour avoir toutes les données)
-        fetch(`${serverUrl}/Observation?patient=${patientId}&_sort=-date&_count=1000`)
-            .then(response => response.json())
+        return new Promise((resolve, reject) => {
+            const container = document.querySelector('#observationsContent');
+            const loadingSection = container.querySelector('.loading-resources');
+            const noResourcesSection = container.querySelector('.no-resources');
+            const resourcesList = container.querySelector('.resources-list');
+            
+            // Réinitialiser les données des observations
+            observationsData = [];
+            
+            loadingSection.style.display = 'block';
+            noResourcesSection.style.display = 'none';
+            resourcesList.style.display = 'none';
+            
+            // URL de la requête FHIR avec format correct pour référence patient (limite à 100)
+            const url = `${serverUrl}/Observation?subject=Patient/${patientId}&_sort=-date&_count=100`;
+            console.log(`Chargement des observations depuis: ${url}`);
+            
+            // Exécuter la requête FHIR pour récupérer les observations
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erreur de récupération des observations: ${response.status}`);
+                    }
+                    return response.json();
+                })
             .then(data => {
                 loadingSection.style.display = 'none';
                 
