@@ -162,89 +162,84 @@ document.addEventListener('DOMContentLoaded', function() {
         // Afficher l'état de chargement
         showStatus('<i class="fas fa-spinner fa-spin"></i> Recherche en cours...', 'info');
         
-        // Envoyer une requête FHIR pour trouver les patients
-        fetch(`${serverUrl}/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.entry && data.entry.length > 0) {
-                    // Vider le sélecteur de patients
-                    patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
-                    
-                    // Ajouter les patients trouvés
-                    data.entry.forEach(entry => {
-                        if (entry.resource && entry.resource.resourceType === 'Patient') {
-                            const patient = entry.resource;
-                            const name = formatPatientName(patient.name);
-                            
-                            const option = document.createElement('option');
-                            option.value = patient.id;
-                            option.textContent = `${name} (${patient.gender || '?'})`;
-                            option.dataset.patient = JSON.stringify(patient);
-                            
-                            patientSelect.appendChild(option);
-                        }
-                    });
-                    
-                    showStatus(`<i class="fas fa-check-circle"></i> ${data.entry.length} patients trouvés`, 'success');
-                    
-                    // Auto-sélectionner si un seul résultat
-                    if (data.entry.length === 1) {
-                        patientSelect.selectedIndex = 1; // Premier patient
+        // Fonction de traitement des résultats
+        function processPatientResults(data) {
+            if (data.entry && data.entry.length > 0) {
+                // Vider le sélecteur de patients
+                patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
+                
+                // Ajouter les patients trouvés
+                data.entry.forEach(entry => {
+                    if (entry.resource && entry.resource.resourceType === 'Patient') {
+                        const patient = entry.resource;
+                        const name = formatPatientName(patient.name);
+                        
+                        const option = document.createElement('option');
+                        option.value = patient.id;
+                        option.textContent = `${name} (${patient.gender || '?'})`;
+                        option.dataset.patient = JSON.stringify(patient);
+                        
+                        patientSelect.appendChild(option);
                     }
-                    
-                    return true;
-                } else {
-                    // Si aucun résultat, essayer une recherche plus large
-                    return fetch(`${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`Erreur HTTP: ${response.status}`);
-                            }
-                            return response.json();
-                        })
-                        .then(widerData => {
-                            if (widerData.entry && widerData.entry.length > 0) {
-                                // Vider le sélecteur de patients
-                                patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
-                                
-                                // Ajouter les patients trouvés
-                                widerData.entry.forEach(entry => {
-                                    if (entry.resource && entry.resource.resourceType === 'Patient') {
-                                        const patient = entry.resource;
-                                        const name = formatPatientName(patient.name);
-                                        
-                                        const option = document.createElement('option');
-                                        option.value = patient.id;
-                                        option.textContent = `${name} (${patient.gender || '?'})`;
-                                        option.dataset.patient = JSON.stringify(patient);
-                                        
-                                        patientSelect.appendChild(option);
-                                    }
-                                });
-                                
-                                showStatus(`<i class="fas fa-check-circle"></i> ${widerData.entry.length} patients trouvés avec la recherche élargie`, 'success');
-                                
-                                // Auto-sélectionner si un seul résultat
-                                if (widerData.entry.length === 1) {
-                                    patientSelect.selectedIndex = 1; // Premier patient
-                                }
-                            } else {
-                                patientSelect.innerHTML = '<option value="">-- Aucun patient trouvé --</option>';
-                                showStatus('<i class="fas fa-exclamation-circle"></i> Aucun patient trouvé', 'error');
-                            }
-                        });
+                });
+                
+                showStatus(`<i class="fas fa-check-circle"></i> ${data.entry.length} patients trouvés`, 'success');
+                
+                // Auto-sélectionner si un seul résultat
+                if (data.entry.length === 1) {
+                    patientSelect.selectedIndex = 1; // Premier patient
                 }
-            })
-            .catch(error => {
-                console.error('Erreur lors de la recherche:', error);
-                patientSelect.innerHTML = '<option value="">-- Erreur de communication avec le serveur --</option>';
-                showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${error.message}`, 'error');
-            });
+                
+                return true;
+            }
+            return false;
+        }
+        
+        // Fonction de recherche sécurisée avec XMLHttpRequest
+        function secureSearch(url, isSecondAttempt = false) {
+            console.log(`Recherche de patients: ${url}`);
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url);
+            
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        const hasResults = processPatientResults(data);
+                        
+                        // Si aucun résultat et c'est la première tentative, essayer une recherche plus large
+                        if (!hasResults && !isSecondAttempt) {
+                            const widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
+                            secureSearch(widerUrl, true);
+                        } else if (!hasResults) {
+                            patientSelect.innerHTML = '<option value="">-- Aucun patient trouvé --</option>';
+                            showStatus('<i class="fas fa-exclamation-circle"></i> Aucun patient trouvé', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Erreur parsing JSON:', error);
+                        patientSelect.innerHTML = '<option value="">-- Erreur de traitement des données --</option>';
+                        showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de traitement des données', 'error');
+                    }
+                } else {
+                    console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
+                    patientSelect.innerHTML = '<option value="">-- Erreur de communication avec le serveur --</option>';
+                    showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${xhr.status}`, 'error');
+                }
+            };
+            
+            xhr.onerror = function() {
+                console.error(`Erreur réseau lors de la récupération des patients: ${url}`);
+                patientSelect.innerHTML = '<option value="">-- Erreur de connexion --</option>';
+                showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de connexion au serveur', 'error');
+            };
+            
+            xhr.send();
+        }
+        
+        // Commencer par la recherche sur le nom de famille avec un nombre élevé de résultats (contexte hospitalier)
+        const initialUrl = `${serverUrl}/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
+        secureSearch(initialUrl);
     }
     
     // Effacer la recherche et toutes les données du patient précédent
@@ -969,6 +964,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Stocker le bundle pour référence, mais ne pas l'afficher dans l'onglet Bundle
                         // pour éviter la duplication avec les onglets spécifiques
                         bundleData = bundle;
+                        
+                        // Générer la chronologie à partir des données du bundle
+                        generateTimelineFromBundle(bundle);
                     } else {
                         showStatus('Le bundle est vide ou mal formaté, utilisation de la méthode traditionnelle', 'warning');
                         loadResourcesTraditionnally();
@@ -2185,86 +2183,27 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Méthode principale: Utiliser l'opération $everything pour tout récupérer en une seule requête
+        // On récupère directement le bundle associé au patient, incluant les références
         fetch(`${serverUrl}/Patient/${patientId}/$everything?_count=100&_include=*`)
             .then(response => {
                 if (!response.ok) {
-                    throw new Error(`Erreur avec $everything: ${response.status}`);
+                    throw new Error(`Erreur de récupération du bundle: ${response.status}`);
                 }
                 return response.json();
             })
             .then(data => {
-                console.log("Bundle récupéré via $everything:", data);
+                // Stocker le bundle pour référence future
                 bundleData = data;
                 processBundle(data);
             })
             .catch(error => {
-                console.warn('Échec de $everything, tentative avec méthode alternative:', error);
-                // Méthode de secours: Récupérer les ressources type par type
-                fetchResourcesManually(patientId);
-            });
-            
-        // Fonction qui récupère manuellement les ressources clés
-        async function fetchResourcesManually(patientId) {
-            try {
-                // Créer un nouveau bundle pour stocker toutes les ressources
-                let bundle = {
-                    resourceType: "Bundle",
-                    type: "collection",
-                    id: `manual-${Date.now()}`,
-                    entry: []
-                };
-                
-                // Récupérer d'abord le patient lui-même
-                const patientResponse = await fetch(`${serverUrl}/Patient/${patientId}`);
-                if (patientResponse.ok) {
-                    const patient = await patientResponse.json();
-                    bundle.entry.push({ resource: patient });
-                    
-                    // Afficher un message indiquant l'utilisation de la méthode alternative
-                    console.log("Patient récupéré, maintenant chargement des ressources associées...");
-                    showStatus("Chargement alternatif des ressources...", "info");
-                }
-                
-                // Récupérer toutes les ressources associées
-                const resourceTypes = [
-                    "Condition", "Observation", "MedicationRequest", 
-                    "Encounter", "Practitioner", "Organization",
-                    "RelatedPerson", "Coverage"
-                ];
-                
-                for (const type of resourceTypes) {
-                    try {
-                        const response = await fetch(`${serverUrl}/${type}?patient=${patientId}`);
-                        if (response.ok) {
-                            const data = await response.json();
-                            if (data.entry && data.entry.length > 0) {
-                                bundle.entry = bundle.entry.concat(data.entry);
-                                console.log(`Ajout de ${data.entry.length} ressources de type ${type}`);
-                            }
-                        }
-                    } catch (e) {
-                        console.warn(`Erreur lors de la récupération des ${type}:`, e);
-                    }
-                }
-                
-                // Si nous avons trouvé des ressources, traiter le bundle
-                if (bundle.entry.length > 0) {
-                    console.log("Bundle créé manuellement avec " + bundle.entry.length + " ressources");
-                    bundleData = bundle;
-                    processBundle(bundle);
-                } else {
-                    throw new Error("Aucune ressource trouvée");
-                }
-            } catch (error) {
-                console.error("Échec de la récupération manuelle des ressources:", error);
+                console.error('Erreur lors du chargement du bundle:', error);
                 if (loadingSection) loadingSection.style.display = 'none';
                 if (noResourcesSection) {
                     noResourcesSection.style.display = 'block';
                     if (bundleInfo) bundleInfo.innerHTML = `Erreur: ${error.message}`;
                 }
-            }
-        }
+            });
             
         // Fonction interne pour traiter et afficher le bundle
         function processBundle(data) {
