@@ -1500,6 +1500,33 @@ const aiFhirAnalyzeRoutes = require('./routes/ai-fhir-analyze'); // Analyse FHIR
 // Enregistrement des routes
 app.use('/api/applications', applicationsRoutes);
 app.use('/applications', applicationViewsRoutes);  // Nouveau router pour les vues des applications
+// Route directe pour le comptage des clés API
+app.get('/api/api-keys/count', (req, res) => {
+  try {
+    const result = db.prepare('SELECT COUNT(*) as count FROM api_keys').get();
+    
+    // Si reset est demandé, retourner 0
+    if (req.query.reset === 'true') {
+      return res.json({
+        success: true,
+        count: 0
+      });
+    }
+    
+    res.json({
+      success: true,
+      count: result ? result.count : 0
+    });
+  } catch (error) {
+    console.error('[API] Erreur lors du comptage des clés API:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur de comptage des clés API',
+      count: 0
+    });
+  }
+});
+
 app.use('/api/api-keys', apiKeysRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/auth', authRoutes);
