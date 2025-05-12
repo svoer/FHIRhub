@@ -385,9 +385,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Mettre à jour tous les onglets en fonction des données disponibles
                         if (resourcesByType.Condition) {
                             conditionsData = resourcesByType.Condition;
-                            // Mettre à jour l'onglet des conditions avec la fonction générique d'affichage de ressources
-                            displayConditions(conditionsData);
-                            console.log(`${conditionsData.length} conditions chargées et affichées`);
+                            // Plutôt que d'appeler une fonction spécifique, utiliser directement le code complet ici
+                            loadPatientConditions(patientId, serverUrl, conditionsData);
+                            console.log(`${conditionsData.length} conditions chargées et stockées`);
                         }
                         
                         if (resourcesByType.Observation) {
@@ -1684,18 +1684,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Fonctions pour charger les ressources liées au patient
-    function loadPatientConditions(patientId, serverUrl) {
+    function loadPatientConditions(patientId, serverUrl, conditionsData = null) {
         const container = document.querySelector('#conditionsContent');
         const loadingSection = container.querySelector('.loading-resources');
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
         
-        // Réinitialiser les données des conditions
-        conditionsData = [];
+        // Ne plus réinitialiser les données globales
+        // Utiliser uniquement les données passées en paramètre ou charger depuis l'API
         
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
+        
+        // Si des données sont déjà fournies, les utiliser directement
+        if (conditionsData && conditionsData.length > 0) {
+            updateConditionsDisplay(conditionsData);
+            return; // Ne pas faire d'appel API si on a déjà les données
+        }
         
         // URL de la requête FHIR (limite augmentée à 1000 pour avoir toutes les données)
         const url = `${serverUrl}/Condition?patient=${patientId}&_sort=-recorded-date&_count=1000`;
