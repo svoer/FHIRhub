@@ -349,7 +349,27 @@
         refreshIcon.classList.add('fa-spin');
         
         // Appeler la fonction de mise à jour des données
-        fetchAndUpdateCharts();
+        if (typeof window.fetchAndUpdateCharts === 'function') {
+          console.log("Utilisation de window.fetchAndUpdateCharts");
+          window.fetchAndUpdateCharts();
+        } else {
+          console.warn("La fonction fetchAndUpdateCharts n'est pas disponible globalement, recherche d'alternatives...");
+          
+          // Tentative d'utiliser la fonction depuis simple-charts.js
+          fetch('/api/stats?t=' + Date.now(), { 
+            headers: { 'Cache-Control': 'no-cache' }
+          })
+          .then(response => response.json())
+          .then(data => {
+            console.log("Données rafraîchies récupérées directement:", data);
+            if (typeof window.updateAllCharts === 'function') {
+              window.updateAllCharts(data);
+            } else {
+              console.error("Aucune fonction de mise à jour des graphiques n'est disponible");
+            }
+          })
+          .catch(error => console.error("Erreur lors du rafraîchissement manuel:", error));
+        }
         
         // Arrêter la rotation après un délai
         setTimeout(() => {
@@ -553,7 +573,26 @@
         safeSetText('#resourceCount .counter', "0");
         
         // Réinitialiser les graphiques immédiatement de façon complète
-        resetAllCharts();
+        console.log("Tentative de réinitialisation des graphiques...");
+        if (typeof window.resetAllCharts === 'function') {
+          console.log("Utilisation de window.resetAllCharts");
+          window.resetAllCharts();
+        } else if (typeof resetAllCharts === 'function') {
+          console.log("Utilisation de resetAllCharts local");
+          resetAllCharts();
+        } else {
+          console.warn("Fonction resetAllCharts non disponible, tentative d'utiliser une approche alternative");
+          // Approche alternative pour réinitialiser les graphiques
+          if (window.charts) {
+            console.log("Réinitialisation par objet charts global");
+            Object.keys(window.charts).forEach(key => {
+              const chart = window.charts[key];
+              if (chart && typeof chart.destroy === 'function') {
+                chart.destroy();
+              }
+            });
+          }
+        }
         
         // Afficher un indicateur de chargement
         const loadingDiv = document.createElement('div');
