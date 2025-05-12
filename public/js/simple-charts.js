@@ -84,12 +84,29 @@ function initializeAllChartsImpl() {
       return;
     }
     
+    // Fonction pour obtenir un élément canvas avec plusieurs IDs alternatifs possibles
+    function getCanvasElement(primaryId, alternativeIds = []) {
+      let element = document.getElementById(primaryId);
+      if (!element && alternativeIds.length > 0) {
+        // Si l'élément principal n'est pas trouvé, essayer les alternatives
+        for (const altId of alternativeIds) {
+          element = document.getElementById(altId);
+          if (element) {
+            console.log(`Canvas ${primaryId} non trouvé, utilisation de l'alternative ${altId}`);
+            break;
+          }
+        }
+      }
+      return element;
+    }
+
     // Vérifier que les éléments canvas existent
-    const memoryCanvas = document.getElementById('memoryChart');
-    const conversionTrendCanvas = document.getElementById('conversionTrendChart');
-    const resourceDistCanvas = document.getElementById('resourceDistChart');
-    const successRateCanvas = document.getElementById('successRateChart');
-    const messageTypesCanvas = document.getElementById('messageTypesChart');
+    const memoryCanvas = getCanvasElement('memoryChart');
+    const conversionTrendCanvas = getCanvasElement('conversionTrendChart');
+    // Chercher resourceDistChart ou l'alternative resourceDistributionChart
+    const resourceDistCanvas = getCanvasElement('resourceDistChart', ['resourceDistributionChart']);
+    const successRateCanvas = getCanvasElement('successRateChart');
+    const messageTypesCanvas = getCanvasElement('messageTypesChart');
     
     console.log("État des canvas:", {
       memory: memoryCanvas ? "OK" : "Manquant",
@@ -113,11 +130,11 @@ function initializeAllChartsImpl() {
     }
     
     // Nettoyer les graphiques existants qui pourraient causer des conflits
-    if (memoryCanvas) safeDestroyChart(memoryCanvas);
-    if (conversionTrendCanvas) safeDestroyChart(conversionTrendCanvas);
-    if (resourceDistCanvas) safeDestroyChart(resourceDistCanvas);
-    if (successRateCanvas) safeDestroyChart(successRateCanvas);
-    if (messageTypesCanvas) safeDestroyChart(messageTypesCanvas);
+    if (memoryCanvas) safeDestroyChart(memoryCanvas.id);
+    if (conversionTrendCanvas) safeDestroyChart(conversionTrendCanvas.id);
+    if (resourceDistCanvas) safeDestroyChart(resourceDistCanvas.id);
+    if (successRateCanvas) safeDestroyChart(successRateCanvas.id);
+    if (messageTypesCanvas) safeDestroyChart(messageTypesCanvas.id);
     
     // Réinitialiser l'objet charts pour s'assurer qu'on part d'un état propre
     Object.keys(charts).forEach(key => delete charts[key]);
