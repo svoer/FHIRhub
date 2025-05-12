@@ -2160,7 +2160,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    function loadPatientBundle(patientId, serverUrl) {
+    function loadPatientBundle(patientId, serverUrl, existingBundle) {
         const container = document.querySelector('#bundleContent');
         const bundleInfo = document.getElementById('bundleInfo');
         const bundleResourcesList = document.getElementById('bundleResourcesList');
@@ -2170,6 +2170,18 @@ document.addEventListener('DOMContentLoaded', function() {
         if (loadingSection) loadingSection.style.display = 'block';
         if (noResourcesSection) noResourcesSection.style.display = 'none';
         if (bundleResourcesList) bundleResourcesList.innerHTML = '';
+        
+        // Si un bundle est fourni (param optionnel), on l'utilise directement
+        if (existingBundle) {
+            processBundle(existingBundle);
+            return;
+        }
+        
+        // Si on a déjà les données en mémoire, les utiliser
+        if (bundleData) {
+            processBundle(bundleData);
+            return;
+        }
         
         // On récupère directement le bundle associé au patient, incluant les références
         fetch(`${serverUrl}/Patient/${patientId}/$everything?_count=100&_include=*`)
@@ -2182,21 +2194,35 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 // Stocker le bundle pour référence future
                 bundleData = data;
-                
+                processBundle(data);
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement du bundle:', error);
                 if (loadingSection) loadingSection.style.display = 'none';
-                
-                // Afficher les informations sur le bundle
-                if (data.resourceType === 'Bundle') {
-                    const resourceCount = data.entry ? data.entry.length : 0;
-                    const resourceTypes = data.entry ? 
-                        [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
+                if (noResourcesSection) {
+                    noResourcesSection.style.display = 'block';
+                    if (bundleInfo) bundleInfo.innerHTML = `Erreur: ${error.message}`;
+                }
+            });
+            
+        // Fonction interne pour traiter et afficher le bundle
+        function processBundle(data) {
+            if (loadingSection) loadingSection.style.display = 'none';
+            
+            // Afficher les informations sur le bundle
+            if (data.resourceType === 'Bundle') {
+                const resourceCount = data.entry ? data.entry.length : 0;
+                const resourceTypes = data.entry ? 
+                    [...new Set(data.entry.map(e => e.resource && e.resource.resourceType ? e.resource.resourceType : 'Unknown'))].sort() : [];
                     
+                if (bundleInfo) {
                     bundleInfo.innerHTML = `
                         <p><strong>Type de bundle:</strong> ${data.type || 'Inconnu'}</p>
                         <p><strong>Identifiant:</strong> ${data.id || 'Non spécifié'}</p>
                         <p><strong>Nombre de ressources:</strong> ${resourceCount}</p>
                         <p><strong>Types de ressources:</strong> ${resourceTypes.join(', ') || 'Aucun'}</p>
                     `;
+                }
                     
                     if (resourceCount > 0) {
                         // Grouper les ressources par type
