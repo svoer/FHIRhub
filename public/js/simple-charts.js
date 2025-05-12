@@ -4,7 +4,7 @@
  */
 
 // Stockage global des références aux instances de graphiques
-const charts = {};
+const charts = window.charts || {};
 
 // S'assurer que Chart.js est disponible avant d'initialiser les graphiques
 document.addEventListener('DOMContentLoaded', function() {

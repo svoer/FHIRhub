@@ -359,11 +359,17 @@
       
       // Ajouter les gestionnaires d'événements aux boutons
       if (resetStatsBtn) {
+        console.log("Attachement du gestionnaire d'événement au bouton Reset");
         resetStatsBtn.addEventListener('click', showResetConfirmation);
+      } else {
+        console.error("Bouton de réinitialisation non trouvé dans le DOM");
       }
       
       if (refreshStatsBtn) {
+        console.log("Attachement du gestionnaire d'événement au bouton Refresh");
         refreshStatsBtn.addEventListener('click', refreshStats);
+      } else {
+        console.error("Bouton de rafraîchissement non trouvé dans le DOM");
       }
       
       // Le gestionnaire d'événement pour le bouton flottant est supprimé

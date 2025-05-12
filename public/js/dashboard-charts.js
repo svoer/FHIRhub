@@ -39,7 +39,7 @@ const chartColors = {
 };
 
 // Stockage des références aux instances de graphiques
-let charts = {
+window.charts = window.charts || {
   resourceDist: null,
   successRate: null,
   messageTypes: null,
@@ -80,7 +80,8 @@ window.addEventListener('load', function() {
 });
 
 // Fonction pour mettre à jour tous les graphiques dynamiques avec les données actuelles
-function updateAllCharts(statsData) {
+// Utilisation interne uniquement - la version exportée est window.updateAllCharts
+function _updateAllChartsInternal(statsData) {
   if (!statsData) {
     console.warn('Données de statistiques non disponibles pour la mise à jour des graphiques');
     return;
@@ -885,7 +886,9 @@ function updateConversionTrendChart(lastConversionTime) {
 }
 
 // Fonction centrale de mise à jour de tous les graphiques
-function updateAllCharts(statsData) {
+// Cette fonction est appelée par le code en dehors de ce fichier, elle doit rester disponible
+// La fonction équivalente plus haut dans le fichier sera utilisée en interne
+window.updateAllCharts = function(statsData) {
   console.log("Mise à jour de tous les graphiques avec les données fraîches:", statsData);
   
   // Mise à jour du graphique de distribution des ressources FHIR
