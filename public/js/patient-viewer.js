@@ -14,19 +14,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearSearchBtn = document.getElementById('clearSearchBtn');
     const analyzeAIBtn = document.getElementById('analyzeAIBtn');
     
-    // Stockage centralisé de toutes les données
-    let patientData = null;
-    let conditionsData = [];
-    let observationsData = [];
-    let medicationsData = [];
-    let encountersData = [];
-    // Variables pour les nouvelles ressources
-    let practitionersData = [];
-    let organizationsData = [];
-    let relatedPersonsData = [];
-    let coverageData = [];
-    let bundleData = null;
-    let lastBundleResponse = null; // Pour stocker la réponse de transaction du serveur FHIR
+    // Variables pour l'interface utilisateur uniquement
+    // Nous évitons de stocker les données médicales pour éviter toute mise en cache
+    // et garantir que toutes les requêtes passent par l'API du serveur FHIR
+    let patientDisplayData = null; // Uniquement pour l'affichage des informations de base du patient
+    
+    // Constantes pour les messages d'erreur et de statut
+    const ERROR_NETWORK = "Erreur réseau lors de la connexion au serveur FHIR";
+    const ERROR_SERVER = "Erreur de serveur FHIR";
+    const ERROR_NOT_FOUND = "Ressource non trouvée";
+    const ERROR_TIMEOUT = "Délai d'attente dépassé";
+    const STATUS_LOADING = "Chargement en cours...";
+    const STATUS_SUCCESS = "Données chargées avec succès";
+    const STATUS_NO_DATA = "Aucune donnée disponible";
     
     // Navigation par onglets
     const tabs = document.querySelectorAll('.tab');
@@ -64,22 +64,39 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour formater le nom du patient
     function formatPatientName(nameArray) {
-        if (!nameArray || nameArray.length === 0) {
+        // Protection contre les valeurs null, undefined, ou non-array
+        if (!nameArray || !Array.isArray(nameArray) || nameArray.length === 0) {
             return 'Patient sans nom';
         }
         
+        // S'assurer que le premier élément existe
         const name = nameArray[0];
+        if (!name) {
+            return 'Patient sans nom';
+        }
         
-        const family = name.family || '';
-        const given = name.given || [];
-        
-        if (family && given.length > 0) {
-            return `${family.toUpperCase()} ${given.join(' ')}`;
-        } else if (family) {
-            return family.toUpperCase();
-        } else if (given.length > 0) {
-            return given.join(' ');
-        } else {
+        try {
+            // Récupération sécurisée des propriétés
+            const family = (name.family && typeof name.family === 'string') ? name.family : '';
+            
+            // Vérification que given est un tableau avant d'utiliser join
+            const given = (name.given && Array.isArray(name.given)) ? name.given.filter(n => n) : [];
+            
+            // Formatage du nom selon les informations disponibles
+            if (family && given.length > 0) {
+                return `${family.toUpperCase()} ${given.join(' ')}`;
+            } else if (family) {
+                return family.toUpperCase();
+            } else if (given.length > 0) {
+                return given.join(' ');
+            } else if (name.text && typeof name.text === 'string') {
+                // Utiliser le texte si disponible
+                return name.text;
+            } else {
+                return 'Patient sans nom';
+            }
+        } catch (error) {
+            console.warn('Erreur lors du formatage du nom du patient:', error);
             return 'Patient sans nom';
         }
     }
@@ -256,15 +273,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Fonction pour effacer toutes les données du patient (identitovigilance)
     function clearPatientData() {
-        // Réinitialiser la variable globale des données patient
-        patientData = null;
+        // Réinitialiser les variables d'affichage patient
+        patientDisplayData = null;
         
-        // Vider tous les conteneurs de contenu
+        // Réinitialiser les données stockées temporairement dans l'interface
         document.getElementById('summaryContent').innerHTML = '';
         document.getElementById('aiAnalysis').innerHTML = '';
         document.getElementById('aiAnalysis').style.display = 'none';
         
-        // Vider tous les conteneurs d'onglets
+        console.log("IDENTITOVIGILANCE: Toutes les données du patient ont été effacées");
+        
+        // Vider tous les conteneurs d'onglets pour garantir qu'aucune donnée patient n'est affichée
         const contentContainers = [
             'conditionsContent', 
             'observationsContent', 
@@ -305,12 +324,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             const selectedOption = patientSelect.options[patientSelect.selectedIndex];
-            patientData = JSON.parse(selectedOption.dataset.patient);
+            patientDisplayData = JSON.parse(selectedOption.dataset.patient);
             
-            // Afficher les détails
-            document.getElementById('patientName').textContent = formatPatientName(patientData.name);
+            // Afficher les détails - uniquement pour l'interface utilisateur, pas pour le traitement
+            document.getElementById('patientName').textContent = formatPatientName(patientDisplayData.name);
             document.getElementById('patientDetails').textContent = 
-                `ID: ${patientData.id} | Genre: ${patientData.gender || 'Non spécifié'} | Naissance: ${patientData.birthDate || 'Non spécifiée'}`;
+                `ID: ${patientDisplayData.id} | Genre: ${patientDisplayData.gender || 'Non spécifié'} | Naissance: ${patientDisplayData.birthDate || 'Non spécifiée'}`;
             
             // Afficher le conteneur de patient
             document.getElementById('patientContainer').style.display = 'block';
@@ -2154,10 +2173,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function loadPatientRelatedPersons(patientId, serverUrl) {
+        // Protection contre les erreurs DOM
         const container = document.querySelector('#relatedContent');
+        if (!container) {
+            console.warn("Container #relatedContent non trouvé pour l'affichage des personnes liées");
+            return;
+        }
+        
         const loadingSection = container.querySelector('.loading-resources');
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
+        
+        if (!loadingSection || !noResourcesSection || !resourcesList) {
+            console.warn("Structure DOM incomplète pour l'affichage des personnes liées");
+            return;
+        }
         
         // Réinitialiser les données des personnes liées
         relatedPersonsData = [];
@@ -2166,8 +2196,15 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        fetch(`${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`)
+        // Gestion du timeout pour éviter les requêtes qui ne répondent pas
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondes max
+        
+        fetch(`${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`, {
+            signal: controller.signal
+        })
             .then(response => {
+                clearTimeout(timeoutId);
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération des personnes liées: ${response.status}`);
                 }
@@ -2176,65 +2213,116 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 loadingSection.style.display = 'none';
                 
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const relatedPersons = data.entry.map(entry => entry.resource);
-                    relatedPersonsData = relatedPersons;
-                    
-                    // Créer une liste de personnes liées
-                    const relatedList = document.createElement('div');
-                    relatedList.style.display = 'grid';
-                    relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    relatedList.style.gap = '15px';
-                    
-                    relatedPersons.forEach(person => {
-                        const personElement = document.createElement('div');
-                        personElement.style.backgroundColor = '#f9f9f9';
-                        personElement.style.borderRadius = '8px';
-                        personElement.style.padding = '15px';
-                        personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        personElement.style.borderLeft = '3px solid #e83e28';
+                try {
+                    if (data && data.entry && Array.isArray(data.entry) && data.entry.length > 0) {
+                        resourcesList.style.display = 'block';
+                        resourcesList.innerHTML = '';
                         
-                        personElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-users" style="color: #e83e28;"></i> ${formatPatientName(person.name) || 'Personne sans nom'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${person.id}</p>
-                                ${person.relationship ? 
-                                  `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>` 
-                                  : ''}
-                                ${person.telecom ? 
-                                  `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>` 
-                                  : ''}
-                                ${person.address ? 
-                                  `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>` 
-                                  : ''}
-                            </div>
-                        `;
+                        // Filtrer pour s'assurer que chaque entrée a une ressource valide
+                        const relatedPersons = data.entry
+                            .filter(entry => entry && entry.resource && entry.resource.resourceType === 'RelatedPerson')
+                            .map(entry => entry.resource);
+                            
+                        relatedPersonsData = relatedPersons;
                         
-                        relatedList.appendChild(personElement);
-                    });
-                    
-                    resourcesList.appendChild(relatedList);
-                } else {
+                        if (relatedPersons.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            return;
+                        }
+                        
+                        // Créer une liste de personnes liées
+                        const relatedList = document.createElement('div');
+                        relatedList.style.display = 'grid';
+                        relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                        relatedList.style.gap = '15px';
+                        
+                        relatedPersons.forEach(person => {
+                            if (!person) return; // Protection supplémentaire
+                            
+                            const personElement = document.createElement('div');
+                            personElement.style.backgroundColor = '#f9f9f9';
+                            personElement.style.borderRadius = '8px';
+                            personElement.style.padding = '15px';
+                            personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                            personElement.style.borderLeft = '3px solid #e83e28';
+                            
+                            // Construction sécurisée de l'affichage avec vérification des propriétés
+                            let displayName = 'Personne sans nom';
+                            if (person.name && Array.isArray(person.name) && person.name.length > 0) {
+                                displayName = formatPatientName(person.name) || displayName;
+                            }
+                            
+                            let relationshipStr = '';
+                            if (person.relationship && Array.isArray(person.relationship) && person.relationship.length > 0) {
+                                relationshipStr = `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>`;
+                            }
+                            
+                            let telecomStr = '';
+                            if (person.telecom && Array.isArray(person.telecom) && person.telecom.length > 0) {
+                                telecomStr = `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>`;
+                            }
+                            
+                            let addressStr = '';
+                            if (person.address && Array.isArray(person.address) && person.address.length > 0) {
+                                addressStr = `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>`;
+                            }
+                            
+                            personElement.innerHTML = `
+                                <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-users" style="color: #e83e28;"></i> ${displayName}
+                                </h4>
+                                <div style="margin-top: 10px; color: #555;">
+                                    <p><strong>Identifiant:</strong> ${person.id || 'Non spécifié'}</p>
+                                    ${relationshipStr}
+                                    ${telecomStr}
+                                    ${addressStr}
+                                </div>
+                            `;
+                            
+                            relatedList.appendChild(personElement);
+                        });
+                        
+                        resourcesList.appendChild(relatedList);
+                    } else {
+                        noResourcesSection.style.display = 'block';
+                    }
+                } catch (err) {
+                    console.error('Erreur lors du traitement des données des personnes liées:', err);
                     noResourcesSection.style.display = 'block';
                 }
             })
             .catch(error => {
+                clearTimeout(timeoutId);
                 console.error('Erreur lors du chargement des personnes liées:', error);
                 loadingSection.style.display = 'none';
+                
+                // Message d'erreur plus informatif
+                if (error.name === 'AbortError') {
+                    console.warn('La requête pour les personnes liées a été abandonnée (timeout)');
+                } else if (error.message && error.message.includes('Failed to fetch')) {
+                    console.warn('Erreur réseau lors du chargement des personnes liées');
+                }
+                
                 noResourcesSection.style.display = 'block';
             });
     }
     
     function loadPatientCoverage(patientId, serverUrl) {
+        // Protection contre les erreurs DOM
         const container = document.querySelector('#coverageContent');
+        if (!container) {
+            console.warn("Container #coverageContent non trouvé pour l'affichage des couvertures");
+            return;
+        }
+        
         const loadingSection = container.querySelector('.loading-resources');
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
+        
+        if (!loadingSection || !noResourcesSection || !resourcesList) {
+            console.warn("Structure DOM incomplète pour l'affichage des couvertures");
+            return;
+        }
         
         // Réinitialiser les données des couvertures
         coverageData = [];
@@ -2243,8 +2331,15 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        fetch(`${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`)
+        // Gestion du timeout pour éviter les requêtes qui ne répondent pas
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 secondes max
+        
+        fetch(`${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`, {
+            signal: controller.signal
+        })
             .then(response => {
+                clearTimeout(timeoutId);
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération des couvertures: ${response.status}`);
                 }
