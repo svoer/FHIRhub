@@ -12,8 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   
   // Vérifier si nous sommes sur la page du tableau de bord (le chatbot ne doit être chargé que sur certaines pages)
-  const currentPath = window.location.pathname;
-  if (currentPath !== '/dashboard.html' && currentPath !== '/') {
+  currentContext = window.location.pathname;
+  if (currentContext !== '/dashboard.html' && currentContext !== '/') {
     console.log('Page non dashboard, le chatbot ne sera pas chargé.');
     return;
   }
