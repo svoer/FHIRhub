@@ -385,7 +385,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Mettre à jour tous les onglets en fonction des données disponibles
                         if (resourcesByType.Condition) {
                             conditionsData = resourcesByType.Condition;
-                            updateConditionsTab(conditionsData);
+                            // Mettre à jour l'onglet des conditions avec la fonction générique d'affichage de ressources
+                            displayConditions(conditionsData);
+                            console.log(`${conditionsData.length} conditions chargées et affichées`);
                         }
                         
                         if (resourcesByType.Observation) {
