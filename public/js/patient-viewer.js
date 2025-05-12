@@ -3994,11 +3994,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 `ID: ${patientId}, Serveur: ${server}`
             );
             
-            xhr.send(JSON.stringify({
-                patientId: patientData.id,
-                serverUrl: serverSelect.value,
-                patientData: completePatientData
-            }));
+            // Envoi uniquement des identifiants - les données seront récupérées côté serveur
+            xhr.send(JSON.stringify(analyzeRequest));
         } catch (error) {
             showLocalAnalysis("Erreur lors de l'envoi de la requête IA");
         }
