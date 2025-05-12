@@ -31,11 +31,13 @@ else
   echo -e "${YELLOW}Détection: Docker Compose V1 détecté, utilisation de 'docker-compose'${NC}"
 fi
 
-# Donner les droits d'exécution au script d'initialisation
-if [ ! -x "./docker-init-data.sh" ]; then
-  echo -e "${YELLOW}Mise à jour des permissions du script d'initialisation...${NC}"
-  chmod +x ./docker-init-data.sh
-fi
+# Donner les droits d'exécution à tous les scripts nécessaires
+for script in "./docker-init-data.sh" "./docker-startup.sh" "./start-hapi-fhir.sh"; do
+  if [ -f "$script" ] && [ ! -x "$script" ]; then
+    echo -e "${YELLOW}Mise à jour des permissions du script $script...${NC}"
+    chmod +x "$script"
+  fi
+done
 
 # Initialiser la structure de données
 echo -e "${YELLOW}Étape 1/3: Initialisation de la structure de données...${NC}"

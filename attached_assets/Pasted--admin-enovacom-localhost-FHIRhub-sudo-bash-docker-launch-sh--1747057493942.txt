@@ -1,0 +1,198 @@
+[admin_enovacom@localhost FHIRhub]$ sudo bash docker-launch.sh
+=====================================================================
+     Démarrage de l'architecture Docker FHIRHub (services séparés)
+=====================================================================
+Détection: Docker Compose V2 détecté, utilisation de 'docker compose'
+Mise à jour des permissions du script d'initialisation...
+Étape 1/3: Initialisation de la structure de données...
+=====================================================================
+     Initialisation de l'architecture de données pour Docker
+=====================================================================
+Création du dossier principal data...
+   Existant: data
+Création de la structure pour FHIRHub...
+   Existant: data/fhirhub/db
+   Existant: data/fhirhub/storage/conversions
+   Existant: data/fhirhub/storage/cache
+   Existant: data/fhirhub/storage/ai_responses
+   Existant: data/fhirhub/storage/history
+   Existant: data/fhirhub/storage/outputs
+   Existant: data/fhirhub/storage/test
+   Existant: data/fhirhub/logs
+   Existant: data/fhirhub/terminology
+   Existant: data/fhirhub/backups
+   Création: data/fhirhub/src
+Création de la structure pour HAPI FHIR...
+   Existant: data/hapifhir
+Création des dossiers d'échange de données...
+   Existant: import
+   Existant: export
+✓ Structure de données initialisée avec succès !
+Préparation des volumes Docker...
+Création du fichier de compatibilité src/index.js...
+✓ Fichier src/index.js créé avec succès
+✓ Les dossiers ont les permissions correctes
+=====================================================================
+Structure des données :
+data/                       # Dossier racine
+├── fhirhub/                # Données FHIRHub
+│   ├── db/                 # Base de données SQLite
+│   ├── storage/            # Stockage des données
+│   ├── logs/               # Journaux
+│   ├── terminology/        # Terminologies
+│   └── backups/            # Sauvegardes
+├── hapifhir/               # Données HAPI FHIR
+import/                     # Dossier d'importation
+export/                     # Dossier d'exportation
+=====================================================================
+✓ Structure de données prête pour le déploiement Docker
+Étape 2/3: Arrêt des conteneurs existants...
+Étape 3/3: Démarrage des services...
+WARN[0000] /home/admin_enovacom/FHIRhub/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion
+[+] Running 38/38
+ ✔ hapifhir Pulled                                                                                                                                      69.8s
+   ✔ 3d78e577de35 Pull complete                                                                                                                          0.8s
+   ✔ bfb59b82a9b6 Pull complete                                                                                                                          0.8s
+   ✔ 4eff9a62d888 Pull complete                                                                                                                          1.3s
+   ✔ a62778643d56 Pull complete                                                                                                                          1.4s
+   ✔ 7c12895b777b Pull complete                                                                                                                          1.4s
+   ✔ 3214acf345c0 Pull complete                                                                                                                          1.5s
+   ✔ 5664b15f108b Pull complete                                                                                                                          2.1s
+   ✔ 0bab15eea81d Pull complete                                                                                                                          2.1s
+   ✔ 4aa0ea1413d3 Pull complete                                                                                                                          2.2s
+   ✔ da7816fa955e Pull complete                                                                                                                          2.7s
+   ✔ 9aee425378d2 Pull complete                                                                                                                          2.8s
+   ✔ d00c3209d929 Pull complete                                                                                                                          4.3s
+   ✔ 02fd24817d0f Pull complete                                                                                                                          4.3s
+   ✔ 9aafee56e35e Pull complete                                                                                                                          4.4s
+   ✔ 51a849027c78 Pull complete                                                                                                                          5.0s
+   ✔ f716db4e3c8d Pull complete                                                                                                                          5.1s
+   ✔ 99791a64acf3 Pull complete                                                                                                                          5.2s
+   ✔ 8bd314445e66 Pull complete                                                                                                                          6.0s
+   ✔ e3269fcfc82e Pull complete                                                                                                                          6.1s
+   ✔ 84845657fbc5 Pull complete                                                                                                                          6.1s
+   ✔ 52210cfa5d4d Pull complete                                                                                                                          6.7s
+   ✔ 590f3f180657 Pull complete                                                                                                                          6.7s
+   ✔ a52506876bfa Pull complete                                                                                                                          6.7s
+   ✔ 57c7c63c9c91 Pull complete                                                                                                                          7.4s
+   ✔ ab0f6cad3051 Pull complete                                                                                                                          7.4s
+   ✔ c83c31ce41af Pull complete                                                                                                                          7.6s
+   ✔ 0cb5c07f8edd Pull complete                                                                                                                          8.0s
+   ✔ e0dbe2dc0f1b Pull complete                                                                                                                          8.1s
+   ✔ df4a74163d8a Pull complete                                                                                                                          8.6s
+   ✔ 5ef042acb7ea Pull complete                                                                                                                          8.9s
+   ✔ 538dbdaf1872 Pull complete                                                                                                                          9.1s
+   ✔ 7cf0bebd8590 Pull complete                                                                                                                          9.4s
+   ✔ 01fccfcccc6b Pull complete                                                                                                                          9.5s
+   ✔ ea6c62ab44cb Pull complete                                                                                                                         36.9s
+   ✔ 85520e8a2d97 Pull complete                                                                                                                         36.9s
+   ✔ 93cf8f58766d Pull complete                                                                                                                         67.3s
+   ✔ 2bb399ebb2b1 Pull complete                                                                                                                         67.5s
+Compose can now delegate builds to bake for better performance.
+ To do so, set COMPOSE_BAKE=true.
+[+] Building 74.3s (21/21) FINISHED                                                                                                            docker:default
+ => [fhirhub internal] load build definition from Dockerfile                                                                                             0.0s
+ => => transferring dockerfile: 2.73kB                                                                                                                   0.0s
+ => [fhirhub internal] load metadata for docker.io/library/node:20-alpine                                                                                2.0s
+ => [fhirhub internal] load .dockerignore                                                                                                                0.0s
+ => => transferring context: 387B                                                                                                                        0.0s
+ => [fhirhub  1/15] FROM docker.io/library/node:20-alpine@sha256:c628bdc7ebc7f95b1b23249a445eb415ce68ae9def8b68364b35ee15e3065b0f                        8.2s
+ => => resolve docker.io/library/node:20-alpine@sha256:c628bdc7ebc7f95b1b23249a445eb415ce68ae9def8b68364b35ee15e3065b0f                                  0.0s
+ => => sha256:b18325f01afbb59e65e32609c3337f46358ebcb13784103e6d4e41cee6180fa0 1.72kB / 1.72kB                                                           0.0s
+ => => sha256:0160beacba2dcf6695e3cf292ed8003aa36f538b6a6fd931878bfc4ea7914555 6.21kB / 6.21kB                                                           0.0s
+ => => sha256:f18232174bc91741fdf3da96d85011092101a032a93a388b79e99e69c2d5c870 3.64MB / 3.64MB                                                           0.9s
+ => => sha256:a54ab62fca2da06cf1bd0418fcd2dbb09ba6f43db517f705291fdfb723fbc642 42.95MB / 42.95MB                                                         6.0s
+ => => sha256:6bf3eed75316cc1c58cc9bd678ce26260a7aacf7847462efa4a1cbf240a7c4d8 1.26MB / 1.26MB                                                           1.4s
+ => => sha256:c628bdc7ebc7f95b1b23249a445eb415ce68ae9def8b68364b35ee15e3065b0f 7.67kB / 7.67kB                                                           0.0s
+ => => extracting sha256:f18232174bc91741fdf3da96d85011092101a032a93a388b79e99e69c2d5c870                                                                0.2s
+ => => sha256:efb51bda5e8760a6e79d8bf56d88f21d5255ac614cb6dd14ee65a868e7aa8387 445B / 445B                                                               1.4s
+ => => extracting sha256:a54ab62fca2da06cf1bd0418fcd2dbb09ba6f43db517f705291fdfb723fbc642                                                                1.8s
+ => => extracting sha256:6bf3eed75316cc1c58cc9bd678ce26260a7aacf7847462efa4a1cbf240a7c4d8                                                                0.1s
+ => => extracting sha256:efb51bda5e8760a6e79d8bf56d88f21d5255ac614cb6dd14ee65a868e7aa8387                                                                0.0s
+ => [fhirhub internal] load build context                                                                                                                0.1s
+ => => transferring context: 12.50MB                                                                                                                     0.1s
+ => [fhirhub  2/15] WORKDIR /app                                                                                                                         0.2s
+ => [fhirhub  3/15] RUN apk add --no-cache curl tini                                                                                                    30.8s
+ => [fhirhub  4/15] COPY package*.json ./                                                                                                                0.0s
+ => [fhirhub  5/15] COPY tsconfig.json ./                                                                                                                0.0s
+ => [fhirhub  6/15] RUN npm ci --only=production && npm cache clean --force                                                                             19.8s
+ => [fhirhub  7/15] COPY . .                                                                                                                             0.1s
+ => [fhirhub  8/15] RUN mkdir -p /app/storage/data              /app/storage/data/conversions              /app/storage/data/history              /app/  0.3s
+ => [fhirhub  9/15] RUN mkdir -p /app/data              /app/data/cache              /app/data/ai_responses              /app/data/conversions           0.5s
+ => [fhirhub 10/15] RUN echo '// Module FHIRHub - Fichier de compatibilité pour Docker\n\nconst fhirHub = {\n  version: \"1.0.0\",\n  name: \"FHIRHub\   0.4s
+ => [fhirhub 11/15] RUN chmod -R 777 /app/storage /app/data                                                                                              0.5s
+ => [fhirhub 12/15] COPY docker-startup.sh /app/                                                                                                         0.0s
+ => [fhirhub 13/15] RUN chmod +x /app/docker-startup.sh                                                                                                  0.5s
+ => [fhirhub 14/15] RUN addgroup -S fhirhub && adduser -S fhirhub -G fhirhub                                                                             0.5s
+ => [fhirhub 15/15] RUN chown -R fhirhub:fhirhub /app                                                                                                    6.7s
+ => [fhirhub] exporting to image                                                                                                                         3.5s
+ => => exporting layers                                                                                                                                  3.5s
+ => => writing image sha256:95c288ff702810b3454cd81ae4c67d217adcdc7272c47f1daf8ffaad4177ecd0                                                             0.0s
+ => => naming to docker.io/library/fhirhub-fhirhub                                                                                                       0.0s
+ => [fhirhub] resolving provenance for metadata file                                                                                                     0.0s
+[+] Running 4/4
+ ✔ fhirhub                          Built                                                                                                                0.0s
+ ✔ Network fhirhub_fhirhub-network  Created                                                                                                              0.1s
+ ✔ Container fhirhub-hapi           Started                                                                                                              0.4s
+ ✔ Container fhirhub                Started                                                                                                              0.8s
+✓ Démarrage terminé !
+=====================================================================
+Services disponibles :
+   ✓ FHIRHub : http://localhost:5000
+   ✓ HAPI FHIR : http://localhost:8080/fhir
+=====================================================================
+Pour suivre les logs :
+   - FHIRHub   : docker logs -f fhirhub
+   - HAPI FHIR : docker logs -f fhirhub-hapi
+=====================================================================
+[admin_enovacom@localhost FHIRhub]$ docker ps
+CONTAINER ID   IMAGE                     COMMAND                  CREATED          STATUS                            PORTS                                         NAMES
+aedb8fde7b68   fhirhub-fhirhub           "/sbin/tini -- /app/…"   11 minutes ago   Restarting (127) 15 seconds ago                                                 fhirhub
+5bc610d98240   hapiproject/hapi:latest   "java --class-path /…"   11 minutes ago   Up 11 minutes (unhealthy)         0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp   fhirhub-hapi
+[admin_enovacom@localhost FHIRhub]$ docker logs --tail 50 fhirhub-fhirhub
+Error response from daemon: No such container: fhirhub-fhirhub
+[admin_enovacom@localhost FHIRhub]$ docker logs --tail 50 fhirhub
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (6)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[admin_enovacom@localhost FHIRhub]$ docker logs --tail 100 fhirhub
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (6)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[admin_enovacom@localhost FHIRhub]$

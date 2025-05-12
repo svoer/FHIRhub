@@ -1,0 +1,52 @@
+
+[admin_enovacom@localhost FHIRhub]$ docker ps
+CONTAINER ID   IMAGE                     COMMAND                  CREATED          STATUS                            PORTS                                         NAMES
+aedb8fde7b68   fhirhub-fhirhub           "/sbin/tini -- /app/…"   11 minutes ago   Restarting (127) 15 seconds ago                                                 fhirhub
+5bc610d98240   hapiproject/hapi:latest   "java --class-path /…"   11 minutes ago   Up 11 minutes (unhealthy)         0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp   fhirhub-hapi
+[admin_enovacom@localhost FHIRhub]$ docker logs --tail 50 fhirhub-fhirhub
+Error response from daemon: No such container: fhirhub-fhirhub
+[admin_enovacom@localhost FHIRhub]$ docker logs --tail 50 fhirhub
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (6)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[admin_enovacom@localhost FHIRhub]$ docker logs --tail 100 fhirhub
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (6)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (8)] exec /app/docker-startup.sh failed: No such file or directory
+[FATAL tini (7)] exec /app/docker-startup.sh failed: No such file or directory
+[admin_enovacom@localhost FHIRhub]$
