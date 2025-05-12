@@ -91,8 +91,8 @@
             <button id="refreshStatsBtn" class="btn-refresh" title="Rafraîchir les statistiques" style="margin-right: 10px;">
               <i class="fas fa-sync-alt"></i>
             </button>
-            <button id="resetStatsBtn" class="btn-reset" title="Réinitialiser toutes les données" style="position: sticky; top: 15px; right: 15px; display: inline-flex !important; visibility: visible !important; z-index: 9999; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-right: 10px; border: 2px solid #fff; font-size: 18px; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease;">
-              <i class="fas fa-trash-alt" style="margin: auto;"></i>
+            <button id="resetStatsBtn" class="btn-reset" title="Réinitialiser toutes les données" style="position: sticky; top: 15px; right: 15px; display: inline-flex !important; visibility: visible !important; z-index: 9999; background: linear-gradient(135deg, #d63031 0%, #be2323 100%); color: white; width: 40px; height: 40px; border-radius: 50%; box-shadow: 0 4px 8px rgba(0,0,0,0.4); margin-right: 10px; border: 3px solid #fff; font-size: 18px; align-items: center; justify-content: center; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+              <i class="fas fa-power-off" style="margin: auto; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);"></i>
             </button>
             <span style="margin-left: 5px;">Dernière mise à jour: <span id="statsUpdateTime"></span></span>
           </div>
@@ -205,19 +205,19 @@
   <!-- Boîte de dialogue modale pour confirmation -->
   <div id="resetConfirmModal" class="modal" style="display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);">
     <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border-radius: 5px; width: 80%; max-width: 500px; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-      <h3 style="color: #e74c3c; margin-top: 0;">⚠️ Attention: Réinitialisation des statistiques</h3>
-      <p>Vous êtes sur le point de réinitialiser les statistiques de FHIRHub.</p>
-      <p>Cette action va:</p>
+      <h3 style="color: #d63031; margin-top: 0;">⚠️ Remise à zéro du système</h3>
+      <p>Vous êtes sur le point d'effectuer une remise à zéro complète des statistiques du système FHIRHub.</p>
+      <p>Cette procédure va:</p>
       <ul style="margin-bottom: 20px;">
-        <li>Effacer l'historique des conversions</li>
-        <li>Réinitialiser les compteurs de performances</li>
-        <li>Remettre à zéro les indicateurs de bénéfices</li>
-        <li>Nettoyer les logs d'utilisation</li>
+        <li>Effacer l'historique des conversions HL7-FHIR</li>
+        <li>Réinitialiser tous les compteurs de performances</li>
+        <li>Remettre à zéro les indicateurs d'activité</li>
+        <li>Réinitialiser la mémoire système des opérations</li>
       </ul>
-      <p style="font-weight: bold; color: #e74c3c;">Cette action est irréversible !</p>
+      <p style="font-weight: bold; color: #d63031;">Cette opération est irréversible et immédiate !</p>
       <div style="text-align: right; margin-top: 20px;">
-        <button id="cancelResetBtn" style="background-color: #95a5a6; color: white; border: none; padding: 8px 15px; margin-right: 10px; border-radius: 4px; cursor: pointer;">Annuler</button>
-        <button id="confirmResetBtn" style="background-color: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer;">Réinitialiser</button>
+        <button id="cancelResetBtn" style="background-color: #95a5a6; color: white; border: none; padding: 8px 15px; margin-right: 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">Annuler</button>
+        <button id="confirmResetBtn" style="background: linear-gradient(135deg, #d63031 0%, #be2323 100%); color: white; border: 2px solid #fff; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">Remise à zéro</button>
       </div>
     </div>
   </div>
