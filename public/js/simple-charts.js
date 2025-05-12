@@ -612,6 +612,8 @@ function updateResourceDistChart(resourceData) {
 
 // Cette fonction n'était pas définie dans ce fichier, mais est appelée par la fonction resetStats dans dashboard.html
 function resetAllCharts() {
+  // Exposer la fonction globalement via window pour permettre l'accès depuis dashboard.html
+  window.resetAllCharts = resetAllCharts;
   console.log("Réinitialisation de tous les graphiques demandée");
   
   // Réinitialiser le graphique de mémoire
