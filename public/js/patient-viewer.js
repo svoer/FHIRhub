@@ -315,17 +315,110 @@ document.addEventListener('DOMContentLoaded', function() {
             // Afficher le conteneur de patient
             document.getElementById('patientContainer').style.display = 'block';
             
-            // Charger toutes les ressources associées au patient
-            loadPatientConditions(patientId, server);
-            loadPatientObservations(patientId, server);
-            loadPatientMedications(patientId, server);
-            loadPatientEncounters(patientId, server);
-            loadPatientPractitioners(patientId, server);
-            loadPatientOrganizations(patientId, server);
-            loadPatientRelatedPersons(patientId, server);
-            loadPatientCoverage(patientId, server);
-            generateTimeline(patientId, server);
-            loadPatientBundle(patientId, server);
+            // Afficher un status de chargement
+            showStatus('Chargement de toutes les données médicales du patient...', 'info');
+            
+            // Tenter de charger toutes les ressources en une seule requête avec $everything
+            fetch(`${server}/Patient/${patientId}/$everything`)
+                .then(response => {
+                    if (!response.ok) {
+                        // Si $everything n'est pas supporté, on utilise l'approche traditionnelle
+                        console.warn("L'opération $everything n'est pas supportée, chargement individuel des ressources");
+                        throw new Error("$everything non supporté");
+                    }
+                    return response.json();
+                })
+                .then(bundle => {
+                    console.log("Bundle complet récupéré via $everything:", bundle);
+                    showStatus('Chargement complet des données réussi via $everything', 'success');
+                    
+                    // Traiter le bundle et extraire les différentes ressources par type
+                    if (bundle.entry && bundle.entry.length > 0) {
+                        // Grouper les ressources par type
+                        const resourcesByType = {};
+                        
+                        bundle.entry.forEach(entry => {
+                            if (entry.resource) {
+                                const type = entry.resource.resourceType;
+                                if (!resourcesByType[type]) {
+                                    resourcesByType[type] = [];
+                                }
+                                resourcesByType[type].push(entry.resource);
+                            }
+                        });
+                        
+                        // Mettre à jour tous les onglets en fonction des données disponibles
+                        if (resourcesByType.Condition) {
+                            conditionsData = resourcesByType.Condition;
+                            updateConditionsTab(conditionsData);
+                        }
+                        
+                        if (resourcesByType.Observation) {
+                            observationsData = resourcesByType.Observation;
+                            updateObservationsTab(observationsData);
+                        }
+                        
+                        if (resourcesByType.MedicationRequest) {
+                            medicationsData = resourcesByType.MedicationRequest;
+                            updateMedicationsTab(medicationsData);
+                        }
+                        
+                        if (resourcesByType.Encounter) {
+                            encountersData = resourcesByType.Encounter;
+                            updateEncountersTab(encountersData);
+                        }
+                        
+                        if (resourcesByType.Practitioner) {
+                            practitionersData = resourcesByType.Practitioner;
+                            updatePractitionersTab(practitionersData);
+                        }
+                        
+                        if (resourcesByType.Organization) {
+                            organizationsData = resourcesByType.Organization;
+                            updateOrganizationsTab(organizationsData);
+                        }
+                        
+                        if (resourcesByType.RelatedPerson) {
+                            relatedPersonsData = resourcesByType.RelatedPerson;
+                            updateRelatedPersonsTab(relatedPersonsData);
+                        }
+                        
+                        if (resourcesByType.Coverage) {
+                            coverageData = resourcesByType.Coverage;
+                            updateCoverageTab(coverageData);
+                        }
+                        
+                        // Mettre à jour l'onglet bundle avec les données complètes
+                        bundleData = bundle;
+                        updateBundleView(bundle);
+                        
+                        // Générer la chronologie à partir des données du bundle
+                        generateTimelineFromBundle(bundle);
+                    } else {
+                        showStatus('Le bundle est vide ou mal formaté, utilisation de la méthode traditionnelle', 'warning');
+                        loadResourcesTraditionnally();
+                    }
+                })
+                .catch(error => {
+                    console.error("Erreur avec $everything:", error);
+                    loadResourcesTraditionnally();
+                });
+                
+            // Fonction pour charger les ressources de façon traditionnelle
+            function loadResourcesTraditionnally() {
+                showStatus('Chargement individuel des ressources...', 'info');
+                // Charger toutes les ressources associées au patient individuellement
+                loadPatientConditions(patientId, server);
+                loadPatientObservations(patientId, server);
+                loadPatientMedications(patientId, server);
+                loadPatientEncounters(patientId, server);
+                loadPatientPractitioners(patientId, server);
+                loadPatientOrganizations(patientId, server);
+                loadPatientRelatedPersons(patientId, server);
+                loadPatientCoverage(patientId, server);
+                generateTimeline(patientId, server);
+                loadPatientBundle(patientId, server);
+            }
             
             // Mettre à jour l'onglet JSON
             updateJsonView();
