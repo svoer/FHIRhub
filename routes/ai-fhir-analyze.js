@@ -30,6 +30,18 @@ try {
         getAllAIProviders: async () => []
     };
 }
+// Service de documentation pour enrichir le chatbot
+let documentationService;
+try {
+    documentationService = require('../utils/documentationService');
+} catch (error) {
+    console.error("Erreur lors de l'importation de documentationService:", error.message);
+    // Créer un objet fake pour éviter les erreurs
+    documentationService = {
+        getEnhancedSystemPrompt: async (prompt) => prompt,
+        findRelevantDocumentation: async () => "Documentation non disponible"
+    };
+}
 const { getActiveAIProvider } = aiProviderService;
 const { authCombined } = require('../middleware/auth');
 
@@ -305,8 +317,14 @@ router.post('/chat', async (req, res) => {
         }
         
         // Extraire le message système et l'historique des messages
-        const systemMessage = messages.find(msg => msg.role === 'system')?.content || '';
+        const baseSystemMessage = messages.find(msg => msg.role === 'system')?.content || '';
         const userMessages = messages.filter(msg => msg.role !== 'system');
+        
+        // Récupérer le dernier message de l'utilisateur pour enrichir le prompt
+        const lastUserMessage = userMessages
+            .filter(msg => msg.role === 'user')
+            .map(msg => msg.content)
+            .pop() || '';
         
         // Formater les messages pour notre service d'IA unifié
         const formattedPrompt = userMessages.map(msg => {
@@ -319,10 +337,17 @@ router.post('/chat', async (req, res) => {
             const aiProvider = await getActiveAIProvider();
             const providerName = aiProvider ? aiProvider.provider_name : 'inconnu';
             
+            // Enrichir le prompt système avec la documentation pertinente
+            console.log("[DOC] Recherche d'informations pertinentes pour:", lastUserMessage.substring(0, 50), '...');
+            const enhancedSystemPrompt = await documentationService.getEnhancedSystemPrompt(
+                baseSystemMessage, 
+                lastUserMessage
+            );
+            
             // Générer la réponse avec notre service d'IA unifié
             const response = await aiService.generateResponse({
                 prompt: formattedPrompt,
-                systemPrompt: systemMessage,
+                systemPrompt: enhancedSystemPrompt,
                 maxTokens: max_tokens,
                 temperature: 0.7
             });
