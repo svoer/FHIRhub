@@ -581,19 +581,103 @@ app.post('/api/convert', authCombined, (req, res) => {
 });
 
 // 2. Endpoint pour texte brut qui accepte directement le message HL7
-app.post('/api/convert/raw', authCombined, (req, res) => {
+app.post('/api/convert/raw', authCombined, async (req, res) => {
   const hl7Message = req.body; // req.body contient directement le texte (grâce à bodyParser.text())
   
   // Enregistrement dans les logs pour le tableau de bord
   console.log('[API] Requête de conversion raw reçue');
   
+  // Vérifier si l'auto-push est demandé via une API key avec autoPush=true
+  const autoPush = req.query.autoPush === 'true' || 
+                  (req.apiKeyData && req.apiKeyData.auto_push === 1);
+
   // Forcer le format FHIR pur pour cette route également
   req.query.format = 'fhir';
   
-  // Définir l'en-tête Content-Type pour FHIR
-  res.setHeader('Content-Type', 'application/fhir+json');
-  
-  return processHL7Conversion(hl7Message, req, res);
+  try {
+    // Traiter la conversion HL7 -> FHIR
+    const conversionStartTime = Date.now();
+    const result = hl7ToFhirConverter.convert(hl7Message, req.query);
+    const conversionTime = Date.now() - conversionStartTime;
+    
+    // Si l'auto-push est demandé, envoyer directement le bundle au serveur FHIR
+    let pushResponse = null;
+    
+    if (autoPush && result && result.resourceType === 'Bundle') {
+      try {
+        const fhirService = require('./utils/fhirService');
+        console.log('[API] Auto-push vers le serveur FHIR activé');
+        
+        // Pousser le bundle vers le serveur FHIR
+        pushResponse = await fhirService.pushBundle(result);
+        
+        console.log('[API] Auto-push réussi', pushResponse.resourceType || 'OK');
+      } catch (pushError) {
+        console.error('[API] Erreur lors du push automatique vers FHIR', pushError.message);
+        pushResponse = {
+          error: true,
+          message: pushError.message
+        };
+      }
+    }
+    
+    // Enregistrement de la conversion (comme dans processHL7Conversion)
+    // Code pour logger la conversion dans la base de données
+    try {
+      const conversionLogService = require('./src/services/conversionLogService');
+      
+      // Préparer les données de conversion
+      const inputMsg = hl7Message.length > 1000 ? hl7Message.substring(0, 1000) + '...' : hl7Message;
+      const outputMsg = JSON.stringify(result).length > 1000 ? JSON.stringify(result).substring(0, 1000) + '...' : JSON.stringify(result);
+      const resourceCount = result.entry ? result.entry.length : 0;
+      
+      // Utiliser le service pour enregistrer la conversion
+      conversionLogService.logConversion({
+        input_message: inputMsg,
+        output_message: outputMsg,
+        status: 'success',
+        processing_time: conversionTime,
+        resource_count: resourceCount,
+        user_id: req.user ? req.user.id : null,
+        api_key_id: req.apiKeyData ? req.apiKeyData.id : null,
+        application_id: req.apiKeyData ? req.apiKeyData.application_id : 1,
+      }).catch(logError => {
+        console.error('[CONVERSION LOG ERROR]', logError.message);
+      });
+    } catch (err) {
+      console.error('[CONVERSION LOG ERROR]', err.message);
+    }
+    
+    // Nettoyer les métadonnées internes avant de retourner le résultat
+    if (result._meta) {
+      delete result._meta;
+    }
+    
+    // Si l'auto-push était activé, inclure la réponse du serveur FHIR dans l'en-tête
+    if (pushResponse) {
+      res.setHeader('X-FHIR-Push-Status', pushResponse.error ? 'error' : 'success');
+      if (req.query.includeAutoPushResponse === 'true') {
+        res.setHeader('X-FHIR-Push-Response', JSON.stringify({
+          status: pushResponse.error ? 'error' : 'success',
+          details: pushResponse.error ? pushResponse.message : 'Bundle envoyé avec succès'
+        }));
+      }
+    }
+    
+    // Définir l'en-tête Content-Type pour FHIR
+    res.setHeader('Content-Type', 'application/fhir+json');
+    
+    // Retourner uniquement le Bundle FHIR
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('[CONVERSION ERROR]', error);
+    
+    return res.status(500).json({
+      success: false,
+      error: 'Conversion Error',
+      message: error.message || 'Erreur inconnue'
+    });
+  }
 });
 
 // 2.1. Endpoint FHIR pur qui accepte directement le message HL7 et retourne du FHIR sans enveloppe

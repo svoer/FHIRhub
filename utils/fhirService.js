@@ -490,6 +490,55 @@ async function createPatientBundle(serverId, patientId, options = {}) {
   return bundle;
 }
 
+/**
+ * Récupérer l'URL du serveur FHIR actif
+ */
+function getFhirServerUrl() {
+  const config = getServersConfig();
+  const defaultServerId = config.defaultServer;
+  const server = getServerDetails(defaultServerId);
+  
+  if (!server) {
+    console.warn(`[FHIR] Serveur par défaut non trouvé, utilisation du serveur local`);
+    return 'http://localhost:8080/fhir';
+  }
+  
+  return server.url;
+}
+
+/**
+ * Pousser un bundle FHIR vers le serveur FHIR
+ */
+async function pushBundle(bundle, serverId = null) {
+  // Si aucun serverId n'est spécifié, utiliser le serveur par défaut
+  if (!serverId) {
+    const config = getServersConfig();
+    serverId = config.defaultServer;
+  }
+  
+  const server = getServerDetails(serverId);
+  if (!server) {
+    throw new Error('Serveur FHIR non trouvé');
+  }
+  
+  if (!bundle || bundle.resourceType !== 'Bundle') {
+    throw new Error('Bundle FHIR invalide');
+  }
+  
+  const url = server.url;
+  const axiosConfig = createAxiosConfig(server, {
+    headers: {
+      'Content-Type': 'application/fhir+json'
+    }
+  });
+  
+  logger.info(`[FHIR] Envoi d'un bundle FHIR contenant ${bundle.entry?.length || 0} ressources vers ${server.name} (${url})`);
+  const response = await axios.post(url, bundle, axiosConfig);
+  logger.info(`[FHIR] Bundle envoyé avec succès, status: ${response.status}`);
+  
+  return response.data;
+}
+
 module.exports = {
   getServersConfig,
   saveServersConfig,
@@ -509,5 +558,7 @@ module.exports = {
   getPatientMedications,
   getPatientEncounters,
   getPatientSummary,
-  createPatientBundle
+  createPatientBundle,
+  getFhirServerUrl,
+  pushBundle
 };
