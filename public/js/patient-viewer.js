@@ -142,39 +142,6 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
     
-    // Fonction de traitement des résultats FHIR Patient
-    function processPatientResults(data) {
-        if (data.entry && data.entry.length > 0) {
-            // Vider le sélecteur de patients
-            patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
-            
-            // Ajouter les patients trouvés
-            data.entry.forEach(entry => {
-                if (entry.resource && entry.resource.resourceType === 'Patient') {
-                    const patient = entry.resource;
-                    const name = formatPatientName(patient.name);
-                    
-                    const option = document.createElement('option');
-                    option.value = patient.id;
-                    option.textContent = `${name} (${patient.gender || '?'})`;
-                    option.dataset.patient = JSON.stringify(patient);
-                    
-                    patientSelect.appendChild(option);
-                }
-            });
-            
-            showStatus(`<i class="fas fa-check-circle"></i> ${data.entry.length} patients trouvés`, 'success');
-            
-            // Auto-sélectionner si un seul résultat
-            if (data.entry.length === 1) {
-                patientSelect.selectedIndex = 1; // Premier patient
-            }
-            
-            return true;
-        }
-        return false;
-    }
-    
     // Recherche des patients avec une implémentation robuste
     function searchPatients() {
         const searchValue = patientSearch.value.trim();
@@ -195,51 +162,84 @@ document.addEventListener('DOMContentLoaded', function() {
         // Afficher l'état de chargement
         showStatus('<i class="fas fa-spinner fa-spin"></i> Recherche en cours...', 'info');
         
+        // Fonction de traitement des résultats
+        function processPatientResults(data) {
+            if (data.entry && data.entry.length > 0) {
+                // Vider le sélecteur de patients
+                patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
+                
+                // Ajouter les patients trouvés
+                data.entry.forEach(entry => {
+                    if (entry.resource && entry.resource.resourceType === 'Patient') {
+                        const patient = entry.resource;
+                        const name = formatPatientName(patient.name);
+                        
+                        const option = document.createElement('option');
+                        option.value = patient.id;
+                        option.textContent = `${name} (${patient.gender || '?'})`;
+                        option.dataset.patient = JSON.stringify(patient);
+                        
+                        patientSelect.appendChild(option);
+                    }
+                });
+                
+                showStatus(`<i class="fas fa-check-circle"></i> ${data.entry.length} patients trouvés`, 'success');
+                
+                // Auto-sélectionner si un seul résultat
+                if (data.entry.length === 1) {
+                    patientSelect.selectedIndex = 1; // Premier patient
+                }
+                
+                return true;
+            }
+            return false;
+        }
+        
+        // Fonction de recherche sécurisée avec XMLHttpRequest
+        function secureSearch(url, isSecondAttempt = false) {
+            console.log(`Recherche de patients: ${url}`);
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url);
+            
+            xhr.onload = function() {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    try {
+                        const data = JSON.parse(xhr.responseText);
+                        const hasResults = processPatientResults(data);
+                        
+                        // Si aucun résultat et c'est la première tentative, essayer une recherche plus large
+                        if (!hasResults && !isSecondAttempt) {
+                            const widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
+                            secureSearch(widerUrl, true);
+                        } else if (!hasResults) {
+                            patientSelect.innerHTML = '<option value="">-- Aucun patient trouvé --</option>';
+                            showStatus('<i class="fas fa-exclamation-circle"></i> Aucun patient trouvé', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Erreur parsing JSON:', error);
+                        patientSelect.innerHTML = '<option value="">-- Erreur de traitement des données --</option>';
+                        showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de traitement des données', 'error');
+                    }
+                } else {
+                    console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
+                    patientSelect.innerHTML = '<option value="">-- Erreur de communication avec le serveur --</option>';
+                    showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${xhr.status}`, 'error');
+                }
+            };
+            
+            xhr.onerror = function() {
+                console.error(`Erreur réseau lors de la récupération des patients: ${url}`);
+                patientSelect.innerHTML = '<option value="">-- Erreur de connexion --</option>';
+                showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de connexion au serveur', 'error');
+            };
+            
+            xhr.send();
+        }
+        
         // Commencer par la recherche sur le nom de famille avec un nombre élevé de résultats (contexte hospitalier)
         const initialUrl = `${serverUrl}/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
-        secureSearch(initialUrl, searchValue, serverUrl, false);
-    }
-    
-    // Fonction de recherche sécurisée avec XMLHttpRequest
-    function secureSearch(url, searchValue, serverUrl, isSecondAttempt = false) {
-        console.log(`Recherche de patients: ${url}`);
-        
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        
-        xhr.onload = function() {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    const hasResults = processPatientResults(data);
-                    
-                    // Si aucun résultat et c'est la première tentative, essayer une recherche plus large
-                    if (!hasResults && !isSecondAttempt) {
-                        const widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
-                        secureSearch(widerUrl, searchValue, serverUrl, true);
-                    } else if (!hasResults) {
-                        patientSelect.innerHTML = '<option value="">-- Aucun patient trouvé --</option>';
-                        showStatus('<i class="fas fa-exclamation-circle"></i> Aucun patient trouvé', 'error');
-                    }
-                } catch (error) {
-                    console.error('Erreur parsing JSON:', error);
-                    patientSelect.innerHTML = '<option value="">-- Erreur de traitement des données --</option>';
-                    showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de traitement des données', 'error');
-                }
-            } else {
-                console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
-                patientSelect.innerHTML = '<option value="">-- Erreur de communication avec le serveur --</option>';
-                showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${xhr.status}`, 'error');
-            }
-        };
-        
-        xhr.onerror = function() {
-            console.error(`Erreur réseau lors de la récupération des patients: ${url}`);
-            patientSelect.innerHTML = '<option value="">-- Erreur de connexion --</option>';
-            showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de connexion au serveur', 'error');
-        };
-        
-        xhr.send();
+        secureSearch(initialUrl);
     }
     
     // Effacer la recherche et toutes les données du patient précédent
@@ -291,38 +291,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Charger les détails d'un patient et ses ressources associées
-    async function fetchPatientEverything(serverUrl, patientId) {
-        const url = `${serverUrl}/Patient/${patientId}/$everything?_count=1000`;
-        try {
-            showStatus('Récupération de toutes les données médicales...', 'info');
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`Erreur ${res.status} sur $everything`);
-            const bundle = await res.json();
-            showStatus('Données médicales complètes récupérées avec succès', 'success');
-            return bundle;
-        } catch (error) {
-            console.warn("Échec de l'opération $everything:", error);
-            throw error;
-        }
-    }
-    
-    function groupByType(bundle) {
-        const byType = {};
-        if (!bundle.entry || !Array.isArray(bundle.entry)) {
-            return byType;
-        }
-        
-        bundle.entry.forEach(entry => {
-            if (entry.resource && entry.resource.resourceType) {
-                const type = entry.resource.resourceType;
-                byType[type] = byType[type] || [];
-                byType[type].push(entry.resource);
-            }
-        });
-        
-        return byType;
-    }
-    
     function loadPatient() {
         if (!patientSelect.value) {
             alert('Veuillez sélectionner un patient');
@@ -347,136 +315,110 @@ document.addEventListener('DOMContentLoaded', function() {
             // Afficher le conteneur de patient
             document.getElementById('patientContainer').style.display = 'block';
             
-            // Fonction centralisée pour charger toutes les données
-            loadAllPatientData(server, patientId);
-        } catch (error) {
-            console.error("Erreur lors du chargement initial du patient:", error);
-            showStatus("Erreur lors du chargement du patient", 'error');
-        }
-    }
-    
-    async function loadAllPatientData(serverUrl, patientId) {
-        try {
-            // Tenter d'abord la méthode $everything
-            const bundle = await fetchPatientEverything(serverUrl, patientId);
+            // Afficher un status de chargement
+            showStatus('Chargement de toutes les données médicales du patient...', 'info');
             
-            // Traiter le bundle et extraire les ressources par type
-            const resourcesByType = groupByType(bundle);
-            
-            console.log("Types de ressources trouvés:", Object.keys(resourcesByType).join(", "));
-            console.log("Ressources par type:", Object.entries(resourcesByType).map(([k, v]) => `${k}: ${v.length}`));
-            
-            // Stocker et afficher chaque type de ressource
-            if (resourcesByType.Condition) {
-                conditionsData = resourcesByType.Condition;
-                updateConditionsTab(conditionsData);
+            // Tenter de charger toutes les ressources en une seule requête avec $everything
+            fetch(`${server}/Patient/${patientId}/$everything`)
+                .then(response => {
+                    if (!response.ok) {
+                        // Si $everything n'est pas supporté, on utilise l'approche traditionnelle
+                        console.warn("L'opération $everything n'est pas supportée, chargement individuel des ressources");
+                        throw new Error("$everything non supporté");
+                    }
+                    return response.json();
+                })
+                .then(bundle => {
+                    console.log("Bundle complet récupéré via $everything:", bundle);
+                    showStatus('Chargement complet des données réussi via $everything', 'success');
+                    
+                    // Traiter le bundle et extraire les différentes ressources par type
+                    if (bundle.entry && bundle.entry.length > 0) {
+                        // Grouper les ressources par type
+                        const resourcesByType = {};
+                        
+                        bundle.entry.forEach(entry => {
+                            if (entry.resource) {
+                                const type = entry.resource.resourceType;
+                                if (!resourcesByType[type]) {
+                                    resourcesByType[type] = [];
+                                }
+                                resourcesByType[type].push(entry.resource);
+                            }
+                        });
+                        
+                        // Mettre à jour tous les onglets en fonction des données disponibles
+                        if (resourcesByType.Condition) {
+                            conditionsData = resourcesByType.Condition;
+                            updateConditionsTab(conditionsData);
+                        }
+                        
+                        if (resourcesByType.Observation) {
+                            observationsData = resourcesByType.Observation;
+                            updateObservationsTab(observationsData);
+                        }
+                        
+                        if (resourcesByType.MedicationRequest) {
+                            medicationsData = resourcesByType.MedicationRequest;
+                            updateMedicationsTab(medicationsData);
+                        }
+                        
+                        if (resourcesByType.Encounter) {
+                            encountersData = resourcesByType.Encounter;
+                            updateEncountersTab(encountersData);
+                        }
+                        
+                        if (resourcesByType.Practitioner) {
+                            practitionersData = resourcesByType.Practitioner;
+                            updatePractitionersTab(practitionersData);
+                        }
+                        
+                        if (resourcesByType.Organization) {
+                            organizationsData = resourcesByType.Organization;
+                            updateOrganizationsTab(organizationsData);
+                        }
+                        
+                        if (resourcesByType.RelatedPerson) {
+                            relatedPersonsData = resourcesByType.RelatedPerson;
+                            updateRelatedPersonsTab(relatedPersonsData);
+                        }
+                        
+                        if (resourcesByType.Coverage) {
+                            coverageData = resourcesByType.Coverage;
+                            updateCoverageTab(coverageData);
+                        }
+                        
+                        // Mettre à jour l'onglet bundle avec les données complètes
+                        bundleData = bundle;
+                        updateBundleView(bundle);
+                        
+                        // Générer la chronologie à partir des données du bundle
+                        generateTimelineFromBundle(bundle);
+                    } else {
+                        showStatus('Le bundle est vide ou mal formaté, utilisation de la méthode traditionnelle', 'warning');
+                        loadResourcesTraditionnally();
+                    }
+                })
+                .catch(error => {
+                    console.error("Erreur avec $everything:", error);
+                    loadResourcesTraditionnally();
+                });
+                
+            // Fonction pour charger les ressources de façon traditionnelle
+            function loadResourcesTraditionnally() {
+                showStatus('Chargement individuel des ressources...', 'info');
+                // Charger toutes les ressources associées au patient individuellement
+                loadPatientConditions(patientId, server);
+                loadPatientObservations(patientId, server);
+                loadPatientMedications(patientId, server);
+                loadPatientEncounters(patientId, server);
+                loadPatientPractitioners(patientId, server);
+                loadPatientOrganizations(patientId, server);
+                loadPatientRelatedPersons(patientId, server);
+                loadPatientCoverage(patientId, server);
+                generateTimeline(patientId, server);
+                loadPatientBundle(patientId, server);
             }
-            
-            if (resourcesByType.Observation) {
-                observationsData = resourcesByType.Observation;
-                updateObservationsTab(observationsData);
-            }
-            
-            if (resourcesByType.MedicationRequest) {
-                medicationsData = resourcesByType.MedicationRequest;
-                updateMedicationsTab(medicationsData);
-            }
-            
-            if (resourcesByType.Encounter) {
-                encountersData = resourcesByType.Encounter;
-                updateEncountersTab(encountersData);
-            }
-            
-            if (resourcesByType.Practitioner) {
-                practitionersData = resourcesByType.Practitioner;
-                updatePractitionersTab(practitionersData);
-            }
-            
-            if (resourcesByType.Organization) {
-                organizationsData = resourcesByType.Organization;
-                updateOrganizationsTab(organizationsData);
-            }
-            
-            if (resourcesByType.RelatedPerson) {
-                relatedPersonsData = resourcesByType.RelatedPerson;
-                updateRelatedPersonsTab(relatedPersonsData);
-            }
-            
-            if (resourcesByType.Coverage) {
-                coverageData = resourcesByType.Coverage;
-                updateCoverageTab(coverageData);
-            }
-            
-            // Stocker le bundle complet
-            bundleData = bundle;
-            
-            // Mettre à jour l'onglet Bundle avec toutes les ressources
-            updateBundleView(bundle);
-            
-            // Générer la chronologie à partir de toutes les ressources temporelles
-            generateTimelineFromBundle(bundle);
-            
-            // Mettre à jour l'onglet JSON
-            updateJsonView();
-            
-            showStatus(`${bundle.entry ? bundle.entry.length : 0} ressources chargées avec succès`, 'success');
-            
-        } catch (error) {
-            console.error("Erreur lors du chargement via $everything:", error);
-            showStatus("Échec de $everything, chargement par ressources individuelles", 'warning');
-            
-            // Méthode de secours : chargement traditionnel par type de ressource
-            try {
-                await loadResourcesTraditionnally(serverUrl, patientId);
-            } catch (fallbackError) {
-                console.error("Échec total du chargement des données:", fallbackError);
-                showStatus("Erreur critique lors du chargement des données", 'error');
-            }
-        }
-    }
-    
-    async function loadResourcesTraditionnally(serverUrl, patientId) {
-        // Version asynchrone pour avoir une meilleure gestion des erreurs
-        showStatus('Chargement individuel des ressources...', 'info');
-        
-        try {
-            // On utilise Promise.allSettled pour continuer même si certaines requêtes échouent
-            const results = await Promise.allSettled([
-                loadPatientConditions(patientId, serverUrl),
-                loadPatientObservations(patientId, serverUrl),
-                loadPatientMedications(patientId, serverUrl),
-                loadPatientEncounters(patientId, serverUrl),
-                loadPatientPractitioners(patientId, serverUrl),
-                loadPatientOrganizations(patientId, serverUrl),
-                loadPatientRelatedPersons(patientId, serverUrl),
-                loadPatientCoverage(patientId, serverUrl)
-            ]);
-            
-            // Compter les succès et les échecs
-            const successes = results.filter(r => r.status === 'fulfilled').length;
-            const failures = results.filter(r => r.status === 'rejected').length;
-            
-            // Générer la chronologie
-            generateTimeline(patientId, serverUrl);
-            
-            // Charger le bundle manuellement
-            loadPatientBundle(patientId, serverUrl);
-            
-            // Mise à jour de l'affichage JSON
-            updateJsonView();
-            
-            // Rapport de statut
-            if (failures === 0) {
-                showStatus(`Chargement traditionnel réussi: ${successes} types de ressources chargés`, 'success');
-            } else {
-                showStatus(`Chargement partiel: ${successes} types de ressources chargés, ${failures} échecs`, 'warning');
-            }
-        } catch (error) {
-            console.error("Erreur générale lors du chargement traditionnel:", error);
-            showStatus("Erreur lors du chargement des ressources", 'error');
-            throw error;
-        }
-    }
             
             // Fonction pour générer une chronologie à partir d'un bundle
             function generateTimelineFromBundle(bundle) {
@@ -983,16 +925,13 @@ document.addEventListener('DOMContentLoaded', function() {
                                       : 'Aucune information de contact disponible'}
                                 </p>
                                 <p style="color: #777; font-style: italic; margin-top: 15px;">
-      ${patientData.address
-        ? `<strong>Adresse:</strong><br>${
-            patientData.address
-              .map(a =>
-                `${a.line ? a.line.join(', ') : ''}<br>
-                 ${a.postalCode || ''} ${a.city || ''}<br>
-                 ${a.country || ''}`)
-              .join('<br><br>')
-          }`
-        : 'Aucune adresse disponible'}
+                                    ${patientData.address ? 
+                                      `<strong>Adresse:</strong><br>${patientData.address.map(a => 
+                                        `${a.line ? a.line.join(', ') : ''}<br>
+                                         ${a.postalCode || ''} ${a.city || ''}<br>
+                                         ${a.country || ''}`
+                                      ).join('<br><br>')}` 
+                                      : 'Aucune adresse disponible'}
                                 </p>
                             </div>
                         </div>
