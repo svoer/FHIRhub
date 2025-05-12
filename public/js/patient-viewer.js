@@ -566,6 +566,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
         
+        // Réinitialiser les données des médicaments
+        medicationsData = [];
+        
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
@@ -577,6 +580,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadingSection.style.display = 'none';
                 
                 if (data.entry && data.entry.length > 0) {
+                    // Stocker tous les médicaments dans la variable globale
+                    medicationsData = data.entry.map(entry => entry.resource);
+                    console.log(`${medicationsData.length} médicaments chargés et stockés`);
+                    
                     resourcesList.innerHTML = '';
                     resourcesList.style.display = 'block';
                     
@@ -637,6 +644,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
         
+        // Réinitialiser les données des consultations
+        encountersData = [];
+        
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
@@ -648,6 +658,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadingSection.style.display = 'none';
                 
                 if (data.entry && data.entry.length > 0) {
+                    // Stocker toutes les consultations dans la variable globale
+                    encountersData = data.entry.map(entry => entry.resource);
+                    console.log(`${encountersData.length} consultations chargées et stockées`);
+                    
                     resourcesList.innerHTML = '';
                     resourcesList.style.display = 'block';
                     
