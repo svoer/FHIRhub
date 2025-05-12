@@ -429,6 +429,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 console.log("Génération de chronologie à partir du bundle complet...");
                 
+                // Avec la simplification de l'interface, nous n'avons plus d'onglet de chronologie
+                // Cependant, nous allons ajouter ces informations au résumé du patient
+                
                 const timelineItems = [];
                 
                 // Parcourir toutes les ressources du bundle et extraire les éléments pour la chronologie
@@ -439,7 +442,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     let date = null;
                     let description = '';
                     let category = '';
-                    let icon = '';
                     let value = '';
                     
                     switch(resource.resourceType) {
@@ -450,7 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                           (resource.type[0].coding[0].display || resource.type[0].coding[0].code)) || 
                                          resource.type[0].text)) || 'Consultation';
                             category = 'encounter';
-                            icon = 'stethoscope';
                             break;
                             
                         case 'Condition':
@@ -460,7 +461,6 @@ document.addEventListener('DOMContentLoaded', function() {
                                           (resource.code.coding[0].display || resource.code.coding[0].code)) || 
                                          resource.code.text)) || 'Condition';
                             category = 'condition';
-                            icon = 'heartbeat';
                             break;
                             
                         case 'Observation':
@@ -482,7 +482,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                             
                             category = 'observation';
-                            icon = 'microscope';
                             break;
                             
                         case 'MedicationRequest':
@@ -497,27 +496,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                             
                             category = 'medication';
-                            icon = 'pills';
-                            break;
-                            
-                        case 'Procedure':
-                            date = resource.performedDateTime || (resource.performedPeriod ? resource.performedPeriod.start : null);
-                            description = (resource.code && 
-                                        ((resource.code.coding && resource.code.coding[0] && 
-                                          (resource.code.coding[0].display || resource.code.coding[0].code)) || 
-                                         resource.code.text)) || 'Procédure';
-                            category = 'procedure';
-                            icon = 'procedures';
-                            break;
-                            
-                        case 'AllergyIntolerance':
-                            date = resource.recordedDate || resource.onsetDateTime || null;
-                            description = (resource.code && 
-                                        ((resource.code.coding && resource.code.coding[0] && 
-                                          ('Allergie: ' + (resource.code.coding[0].display || resource.code.coding[0].code))) || 
-                                         ('Allergie: ' + resource.code.text))) || 'Allergie';
-                            category = 'allergy';
-                            icon = 'allergies';
                             break;
                     }
                     
@@ -527,7 +505,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             description: description,
                             value: value,
                             category: category,
-                            icon: icon,
                             resource: resource
                         });
                     }
@@ -540,93 +517,57 @@ document.addEventListener('DOMContentLoaded', function() {
                     return dateB - dateA; // Tri décroissant (plus récent d'abord)
                 });
                 
-                // Afficher la chronologie
-                if (timelineItems.length === 0) {
-                    document.querySelector('#timelineContent .no-resources').style.display = 'block';
-                    document.querySelector('#timelineContent .loading-resources').style.display = 'none';
-                    return;
-                }
-                
-                // Récupérer le conteneur et préparer l'affichage
-                const container = document.querySelector('#timelineContent');
-                const loadingSection = document.querySelector('#timelineContent .loading-resources');
-                const noResourcesSection = document.querySelector('#timelineContent .no-resources');
-                const resourcesList = document.querySelector('#timelineContent .resources-list');
-                
-                if (!container || !loadingSection || !noResourcesSection || !resourcesList) {
-                    console.error("Structure DOM incorrecte pour la chronologie");
-                    return;
-                }
-                
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'none';
-                resourcesList.style.display = 'block';
-                resourcesList.innerHTML = '';
-                
-                // Ajouter chaque élément à la chronologie
-                timelineItems.forEach(item => {
-                    const itemDate = new Date(item.date);
-                    const formattedDate = itemDate.toLocaleDateString('fr-FR', { 
-                        year: 'numeric', 
-                        month: 'short', 
-                        day: 'numeric' 
-                    });
-                    const formattedTime = itemDate.toLocaleTimeString('fr-FR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit' 
-                    });
-                    
-                    let color;
-                    switch(item.category) {
-                        case 'observation': color = '#1abc9c'; break;
-                        case 'condition': color = '#c0392b'; break;
-                        case 'encounter': color = '#9b59b6'; break;
-                        case 'medication': color = '#3498db'; break;
-                        case 'procedure': color = '#f39c12'; break;
-                        case 'allergy': color = '#e74c3c'; break;
-                        default: color = '#e83e28';
-                    }
-                    
-                    const element = document.createElement('div');
-                    element.className = 'timeline-item';
-                    element.dataset.type = item.category;
-                    element.dataset.date = item.date;
-                    element.innerHTML = `
-                        <div class="timeline-date">
-                            <div class="date">${formattedDate}</div>
-                            <div class="time">${formattedTime}</div>
-                        </div>
-                        <div class="timeline-icon" style="background-color: ${color}">
-                            <i class="fas fa-${item.icon}"></i>
-                        </div>
-                        <div class="timeline-content">
-                            <h4 style="color: ${color}">${item.description}</h4>
-                            ${item.value ? `<p>${item.value}</p>` : ''}
-                            <button class="btn-view-json" data-resource-type="${item.resource.resourceType}" data-resource-id="${item.resource.id}">
-                                Voir JSON <i class="fas fa-code"></i>
-                            </button>
-                        </div>
-                    `;
-                    
-                    resourcesList.appendChild(element);
-                    
-                    // Ajouter un gestionnaire d'événement pour voir le JSON
-                    const btn = element.querySelector('.btn-view-json');
-                    if (btn) {
-                        btn.addEventListener('click', function() {
-                            const resourceJson = JSON.stringify(item.resource, null, 2);
-                            document.getElementById('json-content').textContent = resourceJson;
+                // Ajouter un résumé des éléments au panneau de résumé du patient
+                if (timelineItems.length > 0) {
+                    const summaryContent = document.getElementById('summaryContent');
+                    if (summaryContent) {
+                        let timelineHTML = `
+                            <div class="timeline-summary">
+                                <h3>Chronologie médicale</h3>
+                                <div class="timeline-list">
+                        `;
+                        
+                        // Ajouter les 5 derniers événements à la chronologie
+                        const recentItems = timelineItems.slice(0, 5);
+                        recentItems.forEach(item => {
+                            const itemDate = new Date(item.date);
+                            const formattedDate = itemDate.toLocaleDateString('fr-FR', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                            });
                             
-                            // Activer l'onglet JSON
-                            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-                            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
-                            document.querySelector('.tab[data-tab="json"]').classList.add('active');
-                            document.getElementById('json').style.display = 'block';
+                            let categoryColor = '#e83e28';
+                            switch(item.category) {
+                                case 'observation': categoryColor = '#1abc9c'; break;
+                                case 'condition': categoryColor = '#c0392b'; break;
+                                case 'encounter': categoryColor = '#9b59b6'; break;
+                                case 'medication': categoryColor = '#3498db'; break;
+                            }
+                            
+                            timelineHTML += `
+                                <div class="timeline-item" style="display: flex; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0;">
+                                    <div style="min-width: 120px; font-weight: 500;">${formattedDate}</div>
+                                    <div style="flex-grow: 1;">
+                                        <span style="font-weight: 600; color: ${categoryColor};">${item.description}</span>
+                                        ${item.value ? `<div style="margin-top: 5px; color: #666;">${item.value}</div>` : ''}
+                                    </div>
+                                </div>
+                            `;
                         });
+                        
+                        timelineHTML += `
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Ajouter la chronologie au résumé
+                        const existingContent = summaryContent.innerHTML;
+                        summaryContent.innerHTML = timelineHTML + existingContent;
                     }
-                });
+                }
                 
-                console.log(`${timelineItems.length} éléments ajoutés à la chronologie`);
+                console.log(`${timelineItems.length} éléments traités pour la chronologie`);
             }
             
             // Fonction pour mettre à jour l'affichage du bundle
@@ -637,239 +578,250 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Récupérer les éléments du DOM nécessaires
-                const bundleTab = document.getElementById('bundleContent');
-                if (!bundleTab) {
-                    console.error("Élément #bundleContent introuvable");
-                    return;
-                }
-                
-                const loadingSection = bundleTab.querySelector('.loading-resources');
-                const noResourcesSection = bundleTab.querySelector('.no-resources');
-                const resourcesList = bundleTab.querySelector('.resources-list');
-                const resourceCount = bundleTab.querySelector('.resource-count');
-                const resourceTypes = bundleTab.querySelector('.resource-types');
-                
-                if (!loadingSection || !noResourcesSection || !resourcesList) {
-                    console.error("Structure DOM incorrecte pour l'affichage du bundle");
-                    return;
-                }
-                
-                // Masquer le chargement
-                loadingSection.style.display = 'none';
-                
-                // Vérifier si le bundle contient des entrées
-                if (!bundle.entry || bundle.entry.length === 0) {
-                    noResourcesSection.style.display = 'block';
-                    resourcesList.style.display = 'none';
-                    resourceCount.textContent = '0';
-                    resourceTypes.textContent = 'aucun';
-                    return;
-                }
-                
-                // Afficher les ressources
-                noResourcesSection.style.display = 'none';
-                resourcesList.style.display = 'block';
-                resourcesList.innerHTML = '';
-                
-                // Compter les types de ressources
-                const typeCount = {};
-                bundle.entry.forEach(entry => {
-                    if (entry.resource && entry.resource.resourceType) {
+                try {
+                    // Mise à jour des informations globales
+                    const bundleId = document.getElementById('bundle-id');
+                    const bundleType = document.getElementById('bundle-type');
+                    const bundleResourceCount = document.getElementById('bundle-resource-count');
+                    const bundleResourceTypes = document.getElementById('bundle-resource-types');
+                    const bundleInfoContainer = document.getElementById('bundle-info-container');
+                    const bundleLoadingSection = document.getElementById('bundle-loading-section');
+                    const bundleResourcesList = document.getElementById('bundle-resources-list');
+                    
+                    if (!bundleId || !bundleType || !bundleResourceCount || !bundleResourceTypes || 
+                        !bundleInfoContainer || !bundleLoadingSection || !bundleResourcesList) {
+                        throw new Error("Éléments DOM requis pour l'affichage du bundle non trouvés");
+                    }
+                    
+                    // Masquer le chargement
+                    bundleLoadingSection.style.display = 'none';
+                    
+                    // Mettre à jour les informations du bundle
+                    bundleId.textContent = bundle.id || '(non identifié)';
+                    bundleType.textContent = bundle.type || 'non spécifié';
+                    
+                    // Vérifier si le bundle contient des entrées
+                    if (!bundle.entry || bundle.entry.length === 0) {
+                        bundleResourceCount.textContent = '0';
+                        bundleResourceTypes.textContent = 'aucun';
+                        bundleResourcesList.innerHTML = '<div class="empty-state">Aucune ressource trouvée dans ce bundle</div>';
+                        bundleInfoContainer.style.display = 'block';
+                        return;
+                    }
+                    
+                    // Compter les types de ressources
+                    const typeCount = {};
+                    bundle.entry.forEach(entry => {
+                        if (entry.resource && entry.resource.resourceType) {
+                            const type = entry.resource.resourceType;
+                            typeCount[type] = (typeCount[type] || 0) + 1;
+                        }
+                    });
+                    
+                    // Mettre à jour les informations
+                    bundleResourceCount.textContent = bundle.entry.length.toString();
+                    bundleResourceTypes.textContent = Object.keys(typeCount).join(', ');
+                    bundleInfoContainer.style.display = 'block';
+                    
+                    // Organiser les ressources par type
+                    const resourcesByType = {};
+                    bundle.entry.forEach(entry => {
+                        if (!entry.resource) return;
+                        
                         const type = entry.resource.resourceType;
-                        typeCount[type] = (typeCount[type] || 0) + 1;
-                    }
-                });
-                
-                // Mettre à jour les informations
-                resourceCount.textContent = bundle.entry.length.toString();
-                resourceTypes.textContent = Object.keys(typeCount).join(', ');
-                
-                // Organiser les ressources par type
-                const resourcesByType = {};
-                bundle.entry.forEach(entry => {
-                    if (!entry.resource) return;
+                        if (!resourcesByType[type]) {
+                            resourcesByType[type] = [];
+                        }
+                        resourcesByType[type].push(entry.resource);
+                    });
                     
-                    const type = entry.resource.resourceType;
-                    if (!resourcesByType[type]) {
-                        resourcesByType[type] = [];
-                    }
-                    resourcesByType[type].push(entry.resource);
-                });
-                
-                // Afficher les groupes de ressources
-                Object.entries(resourcesByType).forEach(([type, resources]) => {
-                    // Créer l'en-tête du groupe
-                    const groupElement = document.createElement('div');
-                    groupElement.className = 'resource-group';
+                    // Nettoyer la liste existante
+                    bundleResourcesList.innerHTML = '';
                     
-                    // Déterminer la couleur et l'icône en fonction du type
-                    let typeColor = '#e83e28';  // Couleur par défaut
-                    let typeIcon = 'cube';     // Icône par défaut
-                    
-                    switch(type) {
-                        case 'Patient':
-                            typeColor = '#2980b9';
-                            typeIcon = 'user';
-                            break;
-                        case 'Practitioner':
-                            typeColor = '#27ae60';
-                            typeIcon = 'user-md';
-                            break;
-                        case 'Organization':
-                            typeColor = '#f39c12';
-                            typeIcon = 'hospital-alt';
-                            break;
-                        case 'Encounter':
-                            typeColor = '#9b59b6';
-                            typeIcon = 'stethoscope';
-                            break;
-                        case 'Condition':
-                            typeColor = '#c0392b';
-                            typeIcon = 'heartbeat';
-                            break;
-                        case 'Observation':
-                            typeColor = '#1abc9c';
-                            typeIcon = 'microscope';
-                            break;
-                        case 'MedicationRequest':
-                            typeColor = '#3498db';
-                            typeIcon = 'pills';
-                            break;
-                        case 'Coverage':
-                            typeColor = '#8e44ad';
-                            typeIcon = 'file-medical';
-                            break;
-                    }
-                    
-                    // Créer l'en-tête du groupe
-                    const header = document.createElement('div');
-                    header.className = 'group-header';
-                    header.innerHTML = `
-                        <div class="group-icon" style="background-color: ${typeColor}">
-                            <i class="fas fa-${typeIcon}"></i>
-                        </div>
-                        <div class="group-title">${type} (${resources.length})</div>
-                        <div class="group-toggle">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    `;
-                    
-                    // Créer le contenu du groupe
-                    const content = document.createElement('div');
-                    content.className = 'group-content';
-                    
-                    // Ajouter chaque ressource au groupe
-                    resources.forEach(resource => {
-                        const resourceElement = document.createElement('div');
-                        resourceElement.className = 'resource-item';
+                    // Afficher les groupes de ressources
+                    for (const [type, resources] of Object.entries(resourcesByType)) {
+                        // Créer l'en-tête du groupe
+                        const groupElement = document.createElement('div');
+                        groupElement.className = 'resource-group';
+                        groupElement.style.marginBottom = '20px';
                         
-                        // Obtenir le nom de la ressource en fonction de son type
-                        let resourceName = '';
-                        let resourceDetail = '';
+                        // Déterminer la couleur et l'icône en fonction du type
+                        let typeColor = '#e83e28';  // Couleur par défaut
+                        let typeIcon = 'cube';     // Icône par défaut
                         
-                        if (type === 'Patient' && resource.name && resource.name.length > 0) {
-                            resourceName = formatPatientName(resource.name);
-                            resourceDetail = `ID: ${resource.id}`;
-                            if (resource.birthDate) resourceDetail += ` | Né(e) le: ${resource.birthDate}`;
-                        } 
-                        else if (type === 'Practitioner' && resource.name && resource.name.length > 0) {
-                            resourceName = formatPractitionerName(resource.name);
-                            resourceDetail = `ID: ${resource.id}`;
-                        }
-                        else if (type === 'Organization' && resource.name) {
-                            resourceName = resource.name;
-                            resourceDetail = `ID: ${resource.id}`;
-                        }
-                        else if (type === 'Condition' && resource.code && resource.code.coding && resource.code.coding.length > 0) {
-                            resourceName = resource.code.coding[0].display || resource.code.coding[0].code || `Condition #${resource.id}`;
-                            resourceDetail = `ID: ${resource.id}`;
-                            if (resource.recordedDate) resourceDetail += ` | Date: ${resource.recordedDate.split('T')[0]}`;
-                        }
-                        else if (type === 'Observation' && resource.code && resource.code.coding && resource.code.coding.length > 0) {
-                            resourceName = resource.code.coding[0].display || resource.code.coding[0].code || `Observation #${resource.id}`;
-                            resourceDetail = `ID: ${resource.id}`;
-                            if (resource.effectiveDateTime) resourceDetail += ` | Date: ${resource.effectiveDateTime.split('T')[0]}`;
-                            
-                            if (resource.valueQuantity) {
-                                resourceDetail += ` | Valeur: ${resource.valueQuantity.value} ${resource.valueQuantity.unit || ''}`;
-                            }
-                        }
-                        else if (type === 'MedicationRequest' && resource.medicationCodeableConcept) {
-                            if (resource.medicationCodeableConcept.coding && resource.medicationCodeableConcept.coding.length > 0) {
-                                resourceName = resource.medicationCodeableConcept.coding[0].display || resource.medicationCodeableConcept.coding[0].code;
-                            } else if (resource.medicationCodeableConcept.text) {
-                                resourceName = resource.medicationCodeableConcept.text;
-                            } else {
-                                resourceName = `Médicament #${resource.id}`;
-                            }
-                            resourceDetail = `ID: ${resource.id}`;
-                            if (resource.authoredOn) resourceDetail += ` | Date: ${resource.authoredOn.split('T')[0]}`;
-                        }
-                        else if (type === 'Encounter') {
-                            if (resource.type && resource.type.length > 0 && resource.type[0].coding && resource.type[0].coding.length > 0) {
-                                resourceName = resource.type[0].coding[0].display || resource.type[0].coding[0].code;
-                            } else {
-                                resourceName = `Consultation #${resource.id}`;
-                            }
-                            resourceDetail = `ID: ${resource.id}`;
-                            if (resource.period && resource.period.start) resourceDetail += ` | Début: ${resource.period.start.split('T')[0]}`;
-                        }
-                        else {
-                            resourceName = `${type} #${resource.id}`;
-                            resourceDetail = `ID: ${resource.id}`;
+                        switch(type) {
+                            case 'Patient':
+                                typeColor = '#2980b9';
+                                typeIcon = 'user';
+                                break;
+                            case 'Practitioner':
+                                typeColor = '#27ae60';
+                                typeIcon = 'user-md';
+                                break;
+                            case 'Organization':
+                                typeColor = '#f39c12';
+                                typeIcon = 'hospital-alt';
+                                break;
+                            case 'Encounter':
+                                typeColor = '#9b59b6';
+                                typeIcon = 'stethoscope';
+                                break;
+                            case 'Condition':
+                                typeColor = '#c0392b';
+                                typeIcon = 'heartbeat';
+                                break;
+                            case 'Observation':
+                                typeColor = '#1abc9c';
+                                typeIcon = 'microscope';
+                                break;
+                            case 'MedicationRequest':
+                                typeColor = '#3498db';
+                                typeIcon = 'pills';
+                                break;
+                            case 'Coverage':
+                                typeColor = '#8e44ad';
+                                typeIcon = 'file-medical';
+                                break;
                         }
                         
-                        resourceElement.innerHTML = `
-                            <div class="resource-header">
-                                <div class="resource-name">${resourceName}</div>
-                                <button class="btn-view-json" data-resource-type="${resource.resourceType}" data-resource-id="${resource.id}">
-                                    <i class="fas fa-code"></i>
-                                </button>
+                        const groupHeader = document.createElement('div');
+                        groupHeader.className = 'group-header';
+                        groupHeader.style.display = 'flex';
+                        groupHeader.style.alignItems = 'center';
+                        groupHeader.style.gap = '10px';
+                        groupHeader.style.padding = '15px 10px';
+                        groupHeader.style.backgroundColor = '#f9f9f9';
+                        groupHeader.style.borderRadius = '8px';
+                        groupHeader.style.marginBottom = '10px';
+                        groupHeader.style.cursor = 'pointer';
+                        
+                        groupHeader.innerHTML = `
+                            <div style="width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; background-color: ${typeColor}">
+                                <i class="fas fa-${typeIcon}"></i>
                             </div>
-                            <div class="resource-details">${resourceDetail}</div>
+                            <div style="flex-grow: 1; font-weight: 600;">${type} (${resources.length})</div>
+                            <i class="fas fa-chevron-down" style="color: #999;"></i>
                         `;
                         
-                        content.appendChild(resourceElement);
+                        const groupContent = document.createElement('div');
+                        groupContent.className = 'group-content';
+                        groupContent.style.display = 'block';
                         
-                        // Ajouter un gestionnaire d'événement pour voir le JSON
-                        const btn = resourceElement.querySelector('.btn-view-json');
-                        if (btn) {
-                            btn.addEventListener('click', function() {
-                                const resourceJson = JSON.stringify(resource, null, 2);
-                                document.getElementById('json-content').textContent = resourceJson;
+                        resources.forEach(resource => {
+                            const resourceItem = document.createElement('div');
+                            resourceItem.className = 'resource-item';
+                            resourceItem.style.padding = '12px 16px';
+                            resourceItem.style.borderBottom = '1px solid #f0f0f0';
+                            
+                            // Obtenir le nom de la ressource en fonction de son type
+                            let resourceName = `${type} #${resource.id}`;
+                            let resourceDetail = `ID: ${resource.id}`;
+                            
+                            if (type === 'Patient' && resource.name && resource.name.length > 0) {
+                                resourceName = formatPatientName(resource.name);
+                                if (resource.birthDate) resourceDetail += ` | Né(e) le: ${resource.birthDate}`;
+                            } 
+                            else if (type === 'Practitioner' && resource.name && resource.name.length > 0) {
+                                resourceName = formatPractitionerName(resource.name);
+                            }
+                            else if (type === 'Organization' && resource.name) {
+                                resourceName = resource.name;
+                            }
+                            else if (type === 'Condition' && resource.code && resource.code.coding && resource.code.coding.length > 0) {
+                                resourceName = resource.code.coding[0].display || resource.code.coding[0].code || `Condition #${resource.id}`;
+                                if (resource.recordedDate) resourceDetail += ` | Date: ${resource.recordedDate.split('T')[0]}`;
+                            }
+                            else if (type === 'Observation' && resource.code && resource.code.coding && resource.code.coding.length > 0) {
+                                resourceName = resource.code.coding[0].display || resource.code.coding[0].code || `Observation #${resource.id}`;
+                                if (resource.effectiveDateTime) resourceDetail += ` | Date: ${resource.effectiveDateTime.split('T')[0]}`;
                                 
-                                // Activer l'onglet JSON
-                                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-                                document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
-                                document.querySelector('.tab[data-tab="json"]').classList.add('active');
-                                document.getElementById('json').style.display = 'block';
-                            });
-                        }
-                    });
-                    
-                    // Ajouter un comportement d'expansion/réduction au groupe
-                    header.addEventListener('click', function() {
-                        this.classList.toggle('collapsed');
-                        const content = this.nextElementSibling;
-                        content.style.display = content.style.display === 'none' ? 'block' : 'none';
+                                if (resource.valueQuantity) {
+                                    resourceDetail += ` | Valeur: ${resource.valueQuantity.value} ${resource.valueQuantity.unit || ''}`;
+                                }
+                            }
+                            else if (type === 'MedicationRequest' && resource.medicationCodeableConcept) {
+                                if (resource.medicationCodeableConcept.coding && resource.medicationCodeableConcept.coding.length > 0) {
+                                    resourceName = resource.medicationCodeableConcept.coding[0].display || resource.medicationCodeableConcept.coding[0].code;
+                                } else if (resource.medicationCodeableConcept.text) {
+                                    resourceName = resource.medicationCodeableConcept.text;
+                                }
+                                if (resource.authoredOn) resourceDetail += ` | Date: ${resource.authoredOn.split('T')[0]}`;
+                            }
+                            else if (type === 'Encounter') {
+                                if (resource.type && resource.type.length > 0 && resource.type[0].coding && resource.type[0].coding.length > 0) {
+                                    resourceName = resource.type[0].coding[0].display || resource.type[0].coding[0].code;
+                                }
+                                if (resource.period && resource.period.start) resourceDetail += ` | Début: ${resource.period.start.split('T')[0]}`;
+                            }
+                            
+                            resourceItem.innerHTML = `
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                    <div style="font-weight: 600; color: #333;">${resourceName}</div>
+                                    <button class="btn-view-json" style="background: linear-gradient(135deg, #e83e28, #fd7e30); color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                                        Voir JSON <i class="fas fa-code"></i>
+                                    </button>
+                                </div>
+                                <div style="color: #666; font-size: 0.9rem;">${resourceDetail}</div>
+                            `;
+                            
+                            groupContent.appendChild(resourceItem);
+                            
+                            // Ajouter l'événement pour afficher le JSON
+                            setTimeout(() => {
+                                const jsonBtn = resourceItem.querySelector('.btn-view-json');
+                                if (jsonBtn) {
+                                    jsonBtn.addEventListener('click', function() {
+                                        document.getElementById('json-content').textContent = JSON.stringify(resource, null, 2);
+                                        // Activer l'onglet JSON
+                                        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                        document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                        document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                        document.getElementById('json').style.display = 'block';
+                                    });
+                                }
+                            }, 0);
+                        });
                         
-                        // Rotation de l'icône
-                        const icon = this.querySelector('.fa-chevron-down');
-                        if (icon) {
-                            icon.style.transform = content.style.display === 'none' ? 'rotate(0deg)' : 'rotate(180deg)';
-                        }
-                    });
+                        // Ajouter un comportement d'expansion/réduction au groupe
+                        groupHeader.addEventListener('click', function() {
+                            const isVisible = groupContent.style.display === 'block';
+                            groupContent.style.display = isVisible ? 'none' : 'block';
+                            
+                            // Rotation de l'icône
+                            const icon = this.querySelector('.fa-chevron-down');
+                            if (icon) {
+                                icon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+                                icon.style.transition = 'transform 0.3s ease';
+                            }
+                        });
+                        
+                        groupElement.appendChild(groupHeader);
+                        groupElement.appendChild(groupContent);
+                        bundleResourcesList.appendChild(groupElement);
+                    }
                     
-                    // Ajouter l'en-tête et le contenu au groupe
-                    groupElement.appendChild(header);
-                    groupElement.appendChild(content);
+                    console.log(`Bundle affiché avec ${bundle.entry.length} ressources`);
                     
-                    // Ajouter le groupe à la liste
-                    resourcesList.appendChild(groupElement);
-                });
-                
-                console.log(`Bundle affiché avec ${bundle.entry.length} ressources`);
+                } catch (error) {
+                    console.error("Erreur lors de la mise à jour de l'affichage du bundle:", error);
+                    
+                    // Affichage de secours
+                    const bundleIdElement = document.getElementById('bundle-id');
+                    if (bundleIdElement) bundleIdElement.textContent = bundle.id || '(inconnu)';
+                    
+                    const bundleTypeElement = document.getElementById('bundle-type');
+                    if (bundleTypeElement) bundleTypeElement.textContent = bundle.type || '(inconnu)';
+                    
+                    const bundleInfoContainer = document.getElementById('bundle-info-container');
+                    if (bundleInfoContainer) bundleInfoContainer.style.display = 'block';
+                    
+                    const bundleLoadingSection = document.getElementById('bundle-loading-section');
+                    if (bundleLoadingSection) bundleLoadingSection.style.display = 'none';
+                    
+                    // Afficher le contenu JSON brut comme solution de repli
+                    const jsonContent = document.getElementById('json-content');
+                    if (jsonContent) jsonContent.textContent = JSON.stringify(bundle, null, 2);
+                }
             }
             
             // Mettre à jour l'onglet JSON
