@@ -1839,7 +1839,7 @@
                                 responseContainer.style.marginTop = '15px';
                                 bundleResult.appendChild(responseContainer);
                                 
-                                formatAndDisplayJson(data.data, responseContainer);
+                                formatAndDisplayJson(data.serverResponse, responseContainer);
                                 updateStatusBar("Bundle envoyé avec succès vers le serveur " + serverId, "success");
                             } else {
                                 throw new Error(data.message || "Erreur lors de l'envoi du bundle");
