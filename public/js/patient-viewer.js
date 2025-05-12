@@ -393,6 +393,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
         
+        // Réinitialiser les données des conditions
+        conditionsData = [];
+        
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
@@ -413,6 +416,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const data = JSON.parse(xhr.responseText);
                     
                     if (data.entry && data.entry.length > 0) {
+                        // Stocker toutes les conditions dans la variable globale
+                        conditionsData = data.entry.map(entry => entry.resource);
+                        console.log(`${conditionsData.length} conditions chargées et stockées`);
+                        
                         resourcesList.innerHTML = '';
                         resourcesList.style.display = 'block';
                         
@@ -483,6 +490,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
         
+        // Réinitialiser les données des observations
+        observationsData = [];
+        
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
@@ -494,6 +504,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadingSection.style.display = 'none';
                 
                 if (data.entry && data.entry.length > 0) {
+                    // Stocker toutes les observations dans la variable globale
+                    observationsData = data.entry.map(entry => entry.resource);
+                    console.log(`${observationsData.length} observations chargées et stockées`);
+                    
                     resourcesList.innerHTML = '';
                     resourcesList.style.display = 'block';
                     
@@ -1058,10 +1072,27 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         try {
+            // Créer un objet complet avec toutes les données du patient de tous les onglets
+            const completePatientData = {
+                patient: patientData,
+                conditions: conditionsData,
+                observations: observationsData,
+                medications: medicationsData,
+                encounters: encountersData
+            };
+            
+            console.log("Envoi de l'analyse IA avec données complètes:", 
+                `Patient: ${patientData ? 'OK' : 'Manquant'}, ` +
+                `Conditions: ${conditionsData.length}, ` +
+                `Observations: ${observationsData.length}, ` + 
+                `Médicaments: ${medicationsData.length}, ` +
+                `Consultations: ${encountersData.length}`
+            );
+            
             xhr.send(JSON.stringify({
                 patientId: patientData.id,
                 serverUrl: serverSelect.value,
-                patientData: patientData
+                patientData: completePatientData
             }));
         } catch (error) {
             showLocalAnalysis("Erreur lors de l'envoi de la requête IA");
