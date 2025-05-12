@@ -131,7 +131,13 @@ const chartColors = {
 function fetchAndUpdateCharts(forceReset = false) {
   console.log("Récupération des données pour les graphiques...");
   
-  // Récupérer les statistiques générales
+  // Si reset est demandé, afficher une notification
+  if (forceReset) {
+    console.log("Réinitialisation des statistiques demandée");
+    alert("Réinitialisation des statistiques en cours...");
+  }
+  
+  // Récupérer les statistiques générales avec le paramètre reset si nécessaire
   fetch('/api/stats' + (forceReset ? '?reset=true' : ''))
     .then(response => response.json())
     .then(data => {
@@ -142,6 +148,18 @@ function fetchAndUpdateCharts(forceReset = false) {
       
       const statsData = data.data || data;
       console.log("Données reçues pour les graphiques:", statsData);
+      
+      // Si réinitialisation réussie, afficher une notification
+      if (forceReset) {
+        alert("Statistiques réinitialisées avec succès!");
+        // Également réinitialiser les graphiques localement
+        Object.keys(chartInstances).forEach(key => {
+          if (chartInstances[key]) {
+            chartInstances[key].data.datasets[0].data = Array(chartInstances[key].data.datasets[0].data.length).fill(0);
+            chartInstances[key].update();
+          }
+        });
+      }
       
       // Mettre à jour les timestamps
       updateTimestamps(statsData.timestamp);
@@ -204,7 +222,32 @@ function updateDashboardCounters(data) {
     applicationsCount.textContent = data.applicationStats.length || 0;
   }
   
-  // Le compteur de clés API n'est pas géré par les données actuelles
+  // Récupérer le nombre de clés API séparément
+  if (apiKeysCount) {
+    // Si reset a été demandé, mettre à 0
+    if (data.conversions === 0 && data.conversionStats && data.conversionStats.avgTime === 0) {
+      apiKeysCount.textContent = "0";
+    } else {
+      // Sinon, faire une requête séparée pour les clés API
+      fetch('/api/api-keys/count')
+        .then(response => response.json())
+        .then(apiData => {
+          if (apiData.success === false) {
+            console.error("Erreur lors de la récupération du nombre de clés API:", apiData.error);
+            return;
+          }
+          
+          // Mettre à jour le compteur de clés API
+          const count = apiData.count || 0;
+          apiKeysCount.textContent = count;
+        })
+        .catch(error => {
+          console.error("Erreur lors de la récupération du nombre de clés API:", error);
+          // En cas d'erreur, afficher une valeur par défaut
+          apiKeysCount.textContent = "?";
+        });
+    }
+  }
 }
 
 // Mettre à jour les métriques principales
