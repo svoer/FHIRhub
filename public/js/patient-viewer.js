@@ -318,8 +318,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // Afficher un status de chargement
             showStatus('Chargement de toutes les données médicales du patient...', 'info');
             
+            // Gérer le timeout pour la requête $everything
+            const everythingTimeoutMs = 30000; // 30 secondes
+            let everythingTimedOut = false;
+            
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => {
+                    everythingTimedOut = true;
+                    reject(new Error("Timeout de la requête $everything"));
+                }, everythingTimeoutMs);
+            });
+            
             // Tenter de charger toutes les ressources en une seule requête avec $everything
-            fetch(`${server}/Patient/${patientId}/$everything`)
+            const fetchPromise = fetch(`${server}/Patient/${patientId}/$everything`)
                 .then(response => {
                     if (!response.ok) {
                         // Si $everything n'est pas supporté, on utilise l'approche traditionnelle
@@ -327,8 +338,13 @@ document.addEventListener('DOMContentLoaded', function() {
                         throw new Error("$everything non supporté");
                     }
                     return response.json();
-                })
+                });
+                
+            // Combiner les promesses avec une course (race)
+            Promise.race([fetchPromise, timeoutPromise])
                 .then(bundle => {
+                    if (everythingTimedOut) return; // Si timeout déjà déclenché, on ignore
+                    
                     console.log("Bundle complet récupéré via $everything:", bundle);
                     showStatus('Chargement complet des données réussi via $everything', 'success');
                     
@@ -401,23 +417,135 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error("Erreur avec $everything:", error);
-                    loadResourcesTraditionnally();
+                    
+                    // Afficher un message plus informatif selon le type d'erreur
+                    if (error.message === "Timeout de la requête $everything") {
+                        showStatus("L'opération $everything a pris trop de temps, utilisation de la méthode traditionnelle", 'warning');
+                    } else if (error.message === "$everything non supporté") {
+                        showStatus("L'opération $everything n'est pas supportée par ce serveur, utilisation de la méthode traditionnelle", 'info');
+                    } else if (error.message && error.message.includes("Failed to fetch")) {
+                        showStatus("Erreur réseau lors de la connexion au serveur FHIR, vérifiez votre connexion", 'error');
+                    } else {
+                        showStatus("Erreur lors du chargement via $everything, utilisation de la méthode traditionnelle", 'warning');
+                    }
+                    
+                    // Si nous ne sommes pas déjà en train de charger via la méthode traditionnelle
+                    if (!everythingTimedOut) {
+                        loadResourcesTraditionnally();
+                    }
                 });
                 
             // Fonction pour charger les ressources de façon traditionnelle
             function loadResourcesTraditionnally() {
                 showStatus('Chargement individuel des ressources...', 'info');
-                // Charger toutes les ressources associées au patient individuellement
-                loadPatientConditions(patientId, server);
-                loadPatientObservations(patientId, server);
-                loadPatientMedications(patientId, server);
-                loadPatientEncounters(patientId, server);
-                loadPatientPractitioners(patientId, server);
-                loadPatientOrganizations(patientId, server);
-                loadPatientRelatedPersons(patientId, server);
-                loadPatientCoverage(patientId, server);
-                generateTimeline(patientId, server);
-                loadPatientBundle(patientId, server);
+                
+                // Utiliser Promise.allSettled pour gérer les erreurs de manière robuste
+                // Cela permettra de récupérer les données même si certaines requêtes échouent
+                const loadPromises = [
+                    // Charger les conditions (diagnostics)
+                    new Promise(resolve => {
+                        try {
+                            loadPatientConditions(patientId, server);
+                            resolve();
+                        } catch (err) {
+                            console.warn("Erreur lors du chargement des conditions:", err);
+                            resolve();
+                        }
+                    }),
+                    
+                    // Charger les observations (résultats de laboratoire, signes vitaux)
+                    new Promise(resolve => {
+                        try {
+                            loadPatientObservations(patientId, server);
+                            resolve();
+                        } catch (err) {
+                            console.warn("Erreur lors du chargement des observations:", err);
+                            resolve();
+                        }
+                    }),
+                    
+                    // Charger les médicaments
+                    new Promise(resolve => {
+                        try {
+                            loadPatientMedications(patientId, server);
+                            resolve();
+                        } catch (err) {
+                            console.warn("Erreur lors du chargement des médicaments:", err);
+                            resolve();
+                        }
+                    }),
+                    
+                    // Charger les consultations
+                    new Promise(resolve => {
+                        try {
+                            loadPatientEncounters(patientId, server);
+                            resolve();
+                        } catch (err) {
+                            console.warn("Erreur lors du chargement des consultations:", err);
+                            resolve();
+                        }
+                    }),
+                    
+                    // Charger les praticiens
+                    new Promise(resolve => {
+                        try {
+                            loadPatientPractitioners(patientId, server);
+                            resolve();
+                        } catch (err) {
+                            console.warn("Erreur lors du chargement des praticiens:", err);
+                            resolve();
+                        }
+                    }),
+                    
+                    // Charger les organisations
+                    new Promise(resolve => {
+                        try {
+                            loadPatientOrganizations(patientId, server);
+                            resolve();
+                        } catch (err) {
+                            console.warn("Erreur lors du chargement des organisations:", err);
+                            resolve();
+                        }
+                    }),
+                    
+                    // Charger les personnes liées
+                    new Promise(resolve => {
+                        try {
+                            loadPatientRelatedPersons(patientId, server);
+                            resolve();
+                        } catch (err) {
+                            console.warn("Erreur lors du chargement des personnes liées:", err);
+                            resolve();
+                        }
+                    }),
+                    
+                    // Charger les couvertures d'assurance
+                    new Promise(resolve => {
+                        try {
+                            loadPatientCoverage(patientId, server);
+                            resolve();
+                        } catch (err) {
+                            console.warn("Erreur lors du chargement des couvertures:", err);
+                            resolve();
+                        }
+                    })
+                ];
+                
+                // Attendre que toutes les promesses soient résolues (même en cas d'erreur)
+                Promise.allSettled(loadPromises).then(() => {
+                    try {
+                        // Générer la chronologie avec les données chargées
+                        generateTimeline(patientId, server);
+                        
+                        // Charger le bundle complet
+                        loadPatientBundle(patientId, server);
+                        
+                        showStatus('Chargement terminé', 'success');
+                    } catch (err) {
+                        console.warn("Erreur lors de la finalisation du chargement:", err);
+                        showStatus('Chargement terminé avec des erreurs', 'warning');
+                    }
+                });
             }
             
             // Fonction pour générer une chronologie à partir d'un bundle
