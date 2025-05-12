@@ -1618,62 +1618,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     const resourceTypes = data.entry ? 
                         [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
                     
-                    // Calculer d'abord les types de ressources qui ne sont pas déjà dans d'autres onglets
-                    const existingTabTypes = ['Patient', 'Encounter', 'Condition', 'Observation', 
-                                             'MedicationRequest', 'Practitioner', 'Organization', 
-                                             'RelatedPerson', 'Coverage'];
-                                             
-                    const uniqueResourceTypes = resourceTypes.filter(type => !existingTabTypes.includes(type));
-                    
                     bundleInfo.innerHTML = `
                         <p><strong>Type de bundle:</strong> ${data.type || 'Inconnu'}</p>
                         <p><strong>Identifiant:</strong> ${data.id || 'Non spécifié'}</p>
-                        <p><strong>Nombre total de ressources:</strong> ${resourceCount}</p>
-                        <p><strong>Types de ressources (uniquement celles non présentes dans les onglets dédiés):</strong> ${uniqueResourceTypes.join(', ') || 'Aucun'}</p>
-                        <p><em>Note: Les ressources déjà affichées dans leurs onglets dédiés ne sont pas répétées ici.</em></p>
+                        <p><strong>Nombre de ressources:</strong> ${resourceCount}</p>
+                        <p><strong>Types de ressources:</strong> ${resourceTypes.join(', ') || 'Aucun'}</p>
                     `;
                     
                     if (resourceCount > 0) {
                         // Grouper les ressources par type
                         const resourcesByType = {};
                         
-                        // Stocker les types de ressources déjà présents dans d'autres onglets
-                        const existingTabTypes = [];
-                        if (document.getElementById('patientContent')) existingTabTypes.push('Patient');
-                        if (document.getElementById('encountersContent')) existingTabTypes.push('Encounter');
-                        if (document.getElementById('conditionsContent')) existingTabTypes.push('Condition');
-                        if (document.getElementById('observationsContent')) existingTabTypes.push('Observation');
-                        if (document.getElementById('medicationsContent')) existingTabTypes.push('MedicationRequest');
-                        if (document.getElementById('practitionersContent')) existingTabTypes.push('Practitioner');
-                        if (document.getElementById('organizationsContent')) existingTabTypes.push('Organization');
-                        if (document.getElementById('relatedPersonsContent')) existingTabTypes.push('RelatedPerson');
-                        if (document.getElementById('coverageContent')) existingTabTypes.push('Coverage');
-                        
-                        // Compter uniquement les ressources qui ne sont pas déjà affichées dans d'autres onglets
-                        let uniqueResourceCount = 0;
-                        
                         data.entry.forEach(entry => {
                             if (entry.resource && entry.resource.resourceType) {
                                 const type = entry.resource.resourceType;
-                                
-                                // Si le type n'est pas dans les onglets existants, on l'ajoute au groupe
                                 if (!resourcesByType[type]) {
                                     resourcesByType[type] = [];
                                 }
                                 resourcesByType[type].push(entry.resource);
-                                
-                                // Si le type n'est pas dans un onglet existant, le compter comme unique
-                                if (!existingTabTypes.includes(type)) {
-                                    uniqueResourceCount++;
-                                }
                             }
                         });
-                        
-                        // Mettre à jour l'affichage du nombre de ressources pour n'indiquer que les ressources uniques
-                        const bundleResourceCount = document.getElementById('bundleResourceCount');
-                        if (bundleResourceCount) {
-                            bundleResourceCount.textContent = uniqueResourceCount;
-                        }
                         
                         // Pour chaque type, créer une section dépliable
                         Object.keys(resourcesByType).sort().forEach(type => {
