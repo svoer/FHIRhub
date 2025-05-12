@@ -20,8 +20,34 @@
     <!-- Inclusion du menu latéral avec version corrigée -->
     <script src="/js/include-sidebar.js" defer></script>
     <script src="/js/sidebar-menu.js" defer></script>
-    <!-- Script d'optimisation pour la navigation FHIR -->
-    <script src="/js/fhir-browser-optimization.js" defer></script>
+    <!-- Styles pour la coloration de code -->
+    <style>
+        /* Styles pour la mise en forme du JSON */
+        .json-formatter pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            overflow: auto;
+            font-family: 'Menlo', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .json-formatter .key {
+            color: #e83e28;
+        }
+        .json-formatter .string {
+            color: #2b6cb0;
+        }
+        .json-formatter .number {
+            color: #805ad5;
+        }
+        .json-formatter .boolean {
+            color: #38a169;
+        }
+        .json-formatter .null {
+            color: #718096;
+        }
+    </style>
     
     <style>
         /* Design UX 2025 pour l'explorateur FHIR */
