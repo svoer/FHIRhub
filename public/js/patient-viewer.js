@@ -37,9 +37,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Désactiver tous les onglets
             tabs.forEach(t => {
                 t.classList.remove('active');
-                // Réinitialiser le style
-                t.style.background = '#f5f5f5';
-                t.style.color = '#555';
+                // Le style est maintenant géré par CSS
             });
             
             // Désactiver tous les contenus
@@ -50,9 +48,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Activer l'onglet sélectionné
             this.classList.add('active');
-            // Appliquer le style actif (dégradé rouge-orange)
-            this.style.background = 'linear-gradient(135deg, #e83e28, #fd7e30)';
-            this.style.color = 'white';
             
             // Activer le contenu correspondant
             const tabId = this.getAttribute('data-tab');
