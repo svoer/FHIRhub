@@ -964,9 +964,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Stocker le bundle pour référence, mais ne pas l'afficher dans l'onglet Bundle
                         // pour éviter la duplication avec les onglets spécifiques
                         bundleData = bundle;
-                        
-                        // Générer la chronologie à partir des données du bundle
-                        generateTimelineFromBundle(bundle);
                     } else {
                         showStatus('Le bundle est vide ou mal formaté, utilisation de la méthode traditionnelle', 'warning');
                         loadResourcesTraditionnally();
