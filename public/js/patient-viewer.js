@@ -680,7 +680,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const resourcesList = bundleTab.querySelector('.resources-list');
                 const resourceCount = bundleTab.querySelector('.resource-count');
                 const resourceTypes = bundleTab.querySelector('.resource-types');
-                const bundleResourcesList = document.getElementById('bundleResourcesList');
                 
                 if (!loadingSection || !noResourcesSection || !resourcesList) {
                     console.error("Structure DOM incorrecte pour l'affichage du bundle");
@@ -729,56 +728,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     resourcesByType[type].push(entry.resource);
                 });
                 
-                // Afficher les informations générales du bundle
-                const bundleInfo = document.getElementById('bundleInfo');
-                if (bundleInfo) {
-                    const bundleId = bundle.id || 'Non spécifié';
-                    const bundleType = bundle.type || 'Non spécifié';
-                    const resourceCount = bundle.entry.length;
+                // Afficher les groupes de ressources
+                Object.entries(resourcesByType).forEach(([type, resources]) => {
+                    // Créer l'en-tête du groupe
+                    const groupElement = document.createElement('div');
+                    groupElement.className = 'resource-group';
                     
-                    // Récupérer les types de ressources uniques
-                    const resourceTypes = [...new Set(bundle.entry
-                        .filter(entry => entry.resource)
-                        .map(entry => entry.resource.resourceType))]
-                        .sort()
-                        .join(', ');
-                    
-                    bundleInfo.innerHTML = `
-                        <div><strong>ID du bundle:</strong> ${bundleId}</div>
-                        <div><strong>Type de bundle:</strong> ${bundleType}</div>
-                        <div><strong>Nombre de ressources:</strong> ${resourceCount}</div>
-                        <div><strong>Types de ressources:</strong> ${resourceTypes}</div>
-                    `;
-                }
-                
-                // Afficher les ressources dans la liste avancée
-                if (bundleResourcesList && Object.keys(resourcesByType).length > 0) {
-                    // Vider la liste existante
-                    bundleResourcesList.innerHTML = '';
-                    
-                    // Créer une section pour chaque type de ressource
-                    Object.keys(resourcesByType).sort().forEach(type => {
-                        const resources = resourcesByType[type];
-                        
-                        // Créer la section dépliable
-                        const section = document.createElement('div');
-                        section.className = 'resource-type-section';
-                        section.style.marginBottom = '20px';
-                        
-                        // En-tête de section
-                        const header = document.createElement('div');
-                        header.className = 'resource-type-header';
-                        header.style.padding = '12px 16px';
-                        header.style.backgroundColor = '#f9f9f9';
-                        header.style.borderRadius = '8px';
-                        header.style.cursor = 'pointer';
-                        header.style.display = 'flex';
-                        header.style.justifyContent = 'space-between';
-                        header.style.alignItems = 'center';
-                        
-                        // Définir une couleur différente pour chaque type de ressource
-                        let typeColor = '#e83e28';  // Couleur par défaut
-                        let typeIcon = 'cube';      // Icône par défaut
+                    // Déterminer la couleur et l'icône en fonction du type
+                    let typeColor = '#e83e28';  // Couleur par défaut
+                    let typeIcon = 'cube';     // Icône par défaut
                     
                     switch(type) {
                         case 'Patient':
@@ -1703,7 +1661,244 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Utiliser la fonction updateBundleView pour afficher le bundle proprement
                 updateBundleView(data);
-        }
+                
+                // Éviter les affichages en double, le reste est géré par updateBundleView
+                        const resourcesByType = {};
+                        data.entry.forEach(entry => {
+                            if (entry.resource && entry.resource.resourceType) {
+                                const type = entry.resource.resourceType;
+                                if (!resourcesByType[type]) {
+                                    resourcesByType[type] = [];
+                                }
+                                resourcesByType[type].push(entry.resource);
+                            }
+                        });
+                        
+                        // Pour chaque type, créer une section dépliable
+                        Object.keys(resourcesByType).sort().forEach(type => {
+                            const resources = resourcesByType[type];
+                            const typeSection = document.createElement('div');
+                            typeSection.className = 'resource-type-section';
+                            typeSection.style.marginBottom = '20px';
+                            typeSection.style.border = '1px solid #eee';
+                            typeSection.style.borderRadius = '8px';
+                            typeSection.style.overflow = 'hidden';
+                            
+                            const typeHeader = document.createElement('div');
+                            typeHeader.className = 'resource-type-header';
+                            typeHeader.style.padding = '12px 16px';
+                            typeHeader.style.background = 'linear-gradient(135deg, #f8f8f8, #f2f2f2)';
+                            typeHeader.style.borderBottom = '1px solid #eee';
+                            typeHeader.style.fontWeight = 'bold';
+                            typeHeader.style.cursor = 'pointer';
+                            typeHeader.style.display = 'flex';
+                            typeHeader.style.justifyContent = 'space-between';
+                            typeHeader.style.alignItems = 'center';
+                            // Définir une couleur différente pour chaque type de ressource
+                            let typeColor = '#e83e28';  // Couleur par défaut
+                            let typeIcon = 'cube';     // Icône par défaut
+                            
+                            switch(type) {
+                                case 'Patient':
+                                    typeColor = '#2980b9';
+                                    typeIcon = 'user';
+                                    break;
+                                case 'Practitioner':
+                                    typeColor = '#27ae60';
+                                    typeIcon = 'user-md';
+                                    break;
+                                case 'Organization':
+                                    typeColor = '#f39c12';
+                                    typeIcon = 'hospital-alt';
+                                    break;
+                                case 'Encounter':
+                                    typeColor = '#9b59b6';
+                                    typeIcon = 'stethoscope';
+                                    break;
+                                case 'Condition':
+                                    typeColor = '#c0392b';
+                                    typeIcon = 'heartbeat';
+                                    break;
+                                case 'Observation':
+                                    typeColor = '#1abc9c';
+                                    typeIcon = 'microscope';
+                                    break;
+                                case 'MedicationRequest':
+                                    typeColor = '#3498db';
+                                    typeIcon = 'pills';
+                                    break;
+                                case 'Coverage':
+                                    typeColor = '#8e44ad';
+                                    typeIcon = 'file-medical';
+                                    break;
+                                case 'RelatedPerson':
+                                    typeColor = '#e67e22';
+                                    typeIcon = 'users';
+                                    break;
+                            }
+                            
+                            typeHeader.innerHTML = `
+                                <span style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-${typeIcon}" style="color: ${typeColor};"></i>
+                                    <span style="color: ${typeColor}; font-weight: 600;">${type} (${resources.length})</span>
+                                </span>
+                                <i class="fas fa-chevron-down" style="color: #999;"></i>
+                            `;
+                            
+                            const typeContent = document.createElement('div');
+                            typeContent.className = 'resource-type-content';
+                            typeContent.style.padding = '0';
+                            typeContent.style.maxHeight = '0';
+                            typeContent.style.overflow = 'hidden';
+                            typeContent.style.transition = 'max-height 0.3s ease, padding 0.3s ease';
+                            
+                            // Ajouter les ressources de ce type
+                            resources.forEach(resource => {
+                                const resourceItem = document.createElement('div');
+                                resourceItem.className = 'resource-item';
+                                resourceItem.style.padding = '12px 16px';
+                                resourceItem.style.borderBottom = '1px solid #f0f0f0';
+                                
+                                let resourceName = resource.id;
+                                let resourceDetails = '';
+                                
+                                // Si c'est une référence simple (de transaction-response)
+                                if (resource._sourceType === 'reference') {
+                                    resourceName = `${resource.id}`;
+                                    resourceDetails = `ID: ${resource.id}`;
+                                }
+                                // Si c'est une ressource complète
+                                else {
+                                    if (type === 'Patient' && resource.name && resource.name.length > 0) {
+                                        resourceName = formatPatientName(resource.name);
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.birthDate) {
+                                            resourceDetails += ` | Né(e) le: ${resource.birthDate}`;
+                                        }
+                                        if (resource.gender) {
+                                            let gender = resource.gender === 'male' ? 'Homme' : 
+                                                         resource.gender === 'female' ? 'Femme' : resource.gender;
+                                            resourceDetails += ` | Genre: ${gender}`;
+                                        }
+                                    } 
+                                    else if (type === 'Practitioner' && resource.name && resource.name.length > 0) {
+                                        resourceName = formatPractitionerName(resource.name);
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.identifier && resource.identifier.length > 0) {
+                                            const mainId = resource.identifier[0];
+                                            resourceDetails += ` | ${mainId.system ? mainId.system.split('/').pop() : 'ID'}: ${mainId.value}`;
+                                        }
+                                    } 
+                                    else if (type === 'Organization' && resource.name) {
+                                        resourceName = resource.name;
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.identifier && resource.identifier.length > 0) {
+                                            resourceDetails += ` | Identifiant: ${resource.identifier[0].value}`;
+                                        }
+                                    } 
+                                    else if (type === 'Encounter') {
+                                        resourceName = `Rencontre ${resource.id}`;
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.status) {
+                                            const statusMap = {
+                                                'planned': 'Planifiée',
+                                                'arrived': 'Arrivée',
+                                                'triaged': 'Triée',
+                                                'in-progress': 'En cours',
+                                                'onleave': 'En congé',
+                                                'finished': 'Terminée',
+                                                'cancelled': 'Annulée'
+                                            };
+                                            resourceDetails += ` | Statut: ${statusMap[resource.status] || resource.status}`;
+                                        }
+                                        if (resource.class && resource.class.code) {
+                                            const classMap = {
+                                                'AMB': 'Ambulatoire',
+                                                'IMP': 'Hospitalisation',
+                                                'EMER': 'Urgence',
+                                                'VR': 'Consultation virtuelle'
+                                            };
+                                            resourceDetails += ` | Type: ${classMap[resource.class.code] || resource.class.code}`;
+                                        }
+                                    } 
+                                    else if (type === 'RelatedPerson') {
+                                        if (resource.name && resource.name.length > 0) {
+                                            resourceName = formatPatientName(resource.name);
+                                        }
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.relationship && resource.relationship.length > 0) {
+                                            if (resource.relationship[0].coding) {
+                                                const rel = resource.relationship[0].coding[0];
+                                                const relationMap = {
+                                                    'SPO': 'Conjoint(e)',
+                                                    'CHILD': 'Enfant',
+                                                    'FAMMEMB': 'Famille',
+                                                    'WIFE': 'Épouse',
+                                                    'HUSB': 'Époux',
+                                                    'AUNT': 'Tante',
+                                                    'BRO': 'Frère',
+                                                    'DAU': 'Fille',
+                                                    'DAUFOST': 'Fille d\'accueil',
+                                                    'SIS': 'Sœur'
+                                                };
+                                                resourceDetails += ` | Relation: ${relationMap[rel.code] || rel.display || rel.code}`;
+                                            }
+                                            else if (resource.relationship[0].text) {
+                                                resourceDetails += ` | Relation: ${resource.relationship[0].text}`;
+                                            }
+                                        }
+                                    } 
+                                    else if (type === 'Coverage') {
+                                        resourceName = `Couverture ${resource.id}`;
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.type && resource.type.coding && resource.type.coding.length > 0) {
+                                            const coverageMap = {
+                                                'AMO': 'Assurance Maladie Obligatoire',
+                                                'AMC': 'Assurance Maladie Complémentaire'
+                                            };
+                                            const coverageType = resource.type.coding[0];
+                                            resourceDetails += ` | Type: ${coverageMap[coverageType.code] || coverageType.display || coverageType.code}`;
+                                        }
+                                        if (resource.period) {
+                                            if (resource.period.start) {
+                                                resourceDetails += ` | Début: ${resource.period.start.split('T')[0]}`;
+                                            }
+                                            if (resource.period.end) {
+                                                resourceDetails += ` | Fin: ${resource.period.end.split('T')[0]}`;
+                                            }
+                                        }
+                                    }
+                                    else if (type === 'PractitionerRole') {
+                                        resourceName = `Rôle ${resource.id}`;
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.code && resource.code.length > 0 && resource.code[0].coding && resource.code[0].coding.length > 0) {
+                                            resourceDetails += ` | Code: ${resource.code[0].coding[0].display || resource.code[0].coding[0].code}`;
+                                        }
+                                    }
+                                }
+                                
+                                resourceItem.innerHTML = `
+                                    <div style="display: flex; flex-direction: column; gap: 6px; padding: 5px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-weight: 600; color: #333;">${resourceName || resource.id}</span>
+                                            <button 
+                                                class="view-json-btn"
+                                                style="background: linear-gradient(135deg, #e83e28, #fd7e30); 
+                                                      color: white; 
+                                                      border: none; 
+                                                      border-radius: 4px; 
+                                                      padding: 4px 8px; 
+                                                      font-size: 12px;
+                                                      cursor: pointer;"
+                                                      data-resource='${JSON.stringify(resource).replace(/'/g, "&apos;")}'>
+                                                Voir JSON
+                                            </button>
+                                        </div>
+                                        <div style="color: #666; font-size: 13px;">
+                                            ${resourceDetails}
+                                        </div>
+                                    </div>
+                                `;
                                 
                                 typeContent.appendChild(resourceItem);
                             });
