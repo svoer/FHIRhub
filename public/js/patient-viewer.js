@@ -638,25 +638,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Erreur lors du chargement des observations:', error);
                 loadingSection.style.display = 'none';
                 noResourcesSection.style.display = 'block';
+                reject(error);
+            })
+            .finally(() => {
+                resolve(observationsData);
             });
+        });
     }
     
     function loadPatientMedications(patientId, serverUrl) {
-        const container = document.querySelector('#medicationsContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
-        
-        // Réinitialiser les données des médicaments
-        medicationsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
-        
-        // Exécuter la requête FHIR pour récupérer les médicaments (limite augmentée à 1000 pour avoir toutes les données)
-        fetch(`${serverUrl}/MedicationRequest?patient=${patientId}&_sort=-date&_count=1000`)
-            .then(response => response.json())
+        return new Promise((resolve, reject) => {
+            const container = document.querySelector('#medicationsContent');
+            const loadingSection = container.querySelector('.loading-resources');
+            const noResourcesSection = container.querySelector('.no-resources');
+            const resourcesList = container.querySelector('.resources-list');
+            
+            // Réinitialiser les données des médicaments
+            medicationsData = [];
+            
+            loadingSection.style.display = 'block';
+            noResourcesSection.style.display = 'none';
+            resourcesList.style.display = 'none';
+            
+            // URL de la requête FHIR avec format correct pour référence patient
+            const url = `${serverUrl}/MedicationRequest?subject=Patient/${patientId}&_sort=-date&_count=100`;
+            console.log(`Chargement des médicaments depuis: ${url}`);
+            
+            // Exécuter la requête FHIR pour récupérer les médicaments
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erreur de récupération des médicaments: ${response.status}`);
+                    }
+                    return response.json();
+                })
             .then(data => {
                 loadingSection.style.display = 'none';
                 
@@ -716,25 +731,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Erreur lors du chargement des médicaments:', error);
                 loadingSection.style.display = 'none';
                 noResourcesSection.style.display = 'block';
+                reject(error);
+            })
+            .finally(() => {
+                resolve(medicationsData);
             });
+        });
     }
     
     function loadPatientEncounters(patientId, serverUrl) {
-        const container = document.querySelector('#encountersContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
-        
-        // Réinitialiser les données des consultations
-        encountersData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
-        
-        // Exécuter la requête FHIR pour récupérer les consultations (limite augmentée à 1000 pour avoir toutes les données)
-        fetch(`${serverUrl}/Encounter?patient=${patientId}&_sort=-date&_count=1000`)
-            .then(response => response.json())
+        return new Promise((resolve, reject) => {
+            const container = document.querySelector('#encountersContent');
+            const loadingSection = container.querySelector('.loading-resources');
+            const noResourcesSection = container.querySelector('.no-resources');
+            const resourcesList = container.querySelector('.resources-list');
+            
+            // Réinitialiser les données des consultations
+            encountersData = [];
+            
+            loadingSection.style.display = 'block';
+            noResourcesSection.style.display = 'none';
+            resourcesList.style.display = 'none';
+            
+            // URL de la requête FHIR avec format correct pour référence patient
+            const url = `${serverUrl}/Encounter?subject=Patient/${patientId}&_sort=-date&_count=100`;
+            console.log(`Chargement des consultations depuis: ${url}`);
+            
+            // Exécuter la requête FHIR pour récupérer les consultations
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Erreur de récupération des consultations: ${response.status}`);
+                    }
+                    return response.json();
+                })
             .then(data => {
                 loadingSection.style.display = 'none';
                 
@@ -796,7 +826,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Erreur lors du chargement des consultations:', error);
                 loadingSection.style.display = 'none';
                 noResourcesSection.style.display = 'block';
+                reject(error);
+            })
+            .finally(() => {
+                resolve(encountersData);
             });
+        });
     }
     
     // Fonctions pour charger les ressources supplémentaires
