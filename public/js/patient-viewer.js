@@ -14,7 +14,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearSearchBtn = document.getElementById('clearSearchBtn');
     const analyzeAIBtn = document.getElementById('analyzeAIBtn');
     
+    // Stockage centralisé de toutes les données
     let patientData = null;
+    let conditionsData = [];
+    let observationsData = [];
+    let medicationsData = [];
+    let encountersData = [];
     
     // Navigation par onglets
     const tabs = document.querySelectorAll('.tab');
