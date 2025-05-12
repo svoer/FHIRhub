@@ -20,6 +20,13 @@ document.addEventListener('DOMContentLoaded', function() {
     let observationsData = [];
     let medicationsData = [];
     let encountersData = [];
+    // Variables pour les nouvelles ressources
+    let practitionersData = [];
+    let organizationsData = [];
+    let relatedPersonsData = [];
+    let coverageData = [];
+    let bundleData = null;
+    let lastBundleResponse = null; // Pour stocker la réponse de transaction du serveur FHIR
     
     // Navigation par onglets
     const tabs = document.querySelectorAll('.tab');
