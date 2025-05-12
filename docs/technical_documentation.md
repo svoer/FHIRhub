@@ -1174,9 +1174,9 @@ Les caractéristiques techniques incluent:
 3. Système de retry avec backoff exponentiel
 4. Utilisation du cache pour éviter les conversions redondantes
 
-## Workflows visuels
+## Processus visuels
 
-FHIRHub implémente un éditeur de workflow visuel personnalisé pour configurer des chaînes de traitement:
+FHIRHub implémente un éditeur de processus visuel personnalisé pour configurer des chaînes de traitement:
 
 ```javascript
 class WorkflowEngine {
@@ -1429,7 +1429,7 @@ class WorkflowEngine {
   // Récupère un workflow depuis la base de données
   async getWorkflow(workflowId) {
     return this.db.prepare(`
-      SELECT * FROM workflows WHERE id = ?
+      SELECT * FROM processes WHERE id = ?
     `).get(workflowId);
   }
   
@@ -1494,7 +1494,7 @@ class WorkflowEngine {
 }
 ```
 
-Cette architecture de workflow:
+Cette architecture de processus:
 1. Utilise un modèle basé sur les nœuds et les connexions
 2. Permet des flux conditionnels basés sur le contenu HL7
 3. Supporte des transformations personnalisées
@@ -2081,14 +2081,14 @@ Avantages techniques:
 
 ## Conclusion
 
-Cette documentation technique détaille l'architecture et l'implémentation de FHIRHub. Le système est conçu avec une approche modulaire et extensible, permettant d'ajouter facilement de nouveaux types de messages, de terminologies ou de workflows.
+Cette documentation technique détaille l'architecture et l'implémentation de FHIRHub. Le système est conçu avec une approche modulaire et extensible, permettant d'ajouter facilement de nouveaux types de messages, de terminologies ou de processus de traitement.
 
 Les composants principaux sont:
 1. Le parseur HL7 optimisé qui décompose les messages en structures hiérarchiques
 2. Le convertisseur FHIR qui transforme ces structures en ressources standardisées
 3. L'adaptateur de terminologies françaises qui assure la conformité avec les spécifications de l'ANS
 4. Le système de cache à deux niveaux qui optimise les performances
-5. Le moteur de workflow visuel qui permet des chaînes de traitement personnalisées
+5. Le moteur de processus visuel qui permet des chaînes de traitement personnalisées
 6. L'intégration Mistral AI pour l'analyse intelligente et l'assistance
 
 Pour maintenir et faire évoluer le système:
