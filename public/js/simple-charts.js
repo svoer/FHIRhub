@@ -103,15 +103,15 @@ function initializeAllChartsImpl() {
     // Vérifier que les éléments canvas existent
     const memoryCanvas = getCanvasElement('memoryChart');
     const conversionTrendCanvas = getCanvasElement('conversionTrendChart');
-    // Chercher resourceDistChart ou l'alternative resourceDistributionChart
-    const resourceDistCanvas = getCanvasElement('resourceDistChart', ['resourceDistributionChart']);
+    // Note: Le graphique de distribution des ressources a été supprimé du HTML selon les commentaires
+    // const resourceDistCanvas = getCanvasElement('resourceDistChart', ['resourceDistributionChart']);
     const successRateCanvas = getCanvasElement('successRateChart');
     const messageTypesCanvas = getCanvasElement('messageTypesChart');
     
     console.log("État des canvas:", {
       memory: memoryCanvas ? "OK" : "Manquant",
       conversionTrend: conversionTrendCanvas ? "OK" : "Manquant",
-      resourceDist: resourceDistCanvas ? "OK" : "Manquant",
+      // resourceDist: "Supprimé du HTML",
       successRate: successRateCanvas ? "OK" : "Manquant",
       messageTypes: messageTypesCanvas ? "OK" : "Manquant"
     });
@@ -132,7 +132,7 @@ function initializeAllChartsImpl() {
     // Nettoyer les graphiques existants qui pourraient causer des conflits
     if (memoryCanvas) safeDestroyChart(memoryCanvas.id);
     if (conversionTrendCanvas) safeDestroyChart(conversionTrendCanvas.id);
-    if (resourceDistCanvas) safeDestroyChart(resourceDistCanvas.id);
+    // resourceDistCanvas a été supprimé du HTML
     if (successRateCanvas) safeDestroyChart(successRateCanvas.id);
     if (messageTypesCanvas) safeDestroyChart(messageTypesCanvas.id);
     
