@@ -3087,7 +3087,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/ai/analyze-patient');
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 30000; // 30 secondes de timeout
+        xhr.timeout = 90000; // 90 secondes de timeout (augmenté pour permettre l'analyse complète)
         
         xhr.onload = function() {
             if (xhr.status >= 200 && xhr.status < 300) {
