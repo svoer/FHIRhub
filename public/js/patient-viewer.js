@@ -318,24 +318,57 @@ document.addEventListener('DOMContentLoaded', function() {
             // Afficher un status de chargement
             showStatus('Chargement de toutes les données médicales du patient...', 'info');
             
-            // Tenter de charger toutes les ressources en une seule requête avec $everything
-            fetch(`${server}/Patient/${patientId}/$everything`)
-                .then(response => {
+            // Fonction pour charger toutes les données de manière efficace
+            loadPatientEverything();
+            
+            // Fonction pour récupérer toutes les données patient en une requête
+            async function fetchPatientEverything(serverUrl, patientId) {
+                try {
+                    showStatus('Chargement de toutes les données médicales via $everything...', 'info');
+                    const url = `${serverUrl}/Patient/${patientId}/$everything?_count=1000`;
+                    const response = await fetch(url);
+                    
                     if (!response.ok) {
-                        // Si $everything n'est pas supporté, on utilise l'approche traditionnelle
-                        console.warn("L'opération $everything n'est pas supportée, chargement individuel des ressources");
-                        throw new Error("$everything non supporté");
+                        console.warn(`L'opération $everything a échoué: ${response.status}`, 'warning');
+                        throw new Error(`$everything non supporté: ${response.status}`);
                     }
-                    return response.json();
-                })
-                .then(bundle => {
+                    
+                    const bundle = await response.json();
                     console.log("Bundle complet récupéré via $everything:", bundle);
                     showStatus('Chargement complet des données réussi via $everything', 'success');
+                    return bundle;
+                } catch (error) {
+                    console.error("Erreur avec $everything:", error);
+                    showStatus('Erreur lors du chargement complet, utilisation de la méthode traditionnelle', 'warning');
+                    throw error;
+                }
+            }
+            
+            // Fonction pour grouper les ressources par type
+            function groupByType(bundle) {
+                const byType = {};
+                
+                if (bundle.entry) {
+                    bundle.entry.forEach(entry => {
+                        if (entry.resource) {
+                            const type = entry.resource.resourceType;
+                            byType[type] = byType[type] || [];
+                            byType[type].push(entry.resource);
+                        }
+                    });
+                }
+                
+                return byType;
+            }
+            
+            // Fonction pour tout charger et peupler tous les onglets
+            async function loadAllPatientData() {
+                try {
+                    // 1. Récupérer le bundle complet
+                    const bundle = await fetchPatientEverything(server, patientId);
                     
-                    // Traiter le bundle et extraire les différentes ressources par type
-                    if (bundle.entry && bundle.entry.length > 0) {
-                        // Grouper les ressources par type
-                        const resourcesByType = {};
+                    // 2. Grouper les ressources par type
+                    const resourcesByType = groupByType(bundle);
                         
                         bundle.entry.forEach(entry => {
                             if (entry.resource) {
