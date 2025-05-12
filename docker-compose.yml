@@ -1,7 +1,7 @@
 version: '3.8'
 
-# Les volumes sont désormais liés directement aux chemins sur le système hôte
-# pour permettre un accès plus facile et éviter les problèmes de permissions
+# Configuration utilisant des bind mounts plutôt que des volumes Docker nommés
+# pour faciliter l'accès aux données et éviter les problèmes de permissions
 
 services:
   # Application principale FHIRHub
@@ -26,11 +26,11 @@ services:
       - HAPI_FHIR_SERVER=http://hapifhir:8080/fhir
       - BYPASS_AUTH=false
     volumes:
-      # Montage des volumes pour garantir la persistance et l'organisation claire
-      - data_fhirhub_db:/app/storage/db:rw
-      - data_fhirhub_storage:/app/storage/data:rw
-      - data_fhirhub_logs:/app/storage/logs:rw
-      - data_fhirhub_terminology:/app/french_terminology:rw
+      # Utilisation de binds mounts vers les dossiers locaux
+      - ./data/fhirhub/db:/app/storage/db:rw
+      - ./data/fhirhub/storage:/app/storage/data:rw
+      - ./data/fhirhub/logs:/app/storage/logs:rw
+      - ./data/fhirhub/terminology:/app/french_terminology:rw
       # Dossiers mappés pour faciliter l'import/export de données
       - ./import:/app/import:ro
       - ./export:/app/export:rw
@@ -74,7 +74,7 @@ services:
       - logging.level.ca.uhn.fhir.jpa.search=ERROR
       - JAVA_OPTS=-Xmx1024m -Dfile.encoding=UTF-8
     volumes:
-      - data_hapifhir:/data:rw
+      - ./data/hapifhir:/data:rw
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/fhir/metadata"]
       interval: 30s

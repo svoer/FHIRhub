@@ -46,6 +46,10 @@ VOLUME ["/app/storage/db", "/app/storage/data", "/app/storage/logs", "/app/frenc
 # Exposer uniquement le port principal de l'application
 EXPOSE 5000
 
+# Copier le script de démarrage Docker
+COPY docker-startup.sh /app/
+RUN chmod +x /app/docker-startup.sh
+
 # Utiliser un utilisateur non-root pour plus de sécurité
 RUN addgroup -S fhirhub && adduser -S fhirhub -G fhirhub
 RUN chown -R fhirhub:fhirhub /app
@@ -53,10 +57,6 @@ USER fhirhub
 
 # Utiliser tini comme init pour une meilleure gestion des signaux
 ENTRYPOINT ["/sbin/tini", "--"]
-
-# Copier et rendre exécutable le script de démarrage Docker
-COPY docker-startup.sh /app/
-RUN chmod +x /app/docker-startup.sh
 
 # Script de démarrage
 CMD ["/app/docker-startup.sh"]
