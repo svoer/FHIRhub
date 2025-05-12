@@ -623,6 +623,9 @@
                     <button class="tab-button active" data-tab="explorer">
                         <i class="fas fa-search"></i> Explorateur FHIR
                     </button>
+                    <button class="tab-button" data-tab="bundle-push">
+                        <i class="fas fa-upload"></i> Pousser un Bundle FHIR
+                    </button>
                     <button class="tab-button" data-tab="swagger">
                         <i class="fas fa-book"></i> Documentation Swagger
                     </button>
@@ -717,6 +720,50 @@
                             
                             <div id="statusBar" class="status-bar">
                                 Prêt à explorer les données FHIR
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab pour pousser un bundle FHIR -->
+                <div id="bundle-push-tab" class="tab-content">
+                    <div class="fhir-container">
+                        <div class="header-panel">
+                            <h3>Pousser un Bundle FHIR vers le serveur</h3>
+                        </div>
+                        <div class="server-selector">
+                            <select id="pushServerSelect" class="server-select">
+                                <option value="local">Serveur HAPI FHIR Local</option>
+                                <option value="public">Serveur HAPI FHIR Public</option>
+                            </select>
+                        </div>
+                        <div style="padding: 20px;">
+                            <div class="form-group">
+                                <label for="bundleInput">Bundle FHIR (format JSON)</label>
+                                <textarea id="bundleInput" class="form-control" style="height: 300px; font-family: monospace;" placeholder='{"resourceType": "Bundle", "type": "collection", "entry": [...]}' spellcheck="false"></textarea>
+                            </div>
+                            <div class="form-check" style="margin-top: 10px; margin-bottom: 20px;">
+                                <input type="checkbox" id="returnOriginalCheck" class="form-check-input" checked>
+                                <label for="returnOriginalCheck" class="form-check-label">Renvoyer le bundle original dans la réponse</label>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                                <button id="validateBundleBtn" class="btn btn-secondary">
+                                    <i class="fas fa-check-circle"></i> Valider le Bundle
+                                </button>
+                                <button id="pushBundleBtn" class="btn btn-primary">
+                                    <i class="fas fa-upload"></i> Pousser vers le serveur FHIR
+                                </button>
+                                <button id="clearBundleBtn" class="btn btn-outline-secondary">
+                                    <i class="fas fa-eraser"></i> Effacer
+                                </button>
+                            </div>
+                        </div>
+                        <div style="padding: 0 20px 20px;">
+                            <h4>Résultat</h4>
+                            <div id="bundleResult" class="resource-detail" style="background-color: #f8f9fa; min-height: 100px;">
+                                <p style="color: #718096; text-align: center; padding: 20px;">
+                                    Le résultat de l'opération apparaîtra ici
+                                </p>
                             </div>
                         </div>
                     </div>
