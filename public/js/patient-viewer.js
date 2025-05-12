@@ -1085,8 +1085,128 @@ document.addEventListener('DOMContentLoaded', function() {
                         <p><strong>Types de ressources:</strong> ${resourceTypes.join(', ') || 'Aucun'}</p>
                     `;
                     
-                    // Afficher les ressources de manière organisée
-                    bundleResourcesList.innerHTML = '';
+                    if (resourceCount > 0) {
+                        // Grouper les ressources par type
+                        const resourcesByType = {};
+                        data.entry.forEach(entry => {
+                            if (entry.resource && entry.resource.resourceType) {
+                                const type = entry.resource.resourceType;
+                                if (!resourcesByType[type]) {
+                                    resourcesByType[type] = [];
+                                }
+                                resourcesByType[type].push(entry.resource);
+                            }
+                        });
+                        
+                        // Pour chaque type, créer une section dépliable
+                        Object.keys(resourcesByType).sort().forEach(type => {
+                            const resources = resourcesByType[type];
+                            const typeSection = document.createElement('div');
+                            typeSection.className = 'resource-type-section';
+                            typeSection.style.marginBottom = '20px';
+                            typeSection.style.border = '1px solid #eee';
+                            typeSection.style.borderRadius = '8px';
+                            typeSection.style.overflow = 'hidden';
+                            
+                            const typeHeader = document.createElement('div');
+                            typeHeader.className = 'resource-type-header';
+                            typeHeader.style.padding = '12px 16px';
+                            typeHeader.style.background = 'linear-gradient(135deg, #f8f8f8, #f2f2f2)';
+                            typeHeader.style.borderBottom = '1px solid #eee';
+                            typeHeader.style.fontWeight = 'bold';
+                            typeHeader.style.cursor = 'pointer';
+                            typeHeader.style.display = 'flex';
+                            typeHeader.style.justifyContent = 'space-between';
+                            typeHeader.style.alignItems = 'center';
+                            typeHeader.innerHTML = `
+                                <span style="color: #e83e28;">${type} (${resources.length})</span>
+                                <i class="fas fa-chevron-down" style="color: #999;"></i>
+                            `;
+                            
+                            const typeContent = document.createElement('div');
+                            typeContent.className = 'resource-type-content';
+                            typeContent.style.padding = '0';
+                            typeContent.style.maxHeight = '0';
+                            typeContent.style.overflow = 'hidden';
+                            typeContent.style.transition = 'max-height 0.3s ease, padding 0.3s ease';
+                            
+                            // Ajouter les ressources de ce type
+                            resources.forEach(resource => {
+                                const resourceItem = document.createElement('div');
+                                resourceItem.className = 'resource-item';
+                                resourceItem.style.padding = '12px 16px';
+                                resourceItem.style.borderBottom = '1px solid #f0f0f0';
+                                
+                                let resourceName = resource.id;
+                                if (type === 'Patient' && resource.name && resource.name.length > 0) {
+                                    resourceName = formatPatientName(resource.name);
+                                } else if (type === 'Practitioner' && resource.name && resource.name.length > 0) {
+                                    resourceName = formatPractitionerName(resource.name);
+                                } else if (type === 'Organization' && resource.name) {
+                                    resourceName = resource.name;
+                                }
+                                
+                                resourceItem.innerHTML = `
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <span style="font-weight: 500;">${resourceName || resource.id}</span>
+                                        <button 
+                                            class="view-json-btn"
+                                            style="background: linear-gradient(135deg, #e83e28, #fd7e30); 
+                                                  color: white; 
+                                                  border: none; 
+                                                  border-radius: 4px; 
+                                                  padding: 4px 8px; 
+                                                  font-size: 12px;
+                                                  cursor: pointer;"
+                                                  data-resource='${JSON.stringify(resource).replace(/'/g, "&apos;")}'>
+                                            Voir JSON
+                                        </button>
+                                    </div>
+                                `;
+                                
+                                typeContent.appendChild(resourceItem);
+                            });
+                            
+                            // Ajouter les événements pour le dépliant
+                            typeHeader.addEventListener('click', function() {
+                                const content = this.nextElementSibling;
+                                const icon = this.querySelector('i');
+                                
+                                if (content.style.maxHeight === '0px' || content.style.maxHeight === '') {
+                                    content.style.maxHeight = content.scrollHeight + 'px';
+                                    content.style.padding = '8px 0';
+                                    icon.className = 'fas fa-chevron-up';
+                                } else {
+                                    content.style.maxHeight = '0';
+                                    content.style.padding = '0';
+                                    icon.className = 'fas fa-chevron-down';
+                                }
+                            });
+                            
+                            typeSection.appendChild(typeHeader);
+                            typeSection.appendChild(typeContent);
+                            bundleResourcesList.appendChild(typeSection);
+                        });
+                        
+                        // Ajouter les événements pour les boutons "Voir JSON"
+                        document.querySelectorAll('.view-json-btn').forEach(btn => {
+                            btn.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                const jsonStr = JSON.stringify(resourceData, null, 2);
+                                
+                                // Changer l'onglet actif vers JSON
+                                document.querySelector('#jsonContent').textContent = jsonStr;
+                                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                document.querySelector('#json').style.display = 'block';
+                            });
+                        });
+                    } else {
+                        // Aucune ressource
+                        if (noResourcesSection) noResourcesSection.style.display = 'block';
+                    }
                     
                     if (data.entry && data.entry.length > 0) {
                         // Regrouper par type de ressource pour un affichage organisé
