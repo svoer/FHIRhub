@@ -2451,6 +2451,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (timelineEntries.length === 0) {
                     noResourcesSection.style.display = 'block';
                     resourcesList.style.display = 'none';
+                    resolve({ entries: [], count: 0 });
                 } else {
                     noResourcesSection.style.display = 'none';
                     resourcesList.style.display = 'block';
@@ -2488,80 +2489,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 resourcesList.appendChild(timelineElement);
-            } else {
-                noResourcesSection.style.display = 'block';
+                
+                // Résoudre la promesse avec les données de la chronologie
+                resolve({
+                    entries: timelineEntries,
+                    count: timelineEntries.length
+                });
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Erreur lors de la génération de la chronologie:', error);
-            loadingSection.style.display = 'none';
-            noResourcesSection.style.display = 'block';
-            resourcesList.style.display = 'none';
             
             // Afficher un message d'erreur plus explicite
-            noResourcesSection.innerHTML = `
-                <div class="alert alert-warning">
-                    <h4>Erreur lors de la génération de la chronologie</h4>
-                    <p>Nous n'avons pas pu générer la chronologie pour ce patient. Veuillez réessayer ultérieurement.</p>
-                </div>
-            `;
+            if (container) {
+                loadingSection.style.display = 'none';
+                noResourcesSection.style.display = 'block';
+                resourcesList.style.display = 'none';
+                
+                noResourcesSection.innerHTML = `
+                    <div class="alert alert-warning">
+                        <h4>Erreur lors de la génération de la chronologie</h4>
+                        <p>Nous n'avons pas pu générer la chronologie pour ce patient: ${error.message}</p>
+                    </div>
+                `;
+            }
             
-            // Résoudre la promesse avec les données de la chronologie
-            const timelineData = {
-                entries: timelineEntries,
-                count: timelineEntries.length
-            };
-            resolve(timelineData);
-        })
-        .catch(error => {
-            console.error('Erreur dans generateTimeline:', error);
-            // Afficher un message d'erreur dans l'interface
-            const container = document.querySelector('#timelineContent');
-            if (container) {
-                const noResourcesSection = container.querySelector('.no-resources');
-                if (noResourcesSection) {
-                    noResourcesSection.style.display = 'block';
-                    noResourcesSection.innerHTML = `
-                        <div class="alert alert-danger">
-                            <h4>Erreur critique</h4>
-                            <p>Une erreur est survenue lors de la génération de la chronologie.</p>
-                            <details>
-                                <summary>Détails techniques</summary>
-                                <pre>${error.message || 'Erreur inconnue'}</pre>
-                            </details>
-                        </div>
-                    `;
-                }
-            }
             reject(error);
-        });
-    } catch (error) {
-        console.error('Exception globale dans generateTimeline:', error);
-        // Afficher un message d'erreur dans l'interface si possible
-        try {
-            const container = document.querySelector('#timelineContent');
-            if (container) {
-                const noResourcesSection = container.querySelector('.no-resources');
-                if (noResourcesSection) {
-                    noResourcesSection.style.display = 'block';
-                    noResourcesSection.innerHTML = `
-                        <div class="alert alert-danger">
-                            <h4>Erreur critique</h4>
-                            <p>Une erreur est survenue lors de la génération de la chronologie.</p>
-                            <details>
-                                <summary>Détails techniques</summary>
-                                <pre>${error.message || 'Erreur inconnue'}</pre>
-                            </details>
-                        </div>
-                    `;
-                }
-            }
-        } catch (displayError) {
-            console.error('Impossible d\'afficher le message d\'erreur:', displayError);
         }
-        reject(error);
-    }
-});
+    });
 }
 
 // Fonctions utilitaires

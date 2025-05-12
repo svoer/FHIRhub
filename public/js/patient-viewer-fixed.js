@@ -5,1445 +5,2335 @@
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Variables globales
-    const serverSelect = document.getElementById('serverSelect');
-    const patientSearch = document.getElementById('patientSearch');
-    const searchPatientBtn = document.getElementById('searchPatientBtn');
-    const patientSelect = document.getElementById('patientSelect');
-    const loadPatientBtn = document.getElementById('loadPatientBtn');
-    const clearSearchBtn = document.getElementById('clearSearchBtn');
-    const analyzeAIBtn = document.getElementById('analyzeAIBtn');
+    console.log('Patient Viewer initialisé');
     
-    // Stockage centralisé de toutes les données
-    let patientData = null;
-    let conditionsData = [];
-    let observationsData = [];
-    let medicationsData = [];
-    let encountersData = [];
-    // Variables pour les nouvelles ressources
-    let practitionersData = [];
-    let organizationsData = [];
-    let relatedPersonsData = [];
-    let coverageData = [];
-    let bundleData = null;
-    let lastBundleResponse = null; // Pour stocker la réponse de transaction du serveur FHIR
+    // Afficher les fonctionnalités actives/inactives dans la version démo
+    const demoVersionBanner = document.getElementById('demoVersionBanner');
+    if (demoVersionBanner) {
+        demoVersionBanner.style.display = 'block';
+    }
     
-    // Navigation par onglets
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tab-content');
+    // Initialisation du système
+    setupEventListeners();
+    initializeServerUrlField();
+    clearPatientData();
     
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            // Désactiver tous les onglets
-            tabs.forEach(t => {
-                t.classList.remove('active');
-                // Réinitialiser le style
-                t.style.background = '#f5f5f5';
-                t.style.color = '#555';
+    // Auto-chargement du patient spécifié dans l'URL (si présent)
+    const urlParams = new URLSearchParams(window.location.search);
+    const patientId = urlParams.get('id');
+    const serverUrl = urlParams.get('server') || document.getElementById('serverUrl').value;
+    
+    if (patientId) {
+        document.getElementById('patientId').value = patientId;
+        document.getElementById('serverUrl').value = serverUrl;
+        loadPatient();
+    }
+    
+    // Configuration des options d'affichage
+    toggleResourceSections();
+    setupTabNavigation();
+    
+    // Mettre en place l'indicateur de fournisseur d'IA
+    if (typeof initializeAIProviderIndicator === 'function') {
+        initializeAIProviderIndicator();
+    }
+    
+    function setupEventListeners() {
+        // Bouton de recherche patient
+        const searchButton = document.getElementById('searchButton');
+        if (searchButton) {
+            searchButton.addEventListener('click', searchPatients);
+        }
+        
+        // Champ de recherche avec Enter
+        const searchField = document.getElementById('patientSearch');
+        if (searchField) {
+            searchField.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchPatients();
+                }
             });
-            
-            // Désactiver tous les contenus
-            tabContents.forEach(c => {
-                c.classList.remove('active');
-                c.style.display = 'none';
+        }
+        
+        // Sélection d'un patient dans la liste déroulante
+        const patientSelect = document.getElementById('patientSelect');
+        if (patientSelect) {
+            patientSelect.addEventListener('change', function() {
+                const selectedOption = this.options[this.selectedIndex];
+                if (selectedOption && selectedOption.value) {
+                    document.getElementById('patientId').value = selectedOption.value;
+                    loadPatient();
+                }
             });
-            
-            // Activer l'onglet sélectionné
-            this.classList.add('active');
-            // Appliquer le style actif (dégradé rouge-orange)
-            this.style.background = 'linear-gradient(135deg, #e83e28, #fd7e30)';
-            this.style.color = 'white';
-            
-            // Activer le contenu correspondant
-            const tabId = this.getAttribute('data-tab');
-            const activeTab = document.getElementById(tabId);
-            activeTab.classList.add('active');
-            activeTab.style.display = 'block';
-            
-            // Si c'est l'onglet JSON, mettre à jour le contenu
-            if (tabId === 'json') {
-                updateJsonView();
+        }
+        
+        // Bouton d'effacement de recherche
+        const clearSearchButton = document.getElementById('clearSearchButton');
+        if (clearSearchButton) {
+            clearSearchButton.addEventListener('click', clearSearch);
+        }
+        
+        // Bouton de chargement direct via ID
+        const loadButton = document.getElementById('loadButton');
+        if (loadButton) {
+            loadButton.addEventListener('click', loadPatient);
+        }
+        
+        // Options d'affichage
+        const resourceSectionCheckboxes = document.querySelectorAll('.resource-section-toggle');
+        resourceSectionCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', toggleResourceSections);
+        });
+        
+        // Onglets
+        const tabButtons = document.querySelectorAll('.tab-button');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+        
+        // Vue JSON
+        const jsonViewButtons = document.querySelectorAll('.view-json-button');
+        jsonViewButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const resourceId = this.getAttribute('data-resource-id');
+                const resourceType = this.getAttribute('data-resource-type');
+                openJsonView(resourceId, resourceType);
+            });
+        });
+        
+        // Fermeture de la vue JSON
+        const closeJsonViewButton = document.getElementById('closeJsonView');
+        if (closeJsonViewButton) {
+            closeJsonViewButton.addEventListener('click', function() {
+                document.getElementById('jsonViewModal').style.display = 'none';
+            });
+        }
+        
+        // Générer rapport IA
+        const generateAIReport = document.getElementById('generateAIReport');
+        if (generateAIReport) {
+            generateAIReport.addEventListener('click', function() {
+                const patientId = document.getElementById('patientId').value;
+                const serverUrl = document.getElementById('serverUrl').value;
+                if (patientId && serverUrl) {
+                    analyzePatientWithAI(patientId, serverUrl);
+                } else {
+                    showStatus('<i class="fas fa-exclamation-triangle"></i> Veuillez d\'abord charger un patient', 'warning');
+                }
+            });
+        }
+    }
+    
+    function initializeServerUrlField() {
+        // Initialiser avec le serveur par défaut
+        document.getElementById('serverUrl').value = document.getElementById('serverUrl').value || 'https://hapi.fhir.org/baseR4';
+    }
+    
+    function toggleResourceSections() {
+        document.querySelectorAll('.resource-section-toggle').forEach(checkbox => {
+            const sectionId = checkbox.getAttribute('data-section');
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.style.display = checkbox.checked ? 'block' : 'none';
             }
         });
-    });
+    }
     
-    // Fonction pour formater le nom du patient
+    function setupTabNavigation() {
+        // Activer le premier onglet par défaut
+        switchTab('basic');
+    }
+    
+    function switchTab(tabId) {
+        // Masquer tous les contenus d'onglets
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        
+        // Désactiver tous les boutons d'onglets
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active');
+        });
+        
+        // Activer l'onglet sélectionné
+        document.getElementById(`${tabId}Tab`).classList.add('active');
+        document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add('active');
+    }
+    
+    function openJsonView(resourceId, resourceType) {
+        const jsonViewModal = document.getElementById('jsonViewModal');
+        const jsonContent = document.getElementById('jsonContent');
+        const jsonTitle = document.getElementById('jsonViewTitle');
+        
+        if (jsonViewModal && jsonContent && window.patientData) {
+            let resource = null;
+            
+            // Trouver la ressource dans les données du patient
+            if (resourceType === 'Patient' && window.patientData.patient) {
+                resource = window.patientData.patient;
+            } else if (resourceType === 'Condition' && window.patientData.conditions) {
+                resource = window.patientData.conditions.find(c => c.id === resourceId);
+            } else if (resourceType === 'Observation' && window.patientData.observations) {
+                resource = window.patientData.observations.find(o => o.id === resourceId);
+            } else if (resourceType === 'MedicationRequest' && window.patientData.medications) {
+                resource = window.patientData.medications.find(m => m.id === resourceId);
+            } else if (resourceType === 'Encounter' && window.patientData.encounters) {
+                resource = window.patientData.encounters.find(e => e.id === resourceId);
+            } else if (resourceType === 'Practitioner' && window.patientData.practitioners) {
+                resource = window.patientData.practitioners.find(p => p.id === resourceId);
+            } else if (resourceType === 'Organization' && window.patientData.organizations) {
+                resource = window.patientData.organizations.find(o => o.id === resourceId);
+            } else if (resourceType === 'RelatedPerson' && window.patientData.relatedPersons) {
+                resource = window.patientData.relatedPersons.find(r => r.id === resourceId);
+            } else if (resourceType === 'Coverage' && window.patientData.coverages) {
+                resource = window.patientData.coverages.find(c => c.id === resourceId);
+            }
+            
+            if (resource) {
+                jsonContent.textContent = JSON.stringify(resource, null, 2);
+                jsonTitle.textContent = `${resourceType} (${resourceId})`;
+                jsonViewModal.style.display = 'block';
+                
+                // Mettre en surbrillance le JSON
+                if (typeof hljs !== 'undefined') {
+                    hljs.highlightAll();
+                }
+            } else {
+                console.error(`Ressource non trouvée: ${resourceType}/${resourceId}`);
+            }
+        }
+    }
+    
+    function analyzePatientWithAI(patientId, serverUrl) {
+        const aiReportSection = document.getElementById('aiReportSection');
+        const aiReportContent = document.getElementById('aiReportContent');
+        const aiReportLoading = document.getElementById('aiReportLoading');
+        const aiReportError = document.getElementById('aiReportError');
+        
+        if (!aiReportSection || !aiReportContent || !aiReportLoading || !aiReportError) {
+            console.error('Éléments DOM manquants pour le rapport IA');
+            return;
+        }
+        
+        // Afficher la section et l'indicateur de chargement
+        aiReportSection.style.display = 'block';
+        aiReportLoading.style.display = 'block';
+        aiReportContent.style.display = 'none';
+        aiReportError.style.display = 'none';
+        
+        // Faire défiler jusqu'à la section
+        aiReportSection.scrollIntoView({ behavior: 'smooth' });
+        
+        // Appeler l'API d'analyse IA
+        fetch(`/api/ai/analyze-patient?patientId=${patientId}&serverUrl=${encodeURIComponent(serverUrl)}`)
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`Erreur ${response.status}: ${text}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Masquer l'indicateur de chargement et afficher le contenu
+                aiReportLoading.style.display = 'none';
+                aiReportContent.style.display = 'block';
+                
+                // Formatter et afficher le rapport
+                aiReportContent.innerHTML = formatAIReport(data);
+                
+                // Mettre en surbrillance le code si nécessaire
+                if (typeof hljs !== 'undefined') {
+                    document.querySelectorAll('pre code').forEach(block => {
+                        hljs.highlightBlock(block);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors de l\'analyse IA:', error);
+                
+                // Masquer l'indicateur de chargement et afficher l'erreur
+                aiReportLoading.style.display = 'none';
+                aiReportError.style.display = 'block';
+                
+                // Afficher le message d'erreur
+                aiReportError.innerHTML = `
+                    <div class="alert alert-danger">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Erreur lors de l'analyse</h4>
+                        <p>${error.message || 'Une erreur est survenue lors de l\'analyse du patient.'}</p>
+                        <button class="btn btn-outline-secondary btn-sm mt-2" id="showLocalAnalysisButton">
+                            <i class="fas fa-code"></i> Utiliser l'analyse locale
+                        </button>
+                    </div>
+                `;
+                
+                // Configurer le bouton d'analyse locale
+                const showLocalAnalysisButton = document.getElementById('showLocalAnalysisButton');
+                if (showLocalAnalysisButton) {
+                    showLocalAnalysisButton.addEventListener('click', () => showLocalAnalysis(error.message));
+                }
+            });
+    }
+    
+    function formatAIReport(data) {
+        if (!data || !data.report) {
+            return '<div class="alert alert-warning">Le rapport est vide ou mal formaté.</div>';
+        }
+        
+        // Convertir les sauts de ligne en balises HTML et conserver le formatage
+        let formattedReport = data.report
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Encapsuler dans des balises de paragraphe
+        formattedReport = `<p>${formattedReport}</p>`;
+        
+        // Ajouter une mise en forme pour les sections
+        formattedReport = formattedReport
+            .replace(/<p>#+\s*(.*?)<\/p>/g, '<h4>$1</h4>')
+            .replace(/<p>---+<\/p>/g, '<hr>');
+        
+        return `
+            <div class="ai-report-header">
+                <h3><i class="fas fa-robot"></i> Analyse IA du patient</h3>
+                <div class="ai-report-metadata">
+                    <span><i class="fas fa-clock"></i> Généré le: ${new Date().toLocaleString()}</span>
+                    <span><i class="fas fa-microchip"></i> Modèle: ${data.model || 'Non spécifié'}</span>
+                </div>
+            </div>
+            <div class="ai-report-body">
+                ${formattedReport}
+            </div>
+        `;
+    }
+    
+    function showLocalAnalysis(errorMessage) {
+        const aiReportContent = document.getElementById('aiReportContent');
+        const aiReportLoading = document.getElementById('aiReportLoading');
+        const aiReportError = document.getElementById('aiReportError');
+        
+        if (!aiReportContent || !aiReportLoading || !aiReportError || !window.patientData) {
+            console.error('Éléments DOM ou données patient manquants');
+            return;
+        }
+        
+        // Masquer l'erreur et l'indicateur de chargement
+        aiReportError.style.display = 'none';
+        aiReportLoading.style.display = 'none';
+        
+        // Afficher le contenu
+        aiReportContent.style.display = 'block';
+        
+        // Générer un rapport simple basé sur les données disponibles
+        const patient = window.patientData.patient;
+        const conditions = window.patientData.conditions || [];
+        const observations = window.patientData.observations || [];
+        const medications = window.patientData.medications || [];
+        const encounters = window.patientData.encounters || [];
+        
+        const patientName = formatPatientName(patient.name);
+        const patientGender = patient.gender ? (patient.gender === 'male' ? 'Homme' : patient.gender === 'female' ? 'Femme' : patient.gender) : 'Non spécifié';
+        const patientBirth = patient.birthDate ? new Date(patient.birthDate).toLocaleDateString() : 'Non spécifiée';
+        const patientAge = patient.birthDate ? calculateAge(patient.birthDate) : 'Non spécifié';
+        
+        const report = `
+            <div class="ai-report-header">
+                <h3><i class="fas fa-clipboard-list"></i> Synthèse du dossier patient</h3>
+                <div class="ai-report-metadata">
+                    <span><i class="fas fa-clock"></i> Généré le: ${new Date().toLocaleString()}</span>
+                    <span><i class="fas fa-exclamation-triangle"></i> Analyse IA indisponible: ${errorMessage || 'Erreur inconnue'}</span>
+                </div>
+            </div>
+            <div class="ai-report-body">
+                <h4>Informations personnelles</h4>
+                <p>
+                    <strong>Nom:</strong> ${patientName}<br>
+                    <strong>Genre:</strong> ${patientGender}<br>
+                    <strong>Date de naissance:</strong> ${patientBirth}<br>
+                    <strong>Âge:</strong> ${patientAge}<br>
+                    <strong>Identifiant:</strong> ${patient.id}
+                </p>
+                
+                <h4>Problèmes de santé (${conditions.length})</h4>
+                ${conditions.length > 0 ? `
+                    <ul>
+                        ${conditions.map(c => `
+                            <li>
+                                <strong>${c.code?.coding?.[0]?.display || 'Problème non codé'}</strong>
+                                ${c.onsetDateTime ? ` - Début: ${new Date(c.onsetDateTime).toLocaleDateString()}` : ''}
+                                ${c.clinicalStatus?.coding?.[0]?.code ? ` (${c.clinicalStatus.coding[0].code === 'active' ? 'Actif' : 'Résolu'})` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                ` : '<p>Aucun problème de santé enregistré.</p>'}
+                
+                <h4>Mesures récentes (${Math.min(observations.length, 5)}/${observations.length})</h4>
+                ${observations.length > 0 ? `
+                    <ul>
+                        ${observations.slice(0, 5).map(o => `
+                            <li>
+                                <strong>${o.code?.coding?.[0]?.display || 'Observation non codée'}</strong>:
+                                ${getObservationValue(o)}
+                                ${o.effectiveDateTime ? ` (${new Date(o.effectiveDateTime).toLocaleDateString()})` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                ` : '<p>Aucune mesure enregistrée.</p>'}
+                
+                <h4>Médicaments (${medications.length})</h4>
+                ${medications.length > 0 ? `
+                    <ul>
+                        ${medications.map(m => `
+                            <li>
+                                <strong>${m.medicationCodeableConcept?.coding?.[0]?.display || 'Médicament non codé'}</strong>
+                                ${m.dosageInstruction?.[0]?.text ? ` - ${m.dosageInstruction[0].text}` : ''}
+                                ${m.authoredOn ? ` (Prescrit le: ${new Date(m.authoredOn).toLocaleDateString()})` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                ` : '<p>Aucun médicament enregistré.</p>'}
+                
+                <h4>Consultations récentes (${Math.min(encounters.length, 3)}/${encounters.length})</h4>
+                ${encounters.length > 0 ? `
+                    <ul>
+                        ${encounters.slice(0, 3).map(e => `
+                            <li>
+                                <strong>${e.type?.[0]?.coding?.[0]?.display || 'Consultation'}</strong>
+                                ${e.period?.start ? ` - ${new Date(e.period.start).toLocaleDateString()}` : ''}
+                                ${e.serviceProvider?.display ? ` avec ${e.serviceProvider.display}` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                ` : '<p>Aucune consultation enregistrée.</p>'}
+                
+                <div class="alert alert-info mt-3">
+                    <p><i class="fas fa-info-circle"></i> <strong>Note:</strong> Cette synthèse a été générée localement et ne remplace pas l'analyse complète de l'IA.</p>
+                </div>
+            </div>
+        `;
+        
+        aiReportContent.innerHTML = report;
+    }
+    
+    // Fonction pour calculer l'âge à partir de la date de naissance
+    function calculateAge(birthDate) {
+        const today = new Date();
+        const birth = new Date(birthDate);
+        let age = today.getFullYear() - birth.getFullYear();
+        const monthDiff = today.getMonth() - birth.getMonth();
+        
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+            age--;
+        }
+        
+        return age + ' ans';
+    }
+    
+    // Formatage des noms
     function formatPatientName(nameArray) {
         if (!nameArray || nameArray.length === 0) {
-            return 'Patient sans nom';
+            return 'Nom inconnu';
         }
         
         const name = nameArray[0];
+        let formattedName = '';
         
-        const family = name.family || '';
-        const given = name.given || [];
-        
-        if (family && given.length > 0) {
-            return `${family.toUpperCase()} ${given.join(' ')}`;
-        } else if (family) {
-            return family.toUpperCase();
-        } else if (given.length > 0) {
-            return given.join(' ');
-        } else {
-            return 'Patient sans nom';
+        if (name.prefix && name.prefix.length > 0) {
+            formattedName += name.prefix.join(' ') + ' ';
         }
+        
+        if (name.given && name.given.length > 0) {
+            formattedName += name.given.join(' ') + ' ';
+        }
+        
+        if (name.family) {
+            formattedName += name.family;
+        }
+        
+        return formattedName || 'Nom inconnu';
     }
     
-    // Fonction pour montrer les statuts/alertes
+    // Affichage des messages de statut
     function showStatus(message, type = 'info') {
-        const statusDisplay = document.getElementById('serverStatus');
-        statusDisplay.innerHTML = message;
-        statusDisplay.className = 'status-display';
+        const statusDiv = document.getElementById('statusMessages');
+        if (!statusDiv) return;
         
-        if (type === 'error') {
-            statusDisplay.classList.add('status-error');
-        } else if (type === 'success') {
-            statusDisplay.classList.add('status-success');
-        } else {
-            statusDisplay.classList.add('status-info');
+        const statusMessage = document.createElement('div');
+        statusMessage.className = `alert alert-${type} alert-dismissible fade show`;
+        statusMessage.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
+        `;
+        
+        statusDiv.appendChild(statusMessage);
+        
+        // Auto-suppression après 5 secondes pour les messages non critiques
+        if (type !== 'danger') {
+            setTimeout(() => {
+                statusMessage.classList.remove('show');
+                setTimeout(() => statusMessage.remove(), 500);
+            }, 5000);
         }
-        
-        statusDisplay.style.display = 'block';
     }
     
-    // Fonction pour générer un résumé du patient (sans appeler l'IA)
+    // Génération d'un résumé du patient
     function generatePatientSummary(patient) {
-        // Vérifier les informations disponibles
-        const hasName = patient.name && patient.name.length > 0;
-        const hasBirthDate = !!patient.birthDate;
-        const hasAddress = patient.address && patient.address.length > 0;
-        const hasTelecom = patient.telecom && patient.telecom.length > 0;
+        if (!patient) return '';
         
-        return `
-            <div style="padding: 15px 0; border-bottom: 1px solid #f0f0f0; margin-bottom: 20px;">
-                <h3 style="margin-top: 0; color: #444;">Résumé des informations patient</h3>
-                <p style="color: #666; margin-bottom: 20px;">Analyse basée uniquement sur les données disponibles dans le dossier.</p>
-                
-                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-                    <div style="flex: .85; text-align: center; padding: 10px; background: ${hasName ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}; border-radius: 4px;">
-                        <i class="fas ${hasName ? 'fa-check' : 'fa-times'}" style="color: ${hasName ? '#28a745' : '#dc3545'};"></i><br>
-                        <span style="font-size: 0.9em;">Identité</span>
-                    </div>
-                    <div style="flex: .85; text-align: center; padding: 10px; background: ${hasBirthDate ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}; border-radius: 4px;">
-                        <i class="fas ${hasBirthDate ? 'fa-check' : 'fa-times'}" style="color: ${hasBirthDate ? '#28a745' : '#dc3545'};"></i><br>
-                        <span style="font-size: 0.9em;">Date naissance</span>
-                    </div>
-                    <div style="flex: .85; text-align: center; padding: 10px; background: ${hasAddress ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}; border-radius: 4px;">
-                        <i class="fas ${hasAddress ? 'fa-check' : 'fa-times'}" style="color: ${hasAddress ? '#28a745' : '#dc3545'};"></i><br>
-                        <span style="font-size: 0.9em;">Adresse</span>
-                    </div>
-                    <div style="flex: .85; text-align: center; padding: 10px; background: ${hasTelecom ? 'rgba(40, 167, 69, 0.1)' : 'rgba(220, 53, 69, 0.1)'}; border-radius: 4px;">
-                        <i class="fas ${hasTelecom ? 'fa-check' : 'fa-times'}" style="color: ${hasTelecom ? '#28a745' : '#dc3545'};"></i><br>
-                        <span style="font-size: 0.9em;">Contact</span>
-                    </div>
+        const patientName = formatPatientName(patient.name);
+        const patientGender = patient.gender ? (patient.gender === 'male' ? 'Homme' : patient.gender === 'female' ? 'Femme' : patient.gender) : 'Non spécifié';
+        const patientBirth = patient.birthDate ? new Date(patient.birthDate).toLocaleDateString() : 'Non spécifiée';
+        
+        let summary = `
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-user-circle me-2"></i>${patientName}
+                    </h3>
                 </div>
-                
-                <div style="background: rgba(253, 126, 48, 0.1); padding: 10px; border-radius: 6px; margin-top: 15px; text-align: center;">
-                    <p style="margin: 0; font-style: italic; color: #666;">
-                        Cette analyse est purement factuelle, basée uniquement sur les données disponibles dans le dossier.
-                    </p>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Genre:</strong> ${patientGender}</p>
+                            <p><strong>Date de naissance:</strong> ${patientBirth}</p>
+        `;
+        
+        if (patient.birthDate) {
+            const age = calculateAge(patient.birthDate);
+            summary += `<p><strong>Âge:</strong> ${age}</p>`;
+        }
+        
+        summary += `<p><strong>Identifiant:</strong> ${patient.id}</p>`;
+        
+        // Ajouter le contact si disponible
+        if (patient.telecom && patient.telecom.length > 0) {
+            summary += '<p><strong>Contact:</strong> ';
+            patient.telecom.forEach((t, i) => {
+                if (i > 0) summary += ', ';
+                summary += `${t.system === 'phone' ? '<i class="fas fa-phone-alt"></i>' : t.system === 'email' ? '<i class="fas fa-envelope"></i>' : ''} ${t.value} (${t.use || 'non spécifié'})`;
+            });
+            summary += '</p>';
+        }
+        
+        summary += `
+                        </div>
+                        <div class="col-md-6">
+        `;
+        
+        // Ajouter l'adresse si disponible
+        if (patient.address && patient.address.length > 0) {
+            const address = patient.address[0];
+            summary += '<p><strong>Adresse:</strong><br>';
+            
+            if (address.line && address.line.length > 0) {
+                address.line.forEach(line => {
+                    summary += `${line}<br>`;
+                });
+            }
+            
+            if (address.postalCode || address.city) {
+                summary += `${address.postalCode || ''} ${address.city || ''}<br>`;
+            }
+            
+            if (address.country) {
+                summary += `${address.country}`;
+            }
+            
+            summary += '</p>';
+        }
+        
+        // Ajouter le contact d'urgence si disponible
+        if (patient.contact && patient.contact.length > 0) {
+            const contact = patient.contact[0];
+            summary += '<p><strong>Contact d\'urgence:</strong><br>';
+            
+            if (contact.name) {
+                summary += `${formatPatientName([contact.name])}<br>`;
+            }
+            
+            if (contact.relationship && contact.relationship.length > 0) {
+                const relationships = contact.relationship.map(r => r.text || r.coding?.[0]?.display || 'Non spécifié').join(', ');
+                summary += `Relation: ${relationships}<br>`;
+            }
+            
+            if (contact.telecom && contact.telecom.length > 0) {
+                const telecom = contact.telecom[0];
+                summary += `${telecom.system === 'phone' ? '<i class="fas fa-phone-alt"></i>' : telecom.system === 'email' ? '<i class="fas fa-envelope"></i>' : ''} ${telecom.value}`;
+            }
+            
+            summary += '</p>';
+        }
+        
+        summary += `
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
+        
+        return summary;
     }
     
-    // Recherche des patients avec une implémentation robuste
+    // Recherche de patients
     function searchPatients() {
-        const searchValue = patientSearch.value.trim();
+        const searchTerm = document.getElementById('patientSearch').value.trim();
+        const serverUrl = document.getElementById('serverUrl').value;
         
-        if (!searchValue) {
-            alert('Veuillez entrer un critère de recherche');
+        if (!searchTerm) {
+            showStatus('<i class="fas fa-exclamation-triangle"></i> Veuillez entrer un terme de recherche', 'warning');
             return;
         }
         
-        // IDENTITOVIGILANCE: Effacer toutes les données du patient précédent
-        clearPatientData();
+        if (!serverUrl) {
+            showStatus('<i class="fas fa-exclamation-triangle"></i> Veuillez spécifier l\'URL du serveur FHIR', 'warning');
+            return;
+        }
         
-        // Cacher le conteneur du patient
-        document.getElementById('patientContainer').style.display = 'none';
+        // Afficher l'état de la recherche
+        const searchStatus = document.getElementById('searchStatus');
+        const patientSelect = document.getElementById('patientSelect');
         
-        const serverUrl = serverSelect.value;
+        if (searchStatus) {
+            searchStatus.style.display = 'block';
+            searchStatus.textContent = 'Recherche en cours...';
+        }
         
-        // Afficher l'état de chargement
-        showStatus('<i class="fas fa-spinner fa-spin"></i> Recherche en cours...', 'info');
+        if (patientSelect) {
+            patientSelect.innerHTML = '<option value="">Chargement des résultats...</option>';
+        }
         
-        // Fonction de traitement des résultats
+        // Construire l'URL de recherche
+        let searchUrl = `${serverUrl}/Patient?_count=100&_format=json`;
+        
+        // Déterminer si le terme de recherche est un nom ou un identifiant
+        if (searchTerm.match(/^[0-9]+$/)) {
+            // Si le terme est numérique, chercher par ID
+            searchUrl = `${serverUrl}/Patient?_id=${searchTerm}`;
+        } else {
+            // Sinon, chercher par nom
+            searchUrl += `&name=${encodeURIComponent(searchTerm)}`;
+        }
+        
+        // Effectuer la recherche sécurisée (avec retry)
+        secureSearch(searchUrl)
+            .then(processPatientResults)
+            .catch(error => {
+                console.error('Erreur lors de la recherche:', error);
+                
+                if (searchStatus) {
+                    searchStatus.style.display = 'block';
+                    searchStatus.innerHTML = `<span class="text-danger">Erreur: ${error.message}</span>`;
+                }
+                
+                if (patientSelect) {
+                    patientSelect.innerHTML = '<option value="">-- Erreur de recherche --</option>';
+                }
+                
+                showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur lors de la recherche: ${error.message}`, 'danger');
+            });
+        
+        // Traitement des résultats de recherche
         function processPatientResults(data) {
-            if (data.entry && data.entry.length > 0) {
-                // Vider le sélecteur de patients
-                patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
-                
-                // Ajouter les patients trouvés
-                data.entry.forEach(entry => {
-                    if (entry.resource && entry.resource.resourceType === 'Patient') {
-                        const patient = entry.resource;
-                        const name = formatPatientName(patient.name);
-                        
-                        const option = document.createElement('option');
-                        option.value = patient.id;
-                        option.textContent = `${name} (${patient.gender || '?'})`;
-                        option.dataset.patient = JSON.stringify(patient);
-                        
-                        patientSelect.appendChild(option);
-                    }
-                });
-                
-                showStatus(`<i class="fas fa-check-circle"></i> ${data.entry.length} patients trouvés`, 'success');
-                
-                // Auto-sélectionner si un seul résultat
-                if (data.entry.length === 1) {
-                    patientSelect.selectedIndex = 1; // Premier patient
+            if (!data || !data.entry || data.entry.length === 0) {
+                if (searchStatus) {
+                    searchStatus.style.display = 'block';
+                    searchStatus.textContent = 'Aucun patient trouvé';
                 }
                 
-                return true;
-            }
-            return false;
-        }
-        
-        // Fonction de recherche sécurisée avec XMLHttpRequest
-        function secureSearch(url, isSecondAttempt = false) {
-            console.log(`Recherche de patients: ${url}`);
-            
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', url);
-            
-            xhr.onload = function() {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    try {
-                        const data = JSON.parse(xhr.responseText);
-                        const hasResults = processPatientResults(data);
-                        
-                        // Si aucun résultat et c'est la première tentative, essayer une recherche plus large
-                        if (!hasResults && !isSecondAttempt) {
-                            const widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
-                            secureSearch(widerUrl, true);
-                        } else if (!hasResults) {
-                            patientSelect.innerHTML = '<option value="">-- Aucun patient trouvé --</option>';
-                            showStatus('<i class="fas fa-exclamation-circle"></i> Aucun patient trouvé', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Erreur parsing JSON:', error);
-                        patientSelect.innerHTML = '<option value="">-- Erreur de traitement des données --</option>';
-                        showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de traitement des données', 'error');
-                    }
-                } else {
-                    console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
-                    patientSelect.innerHTML = '<option value="">-- Erreur de communication avec le serveur --</option>';
-                    showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${xhr.status}`, 'error');
-                }
-            };
-            
-            xhr.onerror = function() {
-                console.error(`Erreur réseau lors de la récupération des patients: ${url}`);
-                patientSelect.innerHTML = '<option value="">-- Erreur de connexion --</option>';
-                showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de connexion au serveur', 'error');
-            };
-            
-            xhr.send();
-        }
-        
-        // Commencer par la recherche sur le nom de famille avec un nombre élevé de résultats (contexte hospitalier)
-        const initialUrl = `${serverUrl}/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
-        secureSearch(initialUrl);
-    }
-    
-    // Effacer la recherche et toutes les données du patient précédent
-    function clearSearch() {
-        // Réinitialiser la recherche
-        patientSearch.value = '';
-        patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
-        document.getElementById('serverStatus').style.display = 'none';
-        document.getElementById('patientContainer').style.display = 'none';
-        
-        // IDENTITOVIGILANCE: Effacer toutes les données du patient précédent
-        clearPatientData();
-    }
-    
-    // Fonction pour effacer toutes les données du patient (identitovigilance)
-    function clearPatientData() {
-        // Réinitialiser la variable globale des données patient
-        patientData = null;
-        
-        // Vider tous les conteneurs de contenu
-        document.getElementById('summaryContent').innerHTML = '';
-        document.getElementById('aiAnalysis').innerHTML = '';
-        document.getElementById('aiAnalysis').style.display = 'none';
-        
-        // Vider tous les conteneurs d'onglets
-        const contentContainers = [
-            'conditionsContent', 
-            'observationsContent', 
-            'medicationsContent', 
-            'encountersContent',
-            'practitionersContent',
-            'organizationsContent',
-            'relatedContent',
-            'coverageContent',
-            'timelineContent',
-            'bundleContent',
-            'jsonContent'
-        ];
-        
-        contentContainers.forEach(id => {
-            const container = document.getElementById(id);
-            if (container) {
-                const resourcesList = container.querySelector('.resources-list');
-                if (resourcesList) resourcesList.innerHTML = '';
-            }
-        });
-        
-        console.log('IDENTITOVIGILANCE: Toutes les données du patient ont été effacées');
-    }
-    
-    // Charger les détails d'un patient et ses ressources associées
-    function loadPatient() {
-        if (!patientSelect.value) {
-            alert('Veuillez sélectionner un patient');
-            return;
-        }
-        
-        // IDENTITOVIGILANCE: Effacer toutes les données du patient précédent
-        clearPatientData();
-        
-        const patientId = patientSelect.value;
-        const server = serverSelect.value;
-        
-        console.log(`Chargement du patient ${patientId} depuis le serveur ${server}`);
-        
-        try {
-            const selectedOption = patientSelect.options[patientSelect.selectedIndex];
-            patientData = JSON.parse(selectedOption.dataset.patient);
-            
-            // Afficher les détails
-            document.getElementById('patientName').textContent = formatPatientName(patientData.name);
-            
-            // Format plus détaillé pour l'en-tête du patient
-            let patientDetails = '';
-            
-            if (patientData.gender) {
-                patientDetails += `<span style="margin-right: 15px;"><i class="fas ${patientData.gender === 'male' ? 'fa-male' : patientData.gender === 'female' ? 'fa-female' : 'fa-user'}" style="margin-right: 5px;"></i> ${patientData.gender === 'male' ? 'Homme' : patientData.gender === 'female' ? 'Femme' : patientData.gender}</span>`;
-            }
-            
-            if (patientData.birthDate) {
-                const birthDate = new Date(patientData.birthDate);
-                const today = new Date();
-                const age = today.getFullYear() - birthDate.getFullYear();
-                const formattedDate = birthDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                patientDetails += `<span style="margin-right: 15px;"><i class="fas fa-birthday-cake" style="margin-right: 5px;"></i> ${formattedDate} (${age} ans)</span>`;
-            }
-            
-            if (patientData.telecom && patientData.telecom.length > 0) {
-                const phone = patientData.telecom.find(t => t.system === 'phone');
-                if (phone) {
-                    patientDetails += `<span style="margin-right: 15px;"><i class="fas fa-phone" style="margin-right: 5px;"></i> ${phone.value}</span>`;
+                if (patientSelect) {
+                    patientSelect.innerHTML = '<option value="">-- Aucun résultat --</option>';
                 }
                 
-                const email = patientData.telecom.find(t => t.system === 'email');
-                if (email) {
-                    patientDetails += `<span style="margin-right: 15px;"><i class="fas fa-envelope" style="margin-right: 5px;"></i> ${email.value}</span>`;
-                }
+                showStatus('<i class="fas fa-info-circle"></i> Aucun patient ne correspond à votre recherche', 'info');
+                return;
             }
             
-            document.getElementById('patientDetails').innerHTML = patientDetails || `ID: ${patientData.id}`;
+            // Patients trouvés
+            const count = data.entry.length;
             
-            // Afficher le conteneur de patient
-            document.getElementById('patientContainer').style.display = 'block';
+            if (searchStatus) {
+                searchStatus.style.display = 'block';
+                searchStatus.textContent = `${count} patient(s) trouvé(s)`;
+            }
             
-            // Charger toutes les ressources associées au patient en parallèle
-            // Utiliser Promise.allSettled pour continuer même si certaines requêtes échouent
-            const loadingPromises = [
-                { name: 'Conditions', promise: loadPatientConditions(patientId, server) },
-                { name: 'Observations', promise: loadPatientObservations(patientId, server) },
-                { name: 'Médicaments', promise: loadPatientMedications(patientId, server) },
-                { name: 'Consultations', promise: loadPatientEncounters(patientId, server) },
-                { name: 'Praticiens', promise: loadPatientPractitioners(patientId, server) },
-                { name: 'Organisations', promise: loadPatientOrganizations(patientId, server) },
-                { name: 'Personnes liées', promise: loadPatientRelatedPersons(patientId, server) },
-                { name: 'Couvertures', promise: loadPatientCoverage(patientId, server) },
-                { name: 'Chronologie', promise: generateTimeline(patientId, server) },
-                { name: 'Bundle', promise: loadPatientBundle(patientId, server) }
-            ];
-            
-            // Afficher un résumé global des résultats du chargement
-            Promise.allSettled(loadingPromises.map(item => item.promise))
-                .then(results => {
-                    const summary = loadingPromises.map((item, index) => {
-                        const result = results[index];
-                        return {
-                            name: item.name,
-                            status: result.status,
-                            error: result.status === 'rejected' ? result.reason?.message : null
-                        };
+            if (patientSelect) {
+                try {
+                    // Trier les patients par nom
+                    const sortedPatients = data.entry.sort((a, b) => {
+                        const nameA = a.resource.name?.[0]?.family || '';
+                        const nameB = b.resource.name?.[0]?.family || '';
+                        return nameA.localeCompare(nameB);
                     });
                     
-                    console.log('Résultats du chargement des ressources:', summary);
-                })
-                .finally(() => {
-                    // Mettre à jour l'onglet JSON
-                    updateJsonView();
-                });
-            
-            // Résumé amélioré avec checkboxes et résumé clinique non-IA
-            document.getElementById('summaryContent').innerHTML = `
-                <div class="patient-summary">
-                    <h3 style="color: #e83e28; margin-top: 0; font-size: 1.3rem; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0;">Résumé du patient</h3>
+                    // Générer les options
+                    patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
                     
-                    <!-- Indicateurs visuels de présence des données (via generatePatientSummary) -->
-                    ${generatePatientSummary(patientData)}
-                    
-                    <!-- Résumé clinique par onglet -->
-                    <div id="clinicalSummary" style="margin: 20px 0; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #f0f0f0;">
-                        <h4 style="margin-top: 0; font-size: 1.1rem; color: #555; margin-bottom: 10px;">Résumé clinique:</h4>
-                        <div id="clinicalSummaryContent" style="color: #666; font-size: 0.95rem;">
-                            <p>Les informations cliniques seront chargées au fur et à mesure de l'exploration des onglets.</p>
-                        </div>
-                    </div>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 20px;">
-                        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 3px solid #e83e28;">
-                            <h4 style="margin-top: 0; font-size: 1.1rem; color: #555;">Informations démographiques</h4>
-                            <div style="margin-top: 12px;">
-                                <p style="margin: 8px 0; display: flex; justify-content: space-between;">
-                                    <span style="font-weight: 500; color: #666;">Identifiant:</span> 
-                                    <span style="color: #333;">${patientData.id}</span>
-                                </p>
-                                <p style="margin: 8px 0; display: flex; justify-content: space-between;">
-                                    <span style="font-weight: 500; color: #666;">Nom complet:</span> 
-                                    <span style="color: #333;">${formatPatientName(patientData.name)}</span>
-                                </p>
-                                <p style="margin: 8px 0; display: flex; justify-content: space-between;">
-                                    <span style="font-weight: 500; color: #666;">Genre:</span> 
-                                    <span style="color: #333;">${patientData.gender || 'Non spécifié'}</span>
-                                </p>
-                                <p style="margin: 8px 0; display: flex; justify-content: space-between;">
-                                    <span style="font-weight: 500; color: #666;">Date de naissance:</span> 
-                                    <span style="color: #333;">${patientData.birthDate || 'Non spécifiée'}</span>
-                                </p>
-                            </div>
-                        </div>
+                    sortedPatients.forEach(entry => {
+                        const patient = entry.resource;
+                        const option = document.createElement('option');
+                        option.value = patient.id;
                         
-                        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border-left: 3px solid #fd7e30;">
-                            <h4 style="margin-top: 0; font-size: 1.1rem; color: #555;">Coordonnées</h4>
-                            <div style="margin-top: 12px;">
-                                <p style="color: #777; font-style: italic;">
-                                    ${patientData.telecom ? 
-                                      `<ul style="padding-left: 20px; margin: 10px 0;">
-                                        ${patientData.telecom.map(t => `<li>${t.system}: ${t.value}</li>`).join('')}
-                                       </ul>` 
-                                      : 'Aucune information de contact disponible'}
-                                </p>
-                                <p style="color: #777; font-style: italic; margin-top: 15px;">
-                                    ${patientData.address ? 
-                                      `<strong>Adresse:</strong><br>${patientData.address.map(a => 
-                                        `${a.line ? a.line.join(', ') : ''}<br>
-                                         ${a.postalCode || ''} ${a.city || ''}<br>
-                                         ${a.country || ''}`
-                                      ).join('<br><br>')}` 
-                                      : 'Aucune adresse disponible'}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-        } catch (error) {
-            console.error('Erreur lors du chargement du patient:', error);
-            alert('Erreur lors du chargement du patient: ' + error.message);
+                        const name = formatPatientName(patient.name);
+                        const birth = patient.birthDate ? ` (${patient.birthDate})` : '';
+                        const gender = patient.gender ? ` - ${patient.gender}` : '';
+                        
+                        option.textContent = `${name}${gender}${birth}`;
+                        patientSelect.appendChild(option);
+                    });
+                    
+                    // Si un seul patient est trouvé, le sélectionner automatiquement
+                    if (count === 1) {
+                        patientSelect.selectedIndex = 1;
+                        document.getElementById('patientId').value = patientSelect.value;
+                        loadPatient();
+                    }
+                    
+                    showStatus(`<i class="fas fa-check-circle"></i> ${count} patient(s) trouvé(s)`, 'success');
+                } catch (error) {
+                    console.error('Erreur parsing JSON:', error);
+                    patientSelect.innerHTML = '<option value="">-- Erreur de traitement des données --</option>';
+                    showStatus('<i class="fas fa-exclamation-triangle"></i> Erreur de traitement des données', 'error');
+                }
+            } else {
+                console.error('Element patientSelect non trouvé dans le DOM');
+            }
+        }
+        
+        // Fonction de recherche sécurisée avec retry pour les problèmes CORS
+        function secureSearch(url, isSecondAttempt = false) {
+            return fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error('Serveur FHIR introuvable ou URL incorrecte');
+                        } else if (response.status === 401) {
+                            throw new Error('Accès non autorisé au serveur FHIR');
+                        } else {
+                            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                        }
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    // Si l'erreur est liée à CORS et que c'est la première tentative,
+                    // essayer via le proxy du serveur
+                    if (!isSecondAttempt && (error.message.includes('CORS') || error.message.includes('Failed to fetch'))) {
+                        console.log('Tentative de contournement CORS via proxy...');
+                        return fetch(`/api/fhir-proxy?url=${encodeURIComponent(url)}`).then(response => {
+                            if (!response.ok) {
+                                throw new Error(`Erreur proxy ${response.status}: ${response.statusText}`);
+                            }
+                            return response.json();
+                        });
+                    }
+                    throw error;
+                });
         }
     }
     
-    // Fonctions pour charger les ressources liées au patient
+    // Effacement de la recherche
+    function clearSearch() {
+        document.getElementById('patientSearch').value = '';
+        document.getElementById('patientSelect').innerHTML = '<option value="">-- Recherchez des patients --</option>';
+        document.getElementById('searchStatus').style.display = 'none';
+    }
+    
+    // Effacement des données patient
+    function clearPatientData() {
+        // Effacer les conteneurs de données
+        document.querySelectorAll('.resources-list').forEach(el => {
+            el.innerHTML = '';
+            el.style.display = 'none';
+        });
+        
+        // Afficher les indicateurs de chargement
+        document.querySelectorAll('.loading-resources').forEach(el => {
+            el.style.display = 'none';
+        });
+        
+        // Afficher les messages d'absence de ressources
+        document.querySelectorAll('.no-resources').forEach(el => {
+            el.style.display = 'block';
+        });
+        
+        // Effacer le conteneur de patient
+        document.getElementById('patientContainer').innerHTML = '';
+        
+        // Cacher la section de rapport IA
+        const aiReportSection = document.getElementById('aiReportSection');
+        if (aiReportSection) {
+            aiReportSection.style.display = 'none';
+        }
+        
+        // Réinitialiser les données globales
+        window.patientData = null;
+    }
+    
+    // Chargement d'un patient
+    function loadPatient() {
+        const patientId = document.getElementById('patientId').value;
+        const serverUrl = document.getElementById('serverUrl').value;
+        
+        if (!patientId) {
+            showStatus('<i class="fas fa-exclamation-triangle"></i> Veuillez spécifier l\'ID du patient', 'warning');
+            return;
+        }
+        
+        if (!serverUrl) {
+            showStatus('<i class="fas fa-exclamation-triangle"></i> Veuillez spécifier l\'URL du serveur FHIR', 'warning');
+            return;
+        }
+        
+        // Initialiser l'interface
+        clearPatientData();
+        document.getElementById('patientIdDisplay').textContent = patientId;
+        document.getElementById('patientServerDisplay').textContent = serverUrl;
+        document.getElementById('patientDataContainer').style.display = 'block';
+        
+        // Mettre à jour l'URL pour permettre le partage
+        const newUrl = `${window.location.pathname}?id=${patientId}&server=${encodeURIComponent(serverUrl)}`;
+        window.history.pushState({ patientId, serverUrl }, '', newUrl);
+        
+        // Initialiser l'objet global de données patient
+        window.patientData = {
+            patient: null,
+            conditions: [],
+            observations: [],
+            medications: [],
+            encounters: [],
+            practitioners: [],
+            organizations: [],
+            relatedPersons: [],
+            coverages: []
+        };
+        
+        // Charger les données du patient principal
+        fetch(`${serverUrl}/Patient/${patientId}?_format=json`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                window.patientData.patient = data;
+                
+                // Afficher le résumé du patient
+                const patientContainer = document.getElementById('patientContainer');
+                patientContainer.innerHTML = generatePatientSummary(data);
+                
+                // Charger les ressources liées au patient
+                Promise.all([
+                    loadPatientConditions(patientId, serverUrl),
+                    loadPatientObservations(patientId, serverUrl),
+                    loadPatientMedications(patientId, serverUrl),
+                    loadPatientEncounters(patientId, serverUrl),
+                    loadPatientPractitioners(patientId, serverUrl),
+                    loadPatientOrganizations(patientId, serverUrl),
+                    loadPatientRelatedPersons(patientId, serverUrl),
+                    loadPatientCoverage(patientId, serverUrl),
+                    loadPatientBundle(patientId, serverUrl),
+                    generateTimeline(patientId, serverUrl)
+                ])
+                .then(results => {
+                    console.log('Toutes les ressources ont été chargées');
+                    showStatus('<i class="fas fa-check-circle"></i> Données patient chargées avec succès', 'success');
+                    
+                    // Mettre à jour le compteur global de ressources
+                    updateResourceCounts();
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des ressources:', error);
+                    showStatus(`<i class="fas fa-exclamation-triangle"></i> Certaines ressources n'ont pas pu être chargées: ${error.message}`, 'warning');
+                    
+                    // Mettre à jour le compteur quand même
+                    updateResourceCounts();
+                });
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement du patient:', error);
+                
+                document.getElementById('patientContainer').innerHTML = `
+                    <div class="alert alert-danger">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Erreur lors du chargement du patient</h4>
+                        <p>${error.message}</p>
+                        <p>Vérifiez l'ID du patient et l'URL du serveur FHIR.</p>
+                    </div>
+                `;
+                
+                showStatus(`<i class="fas fa-exclamation-triangle"></i> Erreur: ${error.message}`, 'danger');
+            });
+        
+        // Fonction pour mettre à jour les compteurs de ressources
+        function updateResourceCounts() {
+            document.getElementById('conditionsCount').textContent = window.patientData.conditions.length;
+            document.getElementById('observationsCount').textContent = window.patientData.observations.length;
+            document.getElementById('medicationsCount').textContent = window.patientData.medications.length;
+            document.getElementById('encountersCount').textContent = window.patientData.encounters.length;
+            document.getElementById('practitionersCount').textContent = window.patientData.practitioners.length;
+            document.getElementById('organizationsCount').textContent = window.patientData.organizations.length;
+            document.getElementById('relatedPersonsCount').textContent = window.patientData.relatedPersons.length;
+            document.getElementById('coveragesCount').textContent = window.patientData.coverages.length;
+        }
+    }
+    
+    // Chargement des conditions du patient
     function loadPatientConditions(patientId, serverUrl) {
         return new Promise((resolve, reject) => {
-            const container = document.querySelector('#conditionsContent');
-            const loadingSection = container.querySelector('.loading-resources');
-            const noResourcesSection = container.querySelector('.no-resources');
-            const resourcesList = container.querySelector('.resources-list');
-            
-            // Réinitialiser les données des conditions
-            conditionsData = [];
-            
-            loadingSection.style.display = 'block';
-            noResourcesSection.style.display = 'none';
-            resourcesList.style.display = 'none';
-            
-            // URL de la requête FHIR avec format correct pour référence patient (limite augmentée à 100)
-            const url = `${serverUrl}/Condition?subject=Patient/${patientId}&_sort=-recorded-date&_count=100`;
-            console.log(`Chargement des conditions depuis: ${url}`);
-        
-        // Utiliser XMLHttpRequest pour une meilleure compatibilité et gestion d'erreurs
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        
-        xhr.onload = function() {
-            loadingSection.style.display = 'none';
-            
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    
-                    if (data.entry && data.entry.length > 0) {
-                        // Stocker toutes les conditions dans la variable globale
-                        conditionsData = data.entry.map(entry => entry.resource);
-                        console.log(`${conditionsData.length} conditions chargées et stockées`);
+            try {
+                const container = document.querySelector('#conditionsContent');
+                if (!container) {
+                    reject(new Error("Container #conditionsContent non trouvé dans le DOM"));
+                    return;
+                }
+                
+                const loadingSection = container.querySelector('.loading-resources');
+                const noResourcesSection = container.querySelector('.no-resources');
+                const resourcesList = container.querySelector('.resources-list');
+                
+                if (!loadingSection || !noResourcesSection || !resourcesList) {
+                    reject(new Error("Structure DOM incorrecte dans le container de conditions"));
+                    return;
+                }
+                
+                // Afficher l'indicateur de chargement
+                loadingSection.style.display = 'block';
+                noResourcesSection.style.display = 'none';
+                resourcesList.style.display = 'none';
+                resourcesList.innerHTML = '';
+                
+                // Charger les conditions
+                fetch(`${serverUrl}/Condition?patient=${patientId}&_count=100&_format=json`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        loadingSection.style.display = 'none';
                         
-                        resourcesList.innerHTML = '';
+                        if (!data.entry || data.entry.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            resourcesList.style.display = 'none';
+                            resolve([]);
+                            return;
+                        }
+                        
+                        // Conditions trouvées
+                        noResourcesSection.style.display = 'none';
                         resourcesList.style.display = 'block';
                         
-                        // Créer une liste de conditions
-                        const conditionsList = document.createElement('div');
-                        conditionsList.className = 'conditions-list';
+                        // Trier les conditions par date (les plus récentes d'abord)
+                        const conditions = data.entry.map(entry => entry.resource).sort((a, b) => {
+                            const dateA = a.recordedDate || a.onsetDateTime || '';
+                            const dateB = b.recordedDate || b.onsetDateTime || '';
+                            return dateB.localeCompare(dateA);
+                        });
                         
-                        data.entry.forEach(entry => {
-                            const condition = entry.resource;
+                        // Stocker les conditions dans l'objet global
+                        window.patientData.conditions = conditions;
+                        
+                        // Générer la liste des conditions
+                        conditions.forEach(condition => {
                             const conditionElement = document.createElement('div');
-                            conditionElement.className = 'condition-item';
-                            conditionElement.style.padding = '12px';
-                            conditionElement.style.margin = '8px 0';
-                            conditionElement.style.backgroundColor = '#f9f9f9';
-                            conditionElement.style.borderRadius = '6px';
-                            conditionElement.style.borderLeft = '3px solid #e83e28';
+                            conditionElement.className = 'resource-item';
                             
+                            const clinicalStatus = condition.clinicalStatus?.coding?.[0]?.code || 'unknown';
+                            const verificationStatus = condition.verificationStatus?.coding?.[0]?.code || 'unknown';
                             const severity = condition.severity?.coding?.[0]?.display || '';
-                            const status = condition.clinicalStatus?.coding?.[0]?.display || condition.clinicalStatus?.coding?.[0]?.code || condition.clinicalStatus || '';
-                            const recordedDate = condition.recordedDate ? new Date(condition.recordedDate).toLocaleDateString('fr-FR') : 'Non spécifiée';
+                            const category = condition.category?.[0]?.coding?.[0]?.display || 'Non catégorisé';
+                            
+                            const statusClass = clinicalStatus === 'active' ? 'badge bg-danger' : 
+                                               clinicalStatus === 'resolved' ? 'badge bg-success' : 
+                                               'badge bg-secondary';
+                            
+                            const verificationClass = verificationStatus === 'confirmed' ? 'badge bg-success' : 
+                                                     verificationStatus === 'provisional' ? 'badge bg-warning' : 
+                                                     'badge bg-secondary';
+                            
+                            const conditionName = condition.code?.coding?.[0]?.display || 'Condition sans nom';
+                            const conditionSystem = condition.code?.coding?.[0]?.system || '';
+                            const conditionCode = condition.code?.coding?.[0]?.code || '';
+                            
+                            let dateInfo = '';
+                            if (condition.onsetDateTime) {
+                                dateInfo = `Début: ${new Date(condition.onsetDateTime).toLocaleDateString()}`;
+                            } else if (condition.recordedDate) {
+                                dateInfo = `Enregistré: ${new Date(condition.recordedDate).toLocaleDateString()}`;
+                            }
                             
                             conditionElement.innerHTML = `
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                                        ${condition.code?.coding?.[0]?.display || condition.code?.text || 'Condition non spécifiée'}
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="resource-item-title">
+                                        ${conditionName}
+                                        <button class="btn btn-sm btn-outline-secondary ms-2 view-json-button" 
+                                                data-resource-id="${condition.id}" 
+                                                data-resource-type="Condition"
+                                                title="Voir JSON">
+                                            <i class="fas fa-code"></i>
+                                        </button>
                                     </h4>
-                                    <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                                        ${status || 'Non spécifié'}
-                                    </span>
+                                    <div>
+                                        <span class="${statusClass}">${clinicalStatus}</span>
+                                        <span class="${verificationClass}">${verificationStatus}</span>
+                                    </div>
                                 </div>
-                                <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                                    <strong>Sévérité:</strong> ${severity || 'Non spécifiée'}
-                                </div>
-                                <div style="font-size: 0.9rem; color: #555;">
-                                    <strong>Date d'enregistrement:</strong> ${recordedDate}
+                                <div class="resource-item-details">
+                                    ${dateInfo ? `<div><strong>Date:</strong> ${dateInfo}</div>` : ''}
+                                    ${severity ? `<div><strong>Sévérité:</strong> ${severity}</div>` : ''}
+                                    <div><strong>Catégorie:</strong> ${category}</div>
+                                    <div class="mt-1"><strong>Code:</strong> ${conditionSystem ? `<span title="${conditionSystem}">${conditionCode}</span>` : 'Non codé'}</div>
+                                    ${condition.note && condition.note.length > 0 ? 
+                                        `<div class="mt-2 fst-italic">${condition.note[0].text}</div>` : 
+                                        ''}
                                 </div>
                             `;
                             
-                            conditionsList.appendChild(conditionElement);
+                            resourcesList.appendChild(conditionElement);
                         });
                         
-                        resourcesList.appendChild(conditionsList);
-                    } else {
+                        // Configurer les boutons de visualisation JSON
+                        document.querySelectorAll('.view-json-button').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const resourceId = this.getAttribute('data-resource-id');
+                                const resourceType = this.getAttribute('data-resource-type');
+                                openJsonView(resourceId, resourceType);
+                            });
+                        });
+                        
+                        resolve(conditions);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des conditions:', error);
+                        
+                        loadingSection.style.display = 'none';
                         noResourcesSection.style.display = 'block';
-                    }
-                } catch (error) {
-                    console.error('Erreur parsing JSON conditions:', error);
-                    noResourcesSection.style.display = 'block';
-                    reject(error);
-                }
-            } else {
-                console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
-                noResourcesSection.style.display = 'block';
-                reject(new Error(`Problème de récupération des conditions: ${xhr.status}`));
+                        noResourcesSection.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
+                                <p>Impossible de charger les conditions: ${error.message}</p>
+                            </div>
+                        `;
+                        
+                        reject(error);
+                    });
+            } catch (error) {
+                console.error('Exception dans loadPatientConditions:', error);
+                reject(error);
             }
-            resolve(conditionsData);
-        };
-        
-        xhr.onerror = function() {
-            console.error(`Erreur réseau lors de la récupération des conditions: ${url}`);
-            loadingSection.style.display = 'none';
-            noResourcesSection.style.display = 'block';
-            reject(new Error("Erreur réseau lors de la récupération des conditions"));
-        };
-        
-        xhr.send();
-        });  // Fermeture de la Promise
+        });
     }
     
+    // Chargement des observations du patient
     function loadPatientObservations(patientId, serverUrl) {
         return new Promise((resolve, reject) => {
-            const container = document.querySelector('#observationsContent');
-            const loadingSection = container.querySelector('.loading-resources');
-            const noResourcesSection = container.querySelector('.no-resources');
-            const resourcesList = container.querySelector('.resources-list');
-            
-            // Réinitialiser les données des observations
-            observationsData = [];
-            
-            loadingSection.style.display = 'block';
-            noResourcesSection.style.display = 'none';
-            resourcesList.style.display = 'none';
-            
-            // URL de la requête FHIR avec format correct pour référence patient (limite à 100)
-            const url = `${serverUrl}/Observation?subject=Patient/${patientId}&_sort=-date&_count=100`;
-            console.log(`Chargement des observations depuis: ${url}`);
-            
-            // Exécuter la requête FHIR pour récupérer les observations
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erreur de récupération des observations: ${response.status}`);
-                    }
-                    return response.json();
-                })
-            .then(data => {
-                loadingSection.style.display = 'none';
+            try {
+                const container = document.querySelector('#observationsContent');
+                if (!container) {
+                    reject(new Error("Container #observationsContent non trouvé dans le DOM"));
+                    return;
+                }
                 
-                if (data.entry && data.entry.length > 0) {
-                    // Stocker toutes les observations dans la variable globale
-                    observationsData = data.entry.map(entry => entry.resource);
-                    console.log(`${observationsData.length} observations chargées et stockées`);
-                    
-                    resourcesList.innerHTML = '';
-                    resourcesList.style.display = 'block';
-                    
-                    // Créer une liste d'observations
-                    const observationsList = document.createElement('div');
-                    observationsList.className = 'observations-list';
-                    
-                    data.entry.forEach(entry => {
-                        const observation = entry.resource;
-                        const observationElement = document.createElement('div');
-                        observationElement.className = 'observation-item';
-                        observationElement.style.padding = '12px';
-                        observationElement.style.margin = '8px 0';
-                        observationElement.style.backgroundColor = '#f9f9f9';
-                        observationElement.style.borderRadius = '6px';
-                        observationElement.style.borderLeft = '3px solid #fd7e30';
-                        
-                        const valueDisplay = getObservationValue(observation);
-                        const effectiveDate = getEffectiveDate(observation);
-                        
-                        observationElement.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                                    ${observation.code?.coding?.[0]?.display || observation.code?.text || 'Observation non spécifiée'}
-                                </h4>
-                                <span style="font-size: 0.85rem; background: #f8f9fa; color: #6c757d; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                                    ${observation.status || 'Non spécifié'}
-                                </span>
-                            </div>
-                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                                <strong>Valeur:</strong> ${valueDisplay}
-                            </div>
-                            <div style="font-size: 0.9rem; color: #555;">
-                                <strong>Date:</strong> ${effectiveDate}
-                            </div>
-                        `;
-                        
-                        observationsList.appendChild(observationElement);
-                    });
-                    
-                    resourcesList.appendChild(observationsList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des observations:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
-                reject(error);
-            })
-            .finally(() => {
-                resolve(observationsData);
-            });
-        });
-    }
-    
-    function loadPatientMedications(patientId, serverUrl) {
-        return new Promise((resolve, reject) => {
-            const container = document.querySelector('#medicationsContent');
-            const loadingSection = container.querySelector('.loading-resources');
-            const noResourcesSection = container.querySelector('.no-resources');
-            const resourcesList = container.querySelector('.resources-list');
-            
-            // Réinitialiser les données des médicaments
-            medicationsData = [];
-            
-            loadingSection.style.display = 'block';
-            noResourcesSection.style.display = 'none';
-            resourcesList.style.display = 'none';
-            
-            // URL de la requête FHIR avec format correct pour référence patient
-            const url = `${serverUrl}/MedicationRequest?subject=Patient/${patientId}&_sort=-date&_count=100`;
-            console.log(`Chargement des médicaments depuis: ${url}`);
-            
-            // Exécuter la requête FHIR pour récupérer les médicaments
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erreur de récupération des médicaments: ${response.status}`);
-                    }
-                    return response.json();
-                })
-            .then(data => {
-                loadingSection.style.display = 'none';
+                const loadingSection = container.querySelector('.loading-resources');
+                const noResourcesSection = container.querySelector('.no-resources');
+                const resourcesList = container.querySelector('.resources-list');
                 
-                if (data.entry && data.entry.length > 0) {
-                    // Stocker tous les médicaments dans la variable globale
-                    medicationsData = data.entry.map(entry => entry.resource);
-                    console.log(`${medicationsData.length} médicaments chargés et stockés`);
-                    
-                    resourcesList.innerHTML = '';
-                    resourcesList.style.display = 'block';
-                    
-                    // Créer une liste de médicaments
-                    const medicationsList = document.createElement('div');
-                    medicationsList.className = 'medications-list';
-                    
-                    data.entry.forEach(entry => {
-                        const medication = entry.resource;
-                        const medicationElement = document.createElement('div');
-                        medicationElement.className = 'medication-item';
-                        medicationElement.style.padding = '12px';
-                        medicationElement.style.margin = '8px 0';
-                        medicationElement.style.backgroundColor = '#f9f9f9';
-                        medicationElement.style.borderRadius = '6px';
-                        medicationElement.style.borderLeft = '3px solid #e83e28';
-                        
-                        const status = medication.status || 'Non spécifié';
-                        const authDate = medication.authoredOn ? new Date(medication.authoredOn).toLocaleDateString('fr-FR') : 'Non spécifiée';
-                        
-                        medicationElement.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                                    ${medication.medicationCodeableConcept?.coding?.[0]?.display || 
-                                      medication.medicationCodeableConcept?.text || 
-                                      'Médicament non spécifié'}
-                                </h4>
-                                <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                                    ${status}
-                                </span>
-                            </div>
-                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                                <strong>Dosage:</strong> ${medication.dosageInstruction?.[0]?.text || 'Non spécifié'}
-                            </div>
-                            <div style="font-size: 0.9rem; color: #555;">
-                                <strong>Date de prescription:</strong> ${authDate}
-                            </div>
-                        `;
-                        
-                        medicationsList.appendChild(medicationElement);
-                    });
-                    
-                    resourcesList.appendChild(medicationsList);
-                } else {
-                    noResourcesSection.style.display = 'block';
+                if (!loadingSection || !noResourcesSection || !resourcesList) {
+                    reject(new Error("Structure DOM incorrecte dans le container d'observations"));
+                    return;
                 }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des médicaments:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
-                reject(error);
-            })
-            .finally(() => {
-                resolve(medicationsData);
-            });
-        });
-    }
-    
-    function loadPatientEncounters(patientId, serverUrl) {
-        return new Promise((resolve, reject) => {
-            const container = document.querySelector('#encountersContent');
-            const loadingSection = container.querySelector('.loading-resources');
-            const noResourcesSection = container.querySelector('.no-resources');
-            const resourcesList = container.querySelector('.resources-list');
-            
-            // Réinitialiser les données des consultations
-            encountersData = [];
-            
-            loadingSection.style.display = 'block';
-            noResourcesSection.style.display = 'none';
-            resourcesList.style.display = 'none';
-            
-            // URL de la requête FHIR avec format correct pour référence patient
-            const url = `${serverUrl}/Encounter?subject=Patient/${patientId}&_sort=-date&_count=100`;
-            console.log(`Chargement des consultations depuis: ${url}`);
-            
-            // Exécuter la requête FHIR pour récupérer les consultations
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`Erreur de récupération des consultations: ${response.status}`);
-                    }
-                    return response.json();
-                })
-            .then(data => {
-                loadingSection.style.display = 'none';
                 
-                if (data.entry && data.entry.length > 0) {
-                    // Stocker toutes les consultations dans la variable globale
-                    encountersData = data.entry.map(entry => entry.resource);
-                    console.log(`${encountersData.length} consultations chargées et stockées`);
-                    
-                    resourcesList.innerHTML = '';
-                    resourcesList.style.display = 'block';
-                    
-                    // Créer une liste de consultations
-                    const encountersList = document.createElement('div');
-                    encountersList.className = 'encounters-list';
-                    
-                    data.entry.forEach(entry => {
-                        const encounter = entry.resource;
-                        const encounterElement = document.createElement('div');
-                        encounterElement.className = 'encounter-item';
-                        encounterElement.style.padding = '12px';
-                        encounterElement.style.margin = '8px 0';
-                        encounterElement.style.backgroundColor = '#f9f9f9';
-                        encounterElement.style.borderRadius = '6px';
-                        encounterElement.style.borderLeft = '3px solid #fd7e30';
-                        
-                        const status = encounter.status || 'Non spécifié';
-                        const periodStart = encounter.period?.start ? new Date(encounter.period.start).toLocaleDateString('fr-FR') : 'Non spécifiée';
-                        const periodEnd = encounter.period?.end ? new Date(encounter.period.end).toLocaleDateString('fr-FR') : 'En cours';
-                        
-                        encounterElement.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                                    ${encounter.type?.[0]?.coding?.[0]?.display || encounter.type?.[0]?.text || 'Consultation'}
-                                </h4>
-                                <span style="font-size: 0.85rem; background: ${status === 'finished' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'finished' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                                    ${status}
-                                </span>
-                            </div>
-                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                                <strong>Début:</strong> ${periodStart}
-                            </div>
-                            <div style="font-size: 0.9rem; color: #555;">
-                                <strong>Fin:</strong> ${periodEnd}
-                            </div>
-                            <div style="font-size: 0.9rem; color: #555; margin-top: 5px;">
-                                <strong>Service:</strong> ${encounter.serviceType?.coding?.[0]?.display || encounter.serviceType?.text || 'Non spécifié'}
-                            </div>
-                        `;
-                        
-                        encountersList.appendChild(encounterElement);
-                    });
-                    
-                    resourcesList.appendChild(encountersList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des consultations:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
-                reject(error);
-            })
-            .finally(() => {
-                resolve(encountersData);
-            });
-        });
-    }
-    
-    // Fonctions pour charger les ressources supplémentaires
-    function loadPatientPractitioners(patientId, serverUrl) {
-        const container = document.querySelector('#practitionersContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
-        
-        // Réinitialiser les données des praticiens
-        practitionersData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
-        
-        fetch(`${serverUrl}/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération des praticiens: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSection.style.display = 'none';
+                // Afficher l'indicateur de chargement
+                loadingSection.style.display = 'block';
+                noResourcesSection.style.display = 'none';
+                resourcesList.style.display = 'none';
+                resourcesList.innerHTML = '';
                 
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    // Filtrer les praticiens (dans un Bundle, nous aurons aussi des PractitionerRole)
-                    const practitioners = data.entry
-                        .filter(entry => entry.resource.resourceType === 'Practitioner')
-                        .map(entry => entry.resource);
-                    
-                    practitionersData = practitioners;
-                    
-                    // Créer une liste de praticiens
-                    const practitionersList = document.createElement('div');
-                    practitionersList.style.display = 'grid';
-                    practitionersList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    practitionersList.style.gap = '15px';
-                    
-                    practitioners.forEach(practitioner => {
-                        const practitionerElement = document.createElement('div');
-                        practitionerElement.style.backgroundColor = '#f9f9f9';
-                        practitionerElement.style.borderRadius = '8px';
-                        practitionerElement.style.padding = '15px';
-                        practitionerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        practitionerElement.style.borderLeft = '3px solid #e83e28';
+                // Charger les observations
+                fetch(`${serverUrl}/Observation?patient=${patientId}&_count=100&_format=json`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        loadingSection.style.display = 'none';
                         
-                        const name = formatPractitionerName(practitioner.name);
-                        const roles = findPractitionerRoles(practitioner.id, data.entry);
+                        if (!data.entry || data.entry.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            resourcesList.style.display = 'none';
+                            resolve([]);
+                            return;
+                        }
                         
-                        practitionerElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${practitioner.id}</p>
-                                ${practitioner.qualification ? 
-                                  `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
-                                  : ''}
-                                ${roles && roles.length > 0 ? 
-                                  `<p><strong>Rôles:</strong> ${formatRoles(roles)}</p>` 
-                                  : ''}
-                            </div>
-                        `;
+                        // Observations trouvées
+                        noResourcesSection.style.display = 'none';
+                        resourcesList.style.display = 'block';
                         
-                        practitionersList.appendChild(practitionerElement);
-                    });
-                    
-                    resourcesList.appendChild(practitionersList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des praticiens:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
-            });
-    }
-    
-    function loadPatientOrganizations(patientId, serverUrl) {
-        const container = document.querySelector('#organizationsContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
-        
-        // Réinitialiser les données des organisations
-        organizationsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
-        
-        fetch(`${serverUrl}/Organization?_has:Patient:organization:_id=${patientId}&_count=100`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération des organisations: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSection.style.display = 'none';
-                
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const organizations = data.entry.map(entry => entry.resource);
-                    organizationsData = organizations;
-                    
-                    // Créer une liste d'organisations
-                    const organizationsList = document.createElement('div');
-                    organizationsList.style.display = 'grid';
-                    organizationsList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    organizationsList.style.gap = '15px';
-                    
-                    organizations.forEach(organization => {
-                        const organizationElement = document.createElement('div');
-                        organizationElement.style.backgroundColor = '#f9f9f9';
-                        organizationElement.style.borderRadius = '8px';
-                        organizationElement.style.padding = '15px';
-                        organizationElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        organizationElement.style.borderLeft = '3px solid #fd7e30';
-                        
-                        organizationElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> ${organization.name || 'Organisation sans nom'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${organization.id}</p>
-                                ${organization.alias && organization.alias.length > 0 ? 
-                                  `<p><strong>Alias:</strong> ${organization.alias.join(', ')}</p>` 
-                                  : ''}
-                                ${organization.telecom ? 
-                                  `<p><strong>Contact:</strong> ${formatTelecom(organization.telecom)}</p>` 
-                                  : ''}
-                                ${organization.address ? 
-                                  `<p><strong>Adresse:</strong> ${formatAddress(organization.address[0])}</p>` 
-                                  : ''}
-                            </div>
-                        `;
-                        
-                        organizationsList.appendChild(organizationElement);
-                    });
-                    
-                    resourcesList.appendChild(organizationsList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des organisations:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
-            });
-    }
-    
-    function loadPatientRelatedPersons(patientId, serverUrl) {
-        const container = document.querySelector('#relatedContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
-        
-        // Réinitialiser les données des personnes liées
-        relatedPersonsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
-        
-        fetch(`${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération des personnes liées: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSection.style.display = 'none';
-                
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const relatedPersons = data.entry.map(entry => entry.resource);
-                    relatedPersonsData = relatedPersons;
-                    
-                    // Créer une liste de personnes liées
-                    const relatedList = document.createElement('div');
-                    relatedList.style.display = 'grid';
-                    relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    relatedList.style.gap = '15px';
-                    
-                    relatedPersons.forEach(person => {
-                        const personElement = document.createElement('div');
-                        personElement.style.backgroundColor = '#f9f9f9';
-                        personElement.style.borderRadius = '8px';
-                        personElement.style.padding = '15px';
-                        personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        personElement.style.borderLeft = '3px solid #e83e28';
-                        
-                        personElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-users" style="color: #e83e28;"></i> ${formatPatientName(person.name) || 'Personne sans nom'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${person.id}</p>
-                                ${person.relationship ? 
-                                  `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>` 
-                                  : ''}
-                                ${person.telecom ? 
-                                  `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>` 
-                                  : ''}
-                                ${person.address ? 
-                                  `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>` 
-                                  : ''}
-                            </div>
-                        `;
-                        
-                        relatedList.appendChild(personElement);
-                    });
-                    
-                    resourcesList.appendChild(relatedList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des personnes liées:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
-            });
-    }
-    
-    function loadPatientCoverage(patientId, serverUrl) {
-        const container = document.querySelector('#coverageContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
-        
-        // Réinitialiser les données des couvertures
-        coverageData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
-        
-        fetch(`${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération des couvertures: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSection.style.display = 'none';
-                
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const coverages = data.entry.map(entry => entry.resource);
-                    coverageData = coverages;
-                    
-                    // Créer une liste de couvertures
-                    const coverageList = document.createElement('div');
-                    coverageList.style.display = 'grid';
-                    coverageList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    coverageList.style.gap = '15px';
-                    
-                    coverages.forEach(coverage => {
-                        const coverageElement = document.createElement('div');
-                        coverageElement.style.backgroundColor = '#f9f9f9';
-                        coverageElement.style.borderRadius = '8px';
-                        coverageElement.style.padding = '15px';
-                        coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        coverageElement.style.borderLeft = '3px solid #fd7e30';
-                        
-                        coverageElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
-                                ${coverage.type?.coding?.[0]?.display || coverage.type?.text || 'Couverture'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${coverage.id}</p>
-                                <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
-                                ${coverage.period ? 
-                                  `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>` 
-                                  : ''}
-                                ${coverage.payor ? 
-                                  `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>` 
-                                  : ''}
-                            </div>
-                        `;
-                        
-                        coverageList.appendChild(coverageElement);
-                    });
-                    
-                    resourcesList.appendChild(coverageList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des couvertures:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
-            });
-    }
-    
-    function loadPatientBundle(patientId, serverUrl) {
-        const container = document.querySelector('#bundleContent');
-        const bundleInfo = document.getElementById('bundleInfo');
-        const bundleResourcesList = document.getElementById('bundleResourcesList');
-        
-        // Afficher un indicateur de chargement
-        bundleInfo.innerHTML = `
-            <div style="text-align: center; padding: 20px;">
-                <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="margin-top: 15px; color: #666;">Chargement du bundle patient...</p>
-            </div>
-        `;
-        
-        // Construction d'une URL qui récupère le patient et toutes ses références
-        // Cette URL est compatible avec la plupart des serveurs FHIR
-        const bundleUrl = `${serverUrl}/Patient/${patientId}?_include=Patient:organization&_include=Patient:general-practitioner&_revinclude=Condition:subject&_revinclude=Observation:subject&_revinclude=MedicationRequest:subject&_revinclude=Encounter:subject&_revinclude=Coverage:beneficiary&_revinclude=RelatedPerson:patient&_format=json`;
-        
-        console.log(`Chargement du bundle depuis: ${bundleUrl}`);
-        
-        fetch(bundleUrl)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération du bundle: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Stocker le bundle pour référence future
-                bundleData = data;
-                
-                // Afficher les informations sur le bundle
-                if (data.resourceType === 'Bundle') {
-                    // Simuler une response type "transaction-response" comme montré dans votre exemple
-                    const resourceCount = data.entry ? data.entry.length : 0;
-                    const resourceTypes = data.entry ? 
-                        [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
-                    
-                    bundleInfo.innerHTML = `
-                        <p><strong>Type de bundle:</strong> ${data.type || 'Inconnu'}</p>
-                        <p><strong>Identifiant:</strong> ${data.id || 'Non spécifié'}</p>
-                        <p><strong>Nombre de ressources:</strong> ${resourceCount}</p>
-                        <p><strong>Types de ressources:</strong> ${resourceTypes.join(', ') || 'Aucun'}</p>
-                    `;
-                    
-                    // Afficher les ressources de manière organisée
-                    bundleResourcesList.innerHTML = '';
-                    
-                    if (data.entry && data.entry.length > 0) {
-                        // Regrouper par type de ressource pour un affichage organisé
-                        const resourceGroups = {};
-                        data.entry.forEach(entry => {
-                            const resourceType = entry.resource.resourceType;
-                            if (!resourceGroups[resourceType]) {
-                                resourceGroups[resourceType] = [];
-                            }
-                            resourceGroups[resourceType].push(entry.resource);
+                        // Trier les observations par date (les plus récentes d'abord)
+                        const observations = data.entry.map(entry => entry.resource).sort((a, b) => {
+                            const dateA = a.effectiveDateTime || a.issued || '';
+                            const dateB = b.effectiveDateTime || b.issued || '';
+                            return dateB.localeCompare(dateA);
                         });
                         
-                        // Créer une section pour chaque type de ressource
-                        for (const [type, resources] of Object.entries(resourceGroups)) {
-                            const sectionElement = document.createElement('div');
-                            sectionElement.style.marginBottom = '20px';
+                        // Stocker les observations dans l'objet global
+                        window.patientData.observations = observations;
+                        
+                        // Générer la liste des observations
+                        observations.forEach(observation => {
+                            const observationElement = document.createElement('div');
+                            observationElement.className = 'resource-item';
                             
-                            const sectionTitle = document.createElement('h4');
-                            sectionTitle.style.marginTop = '20px';
-                            sectionTitle.style.marginBottom = '10px';
-                            sectionTitle.style.padding = '10px';
-                            sectionTitle.style.backgroundColor = '#f5f5f5';
-                            sectionTitle.style.borderRadius = '5px';
-                            sectionTitle.innerHTML = `<i class="fas fa-folder-open"></i> ${type} (${resources.length})`;
+                            const observationName = observation.code?.coding?.[0]?.display || 'Observation sans nom';
+                            const observationSystem = observation.code?.coding?.[0]?.system || '';
+                            const observationCode = observation.code?.coding?.[0]?.code || '';
+                            const observationValue = getObservationValue(observation);
+                            const observationDate = getEffectiveDate(observation);
+                            const observationStatus = observation.status || 'unknown';
                             
-                            sectionElement.appendChild(sectionTitle);
+                            const statusClass = observationStatus === 'final' ? 'badge bg-success' : 
+                                              observationStatus === 'preliminary' ? 'badge bg-warning' : 
+                                              'badge bg-secondary';
                             
-                            // Liste des ressources de ce type
-                            const listElement = document.createElement('ul');
-                            listElement.style.listStyle = 'none';
-                            listElement.style.padding = '0';
-                            listElement.style.margin = '0';
-                            listElement.style.display = 'grid';
-                            listElement.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                            listElement.style.gap = '10px';
+                            observationElement.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="resource-item-title">
+                                        ${observationName}
+                                        <button class="btn btn-sm btn-outline-secondary ms-2 view-json-button" 
+                                                data-resource-id="${observation.id}" 
+                                                data-resource-type="Observation"
+                                                title="Voir JSON">
+                                            <i class="fas fa-code"></i>
+                                        </button>
+                                    </h4>
+                                    <div>
+                                        <span class="${statusClass}">${observationStatus}</span>
+                                    </div>
+                                </div>
+                                <div class="resource-item-details">
+                                    <div class="fs-5 fw-bold my-2">${observationValue}</div>
+                                    ${observationDate ? `<div><strong>Date:</strong> ${observationDate}</div>` : ''}
+                                    <div class="mt-1"><strong>Code:</strong> ${observationSystem ? `<span title="${observationSystem}">${observationCode}</span>` : 'Non codé'}</div>
+                                    ${observation.note && observation.note.length > 0 ? 
+                                        `<div class="mt-2 fst-italic">${observation.note[0].text}</div>` : 
+                                        ''}
+                                </div>
+                            `;
                             
-                            resources.forEach(resource => {
-                                const listItem = document.createElement('li');
-                                listItem.style.padding = '10px';
-                                listItem.style.backgroundColor = '#f9f9f9';
-                                listItem.style.borderRadius = '5px';
-                                listItem.style.border = '1px solid #eee';
-                                
-                                // Afficher les informations de base sur la ressource
-                                let resourceName = resource.id;
-                                if (type === 'Patient' && resource.name) {
-                                    resourceName = formatPatientName(resource.name);
-                                } else if (type === 'Practitioner' && resource.name) {
-                                    resourceName = formatPractitionerName(resource.name);
-                                } else if (type === 'Organization' && resource.name) {
-                                    resourceName = resource.name;
-                                }
-                                
-                                listItem.innerHTML = `
-                                    <div style="font-weight: bold;">${resourceName}</div>
-                                    <div style="font-size: 0.8rem; color: #666;">ID: ${resource.id}</div>
-                                `;
-                                
-                                listElement.appendChild(listItem);
+                            resourcesList.appendChild(observationElement);
+                        });
+                        
+                        // Configurer les boutons de visualisation JSON
+                        document.querySelectorAll('.view-json-button').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const resourceId = this.getAttribute('data-resource-id');
+                                const resourceType = this.getAttribute('data-resource-type');
+                                openJsonView(resourceId, resourceType);
                             });
-                            
-                            sectionElement.appendChild(listElement);
-                            bundleResourcesList.appendChild(sectionElement);
-                        }
-                    } else {
-                        bundleResourcesList.innerHTML = '<p>Aucune ressource dans ce bundle.</p>';
-                    }
-                } else {
-                    // Ce n'est pas un bundle
-                    bundleInfo.innerHTML = '<p>Les données reçues ne constituent pas un bundle FHIR.</p>';
-                    bundleResourcesList.innerHTML = '';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement du bundle:', error);
-                bundleInfo.innerHTML = `<p>Erreur lors du chargement du bundle: ${error.message}</p>`;
-                bundleResourcesList.innerHTML = '';
-            });
-            
-        // Si nous avons une réponse de transaction (comme l'exemple partagé)
-        if (lastBundleResponse) {
-            bundleInfo.innerHTML = `
-                <p><strong>Type de bundle:</strong> ${lastBundleResponse.type || 'Inconnu'}</p>
-                <p><strong>Identifiant:</strong> ${lastBundleResponse.id || 'Non spécifié'}</p>
-                <p><strong>Ressources créées:</strong> ${lastBundleResponse.entry?.length || 0}</p>
-            `;
-            
-            bundleResourcesList.innerHTML = '';
-            
-            if (lastBundleResponse.entry && lastBundleResponse.entry.length > 0) {
-                const responsesElement = document.createElement('div');
-                responsesElement.style.marginTop = '20px';
-                
-                lastBundleResponse.entry.forEach((entry, index) => {
-                    const responseElement = document.createElement('div');
-                    responseElement.style.padding = '10px';
-                    responseElement.style.margin = '10px 0';
-                    responseElement.style.backgroundColor = '#f9f9f9';
-                    responseElement.style.borderRadius = '5px';
-                    responseElement.style.border = '1px solid #eee';
-                    
-                    // Extraire les informations de la réponse
-                    const status = entry.response?.status || 'Inconnu';
-                    const location = entry.response?.location || 'Non spécifié';
-                    const isSuccess = status.startsWith('2');
-                    const resourceType = location.split('/')[0] || 'Ressource';
-                    
-                    responseElement.innerHTML = `
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="font-weight: bold;">
-                                <i class="fas fa-${isSuccess ? 'check-circle' : 'times-circle'}" 
-                                   style="color: ${isSuccess ? '#4caf50' : '#f44336'};"></i>
-                                ${resourceType}
+                        });
+                        
+                        resolve(observations);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des observations:', error);
+                        
+                        loadingSection.style.display = 'none';
+                        noResourcesSection.style.display = 'block';
+                        noResourcesSection.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
+                                <p>Impossible de charger les observations: ${error.message}</p>
                             </div>
-                            <div style="font-size: 0.8rem; padding: 2px 8px; background-color: ${isSuccess ? '#e8f5e9' : '#ffebee'}; 
-                                        border-radius: 10px; color: ${isSuccess ? '#2e7d32' : '#c62828'};">
-                                ${status}
-                            </div>
-                        </div>
-                        <div style="font-size: 0.9rem; margin-top: 5px;">
-                            <strong>Emplacement:</strong> ${location}
-                        </div>
-                    `;
-                    
-                    responsesElement.appendChild(responseElement);
-                });
-                
-                bundleResourcesList.appendChild(responsesElement);
+                        `;
+                        
+                        reject(error);
+                    });
+            } catch (error) {
+                console.error('Exception dans loadPatientObservations:', error);
+                reject(error);
             }
-        }
+        });
     }
     
-    // Fonctions utilitaires pour le formatage des nouvelles ressources
+    // Chargement des médicaments du patient
+    function loadPatientMedications(patientId, serverUrl) {
+        return new Promise((resolve, reject) => {
+            try {
+                const container = document.querySelector('#medicationsContent');
+                if (!container) {
+                    reject(new Error("Container #medicationsContent non trouvé dans le DOM"));
+                    return;
+                }
+                
+                const loadingSection = container.querySelector('.loading-resources');
+                const noResourcesSection = container.querySelector('.no-resources');
+                const resourcesList = container.querySelector('.resources-list');
+                
+                if (!loadingSection || !noResourcesSection || !resourcesList) {
+                    reject(new Error("Structure DOM incorrecte dans le container de médicaments"));
+                    return;
+                }
+                
+                // Afficher l'indicateur de chargement
+                loadingSection.style.display = 'block';
+                noResourcesSection.style.display = 'none';
+                resourcesList.style.display = 'none';
+                resourcesList.innerHTML = '';
+                
+                // Charger les prescriptions de médicaments
+                fetch(`${serverUrl}/MedicationRequest?patient=${patientId}&_count=100&_format=json`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        loadingSection.style.display = 'none';
+                        
+                        if (!data.entry || data.entry.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            resourcesList.style.display = 'none';
+                            resolve([]);
+                            return;
+                        }
+                        
+                        // Médicaments trouvés
+                        noResourcesSection.style.display = 'none';
+                        resourcesList.style.display = 'block';
+                        
+                        // Trier les médicaments par date (les plus récents d'abord)
+                        const medications = data.entry.map(entry => entry.resource).sort((a, b) => {
+                            const dateA = a.authoredOn || '';
+                            const dateB = b.authoredOn || '';
+                            return dateB.localeCompare(dateA);
+                        });
+                        
+                        // Stocker les médicaments dans l'objet global
+                        window.patientData.medications = medications;
+                        
+                        // Générer la liste des médicaments
+                        medications.forEach(medication => {
+                            const medicationElement = document.createElement('div');
+                            medicationElement.className = 'resource-item';
+                            
+                            const medicationName = medication.medicationCodeableConcept?.coding?.[0]?.display || 
+                                                medication.medicationReference?.display || 
+                                                'Médicament sans nom';
+                            
+                            const medicationSystem = medication.medicationCodeableConcept?.coding?.[0]?.system || '';
+                            const medicationCode = medication.medicationCodeableConcept?.coding?.[0]?.code || '';
+                            const medicationStatus = medication.status || 'unknown';
+                            const medicationIntent = medication.intent || 'unknown';
+                            
+                            const statusClass = medicationStatus === 'active' ? 'badge bg-success' : 
+                                              medicationStatus === 'stopped' ? 'badge bg-danger' : 
+                                              'badge bg-secondary';
+                            
+                            const intentClass = medicationIntent === 'order' ? 'badge bg-primary' : 
+                                             medicationIntent === 'plan' ? 'badge bg-info' : 
+                                             'badge bg-secondary';
+                            
+                            let dateInfo = '';
+                            if (medication.authoredOn) {
+                                dateInfo = `Prescrit le: ${new Date(medication.authoredOn).toLocaleDateString()}`;
+                            }
+                            
+                            const dosageText = medication.dosageInstruction?.[0]?.text || '';
+                            const noteText = medication.note?.[0]?.text || '';
+                            
+                            medicationElement.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="resource-item-title">
+                                        ${medicationName}
+                                        <button class="btn btn-sm btn-outline-secondary ms-2 view-json-button" 
+                                                data-resource-id="${medication.id}" 
+                                                data-resource-type="MedicationRequest"
+                                                title="Voir JSON">
+                                            <i class="fas fa-code"></i>
+                                        </button>
+                                    </h4>
+                                    <div>
+                                        <span class="${statusClass}">${medicationStatus}</span>
+                                        <span class="${intentClass}">${medicationIntent}</span>
+                                    </div>
+                                </div>
+                                <div class="resource-item-details">
+                                    ${dateInfo ? `<div><strong>Date:</strong> ${dateInfo}</div>` : ''}
+                                    ${dosageText ? `<div class="mt-2"><strong>Posologie:</strong> ${dosageText}</div>` : ''}
+                                    <div class="mt-1"><strong>Code:</strong> ${medicationSystem ? `<span title="${medicationSystem}">${medicationCode}</span>` : 'Non codé'}</div>
+                                    ${noteText ? `<div class="mt-2 fst-italic">${noteText}</div>` : ''}
+                                </div>
+                            `;
+                            
+                            resourcesList.appendChild(medicationElement);
+                        });
+                        
+                        // Configurer les boutons de visualisation JSON
+                        document.querySelectorAll('.view-json-button').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const resourceId = this.getAttribute('data-resource-id');
+                                const resourceType = this.getAttribute('data-resource-type');
+                                openJsonView(resourceId, resourceType);
+                            });
+                        });
+                        
+                        resolve(medications);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des médicaments:', error);
+                        
+                        loadingSection.style.display = 'none';
+                        noResourcesSection.style.display = 'block';
+                        noResourcesSection.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
+                                <p>Impossible de charger les médicaments: ${error.message}</p>
+                            </div>
+                        `;
+                        
+                        reject(error);
+                    });
+            } catch (error) {
+                console.error('Exception dans loadPatientMedications:', error);
+                reject(error);
+            }
+        });
+    }
+    
+    // Chargement des consultations du patient
+    function loadPatientEncounters(patientId, serverUrl) {
+        return new Promise((resolve, reject) => {
+            try {
+                const container = document.querySelector('#encountersContent');
+                if (!container) {
+                    reject(new Error("Container #encountersContent non trouvé dans le DOM"));
+                    return;
+                }
+                
+                const loadingSection = container.querySelector('.loading-resources');
+                const noResourcesSection = container.querySelector('.no-resources');
+                const resourcesList = container.querySelector('.resources-list');
+                
+                if (!loadingSection || !noResourcesSection || !resourcesList) {
+                    reject(new Error("Structure DOM incorrecte dans le container de consultations"));
+                    return;
+                }
+                
+                // Afficher l'indicateur de chargement
+                loadingSection.style.display = 'block';
+                noResourcesSection.style.display = 'none';
+                resourcesList.style.display = 'none';
+                resourcesList.innerHTML = '';
+                
+                // Charger les consultations
+                fetch(`${serverUrl}/Encounter?patient=${patientId}&_count=100&_format=json`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        loadingSection.style.display = 'none';
+                        
+                        if (!data.entry || data.entry.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            resourcesList.style.display = 'none';
+                            resolve([]);
+                            return;
+                        }
+                        
+                        // Consultations trouvées
+                        noResourcesSection.style.display = 'none';
+                        resourcesList.style.display = 'block';
+                        
+                        // Trier les consultations par date (les plus récentes d'abord)
+                        const encounters = data.entry.map(entry => entry.resource).sort((a, b) => {
+                            const dateA = a.period?.start || '';
+                            const dateB = b.period?.start || '';
+                            return dateB.localeCompare(dateA);
+                        });
+                        
+                        // Stocker les consultations dans l'objet global
+                        window.patientData.encounters = encounters;
+                        
+                        // Générer la liste des consultations
+                        encounters.forEach(encounter => {
+                            const encounterElement = document.createElement('div');
+                            encounterElement.className = 'resource-item';
+                            
+                            const encounterType = encounter.type?.[0]?.coding?.[0]?.display || 'Consultation';
+                            const encounterClass = encounter.class?.display || encounter.class?.code || '';
+                            const encounterStatus = encounter.status || 'unknown';
+                            
+                            const statusClass = encounterStatus === 'finished' ? 'badge bg-success' : 
+                                               encounterStatus === 'in-progress' ? 'badge bg-primary' : 
+                                               encounterStatus === 'planned' ? 'badge bg-info' :
+                                               'badge bg-secondary';
+                            
+                            let dateInfo = '';
+                            if (encounter.period?.start) {
+                                const startDate = new Date(encounter.period.start).toLocaleDateString();
+                                if (encounter.period?.end) {
+                                    const endDate = new Date(encounter.period.end).toLocaleDateString();
+                                    if (startDate === endDate) {
+                                        dateInfo = `Date: ${startDate}`;
+                                    } else {
+                                        dateInfo = `Période: ${startDate} → ${endDate}`;
+                                    }
+                                } else {
+                                    dateInfo = `Date: ${startDate}`;
+                                }
+                            }
+                            
+                            encounterElement.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="resource-item-title">
+                                        ${encounterType}
+                                        <button class="btn btn-sm btn-outline-secondary ms-2 view-json-button" 
+                                                data-resource-id="${encounter.id}" 
+                                                data-resource-type="Encounter"
+                                                title="Voir JSON">
+                                            <i class="fas fa-code"></i>
+                                        </button>
+                                    </h4>
+                                    <div>
+                                        <span class="${statusClass}">${encounterStatus}</span>
+                                    </div>
+                                </div>
+                                <div class="resource-item-details">
+                                    ${dateInfo ? `<div><strong>Date:</strong> ${dateInfo}</div>` : ''}
+                                    ${encounterClass ? `<div><strong>Classe:</strong> ${encounterClass}</div>` : ''}
+                                    
+                                    ${encounter.serviceProvider ? 
+                                        `<div><strong>Établissement:</strong> ${encounter.serviceProvider.display || 'Non spécifié'}</div>` : 
+                                        ''}
+                                    
+                                    ${encounter.participant && encounter.participant.length > 0 ? 
+                                        `<div><strong>Participants:</strong> ${encounter.participant.map(p => 
+                                            p.individual?.display || 'Non spécifié'
+                                        ).join(', ')}</div>` : 
+                                        ''}
+                                        
+                                    ${encounter.location && encounter.location.length > 0 ? 
+                                        `<div><strong>Lieux:</strong> ${encounter.location.map(l => 
+                                            l.location?.display || 'Non spécifié'
+                                        ).join(', ')}</div>` : 
+                                        ''}
+                                        
+                                    ${encounter.reasonCode && encounter.reasonCode.length > 0 ? 
+                                        `<div><strong>Motif:</strong> ${encounter.reasonCode.map(r => 
+                                            r.coding?.[0]?.display || r.text || 'Non spécifié'
+                                        ).join(', ')}</div>` : 
+                                        ''}
+                                </div>
+                            `;
+                            
+                            resourcesList.appendChild(encounterElement);
+                        });
+                        
+                        // Configurer les boutons de visualisation JSON
+                        document.querySelectorAll('.view-json-button').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const resourceId = this.getAttribute('data-resource-id');
+                                const resourceType = this.getAttribute('data-resource-type');
+                                openJsonView(resourceId, resourceType);
+                            });
+                        });
+                        
+                        resolve(encounters);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des consultations:', error);
+                        
+                        loadingSection.style.display = 'none';
+                        noResourcesSection.style.display = 'block';
+                        noResourcesSection.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
+                                <p>Impossible de charger les consultations: ${error.message}</p>
+                            </div>
+                        `;
+                        
+                        reject(error);
+                    });
+            } catch (error) {
+                console.error('Exception dans loadPatientEncounters:', error);
+                reject(error);
+            }
+        });
+    }
+    
+    // Chargement des professionnels de santé liés au patient
+    function loadPatientPractitioners(patientId, serverUrl) {
+        return new Promise((resolve, reject) => {
+            try {
+                const container = document.querySelector('#practitionersContent');
+                if (!container) {
+                    reject(new Error("Container #practitionersContent non trouvé dans le DOM"));
+                    return;
+                }
+                
+                const loadingSection = container.querySelector('.loading-resources');
+                const noResourcesSection = container.querySelector('.no-resources');
+                const resourcesList = container.querySelector('.resources-list');
+                
+                if (!loadingSection || !noResourcesSection || !resourcesList) {
+                    reject(new Error("Structure DOM incorrecte dans le container de praticiens"));
+                    return;
+                }
+                
+                // Afficher l'indicateur de chargement
+                loadingSection.style.display = 'block';
+                noResourcesSection.style.display = 'none';
+                resourcesList.style.display = 'none';
+                resourcesList.innerHTML = '';
+                
+                // Charger d'abord tous les praticiens depuis les rencontres
+                loadPractitionersFromEncounters()
+                    .then(practitioners => {
+                        loadingSection.style.display = 'none';
+                        
+                        if (practitioners.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            resourcesList.style.display = 'none';
+                            resolve([]);
+                            return;
+                        }
+                        
+                        // Praticiens trouvés
+                        noResourcesSection.style.display = 'none';
+                        resourcesList.style.display = 'block';
+                        
+                        // Stocker les praticiens dans l'objet global
+                        window.patientData.practitioners = practitioners;
+                        
+                        // Générer la liste des praticiens
+                        practitioners.forEach(practitioner => {
+                            const practitionerElement = document.createElement('div');
+                            practitionerElement.className = 'resource-item';
+                            
+                            const practitionerName = formatPractitionerName(practitioner.name);
+                            const practitionerQualifications = formatQualifications(practitioner.qualification);
+                            const practitionerTelecom = formatTelecom(practitioner.telecom);
+                            const practitionerAddress = formatAddress(practitioner.address);
+                            
+                            // Trouver les rôles associés à ce praticien (si on a chargé un bundle)
+                            let practitionerRoles = [];
+                            if (window.patientData && window.patientData.bundle && window.patientData.bundle.entry) {
+                                practitionerRoles = findPractitionerRoles(practitioner.id, window.patientData.bundle.entry);
+                            }
+                            
+                            const practitionerRolesFormatted = formatRoles(practitionerRoles);
+                            
+                            practitionerElement.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="resource-item-title">
+                                        ${practitionerName}
+                                        <button class="btn btn-sm btn-outline-secondary ms-2 view-json-button" 
+                                                data-resource-id="${practitioner.id}" 
+                                                data-resource-type="Practitioner"
+                                                title="Voir JSON">
+                                            <i class="fas fa-code"></i>
+                                        </button>
+                                    </h4>
+                                </div>
+                                <div class="resource-item-details">
+                                    ${practitionerQualifications ? `<div><strong>Qualifications:</strong> ${practitionerQualifications}</div>` : ''}
+                                    ${practitionerRolesFormatted ? `<div><strong>Rôles:</strong> ${practitionerRolesFormatted}</div>` : ''}
+                                    ${practitionerTelecom ? `<div><strong>Contact:</strong> ${practitionerTelecom}</div>` : ''}
+                                    ${practitionerAddress ? `<div><strong>Adresse:</strong> ${practitionerAddress}</div>` : ''}
+                                </div>
+                            `;
+                            
+                            resourcesList.appendChild(practitionerElement);
+                        });
+                        
+                        // Configurer les boutons de visualisation JSON
+                        document.querySelectorAll('.view-json-button').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const resourceId = this.getAttribute('data-resource-id');
+                                const resourceType = this.getAttribute('data-resource-type');
+                                openJsonView(resourceId, resourceType);
+                            });
+                        });
+                        
+                        resolve(practitioners);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des praticiens:', error);
+                        
+                        loadingSection.style.display = 'none';
+                        noResourcesSection.style.display = 'block';
+                        noResourcesSection.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
+                                <p>Impossible de charger les praticiens: ${error.message}</p>
+                            </div>
+                        `;
+                        
+                        reject(error);
+                    });
+                
+                // Fonction pour charger les praticiens à partir des rencontres
+                function loadPractitionersFromEncounters() {
+                    return new Promise((resolveInner, rejectInner) => {
+                        if (!window.patientData || !window.patientData.encounters || window.patientData.encounters.length === 0) {
+                            // Si nous n'avons pas encore les rencontres, les charger
+                            if (!window.patientData) window.patientData = {};
+                            fetch(`${serverUrl}/Encounter?patient=${patientId}&_count=100&_format=json`)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                                    }
+                                    return response.json();
+                                })
+                                .then(data => {
+                                    if (!data.entry || data.entry.length === 0) {
+                                        resolveInner([]);
+                                        return;
+                                    }
+                                    
+                                    window.patientData.encounters = data.entry.map(entry => entry.resource);
+                                    processPractitionersReferences();
+                                })
+                                .catch(error => {
+                                    console.error('Erreur lors du chargement des rencontres pour les praticiens:', error);
+                                    resolveInner([]);
+                                });
+                        } else {
+                            processPractitionersReferences();
+                        }
+                        
+                        function processPractitionersReferences() {
+                            // Extraire toutes les références aux praticiens des rencontres
+                            const practitionerReferences = new Set();
+                            window.patientData.encounters.forEach(encounter => {
+                                if (encounter.participant) {
+                                    encounter.participant.forEach(participant => {
+                                        if (participant.individual && participant.individual.reference && 
+                                            participant.individual.reference.startsWith('Practitioner/')) {
+                                            practitionerReferences.add(participant.individual.reference);
+                                        }
+                                    });
+                                }
+                            });
+                            
+                            if (practitionerReferences.size === 0) {
+                                resolveInner([]);
+                                return;
+                            }
+                            
+                            // Charger tous les praticiens référencés
+                            const practitionerPromises = Array.from(practitionerReferences).map(reference => {
+                                const practitionerId = reference.split('/')[1];
+                                return fetch(`${serverUrl}/Practitioner/${practitionerId}?_format=json`)
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            if (response.status === 404) {
+                                                console.warn(`Praticien non trouvé: ${practitionerId}`);
+                                                return null;
+                                            }
+                                            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                                        }
+                                        return response.json();
+                                    })
+                                    .catch(error => {
+                                        console.error(`Erreur lors du chargement du praticien ${practitionerId}:`, error);
+                                        return null;
+                                    });
+                            });
+                            
+                            Promise.all(practitionerPromises)
+                                .then(results => {
+                                    const practitioners = results.filter(p => p !== null);
+                                    resolveInner(practitioners);
+                                })
+                                .catch(error => {
+                                    console.error('Erreur lors du chargement des praticiens:', error);
+                                    rejectInner(error);
+                                });
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Exception dans loadPatientPractitioners:', error);
+                reject(error);
+            }
+        });
+    }
+    
+    // Chargement des organisations liées au patient
+    function loadPatientOrganizations(patientId, serverUrl) {
+        return new Promise((resolve, reject) => {
+            try {
+                const container = document.querySelector('#organizationsContent');
+                if (!container) {
+                    reject(new Error("Container #organizationsContent non trouvé dans le DOM"));
+                    return;
+                }
+                
+                const loadingSection = container.querySelector('.loading-resources');
+                const noResourcesSection = container.querySelector('.no-resources');
+                const resourcesList = container.querySelector('.resources-list');
+                
+                if (!loadingSection || !noResourcesSection || !resourcesList) {
+                    reject(new Error("Structure DOM incorrecte dans le container d'organisations"));
+                    return;
+                }
+                
+                // Afficher l'indicateur de chargement
+                loadingSection.style.display = 'block';
+                noResourcesSection.style.display = 'none';
+                resourcesList.style.display = 'none';
+                resourcesList.innerHTML = '';
+                
+                // Charger d'abord toutes les organisations depuis les rencontres et autres références
+                loadOrganizationsFromReferences()
+                    .then(organizations => {
+                        loadingSection.style.display = 'none';
+                        
+                        if (organizations.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            resourcesList.style.display = 'none';
+                            resolve([]);
+                            return;
+                        }
+                        
+                        // Organisations trouvées
+                        noResourcesSection.style.display = 'none';
+                        resourcesList.style.display = 'block';
+                        
+                        // Stocker les organisations dans l'objet global
+                        window.patientData.organizations = organizations;
+                        
+                        // Générer la liste des organisations
+                        organizations.forEach(organization => {
+                            const organizationElement = document.createElement('div');
+                            organizationElement.className = 'resource-item';
+                            
+                            const organizationName = organization.name || 'Organisation sans nom';
+                            const organizationType = organization.type?.[0]?.coding?.[0]?.display || 'Type non spécifié';
+                            const organizationTelecom = formatTelecom(organization.telecom);
+                            const organizationAddress = formatAddress(organization.address);
+                            
+                            organizationElement.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="resource-item-title">
+                                        ${organizationName}
+                                        <button class="btn btn-sm btn-outline-secondary ms-2 view-json-button" 
+                                                data-resource-id="${organization.id}" 
+                                                data-resource-type="Organization"
+                                                title="Voir JSON">
+                                            <i class="fas fa-code"></i>
+                                        </button>
+                                    </h4>
+                                </div>
+                                <div class="resource-item-details">
+                                    <div><strong>Type:</strong> ${organizationType}</div>
+                                    ${organizationTelecom ? `<div><strong>Contact:</strong> ${organizationTelecom}</div>` : ''}
+                                    ${organizationAddress ? `<div><strong>Adresse:</strong> ${organizationAddress}</div>` : ''}
+                                    ${organization.alias && organization.alias.length > 0 ? 
+                                        `<div><strong>Alias:</strong> ${organization.alias.join(', ')}</div>` : 
+                                        ''}
+                                </div>
+                            `;
+                            
+                            resourcesList.appendChild(organizationElement);
+                        });
+                        
+                        // Configurer les boutons de visualisation JSON
+                        document.querySelectorAll('.view-json-button').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const resourceId = this.getAttribute('data-resource-id');
+                                const resourceType = this.getAttribute('data-resource-type');
+                                openJsonView(resourceId, resourceType);
+                            });
+                        });
+                        
+                        resolve(organizations);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des organisations:', error);
+                        
+                        loadingSection.style.display = 'none';
+                        noResourcesSection.style.display = 'block';
+                        noResourcesSection.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
+                                <p>Impossible de charger les organisations: ${error.message}</p>
+                            </div>
+                        `;
+                        
+                        reject(error);
+                    });
+                
+                // Fonction pour charger les organisations à partir des rencontres et autres références
+                function loadOrganizationsFromReferences() {
+                    return new Promise((resolveInner, rejectInner) => {
+                        // Collecter toutes les références d'organisations
+                        const organizationReferences = new Set();
+                        
+                        // Extraire des encounters
+                        if (window.patientData && window.patientData.encounters) {
+                            window.patientData.encounters.forEach(encounter => {
+                                if (encounter.serviceProvider && encounter.serviceProvider.reference && 
+                                    encounter.serviceProvider.reference.startsWith('Organization/')) {
+                                    organizationReferences.add(encounter.serviceProvider.reference);
+                                }
+                            });
+                        }
+                        
+                        // Extraire du patient (managingOrganization)
+                        if (window.patientData && window.patientData.patient && 
+                            window.patientData.patient.managingOrganization && 
+                            window.patientData.patient.managingOrganization.reference && 
+                            window.patientData.patient.managingOrganization.reference.startsWith('Organization/')) {
+                            organizationReferences.add(window.patientData.patient.managingOrganization.reference);
+                        }
+                        
+                        // Extraire des médicaments
+                        if (window.patientData && window.patientData.medications) {
+                            window.patientData.medications.forEach(medication => {
+                                if (medication.requester && medication.requester.agent && 
+                                    medication.requester.agent.reference && 
+                                    medication.requester.agent.reference.startsWith('Organization/')) {
+                                    organizationReferences.add(medication.requester.agent.reference);
+                                }
+                            });
+                        }
+                        
+                        if (organizationReferences.size === 0) {
+                            resolveInner([]);
+                            return;
+                        }
+                        
+                        // Charger toutes les organisations référencées
+                        const organizationPromises = Array.from(organizationReferences).map(reference => {
+                            const organizationId = reference.split('/')[1];
+                            return fetch(`${serverUrl}/Organization/${organizationId}?_format=json`)
+                                .then(response => {
+                                    if (!response.ok) {
+                                        if (response.status === 404) {
+                                            console.warn(`Organisation non trouvée: ${organizationId}`);
+                                            return null;
+                                        }
+                                        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                                    }
+                                    return response.json();
+                                })
+                                .catch(error => {
+                                    console.error(`Erreur lors du chargement de l'organisation ${organizationId}:`, error);
+                                    return null;
+                                });
+                        });
+                        
+                        Promise.all(organizationPromises)
+                            .then(results => {
+                                const organizations = results.filter(org => org !== null);
+                                resolveInner(organizations);
+                            })
+                            .catch(error => {
+                                console.error('Erreur lors du chargement des organisations:', error);
+                                rejectInner(error);
+                            });
+                    });
+                }
+            } catch (error) {
+                console.error('Exception dans loadPatientOrganizations:', error);
+                reject(error);
+            }
+        });
+    }
+    
+    // Chargement des personnes liées au patient
+    function loadPatientRelatedPersons(patientId, serverUrl) {
+        return new Promise((resolve, reject) => {
+            try {
+                const container = document.querySelector('#relatedPersonsContent');
+                if (!container) {
+                    reject(new Error("Container #relatedPersonsContent non trouvé dans le DOM"));
+                    return;
+                }
+                
+                const loadingSection = container.querySelector('.loading-resources');
+                const noResourcesSection = container.querySelector('.no-resources');
+                const resourcesList = container.querySelector('.resources-list');
+                
+                if (!loadingSection || !noResourcesSection || !resourcesList) {
+                    reject(new Error("Structure DOM incorrecte dans le container de personnes liées"));
+                    return;
+                }
+                
+                // Afficher l'indicateur de chargement
+                loadingSection.style.display = 'block';
+                noResourcesSection.style.display = 'none';
+                resourcesList.style.display = 'none';
+                resourcesList.innerHTML = '';
+                
+                // Charger les personnes liées
+                fetch(`${serverUrl}/RelatedPerson?patient=${patientId}&_count=100&_format=json`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        loadingSection.style.display = 'none';
+                        
+                        if (!data.entry || data.entry.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            resourcesList.style.display = 'none';
+                            resolve([]);
+                            return;
+                        }
+                        
+                        // Personnes liées trouvées
+                        noResourcesSection.style.display = 'none';
+                        resourcesList.style.display = 'block';
+                        
+                        // Stocker les personnes liées dans l'objet global
+                        const relatedPersons = data.entry.map(entry => entry.resource);
+                        window.patientData.relatedPersons = relatedPersons;
+                        
+                        // Générer la liste des personnes liées
+                        relatedPersons.forEach(person => {
+                            const personElement = document.createElement('div');
+                            personElement.className = 'resource-item';
+                            
+                            const personName = formatPatientName(person.name);
+                            const relationship = formatRelationship(person.relationship);
+                            const personTelecom = formatTelecom(person.telecom);
+                            const personAddress = formatAddress(person.address);
+                            const period = formatPeriod(person.period);
+                            
+                            personElement.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="resource-item-title">
+                                        ${personName}
+                                        <button class="btn btn-sm btn-outline-secondary ms-2 view-json-button" 
+                                                data-resource-id="${person.id}" 
+                                                data-resource-type="RelatedPerson"
+                                                title="Voir JSON">
+                                            <i class="fas fa-code"></i>
+                                        </button>
+                                    </h4>
+                                    ${person.active !== undefined ? 
+                                        `<div><span class="badge ${person.active ? 'bg-success' : 'bg-secondary'}">${person.active ? 'Actif' : 'Inactif'}</span></div>` : 
+                                        ''}
+                                </div>
+                                <div class="resource-item-details">
+                                    ${relationship ? `<div><strong>Relation:</strong> ${relationship}</div>` : ''}
+                                    ${period ? `<div><strong>Période:</strong> ${period}</div>` : ''}
+                                    ${personTelecom ? `<div><strong>Contact:</strong> ${personTelecom}</div>` : ''}
+                                    ${personAddress ? `<div><strong>Adresse:</strong> ${personAddress}</div>` : ''}
+                                    ${person.gender ? `<div><strong>Genre:</strong> ${person.gender === 'male' ? 'Homme' : person.gender === 'female' ? 'Femme' : person.gender}</div>` : ''}
+                                    ${person.birthDate ? `<div><strong>Date de naissance:</strong> ${new Date(person.birthDate).toLocaleDateString()}</div>` : ''}
+                                </div>
+                            `;
+                            
+                            resourcesList.appendChild(personElement);
+                        });
+                        
+                        // Configurer les boutons de visualisation JSON
+                        document.querySelectorAll('.view-json-button').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const resourceId = this.getAttribute('data-resource-id');
+                                const resourceType = this.getAttribute('data-resource-type');
+                                openJsonView(resourceId, resourceType);
+                            });
+                        });
+                        
+                        resolve(relatedPersons);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des personnes liées:', error);
+                        
+                        loadingSection.style.display = 'none';
+                        noResourcesSection.style.display = 'block';
+                        noResourcesSection.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
+                                <p>Impossible de charger les personnes liées: ${error.message}</p>
+                            </div>
+                        `;
+                        
+                        reject(error);
+                    });
+            } catch (error) {
+                console.error('Exception dans loadPatientRelatedPersons:', error);
+                reject(error);
+            }
+        });
+    }
+    
+    // Chargement des couvertures d'assurance du patient
+    function loadPatientCoverage(patientId, serverUrl) {
+        return new Promise((resolve, reject) => {
+            try {
+                const container = document.querySelector('#coverageContent');
+                if (!container) {
+                    reject(new Error("Container #coverageContent non trouvé dans le DOM"));
+                    return;
+                }
+                
+                const loadingSection = container.querySelector('.loading-resources');
+                const noResourcesSection = container.querySelector('.no-resources');
+                const resourcesList = container.querySelector('.resources-list');
+                
+                if (!loadingSection || !noResourcesSection || !resourcesList) {
+                    reject(new Error("Structure DOM incorrecte dans le container de couvertures"));
+                    return;
+                }
+                
+                // Afficher l'indicateur de chargement
+                loadingSection.style.display = 'block';
+                noResourcesSection.style.display = 'none';
+                resourcesList.style.display = 'none';
+                resourcesList.innerHTML = '';
+                
+                // Charger les couvertures
+                fetch(`${serverUrl}/Coverage?patient=${patientId}&_count=100&_format=json`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        loadingSection.style.display = 'none';
+                        
+                        if (!data.entry || data.entry.length === 0) {
+                            noResourcesSection.style.display = 'block';
+                            resourcesList.style.display = 'none';
+                            resolve([]);
+                            return;
+                        }
+                        
+                        // Couvertures trouvées
+                        noResourcesSection.style.display = 'none';
+                        resourcesList.style.display = 'block';
+                        
+                        // Stocker les couvertures dans l'objet global
+                        const coverages = data.entry.map(entry => entry.resource);
+                        window.patientData.coverages = coverages;
+                        
+                        // Générer la liste des couvertures
+                        coverages.forEach(coverage => {
+                            const coverageElement = document.createElement('div');
+                            coverageElement.className = 'resource-item';
+                            
+                            const coverageType = coverage.type?.coding?.[0]?.display || 'Type non spécifié';
+                            const status = coverage.status || 'unknown';
+                            const period = formatPeriod(coverage.period);
+                            const payor = formatPayor(coverage.payor);
+                            
+                            coverageElement.innerHTML = `
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h4 class="resource-item-title">
+                                        ${coverageType}
+                                        <button class="btn btn-sm btn-outline-secondary ms-2 view-json-button" 
+                                                data-resource-id="${coverage.id}" 
+                                                data-resource-type="Coverage"
+                                                title="Voir JSON">
+                                            <i class="fas fa-code"></i>
+                                        </button>
+                                    </h4>
+                                    <div>
+                                        <span class="badge ${status === 'active' ? 'bg-success' : 'bg-secondary'}">${status}</span>
+                                    </div>
+                                </div>
+                                <div class="resource-item-details">
+                                    ${period ? `<div><strong>Période:</strong> ${period}</div>` : ''}
+                                    ${payor ? `<div><strong>Payeur(s):</strong> ${payor}</div>` : ''}
+                                    ${coverage.relationship?.coding?.[0]?.display ? 
+                                        `<div><strong>Relation:</strong> ${coverage.relationship.coding[0].display}</div>` : 
+                                        ''}
+                                    ${coverage.subscriberId ? 
+                                        `<div><strong>ID d'adhérent:</strong> ${coverage.subscriberId}</div>` : 
+                                        ''}
+                                    ${coverage.dependent ? 
+                                        `<div><strong>ID de dépendant:</strong> ${coverage.dependent}</div>` : 
+                                        ''}
+                                </div>
+                            `;
+                            
+                            resourcesList.appendChild(coverageElement);
+                        });
+                        
+                        // Configurer les boutons de visualisation JSON
+                        document.querySelectorAll('.view-json-button').forEach(button => {
+                            button.addEventListener('click', function() {
+                                const resourceId = this.getAttribute('data-resource-id');
+                                const resourceType = this.getAttribute('data-resource-type');
+                                openJsonView(resourceId, resourceType);
+                            });
+                        });
+                        
+                        resolve(coverages);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des couvertures:', error);
+                        
+                        loadingSection.style.display = 'none';
+                        noResourcesSection.style.display = 'block';
+                        noResourcesSection.innerHTML = `
+                            <div class="alert alert-warning">
+                                <h4><i class="fas fa-exclamation-triangle"></i> Erreur</h4>
+                                <p>Impossible de charger les couvertures: ${error.message}</p>
+                            </div>
+                        `;
+                        
+                        reject(error);
+                    });
+            } catch (error) {
+                console.error('Exception dans loadPatientCoverage:', error);
+                reject(error);
+            }
+        });
+    }
+    
+    // Chargement d'un bundle complet pour le patient (si disponible)
+    function loadPatientBundle(patientId, serverUrl) {
+        return new Promise((resolve, reject) => {
+            try {
+                // Tenter de récupérer un Bundle complet pour le patient
+                fetch(`${serverUrl}/Patient/${patientId}/$everything?_count=100&_format=json`)
+                    .then(response => {
+                        if (!response.ok) {
+                            // Si 4xx ou 5xx, considérer que le serveur ne supporte pas $everything
+                            if (response.status >= 400) {
+                                console.warn('Opération $everything non supportée par ce serveur');
+                                return null;
+                            }
+                            throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data && data.resourceType === 'Bundle') {
+                            // Stocker le bundle dans l'objet global
+                            window.patientData.bundle = data;
+                            console.log('Bundle patient complet récupéré', data);
+                        } else {
+                            console.warn('Bundle patient non disponible');
+                        }
+                        resolve(data);
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement du bundle patient:', error);
+                        resolve(null); // Résoudre quand même pour ne pas bloquer les autres chargements
+                    });
+            } catch (error) {
+                console.error('Exception dans loadPatientBundle:', error);
+                resolve(null); // Résoudre quand même pour ne pas bloquer les autres chargements
+            }
+        });
+    }
+    
+    // Formatage des noms de praticiens
     function formatPractitionerName(names) {
-        if (!names || names.length === 0) return 'Sans nom';
+        if (!names || names.length === 0) {
+            return 'Nom inconnu';
+        }
         
         const name = names[0];
         let formattedName = '';
         
-        if (name.prefix) formattedName += name.prefix.join(' ') + ' ';
-        if (name.given) formattedName += name.given.join(' ') + ' ';
-        if (name.family) formattedName += name.family;
+        if (name.prefix && name.prefix.length > 0) {
+            formattedName += name.prefix.join(' ') + ' ';
+        }
         
-        return formattedName.trim() || 'Sans nom';
+        if (name.given && name.given.length > 0) {
+            formattedName += name.given.join(' ') + ' ';
+        }
+        
+        if (name.family) {
+            formattedName += name.family;
+        }
+        
+        return formattedName || 'Nom inconnu';
     }
     
+    // Formatage des qualifications
     function formatQualifications(qualifications) {
-        if (!qualifications || qualifications.length === 0) return 'Aucune qualification';
+        if (!qualifications || qualifications.length === 0) {
+            return '';
+        }
         
         return qualifications.map(qual => {
-            let text = '';
+            let qualification = '';
+            
             if (qual.code && qual.code.coding && qual.code.coding.length > 0) {
-                text += qual.code.coding[0].display || qual.code.coding[0].code;
+                qualification += qual.code.coding[0].display || qual.code.text || qual.code.coding[0].code || '';
+            } else if (qual.code && qual.code.text) {
+                qualification += qual.code.text;
             }
+            
             if (qual.period && qual.period.start) {
-                const start = new Date(qual.period.start).toLocaleDateString();
-                text += ` (depuis ${start})`;
+                const startYear = new Date(qual.period.start).getFullYear();
+                qualification += ` (${startYear})`;
             }
-            return text;
-        }).join(', ');
+            
+            return qualification;
+        }).filter(q => q).join(', ');
     }
     
+    // Recherche des rôles de praticiens
     function findPractitionerRoles(practitionerId, entries) {
-        if (!entries) return [];
+        if (!entries || !practitionerId) return [];
         
         return entries
             .filter(entry => 
+                entry.resource && 
                 entry.resource.resourceType === 'PractitionerRole' && 
                 entry.resource.practitioner && 
-                entry.resource.practitioner.reference.includes(practitionerId))
+                entry.resource.practitioner.reference === `Practitioner/${practitionerId}`
+            )
             .map(entry => entry.resource);
     }
     
+    // Formatage des rôles
     function formatRoles(roles) {
-        if (!roles || roles.length === 0) return 'Aucun rôle spécifié';
+        if (!roles || roles.length === 0) {
+            return '';
+        }
         
         return roles.map(role => {
-            let text = '';
-            if (role.code && role.code.length > 0 && role.code[0].coding && role.code[0].coding.length > 0) {
-                text += role.code[0].coding[0].display || role.code[0].coding[0].code;
-            } else if (role.specialty && role.specialty.length > 0) {
-                text += role.specialty[0].coding[0].display || role.specialty[0].coding[0].code;
-            } else {
-                text += 'Rôle non spécifié';
+            let formattedRole = '';
+            
+            if (role.code && role.code.length > 0) {
+                const roleCode = role.code[0];
+                formattedRole += roleCode.coding?.[0]?.display || roleCode.text || '';
             }
-            return text;
-        }).join(', ');
+            
+            if (role.specialty && role.specialty.length > 0) {
+                const specialty = role.specialty[0];
+                if (formattedRole) formattedRole += ' - ';
+                formattedRole += specialty.coding?.[0]?.display || specialty.text || '';
+            }
+            
+            if (role.organization && role.organization.display) {
+                formattedRole += ` (${role.organization.display})`;
+            }
+            
+            return formattedRole;
+        }).filter(r => r).join(', ');
     }
     
+    // Formatage des contacts
     function formatTelecom(telecom) {
-        if (!telecom || telecom.length === 0) return 'Non spécifié';
+        if (!telecom || telecom.length === 0) {
+            return '';
+        }
         
         return telecom.map(t => {
-            const system = t.system ? t.system.charAt(0).toUpperCase() + t.system.slice(1) : '';
-            return `${system}: ${t.value}`;
+            let icon = '';
+            if (t.system === 'phone') {
+                icon = '<i class="fas fa-phone-alt"></i> ';
+            } else if (t.system === 'email') {
+                icon = '<i class="fas fa-envelope"></i> ';
+            } else if (t.system === 'fax') {
+                icon = '<i class="fas fa-fax"></i> ';
+            } else if (t.system === 'url') {
+                icon = '<i class="fas fa-globe"></i> ';
+            }
+            
+            return `${icon}${t.value}${t.use ? ` (${t.use})` : ''}`;
         }).join(', ');
     }
     
+    // Formatage des adresses
     function formatAddress(address) {
-        if (!address) return 'Non spécifiée';
+        if (!address || address.length === 0) {
+            return '';
+        }
         
+        const addr = address[0];
         let formattedAddress = '';
-        if (address.line) formattedAddress += address.line.join(', ') + ', ';
-        if (address.postalCode) formattedAddress += address.postalCode + ' ';
-        if (address.city) formattedAddress += address.city + ', ';
-        if (address.country) formattedAddress += address.country;
         
-        return formattedAddress.trim() || 'Non spécifiée';
+        if (addr.line && addr.line.length > 0) {
+            formattedAddress += addr.line.join(', ');
+        }
+        
+        if (addr.postalCode || addr.city) {
+            if (formattedAddress) formattedAddress += ', ';
+            formattedAddress += `${addr.postalCode || ''} ${addr.city || ''}`;
+        }
+        
+        if (addr.country) {
+            if (formattedAddress) formattedAddress += ', ';
+            formattedAddress += addr.country;
+        }
+        
+        return formattedAddress;
     }
     
+    // Formatage des relations
     function formatRelationship(relationship) {
-        if (!relationship || relationship.length === 0) return 'Non spécifiée';
+        if (!relationship || relationship.length === 0) {
+            return '';
+        }
         
         return relationship.map(r => {
             if (r.coding && r.coding.length > 0) {
                 return r.coding[0].display || r.coding[0].code;
+            } else if (r.text) {
+                return r.text;
             }
-            return r.text || 'Relation non spécifiée';
+            return 'Non spécifiée';
         }).join(', ');
     }
     
+    // Formatage des périodes
     function formatPeriod(period) {
-        if (!period) return 'Non spécifiée';
+        if (!period) {
+            return '';
+        }
         
-        let result = '';
+        let formattedPeriod = '';
+        
         if (period.start) {
-            const start = new Date(period.start).toLocaleDateString();
-            result += `Du ${start} `;
-        }
-        if (period.end) {
-            const end = new Date(period.end).toLocaleDateString();
-            result += `au ${end}`;
-        } else if (period.start) {
-            result += 'à aujourd\'hui';
+            formattedPeriod += `Du ${new Date(period.start).toLocaleDateString()}`;
         }
         
-        return result || 'Non spécifiée';
+        if (period.end) {
+            formattedPeriod += ` au ${new Date(period.end).toLocaleDateString()}`;
+        } else if (period.start) {
+            formattedPeriod += ' (en cours)';
+        }
+        
+        return formattedPeriod;
     }
     
+    // Formatage des payeurs
     function formatPayor(payor) {
-        if (!payor || payor.length === 0) return 'Non spécifié';
+        if (!payor || payor.length === 0) {
+            return '';
+        }
         
         return payor.map(p => {
-            if (p.display) return p.display;
-            if (p.reference) {
-                const parts = p.reference.split('/');
-                return parts.length > 1 ? `${parts[0]} (${parts[1]})` : p.reference;
+            if (p.display) {
+                return p.display;
+            } else if (p.reference) {
+                return p.reference;
             }
             return 'Payeur non spécifié';
         }).join(', ');
     }
     
+    // Génération de la chronologie
     function generateTimeline(patientId, serverUrl) {
         return new Promise((resolve, reject) => {
             try {
@@ -1457,176 +2347,132 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Ajouter un message de logging pour debug
                 console.log(`Génération de la chronologie pour le patient ${patientId} sur ${serverUrl}`);
-            
-            const container = document.querySelector('#timelineContent');
-            if (!container) {
-                console.error("Container #timelineContent non trouvé dans le DOM");
-                return;
-            }
-            
-            const loadingSection = container.querySelector('.loading-resources');
-            const noResourcesSection = container.querySelector('.no-resources');
-            const resourcesList = container.querySelector('.resources-list');
-            
-            if (!loadingSection || !noResourcesSection || !resourcesList) {
-                console.error("Structure DOM incorrecte dans le container de chronologie");
-                return;
-            }
-            
-            loadingSection.style.display = 'block';
-            noResourcesSection.style.display = 'none';
-            resourcesList.style.display = 'none';
-            
-            // Fonction sécurisée pour récupérer les ressources
-            const fetchSafely = async (url) => {
-                try {
-                    console.log(`Récupération des données depuis: ${url}`);
-                    // Encoder correctement l'URL
-                    const encodedUrl = url.replace(/&amp;/g, '&');
-                    
-                    // Utiliser xhr pour éviter les problèmes potentiels avec fetch dans certains navigateurs
-                    return new Promise((resolve, reject) => {
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('GET', encodedUrl);
-                        xhr.onload = function() {
-                            if (xhr.status >= 200 && xhr.status < 300) {
-                                try {
-                                    const data = JSON.parse(xhr.responseText);
-                                    resolve(data);
-                                } catch (error) {
-                                    console.warn(`Problème de parsing JSON: ${encodedUrl}`, error);
-                                    resolve({ entry: [] });
-                                }
-                            } else {
-                                console.warn(`Problème de récupération: ${encodedUrl}, statut: ${xhr.status}`);
-                                resolve({ entry: [] });
-                            }
-                        };
-                        xhr.onerror = function() {
-                            console.error(`Erreur réseau lors de la récupération: ${encodedUrl}`);
-                            resolve({ entry: [] });
-                        };
-                        xhr.send();
-                    });
-                } catch (error) {
-                    console.error(`Erreur lors de la récupération: ${url}`, error);
-                    return { entry: [] };
+                
+                const container = document.querySelector('#timelineContent');
+                if (!container) {
+                    console.error("Container #timelineContent non trouvé dans le DOM");
+                    reject(new Error("Container #timelineContent non trouvé dans le DOM"));
+                    return;
                 }
-            };
-            
-            // Récupérer toutes les ressources pour la chronologie avec les formats corrects pour les références patient
-            console.log(`Génération de la chronologie pour le patient ${patientId}`);
-            Promise.all([
-                fetchSafely(`${serverUrl}/Encounter?subject=Patient/${patientId}&_count=100`),
-                fetchSafely(`${serverUrl}/Observation?subject=Patient/${patientId}&_count=100`),
-                fetchSafely(`${serverUrl}/MedicationRequest?subject=Patient/${patientId}&_count=100`),
-                fetchSafely(`${serverUrl}/Condition?subject=Patient/${patientId}&_count=100`)
-            ])
-        .then(([encounters, observations, medications, conditions]) => {
-            loadingSection.style.display = 'none';
-            
-            // Combiner toutes les entrées
-            const timelineEntries = [];
-            
-            // Ajouter les consultations
-            if (encounters.entry && encounters.entry.length > 0) {
-                encounters.entry.forEach(entry => {
-                    if (entry.resource.period && entry.resource.period.start) {
-                        timelineEntries.push({
-                            type: 'encounter',
-                            resource: entry.resource,
-                            date: new Date(entry.resource.period.start),
-                            title: entry.resource.type?.[0]?.coding?.[0]?.display || 'Consultation',
-                            icon: 'fa-hospital',
-                            color: '#fd7e30'
-                        });
-                    }
-                });
-            }
-            
-            // Ajouter les observations
-            if (observations.entry && observations.entry.length > 0) {
-                observations.entry.forEach(entry => {
-                    const effectiveDate = getEffectiveDate(entry.resource, true);
-                    if (effectiveDate) {
-                        timelineEntries.push({
-                            type: 'observation',
-                            resource: entry.resource,
-                            date: new Date(effectiveDate),
-                            title: entry.resource.code?.coding?.[0]?.display || 'Observation',
-                            icon: 'fa-vial',
-                            color: '#fd7e30'
-                        });
-                    }
-                });
-            }
-            
-            // Ajouter les médicaments
-            if (medications.entry && medications.entry.length > 0) {
-                medications.entry.forEach(entry => {
-                    if (entry.resource.authoredOn) {
-                        timelineEntries.push({
-                            type: 'medication',
-                            resource: entry.resource,
-                            date: new Date(entry.resource.authoredOn),
-                            title: entry.resource.medicationCodeableConcept?.coding?.[0]?.display || 'Médicament',
-                            icon: 'fa-pills',
-                            color: '#e83e28'
-                        });
-                    }
-                });
-            }
-            
-            // Ajouter les conditions
-            if (conditions.entry && conditions.entry.length > 0) {
-                conditions.entry.forEach(entry => {
-                    if (entry.resource.recordedDate) {
-                        timelineEntries.push({
-                            type: 'condition',
-                            resource: entry.resource,
-                            date: new Date(entry.resource.recordedDate),
-                            title: entry.resource.code?.coding?.[0]?.display || 'Condition',
-                            icon: 'fa-heartbeat',
-                            color: '#e83e28'
-                        });
-                    }
-                });
-            }
-            
-            // Trier les entrées chronologiquement
-            timelineEntries.sort((a, b) => b.date - a.date);
-            
-            if (timelineEntries.length > 0) {
+                
+                const loadingSection = container.querySelector('.loading-resources');
+                const noResourcesSection = container.querySelector('.no-resources');
+                const resourcesList = container.querySelector('.resources-list');
+                
+                if (!loadingSection || !noResourcesSection || !resourcesList) {
+                    console.error("Structure DOM incorrecte dans le container de chronologie");
+                    reject(new Error("Structure DOM incorrecte dans le container de chronologie"));
+                    return;
+                }
+                
+                // Afficher l'indicateur de chargement
+                loadingSection.style.display = 'block';
+                noResourcesSection.style.display = 'none';
+                resourcesList.style.display = 'none';
                 resourcesList.innerHTML = '';
-                resourcesList.style.display = 'block';
                 
-                // Créer la chronologie
-                const timelineElement = document.createElement('div');
-                timelineElement.className = 'timeline';
-                timelineElement.style.position = 'relative';
-                timelineElement.style.padding = '0 0 0 30px';
+                // Préparer la collection d'entrées de chronologie
+                const timelineEntries = [];
                 
-                timelineEntries.forEach((entry, index) => {
-                    const entryElement = document.createElement('div');
-                    entryElement.className = 'timeline-entry';
-                    entryElement.style.position = 'relative';
-                    entryElement.style.paddingBottom = '20px';
-                    entryElement.style.borderLeft = '2px solid #ddd';
-                    entryElement.style.paddingLeft = '20px';
-                    entryElement.style.marginLeft = '-1px';
-                    
-                    // Formater la date
-                    const formattedDate = entry.date.toLocaleDateString('fr-FR', {
-                        day: '2-digit', 
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
+                // Ajouter les conditions à la chronologie
+                if (window.patientData && window.patientData.conditions) {
+                    window.patientData.conditions.forEach(condition => {
+                        const date = condition.onsetDateTime || condition.recordedDate;
+                        if (date) {
+                            timelineEntries.push({
+                                resourceType: 'Condition',
+                                resource: condition,
+                                date: date,
+                                title: condition.code?.coding?.[0]?.display || 'Condition sans nom',
+                                color: '#e74c3c', // Rouge
+                                icon: 'fa-heartbeat'
+                            });
+                        }
                     });
+                }
+                
+                // Ajouter les observations à la chronologie
+                if (window.patientData && window.patientData.observations) {
+                    window.patientData.observations.forEach(observation => {
+                        const date = getEffectiveDate(observation, true);
+                        if (date) {
+                            timelineEntries.push({
+                                resourceType: 'Observation',
+                                resource: observation,
+                                date: date,
+                                title: observation.code?.coding?.[0]?.display || 'Observation sans nom',
+                                color: '#3498db', // Bleu
+                                icon: 'fa-flask'
+                            });
+                        }
+                    });
+                }
+                
+                // Ajouter les médicaments à la chronologie
+                if (window.patientData && window.patientData.medications) {
+                    window.patientData.medications.forEach(medication => {
+                        const date = medication.authoredOn;
+                        if (date) {
+                            timelineEntries.push({
+                                resourceType: 'MedicationRequest',
+                                resource: medication,
+                                date: date,
+                                title: medication.medicationCodeableConcept?.coding?.[0]?.display || 'Médicament sans nom',
+                                color: '#2ecc71', // Vert
+                                icon: 'fa-pills'
+                            });
+                        }
+                    });
+                }
+                
+                // Ajouter les consultations à la chronologie
+                if (window.patientData && window.patientData.encounters) {
+                    window.patientData.encounters.forEach(encounter => {
+                        const date = encounter.period?.start || encounter.period?.end;
+                        if (date) {
+                            timelineEntries.push({
+                                resourceType: 'Encounter',
+                                resource: encounter,
+                                date: date,
+                                title: encounter.type?.[0]?.coding?.[0]?.display || 'Consultation',
+                                color: '#9b59b6', // Violet
+                                icon: 'fa-hospital'
+                            });
+                        }
+                    });
+                }
+                
+                // Trier les entrées par date (les plus anciennes d'abord)
+                timelineEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                // Afficher la chronologie
+                loadingSection.style.display = 'none';
+                
+                if (timelineEntries.length === 0) {
+                    noResourcesSection.style.display = 'block';
+                    resourcesList.style.display = 'none';
+                    resolve({ entries: [], count: 0 });
+                } else {
+                    noResourcesSection.style.display = 'none';
+                    resourcesList.style.display = 'block';
                     
-                    entryElement.innerHTML = `
-                        <div style="position: absolute; left: -10px; background-color: ${entry.color}; width: 18px; height: 18px; border-radius: 50%; text-align: center; color: white; top: 0;">
-                            <i class="fas ${entry.icon}" style="font-size: 10px; line-height: 18px;"></i>
+                    // Créer l'élément de chronologie
+                    const timelineElement = document.createElement('div');
+                    timelineElement.className = 'timeline-container';
+                    
+                    timelineEntries.forEach((entry, index) => {
+                        const entryElement = document.createElement('div');
+                        entryElement.className = 'timeline-entry';
+                        
+                        const formattedDate = new Date(entry.date).toLocaleDateString('fr-FR', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        });
+                        
+                        entryElement.innerHTML = `
+                        <div class="timeline-icon" style="background-color: ${entry.color};">
+                            <i class="fas ${entry.icon}"></i>
                         </div>
                         <div style="background-color: #f9f9f9; padding: 10px 15px; border-radius: 6px; border-left: 3px solid ${entry.color};">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -1643,84 +2489,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 
                 resourcesList.appendChild(timelineElement);
-            } else {
-                noResourcesSection.style.display = 'block';
+                
+                // Résoudre la promesse avec les données de la chronologie
+                resolve({
+                    entries: timelineEntries,
+                    count: timelineEntries.length
+                });
             }
-        })
-        .catch(error => {
+        } catch (error) {
             console.error('Erreur lors de la génération de la chronologie:', error);
-            loadingSection.style.display = 'none';
-            noResourcesSection.style.display = 'block';
-            resourcesList.style.display = 'none';
             
             // Afficher un message d'erreur plus explicite
-            noResourcesSection.innerHTML = `
-                <div class="alert alert-warning">
-                    <h4>Erreur lors de la génération de la chronologie</h4>
-                    <p>Nous n'avons pas pu générer la chronologie pour ce patient. Veuillez réessayer ultérieurement.</p>
-                    <details>
-                        <summary>Détails techniques</summary>
-                        <pre>${error.message || 'Erreur inconnue'}</pre>
-                    </details>
-                </div>
-            `;
+            if (container) {
+                loadingSection.style.display = 'none';
+                noResourcesSection.style.display = 'block';
+                resourcesList.style.display = 'none';
+                
+                noResourcesSection.innerHTML = `
+                    <div class="alert alert-warning">
+                        <h4>Erreur lors de la génération de la chronologie</h4>
+                        <p>Nous n'avons pas pu générer la chronologie pour ce patient: ${error.message}</p>
+                    </div>
+                `;
+            }
             
-            // Résoudre la promesse avec les données de la chronologie
-            const timelineData = {
-                entries: timelineEntries,
-                count: timelineEntries.length
-            };
-            resolve(timelineData);
-        })
-        .catch(error => {
-            console.error('Erreur dans generateTimeline:', error);
-            // Afficher un message d'erreur dans l'interface
-            const container = document.querySelector('#timelineContent');
-            if (container) {
-                const noResourcesSection = container.querySelector('.no-resources');
-                if (noResourcesSection) {
-                    noResourcesSection.style.display = 'block';
-                    noResourcesSection.innerHTML = `
-                        <div class="alert alert-danger">
-                            <h4>Erreur critique</h4>
-                            <p>Une erreur est survenue lors de la génération de la chronologie.</p>
-                            <details>
-                                <summary>Détails techniques</summary>
-                                <pre>${error.message || 'Erreur inconnue'}</pre>
-                            </details>
-                        </div>
-                    `;
-                }
-            }
             reject(error);
-        });
-    } catch (error) {
-        console.error('Exception globale dans generateTimeline:', error);
-        // Afficher un message d'erreur dans l'interface si possible
-        try {
-            const container = document.querySelector('#timelineContent');
-            if (container) {
-                const noResourcesSection = container.querySelector('.no-resources');
-                if (noResourcesSection) {
-                    noResourcesSection.style.display = 'block';
-                    noResourcesSection.innerHTML = `
-                        <div class="alert alert-danger">
-                            <h4>Erreur critique</h4>
-                            <p>Une erreur est survenue lors de la génération de la chronologie.</p>
-                            <details>
-                                <summary>Détails techniques</summary>
-                                <pre>${error.message || 'Erreur inconnue'}</pre>
-                            </details>
-                        </div>
-                    `;
-                }
-            }
-        } catch (displayError) {
-            console.error('Impossible d\'afficher le message d\'erreur:', displayError);
         }
-        reject(error);
-    }
-});
+    });
 }
 
 // Fonctions utilitaires
@@ -1728,7 +2523,9 @@ function getObservationValue(observation) {
     if (observation.valueQuantity) {
             return `${observation.valueQuantity.value} ${observation.valueQuantity.unit || ''}`;
         } else if (observation.valueCodeableConcept) {
-            return observation.valueCodeableConcept.coding?.[0]?.display || observation.valueCodeableConcept.text || 'Non spécifiée';
+            return observation.valueCodeableConcept.coding?.[0]?.display || 
+                   observation.valueCodeableConcept.text || 
+                   'Valeur codée';
         } else if (observation.valueString) {
             return observation.valueString;
         } else if (observation.valueBoolean !== undefined) {
@@ -1738,175 +2535,90 @@ function getObservationValue(observation) {
         } else if (observation.valueRange) {
             return `${observation.valueRange.low?.value || '?'} - ${observation.valueRange.high?.value || '?'} ${observation.valueRange.low?.unit || ''}`;
         } else if (observation.valueRatio) {
-            return `${observation.valueRatio.numerator?.value || '?'} : ${observation.valueRatio.denominator?.value || '?'}`;
+            return `${observation.valueRatio.numerator?.value || '?'} / ${observation.valueRatio.denominator?.value || '?'}`;
         } else if (observation.component && observation.component.length > 0) {
-            return 'Composants multiples';
-        } else {
-            return 'Non spécifiée';
-        }
-    }
-    
-    function getEffectiveDate(observation, returnRaw = false) {
-        let date;
-        if (observation.effectiveDateTime) {
-            date = observation.effectiveDateTime;
-        } else if (observation.effectivePeriod && observation.effectivePeriod.start) {
-            date = observation.effectivePeriod.start;
-        } else if (observation.issued) {
-            date = observation.issued;
-        } else {
-            return returnRaw ? null : 'Non spécifiée';
-        }
-        
-        return returnRaw ? date : new Date(date).toLocaleDateString('fr-FR');
-    }
-    
-    function getTimelineDescription(entry) {
-        switch (entry.type) {
-            case 'encounter':
-                return `${entry.resource.serviceType?.coding?.[0]?.display || 'Consultation'} - ${entry.resource.status || 'Non spécifié'}`;
-            case 'observation':
-                return `Valeur: ${getObservationValue(entry.resource)}`;
-            case 'medication':
-                return `${entry.resource.dosageInstruction?.[0]?.text || 'Posologie non spécifiée'}`;
-            case 'condition':
-                return `${entry.resource.clinicalStatus?.coding?.[0]?.display || entry.resource.clinicalStatus?.coding?.[0]?.code || 'Non spécifié'}`;
-            default:
-                return '';
-        }
-    }
-    
-    // Analyse IA (utilise le fournisseur d'IA actif) avec gestion d'erreurs robuste
-    analyzeAIBtn.addEventListener('click', function() {
-        if (!patientData) {
-            alert('Veuillez charger un patient d\'abord');
-            return;
-        }
-        
-        const aiAnalysisDiv = document.getElementById('aiAnalysis');
-        aiAnalysisDiv.style.display = 'block';
-        
-        // Montrer d'abord un indicateur de chargement
-        aiAnalysisDiv.innerHTML = `
-            <div style="text-align: center; padding: 30px;">
-                <div style="display: inline-block; width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="margin-top: 15px; color: #666;">Analyse IA en cours...</p>
-            </div>
-            <style>
-                @keyframes spin {
-                    0% { transform: rotate(0deg); }
-                    100% { transform: rotate(360deg); }
+            return observation.component.map(comp => {
+                const name = comp.code?.coding?.[0]?.display || comp.code?.text || 'Composant';
+                let value = '';
+                
+                if (comp.valueQuantity) {
+                    value = `${comp.valueQuantity.value} ${comp.valueQuantity.unit || ''}`;
+                } else if (comp.valueCodeableConcept) {
+                    value = comp.valueCodeableConcept.coding?.[0]?.display || 
+                           comp.valueCodeableConcept.text || 
+                           'Valeur codée';
+                } else if (comp.valueString) {
+                    value = comp.valueString;
                 }
-            </style>
-        `;
-        
-        // Fonction pour afficher l'analyse locale en cas d'erreur
-        function showLocalAnalysis(errorMessage) {
-            console.log("Affichage de l'analyse locale car:", errorMessage);
-            const localAnalysis = generatePatientSummary(patientData);
-            aiAnalysisDiv.innerHTML = `
-                <div style="background: #fff8f8; padding: 10px; border-radius: 5px; margin-bottom: 15px; border-left: 3px solid #e83e28;">
-                    <p style="margin: 0; color: #e83e28;"><i class="fas fa-exclamation-circle"></i> Le service d'IA n'est pas disponible actuellement.</p>
-                    <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">${errorMessage}</p>
-                </div>
-                ${localAnalysis}
-            `;
+                
+                return `${name}: ${value}`;
+            }).join(', ');
+        } else {
+            return 'Valeur non disponible';
         }
-        
-        // Appel API au backend en utilisant XMLHttpRequest pour une meilleure gestion des erreurs
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', '/api/ai/analyze-patient');
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 30000; // 30 secondes de timeout
-        
-        xhr.onload = function() {
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
-                    if (data.success && data.analysis) {
-                        aiAnalysisDiv.innerHTML = data.analysis;
-                    } else {
-                        // En cas d'erreur ou réponse vide, utiliser l'analyse locale comme fallback
-                        showLocalAnalysis(data.error || "Pas de résultat d'analyse disponible");
-                    }
-                } catch (error) {
-                    showLocalAnalysis("Erreur de traitement de la réponse IA");
-                }
-            } else {
-                showLocalAnalysis(`Erreur de communication avec le service IA (${xhr.status})`);
-            }
-        };
-        
-        xhr.ontimeout = function() {
-            showLocalAnalysis("Délai d'attente dépassé pour l'analyse IA");
-        };
-        
-        xhr.onerror = function() {
-            showLocalAnalysis("Erreur de connexion au service IA");
-        };
-        
-        try {
-            // Créer un objet complet avec toutes les données du patient de tous les onglets
-            const completePatientData = {
-                patient: patientData,
-                conditions: conditionsData,
-                observations: observationsData,
-                medications: medicationsData,
-                encounters: encountersData
-            };
-            
-            console.log("Envoi de l'analyse IA avec données complètes:", 
-                `Patient: ${patientData ? 'OK' : 'Manquant'}, ` +
-                `Conditions: ${conditionsData.length}, ` +
-                `Observations: ${observationsData.length}, ` + 
-                `Médicaments: ${medicationsData.length}, ` +
-                `Consultations: ${encountersData.length}`
-            );
-            
-            xhr.send(JSON.stringify({
-                patientId: patientData.id,
-                serverUrl: serverSelect.value,
-                patientData: completePatientData
-            }));
-        } catch (error) {
-            showLocalAnalysis("Erreur lors de l'envoi de la requête IA");
-        }
-    });
+}
+
+// Obtenir la date effective d'une observation
+function getEffectiveDate(observation, returnRaw = false) {
+    let date = null;
     
-    // Permettre la recherche avec la touche Entrée
-    patientSearch.addEventListener('keyup', function(e) {
-        if (e.key === 'Enter') {
-            searchPatients();
-        }
-    });
-    
-    // Déclencher la recherche lors du clic sur le bouton
-    searchPatientBtn.addEventListener('click', searchPatients);
-    
-    // Effacer la recherche lors du clic sur le bouton d'effacement
-    clearSearchBtn.addEventListener('click', clearSearch);
-    
-    // Charger les détails du patient sélectionné
-    loadPatientBtn.addEventListener('click', loadPatient);
-    
-    // Remplir le champ JSON
-    function updateJsonView() {
-        if (patientData) {
-            document.getElementById('jsonContent').textContent = JSON.stringify(patientData, null, 2);
-        }
+    if (observation.effectiveDateTime) {
+        date = observation.effectiveDateTime;
+    } else if (observation.effectiveInstant) {
+        date = observation.effectiveInstant;
+    } else if (observation.effectivePeriod && observation.effectivePeriod.start) {
+        date = observation.effectivePeriod.start;
+    } else if (observation.issued) {
+        date = observation.issued;
     }
     
-    // IDENTITOVIGILANCE: Effacer les données lorsque l'utilisateur change de serveur FHIR
-    serverSelect.addEventListener('change', function() {
-        // Effacer la recherche et toutes les données du patient
-        patientSearch.value = '';
-        patientSelect.innerHTML = '<option value="">-- Sélectionnez un patient --</option>';
-        clearPatientData();
-        
-        // Cacher les conteneurs
-        document.getElementById('serverStatus').style.display = 'none';
-        document.getElementById('patientContainer').style.display = 'none';
-        
-        console.log('IDENTITOVIGILANCE: Changement de serveur FHIR - Données du patient effacées');
-    });
+    if (!date) {
+        return returnRaw ? null : '';
+    }
+    
+    return returnRaw ? date : new Date(date).toLocaleDateString();
+}
+
+// Obtenir une description pour la chronologie
+function getTimelineDescription(entry) {
+    switch (entry.resourceType) {
+        case 'Condition':
+            const status = entry.resource.clinicalStatus?.coding?.[0]?.code || '';
+            const verification = entry.resource.verificationStatus?.coding?.[0]?.code || '';
+            const severity = entry.resource.severity?.coding?.[0]?.display || '';
+            
+            return `${status === 'active' ? 'Actif' : status === 'resolved' ? 'Résolu' : status}${severity ? ', ' + severity : ''}`;
+            
+        case 'Observation':
+            return getObservationValue(entry.resource);
+            
+        case 'MedicationRequest':
+            const dosage = entry.resource.dosageInstruction?.[0]?.text || '';
+            return dosage || 'Pas de posologie spécifiée';
+            
+        case 'Encounter':
+            const serviceProvider = entry.resource.serviceProvider?.display || '';
+            const participants = entry.resource.participant ? 
+                entry.resource.participant
+                    .filter(p => p.individual && p.individual.display)
+                    .map(p => p.individual.display)
+                    .join(', ') : '';
+            
+            return serviceProvider ? 
+                     (participants ? `${serviceProvider} avec ${participants}` : serviceProvider) : 
+                     (participants ? `Avec ${participants}` : 'Aucun détail disponible');
+            
+        default:
+            return '';
+    }
+}
+
+// Mise à jour de la vue JSON
+function updateJsonView() {
+    const jsonContent = document.getElementById('jsonContent');
+    if (jsonContent && typeof hljs !== 'undefined') {
+        hljs.highlightElement(jsonContent);
+    }
+}
+
 });
