@@ -348,49 +348,622 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                         
                         // Mettre à jour tous les onglets en fonction des données disponibles
+                        // Stocker les données dans les variables globales
                         if (resourcesByType.Condition) {
                             conditionsData = resourcesByType.Condition;
-                            updateConditionsTab(conditionsData);
+                            // Mise à jour de l'onglet Conditions
+                            const conditionsContainer = document.getElementById('conditionsContent');
+                            if (conditionsContainer) {
+                                const conditionsList = conditionsContainer.querySelector('.resources-list');
+                                const loadingSection = conditionsContainer.querySelector('.loading-resources');
+                                const noResourcesSection = conditionsContainer.querySelector('.no-resources');
+                                
+                                if (conditionsList && loadingSection && noResourcesSection) {
+                                    loadingSection.style.display = 'none';
+                                    
+                                    if (conditionsData.length === 0) {
+                                        noResourcesSection.style.display = 'block';
+                                        conditionsList.style.display = 'none';
+                                    } else {
+                                        noResourcesSection.style.display = 'none';
+                                        conditionsList.style.display = 'block';
+                                        conditionsList.innerHTML = '';
+                                        
+                                        conditionsData.forEach(condition => {
+                                            const conditionItem = document.createElement('div');
+                                            conditionItem.className = 'resource-item';
+                                            
+                                            let conditionName = 'Condition';
+                                            if (condition.code && condition.code.coding && condition.code.coding.length > 0) {
+                                                conditionName = condition.code.coding[0].display || condition.code.coding[0].code;
+                                            } else if (condition.code && condition.code.text) {
+                                                conditionName = condition.code.text;
+                                            }
+                                            
+                                            let statusText = '';
+                                            if (condition.clinicalStatus && condition.clinicalStatus.coding && condition.clinicalStatus.coding.length > 0) {
+                                                const statusCode = condition.clinicalStatus.coding[0].code;
+                                                const statusMap = {
+                                                    'active': 'Active',
+                                                    'recurrence': 'Récurrence',
+                                                    'relapse': 'Rechute',
+                                                    'inactive': 'Inactive',
+                                                    'remission': 'Rémission',
+                                                    'resolved': 'Résolue'
+                                                };
+                                                statusText = statusMap[statusCode] || statusCode;
+                                            }
+                                            
+                                            const conditionDate = condition.recordedDate ? 
+                                                new Date(condition.recordedDate).toLocaleDateString('fr-FR') : 'Date inconnue';
+                                            
+                                            conditionItem.innerHTML = `
+                                                <div class="resource-header">
+                                                    <span class="resource-title">${conditionName}</span>
+                                                    <button class="btn-view-json" data-resource='${JSON.stringify(condition).replace(/'/g, "&apos;")}'>
+                                                        <i class="fas fa-code"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="resource-details">
+                                                    <span>Date: ${conditionDate}</span>
+                                                    ${statusText ? `<span>Statut: ${statusText}</span>` : ''}
+                                                </div>
+                                            `;
+                                            
+                                            conditionsList.appendChild(conditionItem);
+                                            
+                                            // Ajouter l'événement pour afficher le JSON
+                                            const jsonBtn = conditionItem.querySelector('.btn-view-json');
+                                            if (jsonBtn) {
+                                                jsonBtn.addEventListener('click', function() {
+                                                    const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                                    document.getElementById('json-content').textContent = JSON.stringify(resourceData, null, 2);
+                                                    // Activer l'onglet JSON
+                                                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                                    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                                    document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                                    document.getElementById('json').style.display = 'block';
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                         
                         if (resourcesByType.Observation) {
                             observationsData = resourcesByType.Observation;
-                            updateObservationsTab(observationsData);
+                            // Mise à jour de l'onglet Observations
+                            const observationsContainer = document.getElementById('observationsContent');
+                            if (observationsContainer) {
+                                const observationsList = observationsContainer.querySelector('.resources-list');
+                                const loadingSection = observationsContainer.querySelector('.loading-resources');
+                                const noResourcesSection = observationsContainer.querySelector('.no-resources');
+                                
+                                if (observationsList && loadingSection && noResourcesSection) {
+                                    loadingSection.style.display = 'none';
+                                    
+                                    if (observationsData.length === 0) {
+                                        noResourcesSection.style.display = 'block';
+                                        observationsList.style.display = 'none';
+                                    } else {
+                                        noResourcesSection.style.display = 'none';
+                                        observationsList.style.display = 'block';
+                                        observationsList.innerHTML = '';
+                                        
+                                        observationsData.forEach(observation => {
+                                            const observationItem = document.createElement('div');
+                                            observationItem.className = 'resource-item';
+                                            
+                                            let observationName = 'Observation';
+                                            if (observation.code && observation.code.coding && observation.code.coding.length > 0) {
+                                                observationName = observation.code.coding[0].display || observation.code.coding[0].code;
+                                            } else if (observation.code && observation.code.text) {
+                                                observationName = observation.code.text;
+                                            }
+                                            
+                                            let valueText = '';
+                                            if (observation.valueQuantity) {
+                                                valueText = `${observation.valueQuantity.value} ${observation.valueQuantity.unit || ''}`;
+                                            } else if (observation.valueString) {
+                                                valueText = observation.valueString;
+                                            } else if (observation.valueCodeableConcept && observation.valueCodeableConcept.coding && observation.valueCodeableConcept.coding.length > 0) {
+                                                valueText = observation.valueCodeableConcept.coding[0].display || observation.valueCodeableConcept.coding[0].code;
+                                            } else if (observation.valueCodeableConcept && observation.valueCodeableConcept.text) {
+                                                valueText = observation.valueCodeableConcept.text;
+                                            }
+                                            
+                                            const observationDate = observation.effectiveDateTime ? 
+                                                new Date(observation.effectiveDateTime).toLocaleDateString('fr-FR') : 
+                                                (observation.issued ? new Date(observation.issued).toLocaleDateString('fr-FR') : 'Date inconnue');
+                                            
+                                            observationItem.innerHTML = `
+                                                <div class="resource-header">
+                                                    <span class="resource-title">${observationName}</span>
+                                                    <button class="btn-view-json" data-resource='${JSON.stringify(observation).replace(/'/g, "&apos;")}'>
+                                                        <i class="fas fa-code"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="resource-details">
+                                                    <span>Date: ${observationDate}</span>
+                                                    ${valueText ? `<span>Valeur: ${valueText}</span>` : ''}
+                                                </div>
+                                            `;
+                                            
+                                            observationsList.appendChild(observationItem);
+                                            
+                                            // Ajouter l'événement pour afficher le JSON
+                                            const jsonBtn = observationItem.querySelector('.btn-view-json');
+                                            if (jsonBtn) {
+                                                jsonBtn.addEventListener('click', function() {
+                                                    const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                                    document.getElementById('json-content').textContent = JSON.stringify(resourceData, null, 2);
+                                                    // Activer l'onglet JSON
+                                                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                                    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                                    document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                                    document.getElementById('json').style.display = 'block';
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                         
                         if (resourcesByType.MedicationRequest) {
                             medicationsData = resourcesByType.MedicationRequest;
-                            updateMedicationsTab(medicationsData);
+                            // Mise à jour de l'onglet Médicaments
+                            const medicationsContainer = document.getElementById('medicationsContent');
+                            if (medicationsContainer) {
+                                const medicationsList = medicationsContainer.querySelector('.resources-list');
+                                const loadingSection = medicationsContainer.querySelector('.loading-resources');
+                                const noResourcesSection = medicationsContainer.querySelector('.no-resources');
+                                
+                                if (medicationsList && loadingSection && noResourcesSection) {
+                                    loadingSection.style.display = 'none';
+                                    
+                                    if (medicationsData.length === 0) {
+                                        noResourcesSection.style.display = 'block';
+                                        medicationsList.style.display = 'none';
+                                    } else {
+                                        noResourcesSection.style.display = 'none';
+                                        medicationsList.style.display = 'block';
+                                        medicationsList.innerHTML = '';
+                                        
+                                        medicationsData.forEach(medication => {
+                                            const medicationItem = document.createElement('div');
+                                            medicationItem.className = 'resource-item';
+                                            
+                                            let medicationName = 'Médicament';
+                                            if (medication.medicationCodeableConcept && medication.medicationCodeableConcept.coding && medication.medicationCodeableConcept.coding.length > 0) {
+                                                medicationName = medication.medicationCodeableConcept.coding[0].display || medication.medicationCodeableConcept.coding[0].code;
+                                            } else if (medication.medicationCodeableConcept && medication.medicationCodeableConcept.text) {
+                                                medicationName = medication.medicationCodeableConcept.text;
+                                            }
+                                            
+                                            let dosageText = '';
+                                            if (medication.dosageInstruction && medication.dosageInstruction.length > 0 && medication.dosageInstruction[0].text) {
+                                                dosageText = medication.dosageInstruction[0].text;
+                                            }
+                                            
+                                            const medicationDate = medication.authoredOn ? 
+                                                new Date(medication.authoredOn).toLocaleDateString('fr-FR') : 'Date inconnue';
+                                            
+                                            medicationItem.innerHTML = `
+                                                <div class="resource-header">
+                                                    <span class="resource-title">${medicationName}</span>
+                                                    <button class="btn-view-json" data-resource='${JSON.stringify(medication).replace(/'/g, "&apos;")}'>
+                                                        <i class="fas fa-code"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="resource-details">
+                                                    <span>Date: ${medicationDate}</span>
+                                                    ${dosageText ? `<span>Posologie: ${dosageText}</span>` : ''}
+                                                </div>
+                                            `;
+                                            
+                                            medicationsList.appendChild(medicationItem);
+                                            
+                                            // Ajouter l'événement pour afficher le JSON
+                                            const jsonBtn = medicationItem.querySelector('.btn-view-json');
+                                            if (jsonBtn) {
+                                                jsonBtn.addEventListener('click', function() {
+                                                    const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                                    document.getElementById('json-content').textContent = JSON.stringify(resourceData, null, 2);
+                                                    // Activer l'onglet JSON
+                                                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                                    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                                    document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                                    document.getElementById('json').style.display = 'block';
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                         
                         if (resourcesByType.Encounter) {
                             encountersData = resourcesByType.Encounter;
-                            updateEncountersTab(encountersData);
+                            // Mise à jour de l'onglet Consultations
+                            const encountersContainer = document.getElementById('encountersContent');
+                            if (encountersContainer) {
+                                const encountersList = encountersContainer.querySelector('.resources-list');
+                                const loadingSection = encountersContainer.querySelector('.loading-resources');
+                                const noResourcesSection = encountersContainer.querySelector('.no-resources');
+                                
+                                if (encountersList && loadingSection && noResourcesSection) {
+                                    loadingSection.style.display = 'none';
+                                    
+                                    if (encountersData.length === 0) {
+                                        noResourcesSection.style.display = 'block';
+                                        encountersList.style.display = 'none';
+                                    } else {
+                                        noResourcesSection.style.display = 'none';
+                                        encountersList.style.display = 'block';
+                                        encountersList.innerHTML = '';
+                                        
+                                        encountersData.forEach(encounter => {
+                                            const encounterItem = document.createElement('div');
+                                            encounterItem.className = 'resource-item';
+                                            
+                                            let encounterName = 'Consultation';
+                                            if (encounter.type && encounter.type.length > 0) {
+                                                if (encounter.type[0].coding && encounter.type[0].coding.length > 0) {
+                                                    encounterName = encounter.type[0].coding[0].display || encounter.type[0].coding[0].code;
+                                                } else if (encounter.type[0].text) {
+                                                    encounterName = encounter.type[0].text;
+                                                }
+                                            }
+                                            
+                                            let statusText = '';
+                                            if (encounter.status) {
+                                                const statusMap = {
+                                                    'planned': 'Planifiée',
+                                                    'arrived': 'Arrivée',
+                                                    'triaged': 'Triée',
+                                                    'in-progress': 'En cours',
+                                                    'onleave': 'En congé',
+                                                    'finished': 'Terminée',
+                                                    'cancelled': 'Annulée'
+                                                };
+                                                statusText = statusMap[encounter.status] || encounter.status;
+                                            }
+                                            
+                                            let dateText = '';
+                                            if (encounter.period) {
+                                                if (encounter.period.start) {
+                                                    dateText = `Début: ${new Date(encounter.period.start).toLocaleDateString('fr-FR')}`;
+                                                    if (encounter.period.end) {
+                                                        dateText += ` / Fin: ${new Date(encounter.period.end).toLocaleDateString('fr-FR')}`;
+                                                    }
+                                                } else if (encounter.period.end) {
+                                                    dateText = `Fin: ${new Date(encounter.period.end).toLocaleDateString('fr-FR')}`;
+                                                }
+                                            }
+                                            
+                                            encounterItem.innerHTML = `
+                                                <div class="resource-header">
+                                                    <span class="resource-title">${encounterName}</span>
+                                                    <button class="btn-view-json" data-resource='${JSON.stringify(encounter).replace(/'/g, "&apos;")}'>
+                                                        <i class="fas fa-code"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="resource-details">
+                                                    ${dateText ? `<span>${dateText}</span>` : ''}
+                                                    ${statusText ? `<span>Statut: ${statusText}</span>` : ''}
+                                                </div>
+                                            `;
+                                            
+                                            encountersList.appendChild(encounterItem);
+                                            
+                                            // Ajouter l'événement pour afficher le JSON
+                                            const jsonBtn = encounterItem.querySelector('.btn-view-json');
+                                            if (jsonBtn) {
+                                                jsonBtn.addEventListener('click', function() {
+                                                    const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                                    document.getElementById('json-content').textContent = JSON.stringify(resourceData, null, 2);
+                                                    // Activer l'onglet JSON
+                                                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                                    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                                    document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                                    document.getElementById('json').style.display = 'block';
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                         
                         if (resourcesByType.Practitioner) {
                             practitionersData = resourcesByType.Practitioner;
-                            updatePractitionersTab(practitionersData);
+                            // Mise à jour pour les praticiens
+                            const practitionersContainer = document.getElementById('practitionersContent');
+                            if (practitionersContainer) {
+                                const practitionersList = practitionersContainer.querySelector('.resources-list');
+                                const loadingSection = practitionersContainer.querySelector('.loading-resources');
+                                const noResourcesSection = practitionersContainer.querySelector('.no-resources');
+                                
+                                if (practitionersList && loadingSection && noResourcesSection) {
+                                    loadingSection.style.display = 'none';
+                                    
+                                    if (practitionersData.length === 0) {
+                                        noResourcesSection.style.display = 'block';
+                                        practitionersList.style.display = 'none';
+                                    } else {
+                                        noResourcesSection.style.display = 'none';
+                                        practitionersList.style.display = 'block';
+                                        practitionersList.innerHTML = '';
+                                        
+                                        practitionersData.forEach(practitioner => {
+                                            const practitionerItem = document.createElement('div');
+                                            practitionerItem.className = 'resource-item';
+                                            
+                                            const name = formatPractitionerName(practitioner.name);
+                                            
+                                            practitionerItem.innerHTML = `
+                                                <div class="resource-header">
+                                                    <span class="resource-title">${name}</span>
+                                                    <button class="btn-view-json" data-resource='${JSON.stringify(practitioner).replace(/'/g, "&apos;")}'>
+                                                        <i class="fas fa-code"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="resource-details">
+                                                    <span>ID: ${practitioner.id}</span>
+                                                </div>
+                                            `;
+                                            
+                                            practitionersList.appendChild(practitionerItem);
+                                            
+                                            // Ajouter l'événement pour afficher le JSON
+                                            const jsonBtn = practitionerItem.querySelector('.btn-view-json');
+                                            if (jsonBtn) {
+                                                jsonBtn.addEventListener('click', function() {
+                                                    const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                                    document.getElementById('json-content').textContent = JSON.stringify(resourceData, null, 2);
+                                                    // Activer l'onglet JSON
+                                                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                                    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                                    document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                                    document.getElementById('json').style.display = 'block';
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                         
                         if (resourcesByType.Organization) {
                             organizationsData = resourcesByType.Organization;
-                            updateOrganizationsTab(organizationsData);
+                            // Mise à jour pour les organisations
+                            const organizationsContainer = document.getElementById('organizationsContent');
+                            if (organizationsContainer) {
+                                const organizationsList = organizationsContainer.querySelector('.resources-list');
+                                const loadingSection = organizationsContainer.querySelector('.loading-resources');
+                                const noResourcesSection = organizationsContainer.querySelector('.no-resources');
+                                
+                                if (organizationsList && loadingSection && noResourcesSection) {
+                                    loadingSection.style.display = 'none';
+                                    
+                                    if (organizationsData.length === 0) {
+                                        noResourcesSection.style.display = 'block';
+                                        organizationsList.style.display = 'none';
+                                    } else {
+                                        noResourcesSection.style.display = 'none';
+                                        organizationsList.style.display = 'block';
+                                        organizationsList.innerHTML = '';
+                                        
+                                        organizationsData.forEach(organization => {
+                                            const organizationItem = document.createElement('div');
+                                            organizationItem.className = 'resource-item';
+                                            
+                                            organizationItem.innerHTML = `
+                                                <div class="resource-header">
+                                                    <span class="resource-title">${organization.name || 'Organisation sans nom'}</span>
+                                                    <button class="btn-view-json" data-resource='${JSON.stringify(organization).replace(/'/g, "&apos;")}'>
+                                                        <i class="fas fa-code"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="resource-details">
+                                                    <span>ID: ${organization.id}</span>
+                                                </div>
+                                            `;
+                                            
+                                            organizationsList.appendChild(organizationItem);
+                                            
+                                            // Ajouter l'événement pour afficher le JSON
+                                            const jsonBtn = organizationItem.querySelector('.btn-view-json');
+                                            if (jsonBtn) {
+                                                jsonBtn.addEventListener('click', function() {
+                                                    const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                                    document.getElementById('json-content').textContent = JSON.stringify(resourceData, null, 2);
+                                                    // Activer l'onglet JSON
+                                                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                                    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                                    document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                                    document.getElementById('json').style.display = 'block';
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                         
                         if (resourcesByType.RelatedPerson) {
                             relatedPersonsData = resourcesByType.RelatedPerson;
-                            updateRelatedPersonsTab(relatedPersonsData);
+                            // Mise à jour pour les personnes liées
+                            const relatedPersonsContainer = document.getElementById('relatedPersonsContent');
+                            if (relatedPersonsContainer) {
+                                const relatedPersonsList = relatedPersonsContainer.querySelector('.resources-list');
+                                const loadingSection = relatedPersonsContainer.querySelector('.loading-resources');
+                                const noResourcesSection = relatedPersonsContainer.querySelector('.no-resources');
+                                
+                                if (relatedPersonsList && loadingSection && noResourcesSection) {
+                                    loadingSection.style.display = 'none';
+                                    
+                                    if (relatedPersonsData.length === 0) {
+                                        noResourcesSection.style.display = 'block';
+                                        relatedPersonsList.style.display = 'none';
+                                    } else {
+                                        noResourcesSection.style.display = 'none';
+                                        relatedPersonsList.style.display = 'block';
+                                        relatedPersonsList.innerHTML = '';
+                                        
+                                        relatedPersonsData.forEach(relatedPerson => {
+                                            const relatedPersonItem = document.createElement('div');
+                                            relatedPersonItem.className = 'resource-item';
+                                            
+                                            let name = 'Personne liée';
+                                            if (relatedPerson.name && relatedPerson.name.length > 0) {
+                                                name = formatPatientName(relatedPerson.name);
+                                            }
+                                            
+                                            let relationshipText = '';
+                                            if (relatedPerson.relationship && relatedPerson.relationship.length > 0) {
+                                                if (relatedPerson.relationship[0].coding && relatedPerson.relationship[0].coding.length > 0) {
+                                                    const relationshipCode = relatedPerson.relationship[0].coding[0].code;
+                                                    const relationshipMap = {
+                                                        'SPO': 'Conjoint(e)',
+                                                        'CHILD': 'Enfant',
+                                                        'FAMMEMB': 'Famille',
+                                                        'WIFE': 'Épouse',
+                                                        'HUSB': 'Époux',
+                                                        'AUNT': 'Tante',
+                                                        'BRO': 'Frère',
+                                                        'DAU': 'Fille',
+                                                        'DAUFOST': 'Fille d\'accueil',
+                                                        'SIS': 'Sœur'
+                                                    };
+                                                    relationshipText = relationshipMap[relationshipCode] || relatedPerson.relationship[0].coding[0].display || relationshipCode;
+                                                } else if (relatedPerson.relationship[0].text) {
+                                                    relationshipText = relatedPerson.relationship[0].text;
+                                                }
+                                            }
+                                            
+                                            relatedPersonItem.innerHTML = `
+                                                <div class="resource-header">
+                                                    <span class="resource-title">${name}</span>
+                                                    <button class="btn-view-json" data-resource='${JSON.stringify(relatedPerson).replace(/'/g, "&apos;")}'>
+                                                        <i class="fas fa-code"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="resource-details">
+                                                    <span>ID: ${relatedPerson.id}</span>
+                                                    ${relationshipText ? `<span>Relation: ${relationshipText}</span>` : ''}
+                                                </div>
+                                            `;
+                                            
+                                            relatedPersonsList.appendChild(relatedPersonItem);
+                                            
+                                            // Ajouter l'événement pour afficher le JSON
+                                            const jsonBtn = relatedPersonItem.querySelector('.btn-view-json');
+                                            if (jsonBtn) {
+                                                jsonBtn.addEventListener('click', function() {
+                                                    const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                                    document.getElementById('json-content').textContent = JSON.stringify(resourceData, null, 2);
+                                                    // Activer l'onglet JSON
+                                                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                                    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                                    document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                                    document.getElementById('json').style.display = 'block';
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                         
                         if (resourcesByType.Coverage) {
                             coverageData = resourcesByType.Coverage;
-                            updateCoverageTab(coverageData);
+                            // Mise à jour pour les couvertures
+                            const coverageContainer = document.getElementById('coverageContent');
+                            if (coverageContainer) {
+                                const coverageList = coverageContainer.querySelector('.resources-list');
+                                const loadingSection = coverageContainer.querySelector('.loading-resources');
+                                const noResourcesSection = coverageContainer.querySelector('.no-resources');
+                                
+                                if (coverageList && loadingSection && noResourcesSection) {
+                                    loadingSection.style.display = 'none';
+                                    
+                                    if (coverageData.length === 0) {
+                                        noResourcesSection.style.display = 'block';
+                                        coverageList.style.display = 'none';
+                                    } else {
+                                        noResourcesSection.style.display = 'none';
+                                        coverageList.style.display = 'block';
+                                        coverageList.innerHTML = '';
+                                        
+                                        coverageData.forEach(coverage => {
+                                            const coverageItem = document.createElement('div');
+                                            coverageItem.className = 'resource-item';
+                                            
+                                            let typeText = 'Couverture';
+                                            if (coverage.type && coverage.type.coding && coverage.type.coding.length > 0) {
+                                                const coverageTypeCode = coverage.type.coding[0].code;
+                                                const coverageTypeMap = {
+                                                    'AMO': 'Assurance Maladie Obligatoire',
+                                                    'AMC': 'Assurance Maladie Complémentaire'
+                                                };
+                                                typeText = coverageTypeMap[coverageTypeCode] || coverage.type.coding[0].display || coverageTypeCode;
+                                            }
+                                            
+                                            let periodText = '';
+                                            if (coverage.period) {
+                                                if (coverage.period.start) {
+                                                    periodText = `Début: ${new Date(coverage.period.start).toLocaleDateString('fr-FR')}`;
+                                                    if (coverage.period.end) {
+                                                        periodText += ` / Fin: ${new Date(coverage.period.end).toLocaleDateString('fr-FR')}`;
+                                                    }
+                                                } else if (coverage.period.end) {
+                                                    periodText = `Fin: ${new Date(coverage.period.end).toLocaleDateString('fr-FR')}`;
+                                                }
+                                            }
+                                            
+                                            coverageItem.innerHTML = `
+                                                <div class="resource-header">
+                                                    <span class="resource-title">${typeText}</span>
+                                                    <button class="btn-view-json" data-resource='${JSON.stringify(coverage).replace(/'/g, "&apos;")}'>
+                                                        <i class="fas fa-code"></i>
+                                                    </button>
+                                                </div>
+                                                <div class="resource-details">
+                                                    <span>ID: ${coverage.id}</span>
+                                                    ${periodText ? `<span>${periodText}</span>` : ''}
+                                                </div>
+                                            `;
+                                            
+                                            coverageList.appendChild(coverageItem);
+                                            
+                                            // Ajouter l'événement pour afficher le JSON
+                                            const jsonBtn = coverageItem.querySelector('.btn-view-json');
+                                            if (jsonBtn) {
+                                                jsonBtn.addEventListener('click', function() {
+                                                    const resourceData = JSON.parse(this.getAttribute('data-resource'));
+                                                    document.getElementById('json-content').textContent = JSON.stringify(resourceData, null, 2);
+                                                    // Activer l'onglet JSON
+                                                    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                                                    document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                                                    document.querySelector('.tab[data-tab="json"]').classList.add('active');
+                                                    document.getElementById('json').style.display = 'block';
+                                                });
+                                            }
+                                        });
+                                    }
+                                }
+                            }
                         }
                         
-                        // Mettre à jour l'onglet bundle avec les données complètes
+                        // Générer la chronologie à partir des données du bundle
+                        generateTimelineFromBundle(bundle);
+                        
+                        // Stocker le bundle pour référence, mais ne pas l'afficher dans l'onglet Bundle
+                        // pour éviter la duplication avec les onglets spécifiques
                         bundleData = bundle;
-                        updateBundleView(bundle);
                         
                         // Générer la chronologie à partir des données du bundle
                         generateTimelineFromBundle(bundle);
