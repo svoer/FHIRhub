@@ -1544,6 +1544,248 @@
                     });
             }
             
+            // Initialisation du gestionnaire d'onglets
+            function initTabs() {
+                const tabButtons = document.querySelectorAll('.tab-button');
+                const tabContents = document.querySelectorAll('.tab-content');
+                
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', function() {
+                        const tabName = this.getAttribute('data-tab');
+                        
+                        // Retirer la classe active de tous les boutons et contenus
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        tabContents.forEach(content => content.classList.remove('active'));
+                        
+                        // Ajouter la classe active au bouton et contenu correspondants
+                        this.classList.add('active');
+                        document.getElementById(tabName + '-tab').classList.add('active');
+                        
+                        // Mise à jour de la barre d'état
+                        if (tabName === 'explorer') {
+                            updateStatusBar('Prêt à explorer les données FHIR', 'info');
+                        } else if (tabName === 'bundle-push') {
+                            updateStatusBar('Prêt à pousser un bundle FHIR', 'info');
+                        } else if (tabName === 'swagger') {
+                            updateStatusBar('Documentation Swagger disponible', 'info');
+                        }
+                    });
+                });
+                
+                // Activer le premier onglet par défaut
+                if (tabButtons.length > 0) {
+                    tabButtons[0].classList.add('active');
+                }
+                if (tabContents.length > 0) {
+                    tabContents[0].classList.add('active');
+                }
+            }
+            
+            // Initialisation de l'onglet Push Bundle
+            function initBundlePushTab() {
+                // Récupération des éléments DOM pour le push de bundle
+                const pushServerSelect = document.getElementById('pushServerSelect');
+                const bundleInput = document.getElementById('bundleInput');
+                const returnOriginalCheck = document.getElementById('returnOriginalCheck');
+                const validateBundleBtn = document.getElementById('validateBundleBtn');
+                const pushBundleBtn = document.getElementById('pushBundleBtn');
+                const clearBundleBtn = document.getElementById('clearBundleBtn');
+                const bundleResult = document.getElementById('bundleResult');
+                
+                if (!pushServerSelect || !bundleInput || !validateBundleBtn || !pushBundleBtn || !clearBundleBtn || !bundleResult) {
+                    console.error('Certains éléments DOM requis pour l\'onglet Push Bundle sont manquants');
+                    return;
+                }
+                
+                // Fonction pour formater et afficher le JSON
+                function formatAndDisplayJson(json, element) {
+                    try {
+                        // Si c'est déjà un objet JSON, le convertir en chaîne
+                        const jsonString = typeof json === 'string' ? json : JSON.stringify(json, null, 2);
+                        
+                        // Formater avec coloration syntaxique
+                        const formatted = jsonString
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                                let cls = 'number';
+                                if (/^"/.test(match)) {
+                                    if (/:$/.test(match)) {
+                                        cls = 'key';
+                                    } else {
+                                        cls = 'string';
+                                    }
+                                } else if (/true|false/.test(match)) {
+                                    cls = 'boolean';
+                                } else if (/null/.test(match)) {
+                                    cls = 'null';
+                                }
+                                return '<span class="' + cls + '">' + match + '</span>';
+                            })
+                            .replace(/\n/g, '<br>')
+                            .replace(/\s{2}/g, '&nbsp;&nbsp;');
+                        
+                        element.innerHTML = `<pre style="margin: 0;">${formatted}</pre>`;
+                    } catch (error) {
+                        element.innerHTML = `<p style="color: #f56565;">Erreur de formatage JSON: ${error.message}</p>`;
+                    }
+                }
+                
+                // Fonction de validation du bundle FHIR
+                validateBundleBtn.addEventListener('click', function() {
+                    try {
+                        // Vérifier si le bundle est valide
+                        let bundleData = JSON.parse(bundleInput.value);
+                        
+                        // Vérifications de base
+                        if (!bundleData.resourceType) {
+                            throw new Error("Le champ 'resourceType' est obligatoire");
+                        }
+                        
+                        if (bundleData.resourceType !== 'Bundle') {
+                            throw new Error("La ressource doit être de type 'Bundle'");
+                        }
+                        
+                        if (!bundleData.type) {
+                            throw new Error("Le champ 'type' est obligatoire dans un Bundle");
+                        }
+                        
+                        if (!bundleData.entry || !Array.isArray(bundleData.entry)) {
+                            throw new Error("Le bundle doit contenir un tableau 'entry'");
+                        }
+                        
+                        // Format correct pour JSON.stringify
+                        const formattedJson = JSON.stringify(bundleData, null, 2);
+                        bundleInput.value = formattedJson;
+                        
+                        bundleResult.innerHTML = `
+                            <div style="padding: 10px; background-color: #d1fae5; border-radius: 4px; margin-bottom: 15px;">
+                                <i class="fas fa-check-circle" style="color: #047857;"></i> 
+                                <span style="color: #047857; font-weight: 500;">Le bundle FHIR est valide</span>
+                            </div>
+                            <div>
+                                <p><strong>Détails du bundle :</strong></p>
+                                <ul>
+                                    <li>Type: ${bundleData.type}</li>
+                                    <li>Nombre d'entrées: ${bundleData.entry.length}</li>
+                                    <li>Types de ressources: ${Array.from(new Set(bundleData.entry.map(e => e.resource?.resourceType).filter(Boolean))).join(', ')}</li>
+                                </ul>
+                            </div>
+                        `;
+                        
+                        updateStatusBar("Bundle validé avec succès", "success");
+                        
+                    } catch (error) {
+                        bundleResult.innerHTML = `
+                            <div style="padding: 10px; background-color: #fee2e2; border-radius: 4px; margin-bottom: 15px;">
+                                <i class="fas fa-exclamation-circle" style="color: #b91c1c;"></i> 
+                                <span style="color: #b91c1c; font-weight: 500;">Erreur de validation</span>
+                            </div>
+                            <p>${error.message}</p>
+                        `;
+                        
+                        updateStatusBar("Erreur de validation: " + error.message, "error");
+                    }
+                });
+                
+                // Fonction pour pousser le bundle vers le serveur FHIR
+                pushBundleBtn.addEventListener('click', function() {
+                    try {
+                        // Vérifier si le bundle est valide
+                        const bundleData = JSON.parse(bundleInput.value);
+                        
+                        // Vérifications de base avant d'envoyer
+                        if (bundleData.resourceType !== 'Bundle') {
+                            throw new Error("La ressource doit être de type 'Bundle'");
+                        }
+                        
+                        // Afficher l'indicateur de chargement
+                        bundleResult.innerHTML = `
+                            <div style="display: flex; justify-content: center; align-items: center; padding: 30px;">
+                                <div style="width: 40px; height: 40px; border: 3px solid #f9f9f9; border-top: 3px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                                <span style="margin-left: 15px; color: #718096;">Envoi en cours...</span>
+                            </div>
+                            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+                        `;
+                        
+                        // Construire l'URL de l'API selon le serveur sélectionné
+                        const serverId = pushServerSelect.value;
+                        const returnOriginal = returnOriginalCheck.checked;
+                        
+                        // Appel à l'API pour pousser le bundle
+                        fetch('/api/fhir-push-bundle', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                bundle: bundleData,
+                                serverId: serverId,
+                                returnOriginal: returnOriginal
+                            })
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                bundleResult.innerHTML = `
+                                    <div style="padding: 10px; background-color: #d1fae5; border-radius: 4px; margin-bottom: 15px;">
+                                        <i class="fas fa-check-circle" style="color: #047857;"></i> 
+                                        <span style="color: #047857; font-weight: 500;">Bundle envoyé avec succès</span>
+                                    </div>
+                                `;
+                                
+                                // Formater et afficher la réponse
+                                const responseContainer = document.createElement('div');
+                                responseContainer.style.marginTop = '15px';
+                                bundleResult.appendChild(responseContainer);
+                                
+                                formatAndDisplayJson(data.data, responseContainer);
+                                updateStatusBar("Bundle envoyé avec succès vers le serveur " + serverId, "success");
+                            } else {
+                                throw new Error(data.message || "Erreur lors de l'envoi du bundle");
+                            }
+                        })
+                        .catch(error => {
+                            bundleResult.innerHTML = `
+                                <div style="padding: 10px; background-color: #fee2e2; border-radius: 4px; margin-bottom: 15px;">
+                                    <i class="fas fa-exclamation-circle" style="color: #b91c1c;"></i> 
+                                    <span style="color: #b91c1c; font-weight: 500;">Erreur lors de l'envoi</span>
+                                </div>
+                                <p>${error.message}</p>
+                            `;
+                            updateStatusBar("Erreur d'envoi: " + error.message, "error");
+                        });
+                        
+                    } catch (error) {
+                        bundleResult.innerHTML = `
+                            <div style="padding: 10px; background-color: #fee2e2; border-radius: 4px; margin-bottom: 15px;">
+                                <i class="fas fa-exclamation-circle" style="color: #b91c1c;"></i> 
+                                <span style="color: #b91c1c; font-weight: 500;">Erreur</span>
+                            </div>
+                            <p>${error.message}</p>
+                        `;
+                        updateStatusBar("Erreur: " + error.message, "error");
+                    }
+                });
+                
+                // Effacer le formulaire
+                clearBundleBtn.addEventListener('click', function() {
+                    bundleInput.value = '';
+                    bundleResult.innerHTML = `
+                        <p style="color: #718096; text-align: center; padding: 20px;">
+                            Le résultat de l'opération apparaîtra ici
+                        </p>
+                    `;
+                    updateStatusBar("Formulaire effacé", "info");
+                });
+            }
+            
             // Initialisation
             function init() {
                 // Ajouter une première ligne de paramètre
