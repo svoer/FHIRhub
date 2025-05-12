@@ -347,10 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                         });
                         
-                        // Stocker le bundle pour l'onglet détaillé
-                        bundleData = bundle;
-                        
-                        // Répartir les ressources dans les onglets appropriés
+                        // Mettre à jour tous les onglets en fonction des données disponibles
                         if (resourcesByType.Condition) {
                             conditionsData = resourcesByType.Condition;
                             updateConditionsTab(conditionsData);
@@ -371,54 +368,29 @@ document.addEventListener('DOMContentLoaded', function() {
                             updateEncountersTab(encountersData);
                         }
                         
-                        // Répartir correctement les personnes liées
-                        
-                        // Praticiens (médecins)
                         if (resourcesByType.Practitioner) {
                             practitionersData = resourcesByType.Practitioner;
                             updatePractitionersTab(practitionersData);
                         }
                         
-                        // Organisations (cliniques, hôpitaux)
                         if (resourcesByType.Organization) {
                             organizationsData = resourcesByType.Organization;
                             updateOrganizationsTab(organizationsData);
                         }
                         
-                        // Personnes liées (famille, contacts d'urgence)
                         if (resourcesByType.RelatedPerson) {
                             relatedPersonsData = resourcesByType.RelatedPerson;
                             updateRelatedPersonsTab(relatedPersonsData);
-                        } else if (patientData.contact && patientData.contact.length > 0) {
-                            // Si pas de RelatedPerson mais des contacts dans Patient
-                            const relatedFromContacts = patientData.contact.map(contact => {
-                                // Créer une ressource RelatedPerson à partir des contacts
-                                return {
-                                    resourceType: "RelatedPerson",
-                                    id: `generated-${Date.now()}-${Math.floor(Math.random()*1000)}`,
-                                    patient: {
-                                        reference: `Patient/${patientId}`
-                                    },
-                                    relationship: contact.relationship,
-                                    name: contact.name,
-                                    telecom: contact.telecom,
-                                    address: contact.address,
-                                    gender: contact.gender,
-                                    _generatedFromContact: true
-                                };
-                            });
-                            
-                            if (relatedFromContacts.length > 0) {
-                                relatedPersonsData = relatedFromContacts;
-                                updateRelatedPersonsTab(relatedPersonsData);
-                            }
                         }
                         
-                        // Couverture d'assurance
                         if (resourcesByType.Coverage) {
                             coverageData = resourcesByType.Coverage;
                             updateCoverageTab(coverageData);
                         }
+                        
+                        // Mettre à jour l'onglet bundle avec les données complètes
+                        bundleData = bundle;
+                        updateBundleView(bundle);
                         
                         // Générer la chronologie à partir des données du bundle
                         generateTimelineFromBundle(bundle);
@@ -445,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadPatientRelatedPersons(patientId, server);
                 loadPatientCoverage(patientId, server);
                 generateTimeline(patientId, server);
-                // Ne pas appeler loadPatientBundle en double car déjà chargé via $everything
+                loadPatientBundle(patientId, server);
             }
             
             // Fonction pour générer une chronologie à partir d'un bundle
