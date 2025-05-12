@@ -32,6 +32,9 @@ Thumbs.db
 *.swp
 *.swo
 *~
+attached_assets/
+storage/data/ai_responses/
+_clean-*
 
 # Fichiers volumineux
 hapi-fhir/hapi-fhir-server-starter-5.4.0.jar
@@ -50,3 +53,7 @@ hapi-fhir/hapi-fhir-server.log
 # Backup Git avec fichiers volumineux
 .git_backup*
 */.git_backup*
+
+# Scripts de nettoyage temporaires
+clean-*-backup.sh
+clean-repo-manual.sh
