@@ -308,32 +308,80 @@ document.addEventListener('DOMContentLoaded', function() {
         const patientId = patientSelect.value;
         const server = serverSelect.value;
         
+        console.log(`Chargement du patient ${patientId} depuis le serveur ${server}`);
+        
         try {
             const selectedOption = patientSelect.options[patientSelect.selectedIndex];
             patientData = JSON.parse(selectedOption.dataset.patient);
             
             // Afficher les détails
             document.getElementById('patientName').textContent = formatPatientName(patientData.name);
-            document.getElementById('patientDetails').textContent = 
-                `ID: ${patientData.id} | Genre: ${patientData.gender || 'Non spécifié'} | Naissance: ${patientData.birthDate || 'Non spécifiée'}`;
+            
+            // Format plus détaillé pour l'en-tête du patient
+            let patientDetails = '';
+            
+            if (patientData.gender) {
+                patientDetails += `<span style="margin-right: 15px;"><i class="fas ${patientData.gender === 'male' ? 'fa-male' : patientData.gender === 'female' ? 'fa-female' : 'fa-user'}" style="margin-right: 5px;"></i> ${patientData.gender === 'male' ? 'Homme' : patientData.gender === 'female' ? 'Femme' : patientData.gender}</span>`;
+            }
+            
+            if (patientData.birthDate) {
+                const birthDate = new Date(patientData.birthDate);
+                const today = new Date();
+                const age = today.getFullYear() - birthDate.getFullYear();
+                const formattedDate = birthDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                patientDetails += `<span style="margin-right: 15px;"><i class="fas fa-birthday-cake" style="margin-right: 5px;"></i> ${formattedDate} (${age} ans)</span>`;
+            }
+            
+            if (patientData.telecom && patientData.telecom.length > 0) {
+                const phone = patientData.telecom.find(t => t.system === 'phone');
+                if (phone) {
+                    patientDetails += `<span style="margin-right: 15px;"><i class="fas fa-phone" style="margin-right: 5px;"></i> ${phone.value}</span>`;
+                }
+                
+                const email = patientData.telecom.find(t => t.system === 'email');
+                if (email) {
+                    patientDetails += `<span style="margin-right: 15px;"><i class="fas fa-envelope" style="margin-right: 5px;"></i> ${email.value}</span>`;
+                }
+            }
+            
+            document.getElementById('patientDetails').innerHTML = patientDetails || `ID: ${patientData.id}`;
             
             // Afficher le conteneur de patient
             document.getElementById('patientContainer').style.display = 'block';
             
-            // Charger toutes les ressources associées au patient
-            loadPatientConditions(patientId, server);
-            loadPatientObservations(patientId, server);
-            loadPatientMedications(patientId, server);
-            loadPatientEncounters(patientId, server);
-            loadPatientPractitioners(patientId, server);
-            loadPatientOrganizations(patientId, server);
-            loadPatientRelatedPersons(patientId, server);
-            loadPatientCoverage(patientId, server);
-            generateTimeline(patientId, server);
-            loadPatientBundle(patientId, server);
+            // Charger toutes les ressources associées au patient en parallèle
+            // Utiliser Promise.allSettled pour continuer même si certaines requêtes échouent
+            const loadingPromises = [
+                { name: 'Conditions', promise: loadPatientConditions(patientId, server) },
+                { name: 'Observations', promise: loadPatientObservations(patientId, server) },
+                { name: 'Médicaments', promise: loadPatientMedications(patientId, server) },
+                { name: 'Consultations', promise: loadPatientEncounters(patientId, server) },
+                { name: 'Praticiens', promise: loadPatientPractitioners(patientId, server) },
+                { name: 'Organisations', promise: loadPatientOrganizations(patientId, server) },
+                { name: 'Personnes liées', promise: loadPatientRelatedPersons(patientId, server) },
+                { name: 'Couvertures', promise: loadPatientCoverage(patientId, server) },
+                { name: 'Chronologie', promise: generateTimeline(patientId, server) },
+                { name: 'Bundle', promise: loadPatientBundle(patientId, server) }
+            ];
             
-            // Mettre à jour l'onglet JSON
-            updateJsonView();
+            // Afficher un résumé global des résultats du chargement
+            Promise.allSettled(loadingPromises.map(item => item.promise))
+                .then(results => {
+                    const summary = loadingPromises.map((item, index) => {
+                        const result = results[index];
+                        return {
+                            name: item.name,
+                            status: result.status,
+                            error: result.status === 'rejected' ? result.reason?.message : null
+                        };
+                    });
+                    
+                    console.log('Résultats du chargement des ressources:', summary);
+                })
+                .finally(() => {
+                    // Mettre à jour l'onglet JSON
+                    updateJsonView();
+                });
             
             // Résumé amélioré avec checkboxes et résumé clinique non-IA
             document.getElementById('summaryContent').innerHTML = `
@@ -1052,9 +1100,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const bundleInfo = document.getElementById('bundleInfo');
         const bundleResourcesList = document.getElementById('bundleResourcesList');
         
-        // URL arbitraire pour simuler la récupération d'un bundle de transaction/création
-        // Dans un cas réel, cette URL proviendrait d'une API ou d'un stockage précédent
-        fetch(`${serverUrl}/Patient/${patientId}?_include=*`)
+        // Afficher un indicateur de chargement
+        bundleInfo.innerHTML = `
+            <div style="text-align: center; padding: 20px;">
+                <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <p style="margin-top: 15px; color: #666;">Chargement du bundle patient...</p>
+            </div>
+        `;
+        
+        // Construction d'une URL qui récupère le patient et toutes ses références
+        // Cette URL est compatible avec la plupart des serveurs FHIR
+        const bundleUrl = `${serverUrl}/Patient/${patientId}?_include=Patient:organization&_include=Patient:general-practitioner&_revinclude=Condition:subject&_revinclude=Observation:subject&_revinclude=MedicationRequest:subject&_revinclude=Encounter:subject&_revinclude=Coverage:beneficiary&_revinclude=RelatedPerson:patient&_format=json`;
+        
+        console.log(`Chargement du bundle depuis: ${bundleUrl}`);
+        
+        fetch(bundleUrl)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération du bundle: ${response.status}`);

@@ -18,8 +18,20 @@ function loadPatientPractitioners(patientId, serverUrl) {
     noResourcesSection.style.display = 'none';
     resourcesList.style.display = 'none';
     
-    // Exécuter une requête FHIR pour récupérer les praticiens liés aux consultations du patient
-    fetch(`${serverUrl}/Encounter?patient=${patientId}&_include=Encounter:practitioner&_count=100`)
+    // Plusieurs chemins possibles pour récupérer les praticiens liés au patient
+    const urls = [
+        // Praticiens référencés directement dans la ressource Patient
+        `${serverUrl}/Patient/${patientId}?_include=Patient:general-practitioner`,
+        // Praticiens via les consultations
+        `${serverUrl}/Encounter?patient=${patientId}&_include=Encounter:participant:Practitioner`,
+        // Praticiens via les prescriptions
+        `${serverUrl}/MedicationRequest?patient=${patientId}&_include=MedicationRequest:requester:Practitioner`
+    ];
+    
+    console.log(`Chargement des praticiens depuis: ${urls[0]}`);
+    
+    // Exécuter une requête FHIR pour récupérer les praticiens liés au patient
+    fetch(urls[0])
         .then(response => {
             if (!response.ok) throw new Error('Erreur lors de la récupération des praticiens');
             return response.json();
@@ -207,11 +219,20 @@ function loadPatientOrganizations(patientId, serverUrl) {
     noResourcesSection.style.display = 'none';
     resourcesList.style.display = 'none';
     
-    // Exécuter les requêtes FHIR pour récupérer les organisations associées
-    // 1. Via les consultations
-    // 2. Via le praticien
-    // 3. Via la couverture santé
-    fetch(`${serverUrl}/Encounter?patient=${patientId}&_include=Encounter:service-provider&_count=100`)
+    // Plusieurs chemins possibles pour récupérer les organisations liées au patient
+    const urls = [
+        // Organisations référencées directement dans la ressource Patient
+        `${serverUrl}/Patient/${patientId}?_include=Patient:organization`,
+        // Organisations via les consultations
+        `${serverUrl}/Encounter?patient=${patientId}&_include=Encounter:service-provider`,
+        // Organisations via les couvertures d'assurance
+        `${serverUrl}/Coverage?beneficiary=Patient/${patientId}&_include=Coverage:payor:Organization`
+    ];
+    
+    console.log(`Chargement des organisations depuis: ${urls[0]}`);
+    
+    // Exécuter la requête FHIR pour récupérer les organisations liées au patient
+    fetch(urls[0])
         .then(response => {
             if (!response.ok) throw new Error('Erreur lors de la récupération des organisations');
             return response.json();
@@ -384,8 +405,12 @@ function loadPatientRelatedPersons(patientId, serverUrl) {
     noResourcesSection.style.display = 'none';
     resourcesList.style.display = 'none';
     
+    // URL pour récupérer les personnes liées au patient
+    const url = `${serverUrl}/RelatedPerson?patient=Patient/${patientId}`;
+    console.log(`Chargement des personnes liées depuis: ${url}`);
+    
     // Exécuter la requête FHIR pour récupérer les personnes liées au patient
-    fetch(`${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`)
+    fetch(url)
         .then(response => {
             if (!response.ok) throw new Error('Erreur lors de la récupération des personnes liées');
             return response.json();
@@ -529,8 +554,12 @@ function loadPatientCoverage(patientId, serverUrl) {
     noResourcesSection.style.display = 'none';
     resourcesList.style.display = 'none';
     
+    // URL pour récupérer les couvertures d'assurance du patient
+    const url = `${serverUrl}/Coverage?beneficiary=Patient/${patientId}&_include=Coverage:payor`;
+    console.log(`Chargement des couvertures depuis: ${url}`);
+    
     // Exécuter la requête FHIR pour récupérer les ressources Coverage
-    fetch(`${serverUrl}/Coverage?beneficiary=${patientId}&_include=Coverage:payor&_count=100`)
+    fetch(url)
         .then(response => {
             if (!response.ok) throw new Error('Erreur lors de la récupération des couvertures');
             return response.json();
