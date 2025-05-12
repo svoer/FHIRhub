@@ -15,17 +15,46 @@ echo -e "${BLUE}================================================================
 echo -e "${BLUE}     Démarrage de l'architecture Docker FHIRHub (services séparés)   ${NC}"
 echo -e "${BLUE}=====================================================================${NC}"
 
+# Vérifier les droits d'exécution sur les scripts
+if [ ! -x "$(command -v docker)" ]; then
+  echo -e "${RED}Erreur: Docker n'est pas installé ou n'est pas accessible.${NC}"
+  echo -e "${YELLOW}Installez Docker pour continuer: https://docs.docker.com/get-docker/${NC}"
+  exit 1
+fi
+
+# Détecter la version de Docker Compose
+DOCKER_COMPOSE_CMD="docker-compose"
+if docker compose version &> /dev/null; then
+  DOCKER_COMPOSE_CMD="docker compose"
+  echo -e "${YELLOW}Détection: Docker Compose V2 détecté, utilisation de 'docker compose'${NC}"
+else
+  echo -e "${YELLOW}Détection: Docker Compose V1 détecté, utilisation de 'docker-compose'${NC}"
+fi
+
+# Donner les droits d'exécution au script d'initialisation
+if [ ! -x "./docker-init-data.sh" ]; then
+  echo -e "${YELLOW}Mise à jour des permissions du script d'initialisation...${NC}"
+  chmod +x ./docker-init-data.sh
+fi
+
 # Initialiser la structure de données
 echo -e "${YELLOW}Étape 1/3: Initialisation de la structure de données...${NC}"
-./docker-init-data.sh
+bash ./docker-init-data.sh
 
 # Arrêter les conteneurs existants
 echo -e "${YELLOW}Étape 2/3: Arrêt des conteneurs existants...${NC}"
-docker-compose down
+$DOCKER_COMPOSE_CMD down 2>/dev/null || echo -e "${YELLOW}Aucun conteneur à arrêter.${NC}"
 
 # Démarrer les services
 echo -e "${YELLOW}Étape 3/3: Démarrage des services...${NC}"
-docker-compose up -d
+$DOCKER_COMPOSE_CMD up -d
+
+if [ $? -ne 0 ]; then
+  echo -e "${RED}Erreur lors du démarrage des services Docker.${NC}"
+  echo -e "${YELLOW}Vérifiez que Docker est correctement installé et que vous avez les permissions suffisantes.${NC}"
+  echo -e "${YELLOW}Vous pouvez lancer l'application sans Docker avec './start.sh'${NC}"
+  exit 1
+fi
 
 echo -e "${GREEN}✓ Démarrage terminé !${NC}"
 echo -e "${CYAN}=====================================================================${NC}"

@@ -1,25 +1,7 @@
 version: '3.8'
 
-# Structure centralisée des données dans un dossier data
-volumes:
-  # Volumes pour FHIRHub avec noms explicites
-  data_fhirhub_db:
-    driver: local
-    name: data_fhirhub_db 
-  data_fhirhub_storage:
-    driver: local
-    name: data_fhirhub_storage
-  data_fhirhub_logs:
-    driver: local
-    name: data_fhirhub_logs
-  data_fhirhub_terminology:
-    driver: local
-    name: data_fhirhub_terminology
-  
-  # Volume pour HAPI FHIR
-  data_hapifhir:
-    driver: local
-    name: data_hapifhir
+# Les volumes sont désormais liés directement aux chemins sur le système hôte
+# pour permettre un accès plus facile et éviter les problèmes de permissions
 
 services:
   # Application principale FHIRHub

@@ -16,35 +16,63 @@ echo -e "${BLUE}================================================================
 echo -e "${BLUE}     Initialisation de l'architecture de données pour Docker         ${NC}"
 echo -e "${BLUE}=====================================================================${NC}"
 
+# Vérifier si l'utilisateur a les droits sudo
+HAS_SUDO=0
+if [ $(id -u) -eq 0 ]; then
+  HAS_SUDO=1
+elif command -v sudo >/dev/null 2>&1; then
+  sudo -n true >/dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    HAS_SUDO=1
+  fi
+fi
+
+# Fonction pour créer un dossier avec les bonnes permissions
+create_dir() {
+  local DIR=$1
+  
+  if [ ! -d "$DIR" ]; then
+    echo -e "   Création: $DIR"
+    
+    if [ $HAS_SUDO -eq 1 ]; then
+      sudo mkdir -p "$DIR"
+      sudo chmod 777 "$DIR"
+    else
+      mkdir -p "$DIR" || {
+        echo -e "${YELLOW}   Note: Création sans droits d'écriture, les conteneurs Docker pourraient avoir des problèmes de permissions${NC}"
+        mkdir -p "$DIR" 2>/dev/null || true
+      }
+    fi
+  else
+    echo -e "   Existant: $DIR"
+  fi
+}
+
 # Création du dossier principal data
 echo -e "${YELLOW}Création du dossier principal data...${NC}"
-mkdir -p data
+create_dir "data"
 
 # Structure de données pour FHIRHub
 echo -e "${YELLOW}Création de la structure pour FHIRHub...${NC}"
-mkdir -p data/fhirhub/db          # Base de données SQLite
-mkdir -p data/fhirhub/storage/conversions    # Conversions HL7 vers FHIR
-mkdir -p data/fhirhub/storage/cache          # Cache des requêtes
-mkdir -p data/fhirhub/storage/ai_responses   # Réponses des modèles d'IA
-mkdir -p data/fhirhub/storage/history        # Historique des conversions
-mkdir -p data/fhirhub/storage/outputs        # Sorties des conversions
-mkdir -p data/fhirhub/storage/test           # Données de test
-mkdir -p data/fhirhub/logs                   # Journaux d'application
-mkdir -p data/fhirhub/terminology            # Terminologies (française, etc.)
-mkdir -p data/fhirhub/backups                # Sauvegardes
+create_dir "data/fhirhub/db"          # Base de données SQLite
+create_dir "data/fhirhub/storage/conversions"    # Conversions HL7 vers FHIR
+create_dir "data/fhirhub/storage/cache"          # Cache des requêtes
+create_dir "data/fhirhub/storage/ai_responses"   # Réponses des modèles d'IA
+create_dir "data/fhirhub/storage/history"        # Historique des conversions
+create_dir "data/fhirhub/storage/outputs"        # Sorties des conversions
+create_dir "data/fhirhub/storage/test"           # Données de test
+create_dir "data/fhirhub/logs"                   # Journaux d'application
+create_dir "data/fhirhub/terminology"            # Terminologies (française, etc.)
+create_dir "data/fhirhub/backups"                # Sauvegardes
 
 # Structure de données pour HAPI FHIR
 echo -e "${YELLOW}Création de la structure pour HAPI FHIR...${NC}"
-mkdir -p data/hapifhir
+create_dir "data/hapifhir"
 
 # Dossiers partagés pour l'import et l'export de données
 echo -e "${YELLOW}Création des dossiers d'échange de données...${NC}"
-mkdir -p import
-mkdir -p export
-
-# Définition des bonnes permissions pour éviter les problèmes d'accès
-echo -e "${YELLOW}Configuration des permissions...${NC}"
-chmod -R 777 data import export
+create_dir "import"
+create_dir "export"
 
 # Vérification de la structure des données créée
 echo -e "${GREEN}✓ Structure de données initialisée avec succès !${NC}"
@@ -76,6 +104,16 @@ EOF
   echo -e "${GREEN}✓ Fichier .env créé avec succès${NC}"
 fi
 
+# Vérifier si les dossiers sont accessibles en écriture
+TEST_FILE="data/.write_test"
+if touch "$TEST_FILE" 2>/dev/null; then
+  rm "$TEST_FILE"
+  echo -e "${GREEN}✓ Les dossiers ont les permissions correctes${NC}"
+else
+  echo -e "${YELLOW}⚠️ Certains dossiers pourraient avoir des problèmes de permissions${NC}"
+  echo -e "${YELLOW}  Conseil: Exécutez 'sudo chmod -R 777 data import export' si nécessaire${NC}"
+fi
+
 echo -e "${CYAN}=====================================================================${NC}"
 echo -e "${YELLOW}Structure des données :${NC}"
 echo -e "${YELLOW}data/                       # Dossier racine${NC}"
@@ -90,4 +128,3 @@ echo -e "${YELLOW}import/                     # Dossier d'importation${NC}"
 echo -e "${YELLOW}export/                     # Dossier d'exportation${NC}"
 echo -e "${CYAN}=====================================================================${NC}"
 echo -e "${GREEN}✓ Structure de données prête pour le déploiement Docker${NC}"
-echo -e "${GREEN}✓ Exécutez './docker-launch.sh' pour démarrer les services${NC}"
