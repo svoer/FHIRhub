@@ -1053,8 +1053,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (noResourcesSection) noResourcesSection.style.display = 'none';
         if (bundleResourcesList) bundleResourcesList.innerHTML = '';
         
-        // On crée une requête pour récupérer toutes les ressources associées au patient
-        fetch(`${serverUrl}/Patient/${patientId}/$everything`)
+        // On récupère directement le bundle associé au patient, incluant les références
+        fetch(`${serverUrl}/Patient/${patientId}/$everything?_count=100&_include=*`)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération du bundle: ${response.status}`);
@@ -1113,8 +1113,54 @@ document.addEventListener('DOMContentLoaded', function() {
                             typeHeader.style.display = 'flex';
                             typeHeader.style.justifyContent = 'space-between';
                             typeHeader.style.alignItems = 'center';
+                            // Définir une couleur différente pour chaque type de ressource
+                            let typeColor = '#e83e28';  // Couleur par défaut
+                            let typeIcon = 'cube';     // Icône par défaut
+                            
+                            switch(type) {
+                                case 'Patient':
+                                    typeColor = '#2980b9';
+                                    typeIcon = 'user';
+                                    break;
+                                case 'Practitioner':
+                                    typeColor = '#27ae60';
+                                    typeIcon = 'user-md';
+                                    break;
+                                case 'Organization':
+                                    typeColor = '#f39c12';
+                                    typeIcon = 'hospital-alt';
+                                    break;
+                                case 'Encounter':
+                                    typeColor = '#9b59b6';
+                                    typeIcon = 'stethoscope';
+                                    break;
+                                case 'Condition':
+                                    typeColor = '#c0392b';
+                                    typeIcon = 'heartbeat';
+                                    break;
+                                case 'Observation':
+                                    typeColor = '#1abc9c';
+                                    typeIcon = 'microscope';
+                                    break;
+                                case 'MedicationRequest':
+                                    typeColor = '#3498db';
+                                    typeIcon = 'pills';
+                                    break;
+                                case 'Coverage':
+                                    typeColor = '#8e44ad';
+                                    typeIcon = 'file-medical';
+                                    break;
+                                case 'RelatedPerson':
+                                    typeColor = '#e67e22';
+                                    typeIcon = 'users';
+                                    break;
+                            }
+                            
                             typeHeader.innerHTML = `
-                                <span style="color: #e83e28;">${type} (${resources.length})</span>
+                                <span style="display: flex; align-items: center; gap: 8px;">
+                                    <i class="fas fa-${typeIcon}" style="color: ${typeColor};"></i>
+                                    <span style="color: ${typeColor}; font-weight: 600;">${type} (${resources.length})</span>
+                                </span>
                                 <i class="fas fa-chevron-down" style="color: #999;"></i>
                             `;
                             
@@ -1133,29 +1179,143 @@ document.addEventListener('DOMContentLoaded', function() {
                                 resourceItem.style.borderBottom = '1px solid #f0f0f0';
                                 
                                 let resourceName = resource.id;
-                                if (type === 'Patient' && resource.name && resource.name.length > 0) {
-                                    resourceName = formatPatientName(resource.name);
-                                } else if (type === 'Practitioner' && resource.name && resource.name.length > 0) {
-                                    resourceName = formatPractitionerName(resource.name);
-                                } else if (type === 'Organization' && resource.name) {
-                                    resourceName = resource.name;
+                                let resourceDetails = '';
+                                
+                                // Si c'est une référence simple (de transaction-response)
+                                if (resource._sourceType === 'reference') {
+                                    resourceName = `${resource.id}`;
+                                    resourceDetails = `ID: ${resource.id}`;
+                                }
+                                // Si c'est une ressource complète
+                                else {
+                                    if (type === 'Patient' && resource.name && resource.name.length > 0) {
+                                        resourceName = formatPatientName(resource.name);
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.birthDate) {
+                                            resourceDetails += ` | Né(e) le: ${resource.birthDate}`;
+                                        }
+                                        if (resource.gender) {
+                                            let gender = resource.gender === 'male' ? 'Homme' : 
+                                                         resource.gender === 'female' ? 'Femme' : resource.gender;
+                                            resourceDetails += ` | Genre: ${gender}`;
+                                        }
+                                    } 
+                                    else if (type === 'Practitioner' && resource.name && resource.name.length > 0) {
+                                        resourceName = formatPractitionerName(resource.name);
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.identifier && resource.identifier.length > 0) {
+                                            const mainId = resource.identifier[0];
+                                            resourceDetails += ` | ${mainId.system ? mainId.system.split('/').pop() : 'ID'}: ${mainId.value}`;
+                                        }
+                                    } 
+                                    else if (type === 'Organization' && resource.name) {
+                                        resourceName = resource.name;
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.identifier && resource.identifier.length > 0) {
+                                            resourceDetails += ` | Identifiant: ${resource.identifier[0].value}`;
+                                        }
+                                    } 
+                                    else if (type === 'Encounter') {
+                                        resourceName = `Rencontre ${resource.id}`;
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.status) {
+                                            const statusMap = {
+                                                'planned': 'Planifiée',
+                                                'arrived': 'Arrivée',
+                                                'triaged': 'Triée',
+                                                'in-progress': 'En cours',
+                                                'onleave': 'En congé',
+                                                'finished': 'Terminée',
+                                                'cancelled': 'Annulée'
+                                            };
+                                            resourceDetails += ` | Statut: ${statusMap[resource.status] || resource.status}`;
+                                        }
+                                        if (resource.class && resource.class.code) {
+                                            const classMap = {
+                                                'AMB': 'Ambulatoire',
+                                                'IMP': 'Hospitalisation',
+                                                'EMER': 'Urgence',
+                                                'VR': 'Consultation virtuelle'
+                                            };
+                                            resourceDetails += ` | Type: ${classMap[resource.class.code] || resource.class.code}`;
+                                        }
+                                    } 
+                                    else if (type === 'RelatedPerson') {
+                                        if (resource.name && resource.name.length > 0) {
+                                            resourceName = formatPatientName(resource.name);
+                                        }
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.relationship && resource.relationship.length > 0) {
+                                            if (resource.relationship[0].coding) {
+                                                const rel = resource.relationship[0].coding[0];
+                                                const relationMap = {
+                                                    'SPO': 'Conjoint(e)',
+                                                    'CHILD': 'Enfant',
+                                                    'FAMMEMB': 'Famille',
+                                                    'WIFE': 'Épouse',
+                                                    'HUSB': 'Époux',
+                                                    'AUNT': 'Tante',
+                                                    'BRO': 'Frère',
+                                                    'DAU': 'Fille',
+                                                    'DAUFOST': 'Fille d\'accueil',
+                                                    'SIS': 'Sœur'
+                                                };
+                                                resourceDetails += ` | Relation: ${relationMap[rel.code] || rel.display || rel.code}`;
+                                            }
+                                            else if (resource.relationship[0].text) {
+                                                resourceDetails += ` | Relation: ${resource.relationship[0].text}`;
+                                            }
+                                        }
+                                    } 
+                                    else if (type === 'Coverage') {
+                                        resourceName = `Couverture ${resource.id}`;
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.type && resource.type.coding && resource.type.coding.length > 0) {
+                                            const coverageMap = {
+                                                'AMO': 'Assurance Maladie Obligatoire',
+                                                'AMC': 'Assurance Maladie Complémentaire'
+                                            };
+                                            const coverageType = resource.type.coding[0];
+                                            resourceDetails += ` | Type: ${coverageMap[coverageType.code] || coverageType.display || coverageType.code}`;
+                                        }
+                                        if (resource.period) {
+                                            if (resource.period.start) {
+                                                resourceDetails += ` | Début: ${resource.period.start.split('T')[0]}`;
+                                            }
+                                            if (resource.period.end) {
+                                                resourceDetails += ` | Fin: ${resource.period.end.split('T')[0]}`;
+                                            }
+                                        }
+                                    }
+                                    else if (type === 'PractitionerRole') {
+                                        resourceName = `Rôle ${resource.id}`;
+                                        resourceDetails = `ID: ${resource.id}`;
+                                        if (resource.code && resource.code.length > 0 && resource.code[0].coding && resource.code[0].coding.length > 0) {
+                                            resourceDetails += ` | Code: ${resource.code[0].coding[0].display || resource.code[0].coding[0].code}`;
+                                        }
+                                    }
                                 }
                                 
                                 resourceItem.innerHTML = `
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <span style="font-weight: 500;">${resourceName || resource.id}</span>
-                                        <button 
-                                            class="view-json-btn"
-                                            style="background: linear-gradient(135deg, #e83e28, #fd7e30); 
-                                                  color: white; 
-                                                  border: none; 
-                                                  border-radius: 4px; 
-                                                  padding: 4px 8px; 
-                                                  font-size: 12px;
-                                                  cursor: pointer;"
-                                                  data-resource='${JSON.stringify(resource).replace(/'/g, "&apos;")}'>
-                                            Voir JSON
-                                        </button>
+                                    <div style="display: flex; flex-direction: column; gap: 6px; padding: 5px;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                            <span style="font-weight: 600; color: #333;">${resourceName || resource.id}</span>
+                                            <button 
+                                                class="view-json-btn"
+                                                style="background: linear-gradient(135deg, #e83e28, #fd7e30); 
+                                                      color: white; 
+                                                      border: none; 
+                                                      border-radius: 4px; 
+                                                      padding: 4px 8px; 
+                                                      font-size: 12px;
+                                                      cursor: pointer;"
+                                                      data-resource='${JSON.stringify(resource).replace(/'/g, "&apos;")}'>
+                                                Voir JSON
+                                            </button>
+                                        </div>
+                                        <div style="color: #666; font-size: 13px;">
+                                            ${resourceDetails}
+                                        </div>
                                     </div>
                                 `;
                                 
@@ -1206,13 +1366,77 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data.entry && data.entry.length > 0) {
                         // Regrouper par type de ressource pour un affichage organisé
                         const resourceGroups = {};
-                        data.entry.forEach(entry => {
-                            const resourceType = entry.resource.resourceType;
-                            if (!resourceGroups[resourceType]) {
-                                resourceGroups[resourceType] = [];
+                        
+                        // Traitement différent selon le type de bundle
+                        if (data.type === 'transaction' || data.type === 'batch') {
+                            // Dans un bundle transaction, les ressources sont directement dans entry.resource
+                            data.entry.forEach(entry => {
+                                if (entry.resource) {
+                                    const resourceType = entry.resource.resourceType;
+                                    if (!resourceGroups[resourceType]) {
+                                        resourceGroups[resourceType] = [];
+                                    }
+                                    resourceGroups[resourceType].push(entry.resource);
+                                }
+                            });
+                        } 
+                        else if (data.type === 'transaction-response' || data.type === 'batch-response') {
+                            // Dans un bundle transaction-response, nous avons seulement les références
+                            // aux ressources créées dans entry.response.location
+                            
+                            // Pour le moment, nous ne pouvons pas afficher les détails des ressources,
+                            // seulement les références à partir des identifiants générés
+                            data.entry.forEach(entry => {
+                                if (entry.response && entry.response.location) {
+                                    // Format typique: "Patient/12345/_history/1"
+                                    const parts = entry.response.location.split('/');
+                                    if (parts.length >= 2) {
+                                        const resourceType = parts[0];
+                                        const resourceId = parts[1];
+                                        
+                                        // Créer une ressource minimale pour l'affichage
+                                        const minimalResource = {
+                                            resourceType: resourceType,
+                                            id: resourceId,
+                                            _sourceType: 'reference', // Marquer comme référence seulement
+                                        };
+                                        
+                                        if (!resourceGroups[resourceType]) {
+                                            resourceGroups[resourceType] = [];
+                                        }
+                                        resourceGroups[resourceType].push(minimalResource);
+                                    }
+                                }
+                            });
+                        }
+                        else if (data.type === 'searchset') {
+                            // Dans un bundle searchset, les ressources sont dans entry.resource
+                            data.entry.forEach(entry => {
+                                if (entry.resource) {
+                                    const resourceType = entry.resource.resourceType;
+                                    if (!resourceGroups[resourceType]) {
+                                        resourceGroups[resourceType] = [];
+                                    }
+                                    resourceGroups[resourceType].push(entry.resource);
+                                }
+                            });
+                        }
+                        else {
+                            // Par défaut, essayer l'ancienne méthode comme fallback
+                            try {
+                                data.entry.forEach(entry => {
+                                    if (entry.resource) {
+                                        const resourceType = entry.resource.resourceType;
+                                        if (!resourceGroups[resourceType]) {
+                                            resourceGroups[resourceType] = [];
+                                        }
+                                        resourceGroups[resourceType].push(entry.resource);
+                                    }
+                                });
+                            } catch (e) {
+                                console.warn("Erreur lors de l'analyse du bundle:", e);
                             }
-                            resourceGroups[resourceType].push(entry.resource);
-                        });
+                        }
                         
                         // Créer une section pour chaque type de ressource
                         for (const [type, resources] of Object.entries(resourceGroups)) {
