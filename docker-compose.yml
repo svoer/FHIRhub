@@ -2,53 +2,24 @@ version: '3.8'
 
 # Structure centralisée des données dans un dossier data
 volumes:
-  # Volume racine pour toutes les données
-  data:
-    name: fhirhub_data_root
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data
-  
-  # Volumes spécifiques pour FHIRHub
+  # Volumes pour FHIRHub avec noms explicites
   data_fhirhub_db:
-    name: data_fhirhub_db
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/fhirhub/db
+    name: data_fhirhub_db 
   data_fhirhub_storage:
+    driver: local
     name: data_fhirhub_storage
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/fhirhub/storage
   data_fhirhub_logs:
+    driver: local
     name: data_fhirhub_logs
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/fhirhub/logs
   data_fhirhub_terminology:
+    driver: local
     name: data_fhirhub_terminology
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/fhirhub/terminology
   
-  # Volume spécifique pour HAPI FHIR
+  # Volume pour HAPI FHIR
   data_hapifhir:
-    name: data_hapifhir
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./data/hapifhir
+    name: data_hapifhir
 
 services:
   # Application principale FHIRHub
@@ -59,13 +30,13 @@ services:
     container_name: fhirhub
     restart: unless-stopped
     ports:
-      - "5000:5000"  # Port principal FHIRHub
+      - "${PORT_FHIRHUB:-5000}:5000"  # Port principal FHIRHub
     environment:
       - NODE_ENV=production
       - PORT=5000
       - DB_PATH=/app/storage/db/fhirhub.db
       - DB_PERSISTENT=true
-      - SESSION_SECRET=fhirhub_production_secure_session_key
+      - SESSION_SECRET=${SESSION_SECRET:-fhirhub_production_secure_session_key}
       - METRICS_ENABLED=false
       - LOG_LEVEL=info
       - DOCKER_ENV=true
@@ -73,7 +44,7 @@ services:
       - HAPI_FHIR_SERVER=http://hapifhir:8080/fhir
       - BYPASS_AUTH=false
     volumes:
-      # Montage des volumes locaux pour garantir la persistance et l'organisation claire
+      # Montage des volumes pour garantir la persistance et l'organisation claire
       - data_fhirhub_db:/app/storage/db:rw
       - data_fhirhub_storage:/app/storage/data:rw
       - data_fhirhub_logs:/app/storage/logs:rw
@@ -103,7 +74,7 @@ services:
     container_name: fhirhub-hapi
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "${PORT_HAPIFHIR:-8080}:8080"
     environment:
       - hapi.fhir.default_encoding=JSON
       - hapi.fhir.allow_external_references=true
@@ -111,6 +82,7 @@ services:
       - hapi.fhir.allow_placeholder_references=true
       - hapi.fhir.narrative_enabled=false
       - hapi.fhir.advanced_lucene_indexing=false
+      # Configuration de la base de données H2 (intégrée)
       - spring.datasource.url=jdbc:h2:/data/hapi
       - spring.datasource.username=sa
       - spring.datasource.password=
