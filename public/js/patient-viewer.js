@@ -21,11 +21,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-chargement du patient spécifié dans l'URL (si présent)
     const urlParams = new URLSearchParams(window.location.search);
     const patientId = urlParams.get('id');
-    const serverUrl = urlParams.get('server') || document.getElementById('serverUrl').value;
+    
+    const serverUrlField = document.getElementById('serverUrl');
+    const serverUrl = urlParams.get('server') || (serverUrlField ? serverUrlField.value : 'https://hapi.fhir.org/baseR4');
     
     if (patientId) {
-        document.getElementById('patientId').value = patientId;
-        document.getElementById('serverUrl').value = serverUrl;
+        const patientIdField = document.getElementById('patientId');
+        if (patientIdField) {
+            patientIdField.value = patientId;
+        }
+        
+        if (serverUrlField) {
+            serverUrlField.value = serverUrl;
+        }
+        
         loadPatient();
     }
     
@@ -117,8 +126,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const generateAIReport = document.getElementById('generateAIReport');
         if (generateAIReport) {
             generateAIReport.addEventListener('click', function() {
-                const patientId = document.getElementById('patientId').value;
-                const serverUrl = document.getElementById('serverUrl').value;
+                const patientIdField = document.getElementById('patientId');
+                const serverUrlField = document.getElementById('serverUrl');
+                
+                const patientId = patientIdField ? patientIdField.value : null;
+                const serverUrl = serverUrlField ? serverUrlField.value : null;
+                
                 if (patientId && serverUrl) {
                     analyzePatientWithAI(patientId, serverUrl);
                 } else {
@@ -130,7 +143,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function initializeServerUrlField() {
         // Initialiser avec le serveur par défaut
-        document.getElementById('serverUrl').value = document.getElementById('serverUrl').value || 'https://hapi.fhir.org/baseR4';
+        const serverUrlField = document.getElementById('serverUrl');
+        if (serverUrlField) {
+            serverUrlField.value = serverUrlField.value || 'https://hapi.fhir.org/baseR4';
+        } else {
+            console.warn("Élément serverUrl non trouvé dans le DOM");
+        }
     }
     
     function toggleResourceSections() {
@@ -582,8 +600,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Recherche de patients
     function searchPatients() {
-        const searchTerm = document.getElementById('patientSearch').value.trim();
-        const serverUrl = document.getElementById('serverUrl').value;
+        const searchField = document.getElementById('patientSearch');
+        const serverUrlField = document.getElementById('serverUrl');
+        
+        if (!searchField) {
+            console.error("Élément patientSearch non trouvé dans le DOM");
+            return;
+        }
+        
+        const searchTerm = searchField.value.trim();
+        const serverUrl = serverUrlField ? serverUrlField.value : '';
         
         if (!searchTerm) {
             showStatus('<i class="fas fa-exclamation-triangle"></i> Veuillez entrer un terme de recherche', 'warning');
@@ -777,8 +803,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Chargement d'un patient
     function loadPatient() {
-        const patientId = document.getElementById('patientId').value;
-        const serverUrl = document.getElementById('serverUrl').value;
+        const patientIdField = document.getElementById('patientId');
+        const serverUrlField = document.getElementById('serverUrl');
+        
+        if (!patientIdField) {
+            console.error("Élément patientId non trouvé dans le DOM");
+            return;
+        }
+        
+        const patientId = patientIdField.value;
+        const serverUrl = serverUrlField ? serverUrlField.value : '';
         
         if (!patientId) {
             showStatus('<i class="fas fa-exclamation-triangle"></i> Veuillez spécifier l\'ID du patient', 'warning');
@@ -792,9 +826,22 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Initialiser l'interface
         clearPatientData();
-        document.getElementById('patientIdDisplay').textContent = patientId;
-        document.getElementById('patientServerDisplay').textContent = serverUrl;
-        document.getElementById('patientDataContainer').style.display = 'block';
+        
+        const patientIdDisplay = document.getElementById('patientIdDisplay');
+        const patientServerDisplay = document.getElementById('patientServerDisplay');
+        const patientDataContainer = document.getElementById('patientDataContainer');
+        
+        if (patientIdDisplay) {
+            patientIdDisplay.textContent = patientId;
+        }
+        
+        if (patientServerDisplay) {
+            patientServerDisplay.textContent = serverUrl;
+        }
+        
+        if (patientDataContainer) {
+            patientDataContainer.style.display = 'block';
+        }
         
         // Mettre à jour l'URL pour permettre le partage
         const newUrl = `${window.location.pathname}?id=${patientId}&server=${encodeURIComponent(serverUrl)}`;
@@ -872,14 +919,23 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Fonction pour mettre à jour les compteurs de ressources
         function updateResourceCounts() {
-            document.getElementById('conditionsCount').textContent = window.patientData.conditions.length;
-            document.getElementById('observationsCount').textContent = window.patientData.observations.length;
-            document.getElementById('medicationsCount').textContent = window.patientData.medications.length;
-            document.getElementById('encountersCount').textContent = window.patientData.encounters.length;
-            document.getElementById('practitionersCount').textContent = window.patientData.practitioners.length;
-            document.getElementById('organizationsCount').textContent = window.patientData.organizations.length;
-            document.getElementById('relatedPersonsCount').textContent = window.patientData.relatedPersons.length;
-            document.getElementById('coveragesCount').textContent = window.patientData.coverages.length;
+            if (!window.patientData) return;
+            
+            const updateCount = (elementId, count) => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.textContent = count;
+                }
+            };
+            
+            updateCount('conditionsCount', window.patientData.conditions.length);
+            updateCount('observationsCount', window.patientData.observations.length);
+            updateCount('medicationsCount', window.patientData.medications.length);
+            updateCount('encountersCount', window.patientData.encounters.length);
+            updateCount('practitionersCount', window.patientData.practitioners.length);
+            updateCount('organizationsCount', window.patientData.organizations.length);
+            updateCount('relatedPersonsCount', window.patientData.relatedPersons.length);
+            updateCount('coveragesCount', window.patientData.coverages.length);
         }
     }
     
