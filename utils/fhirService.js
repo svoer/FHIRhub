@@ -493,14 +493,14 @@ async function createPatientBundle(serverId, patientId, options = {}) {
 /**
  * Récupérer l'URL du serveur FHIR actif
  */
-function getFhirServerUrl() {
+function getFhirServerUrl(serverId = null) {
   const config = getServersConfig();
-  const defaultServerId = config.defaultServer;
+  const defaultServerId = serverId || config.defaultServer;
   const server = getServerDetails(defaultServerId);
   
   if (!server) {
-    console.warn(`[FHIR] Serveur par défaut non trouvé, utilisation du serveur local`);
-    return 'http://localhost:8080/fhir';
+    console.warn(`[FHIR] Serveur par défaut non trouvé, utilisation du serveur public`);
+    return 'https://hapi.fhir.org/baseR4';
   }
   
   return server.url;

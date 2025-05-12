@@ -38,8 +38,9 @@ router.post('/', authMiddleware, async (req, res) => {
             });
         }
 
-        // Récupérer l'URL du serveur FHIR
-        const fhirServerUrl = getFhirServerUrl();
+        // Récupérer l'URL du serveur FHIR selon le serverId spécifié
+        const serverId = req.body.serverId || 'hapi-public';
+        const fhirServerUrl = getFhirServerUrl(serverId);
         
         logger.info(`[FHIR-BUNDLE-PUSH] Tentative d'envoi d'un bundle contenant ${bundle.entry?.length || 0} ressources`);
         
