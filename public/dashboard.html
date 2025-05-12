@@ -1459,25 +1459,11 @@
       const timeStr = now.toLocaleTimeString();
       const dateStr = now.toLocaleDateString();
       
-      // Ajouter l'élément d'horodatage pour les métriques avancées s'il n'existe pas
-      if (!document.querySelector('.metrics-refresh-time')) {
-        const metricsCard = document.querySelector('.card:has(.system-metrics)');
-        if (metricsCard) {
-          const refreshDiv = document.createElement('div');
-          refreshDiv.className = 'metrics-refresh-time';
-          refreshDiv.innerHTML = `Dernière mise à jour: <span id="lastUpdateTime">${timeStr}</span> - ${dateStr}`;
-          
-          // Insérer avant le premier élément dans metrics-container
-          const header = metricsCard.querySelector('.card-header');
-          if (header) {
-            header.appendChild(refreshDiv);
-          }
-        }
-      } else {
-        const lastUpdateElement = document.getElementById('lastUpdateTime');
-        if (lastUpdateElement) {
-          lastUpdateElement.textContent = timeStr;
-        }
+      // Suppression de l'indicateur de dernière mise à jour pour les métriques avancées
+      // qui était confusant pour l'utilisateur
+      const existingRefreshTime = document.querySelector('.metrics-refresh-time');
+      if (existingRefreshTime) {
+        existingRefreshTime.remove();
       }
       
       // Mise à jour de l'horodatage pour les statistiques de conversion
