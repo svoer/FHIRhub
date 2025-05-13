@@ -1280,7 +1280,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let url;
         if (serverUrl.includes('hapi.fhir.org')) {
             // Utiliser le proxy pour contourner les limitations CORS
-            url = `/api/fhir-proxy/hapi/Encounter?patient=${patientId}&_sort=-date&_count=1000`;
+            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
+            url = `/api/fhir-proxy/hapi/Encounter?patient=${patientId}&_sort=-date&_count=50`;
         } else {
             // URL directe pour les serveurs locaux (déjà sur le même domaine)
             url = `${serverUrl}/Encounter?patient=${patientId}&_sort=-date&_count=1000`;
@@ -1373,7 +1374,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let url;
         if (serverUrl.includes('hapi.fhir.org')) {
             // Utiliser le proxy pour contourner les limitations CORS
-            url = `/api/fhir-proxy/hapi/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`;
+            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
+            url = `/api/fhir-proxy/hapi/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=50`;
         } else {
             // URL directe pour les serveurs locaux (déjà sur le même domaine)
             url = `${serverUrl}/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`;
@@ -1467,7 +1469,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let url;
         if (serverUrl.includes('hapi.fhir.org')) {
             // Utiliser le proxy pour contourner les limitations CORS
-            url = `/api/fhir-proxy/hapi/Organization?_has:Patient:organization:_id=${patientId}&_count=100`;
+            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
+            url = `/api/fhir-proxy/hapi/Organization?_has:Patient:organization:_id=${patientId}&_count=50`;
         } else {
             // URL directe pour les serveurs locaux (déjà sur le même domaine)
             url = `${serverUrl}/Organization?_has:Patient:organization:_id=${patientId}&_count=100`;
@@ -1557,7 +1560,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let url;
         if (serverUrl.includes('hapi.fhir.org')) {
             // Utiliser le proxy pour contourner les limitations CORS
-            url = `/api/fhir-proxy/hapi/RelatedPerson?patient=${patientId}&_count=100`;
+            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
+            url = `/api/fhir-proxy/hapi/RelatedPerson?patient=${patientId}&_count=50`;
         } else {
             // URL directe pour les serveurs locaux (déjà sur le même domaine)
             url = `${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`;
