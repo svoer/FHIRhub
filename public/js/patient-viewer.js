@@ -1073,8 +1073,20 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Exécuter la requête FHIR pour récupérer les observations (limite augmentée à 1000 pour avoir toutes les données)
-        fetch(`${serverUrl}/Observation?patient=${patientId}&_sort=-date&_count=1000`)
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let url;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            url = `/api/fhir-proxy/hapi/Observation?patient=${patientId}&_sort=-date&_count=1000`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            url = `${serverUrl}/Observation?patient=${patientId}&_sort=-date&_count=1000`;
+        }
+        
+        console.log(`Chargement des observations depuis: ${url}`);
+        
+        // Exécuter la requête FHIR pour récupérer les observations
+        fetch(url)
             .then(response => response.json())
             .then(data => {
                 loadingSection.style.display = 'none';
@@ -1149,8 +1161,20 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Exécuter la requête FHIR pour récupérer les médicaments (limite augmentée à 1000 pour avoir toutes les données)
-        fetch(`${serverUrl}/MedicationRequest?patient=${patientId}&_sort=-date&_count=1000`)
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let url;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            url = `/api/fhir-proxy/hapi/MedicationRequest?patient=${patientId}&_sort=-date&_count=1000`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            url = `${serverUrl}/MedicationRequest?patient=${patientId}&_sort=-date&_count=1000`;
+        }
+        
+        console.log(`Chargement des médicaments depuis: ${url}`);
+        
+        // Exécuter la requête FHIR pour récupérer les médicaments
+        fetch(url)
             .then(response => response.json())
             .then(data => {
                 loadingSection.style.display = 'none';
@@ -1227,8 +1251,20 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Exécuter la requête FHIR pour récupérer les consultations (limite augmentée à 1000 pour avoir toutes les données)
-        fetch(`${serverUrl}/Encounter?patient=${patientId}&_sort=-date&_count=1000`)
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let url;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            url = `/api/fhir-proxy/hapi/Encounter?patient=${patientId}&_sort=-date&_count=1000`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            url = `${serverUrl}/Encounter?patient=${patientId}&_sort=-date&_count=1000`;
+        }
+        
+        console.log(`Chargement des consultations depuis: ${url}`);
+        
+        // Exécuter la requête FHIR pour récupérer les consultations
+        fetch(url)
             .then(response => response.json())
             .then(data => {
                 loadingSection.style.display = 'none';
