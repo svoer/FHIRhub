@@ -340,7 +340,7 @@ router.post('/chat', async (req, res) => {
         
         try {
             // Obtenir le fournisseur actif pour le logging
-            const aiProvider = await getActiveAIProvider();
+            const aiProvider = await aiProviderService.getActiveAIProvider();
             const providerName = aiProvider ? aiProvider.provider_name : 'inconnu';
             
             // Enrichir le prompt système avec les connaissances pertinentes
@@ -603,7 +603,7 @@ router.get('/test-knowledge', async (req, res) => {
 router.get('/test-chatbot-ai-provider', async (req, res) => {
     try {
         // Récupérer le fournisseur d'IA actif
-        const activeProvider = await getActiveAIProvider();
+        const activeProvider = await aiProviderService.getActiveAIProvider();
         
         if (!activeProvider) {
             return res.status(404).json({
