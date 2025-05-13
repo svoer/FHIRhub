@@ -1376,16 +1376,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function loadPatientOrganizations(patientId, serverUrl) {
         const container = document.querySelector('#organizationsContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des organisations
         organizationsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1398,85 +1391,58 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Organization?_has:Patient:organization:_id=${patientId}&_count=100`;
         }
         
-        console.log(`Chargement des organisations depuis: ${url}`);
-        
-        // Exécuter la requête FHIR pour récupérer les organisations
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération des organisations: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSection.style.display = 'none';
+        // Fonction de traitement des données spécifique aux organisations
+        const processOrganizationsData = (data, resourcesList) => {
+            const organizations = data.entry.map(entry => entry.resource);
+            organizationsData = organizations;
+            
+            // Créer une liste d'organisations
+            const organizationsList = document.createElement('div');
+            organizationsList.style.display = 'grid';
+            organizationsList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+            organizationsList.style.gap = '15px';
+            
+            organizations.forEach(organization => {
+                const organizationElement = document.createElement('div');
+                organizationElement.style.backgroundColor = '#f9f9f9';
+                organizationElement.style.borderRadius = '8px';
+                organizationElement.style.padding = '15px';
+                organizationElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                organizationElement.style.borderLeft = '3px solid #fd7e30';
                 
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const organizations = data.entry.map(entry => entry.resource);
-                    organizationsData = organizations;
-                    
-                    // Créer une liste d'organisations
-                    const organizationsList = document.createElement('div');
-                    organizationsList.style.display = 'grid';
-                    organizationsList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    organizationsList.style.gap = '15px';
-                    
-                    organizations.forEach(organization => {
-                        const organizationElement = document.createElement('div');
-                        organizationElement.style.backgroundColor = '#f9f9f9';
-                        organizationElement.style.borderRadius = '8px';
-                        organizationElement.style.padding = '15px';
-                        organizationElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        organizationElement.style.borderLeft = '3px solid #fd7e30';
-                        
-                        organizationElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> ${organization.name || 'Organisation sans nom'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${organization.id}</p>
-                                ${organization.alias && organization.alias.length > 0 ? 
-                                  `<p><strong>Alias:</strong> ${organization.alias.join(', ')}</p>` 
-                                  : ''}
-                                ${organization.telecom ? 
-                                  `<p><strong>Contact:</strong> ${formatTelecom(organization.telecom)}</p>` 
-                                  : ''}
-                                ${organization.address ? 
-                                  `<p><strong>Adresse:</strong> ${formatAddress(organization.address[0])}</p>` 
-                                  : ''}
-                            </div>
-                        `;
-                        
-                        organizationsList.appendChild(organizationElement);
-                    });
-                    
-                    resourcesList.appendChild(organizationsList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des organisations:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
+                organizationElement.innerHTML = `
+                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> ${organization.name || 'Organisation sans nom'}
+                    </h4>
+                    <div style="margin-top: 10px; color: #555;">
+                        <p><strong>Identifiant:</strong> ${organization.id}</p>
+                        ${organization.alias && organization.alias.length > 0 ? 
+                          `<p><strong>Alias:</strong> ${organization.alias.join(', ')}</p>` 
+                          : ''}
+                        ${organization.telecom ? 
+                          `<p><strong>Contact:</strong> ${formatTelecom(organization.telecom)}</p>` 
+                          : ''}
+                        ${organization.address ? 
+                          `<p><strong>Adresse:</strong> ${formatAddress(organization.address[0])}</p>` 
+                          : ''}
+                    </div>
+                `;
+                
+                organizationsList.appendChild(organizationElement);
             });
+            
+            resourcesList.appendChild(organizationsList);
+        };
+        
+        // Utiliser notre fonction générique pour charger les organisations
+        loadFhirResourceWithDelay(url, container, processOrganizationsData);
     }
     
     function loadPatientRelatedPersons(patientId, serverUrl) {
         const container = document.querySelector('#relatedContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des personnes liées
         relatedPersonsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1489,85 +1455,58 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`;
         }
         
-        console.log(`Chargement des personnes liées depuis: ${url}`);
-        
-        // Exécuter la requête FHIR pour récupérer les personnes liées
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération des personnes liées: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSection.style.display = 'none';
+        // Fonction de traitement des données spécifique aux personnes liées
+        const processRelatedPersonsData = (data, resourcesList) => {
+            const relatedPersons = data.entry.map(entry => entry.resource);
+            relatedPersonsData = relatedPersons;
+            
+            // Créer une liste de personnes liées
+            const relatedList = document.createElement('div');
+            relatedList.style.display = 'grid';
+            relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+            relatedList.style.gap = '15px';
+            
+            relatedPersons.forEach(person => {
+                const personElement = document.createElement('div');
+                personElement.style.backgroundColor = '#f9f9f9';
+                personElement.style.borderRadius = '8px';
+                personElement.style.padding = '15px';
+                personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                personElement.style.borderLeft = '3px solid #e83e28';
                 
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const relatedPersons = data.entry.map(entry => entry.resource);
-                    relatedPersonsData = relatedPersons;
-                    
-                    // Créer une liste de personnes liées
-                    const relatedList = document.createElement('div');
-                    relatedList.style.display = 'grid';
-                    relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    relatedList.style.gap = '15px';
-                    
-                    relatedPersons.forEach(person => {
-                        const personElement = document.createElement('div');
-                        personElement.style.backgroundColor = '#f9f9f9';
-                        personElement.style.borderRadius = '8px';
-                        personElement.style.padding = '15px';
-                        personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        personElement.style.borderLeft = '3px solid #e83e28';
-                        
-                        personElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-users" style="color: #e83e28;"></i> ${formatPatientName(person.name) || 'Personne sans nom'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${person.id}</p>
-                                ${person.relationship ? 
-                                  `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>` 
-                                  : ''}
-                                ${person.telecom ? 
-                                  `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>` 
-                                  : ''}
-                                ${person.address ? 
-                                  `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>` 
-                                  : ''}
-                            </div>
-                        `;
-                        
-                        relatedList.appendChild(personElement);
-                    });
-                    
-                    resourcesList.appendChild(relatedList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des personnes liées:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
+                personElement.innerHTML = `
+                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-users" style="color: #e83e28;"></i> ${formatPatientName(person.name) || 'Personne sans nom'}
+                    </h4>
+                    <div style="margin-top: 10px; color: #555;">
+                        <p><strong>Identifiant:</strong> ${person.id}</p>
+                        ${person.relationship ? 
+                          `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>` 
+                          : ''}
+                        ${person.telecom ? 
+                          `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>` 
+                          : ''}
+                        ${person.address ? 
+                          `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>` 
+                          : ''}
+                    </div>
+                `;
+                
+                relatedList.appendChild(personElement);
             });
+            
+            resourcesList.appendChild(relatedList);
+        };
+        
+        // Utiliser notre fonction générique pour charger les personnes liées
+        loadFhirResourceWithDelay(url, container, processRelatedPersonsData);
     }
     
     function loadPatientCoverage(patientId, serverUrl) {
         const container = document.querySelector('#coverageContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des couvertures
         coverageData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1580,70 +1519,50 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`;
         }
         
-        console.log(`Chargement des couvertures depuis: ${url}`);
-        
-        // Exécuter la requête FHIR pour récupérer les couvertures
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération des couvertures: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSection.style.display = 'none';
+        // Fonction de traitement des données spécifique aux couvertures
+        const processCoverageData = (data, resourcesList) => {
+            const coverages = data.entry.map(entry => entry.resource);
+            coverageData = coverages;
+            
+            // Créer une liste de couvertures
+            const coverageList = document.createElement('div');
+            coverageList.style.display = 'grid';
+            coverageList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+            coverageList.style.gap = '15px';
+            
+            coverages.forEach(coverage => {
+                const coverageElement = document.createElement('div');
+                coverageElement.style.backgroundColor = '#f9f9f9';
+                coverageElement.style.borderRadius = '8px';
+                coverageElement.style.padding = '15px';
+                coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                coverageElement.style.borderLeft = '3px solid #fd7e30';
                 
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const coverages = data.entry.map(entry => entry.resource);
-                    coverageData = coverages;
-                    
-                    // Créer une liste de couvertures
-                    const coverageList = document.createElement('div');
-                    coverageList.style.display = 'grid';
-                    coverageList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    coverageList.style.gap = '15px';
-                    
-                    coverages.forEach(coverage => {
-                        const coverageElement = document.createElement('div');
-                        coverageElement.style.backgroundColor = '#f9f9f9';
-                        coverageElement.style.borderRadius = '8px';
-                        coverageElement.style.padding = '15px';
-                        coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        coverageElement.style.borderLeft = '3px solid #fd7e30';
-                        
-                        coverageElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
-                                ${coverage.type?.coding?.[0]?.display || coverage.type?.text || 'Couverture'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${coverage.id}</p>
-                                <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
-                                ${coverage.period ? 
-                                  `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>` 
-                                  : ''}
-                                ${coverage.payor ? 
-                                  `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>` 
-                                  : ''}
-                            </div>
-                        `;
-                        
-                        coverageList.appendChild(coverageElement);
-                    });
-                    
-                    resourcesList.appendChild(coverageList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des couvertures:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
+                coverageElement.innerHTML = `
+                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
+                        ${coverage.type?.coding?.[0]?.display || coverage.type?.text || 'Couverture'}
+                    </h4>
+                    <div style="margin-top: 10px; color: #555;">
+                        <p><strong>Identifiant:</strong> ${coverage.id}</p>
+                        <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
+                        ${coverage.period ? 
+                          `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>` 
+                          : ''}
+                        ${coverage.payor ? 
+                          `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>` 
+                          : ''}
+                    </div>
+                `;
+                
+                coverageList.appendChild(coverageElement);
             });
+            
+            resourcesList.appendChild(coverageList);
+        };
+        
+        // Utiliser notre fonction générique pour charger les couvertures
+        loadFhirResourceWithDelay(url, container, processCoverageData);
     }
     
     function loadPatientBundle(patientId, serverUrl) {
