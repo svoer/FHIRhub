@@ -391,25 +391,26 @@ INSTRUCTIONS IMPORTANTES:
             }
             
             // Générer la réponse avec le service d'IA
-            console.log(`[DEBUG-CHAT] Envoi de la requête au fournisseur: ${providerName}`);
+            const targetProviderName = provider || providerName;
+            console.log(`[DEBUG-CHAT] Envoi de la requête au fournisseur: ${targetProviderName}`);
             
             const response = await aiService.generateResponse({
                 prompt: formattedPrompt,
                 systemPrompt: enhancedSystemPrompt,
                 maxTokens: max_tokens,
                 temperature: 0.7,
-                providerName: provider // Utiliser le fournisseur spécifié dans la requête s'il existe
+                providerName: targetProviderName
             });
             
-            // Journaliser le succès
-            console.log(`[CHATBOT] Réponse générée avec succès par ${providerName}`);
+            // Journaliser le succès avec le nom correct du fournisseur utilisé
+            console.log(`[CHATBOT] Réponse générée avec succès par ${targetProviderName}`);
             
             // Répondre avec la réponse générée
             return res.status(200).json({
                 success: true,
                 message: 'Réponse générée avec succès',
                 content: response,
-                provider: providerName
+                provider: targetProviderName
             });
             
         } catch (error) {

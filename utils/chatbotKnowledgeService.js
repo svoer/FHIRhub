@@ -84,16 +84,21 @@ async function findRelevantKnowledge(query) {
         
         console.log(`[KNOWLEDGE] Recherche locale d'informations pour: "${query.substring(0, 50)}..."`);
         
-        // Fonction pour calculer un score de pertinence simple
+        // Fonction améliorée pour calculer un score de pertinence
         function calculateRelevance(text, queryText) {
             if (!text) return 0;
             
             const normalizedText = text.toLowerCase();
             let score = 0;
             
-            // Vérifier la présence de la requête complète
+            // Vérifier la présence de la requête complète (plus fort coefficient)
             if (normalizedText.includes(normalizedQuery)) {
-                score += 3;
+                score += 5;
+                
+                // Bonus si la requête est au début du texte
+                if (normalizedText.startsWith(normalizedQuery)) {
+                    score += 3;
+                }
             }
             
             // Extraire les mots-clés (mots de plus de 3 caractères)
@@ -102,12 +107,44 @@ async function findRelevantKnowledge(query) {
                 .split(/\s+/)
                 .filter(word => word.length > 3);
             
+            // Obtenir les mots uniques pour éviter de compter plusieurs fois le même mot
+            const uniqueKeywords = [...new Set(keywords)];
+            
             // Vérifier la présence de mots-clés
-            keywords.forEach(keyword => {
-                if (normalizedText.includes(keyword.toLowerCase())) {
-                    score += 1;
+            uniqueKeywords.forEach(keyword => {
+                const keywordLower = keyword.toLowerCase();
+                
+                if (normalizedText.includes(keywordLower)) {
+                    // Poids de base pour la présence d'un mot-clé
+                    score += 2;
+                    
+                    // Bonus pour les mots-clés au début du texte
+                    if (normalizedText.startsWith(keywordLower)) {
+                        score += 1;
+                    }
+                    
+                    // Bonus pour les mots-clés qui apparaissent plusieurs fois
+                    const occurrences = (normalizedText.match(new RegExp(`\\b${keywordLower}\\b`, 'g')) || []).length;
+                    if (occurrences > 1) {
+                        score += Math.min(occurrences - 1, 3); // Maximum +3 pour éviter les abus
+                    }
                 }
             });
+            
+            // Détection d'expressions thématiques dans la requête
+            const fhirTerms = ['fhir', 'ressource', 'patient', 'observation'];
+            const hl7Terms = ['hl7', 'message', 'conversion', 'segment'];
+            const aiTerms = ['ia', 'ai', 'mistral', 'ollama', 'deepseek', 'intelligence'];
+            
+            // Vérifier si le texte et la requête partagent des termes thématiques
+            const hasFhirTheme = fhirTerms.some(term => normalizedText.includes(term) && normalizedQuery.includes(term));
+            const hasHl7Theme = hl7Terms.some(term => normalizedText.includes(term) && normalizedQuery.includes(term));
+            const hasAiTheme = aiTerms.some(term => normalizedText.includes(term) && normalizedQuery.includes(term));
+            
+            // Bonus pour les correspondances thématiques
+            if (hasFhirTheme || hasHl7Theme || hasAiTheme) {
+                score += 3;
+            }
             
             return score;
         }
@@ -118,7 +155,7 @@ async function findRelevantKnowledge(query) {
                 type: 'faq',
                 question: item.question,
                 answer: item.answer,
-                score: calculateRelevance(item.question, query) * 2 + 
+                score: calculateRelevance(item.question, query) * 2.5 + // Augmentation de la pondération des questions
                        calculateRelevance(item.answer, query)
               })).filter(item => item.score > 0)
             : [];
@@ -147,12 +184,44 @@ async function findRelevantKnowledge(query) {
         
         // Fusionner et trier par score
         const allRelevant = [...relevantFaq, ...relevantFeatures, ...relevantCommands]
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 3);  // Prendre les 3 résultats les plus pertinents
+            .sort((a, b) => b.score - a.score);
         
-        console.log(`[KNOWLEDGE] ${allRelevant.length} informations pertinentes trouvées dans le cache local`);
+        // Diversifier les résultats en prenant au maximum 2 éléments de chaque type
+        // pour éviter d'avoir que des FAQs ou que des fonctionnalités
+        let diverseResults = [];
+        const typeCounts = { faq: 0, feature: 0, command: 0 };
+        const maxPerType = 2;
         
-        return allRelevant;
+        for (const item of allRelevant) {
+            if (typeCounts[item.type] < maxPerType) {
+                diverseResults.push(item);
+                typeCounts[item.type]++;
+                
+                // Arrêter si nous avons atteint la limite totale
+                if (diverseResults.length >= 4) break;
+            }
+        }
+        
+        // Si nous n'avons pas suffisamment de résultats avec la diversification,
+        // compléter avec les meilleurs scores restants
+        if (diverseResults.length < 3 && allRelevant.length > diverseResults.length) {
+            const usedItems = new Set(diverseResults.map(item => 
+                item.type === 'faq' ? item.question : item.name));
+            
+            for (const item of allRelevant) {
+                const itemId = item.type === 'faq' ? item.question : item.name;
+                if (!usedItems.has(itemId)) {
+                    diverseResults.push(item);
+                    usedItems.add(itemId);
+                    if (diverseResults.length >= 4) break;
+                }
+            }
+        }
+        
+        console.log(`[KNOWLEDGE] ${diverseResults.length} informations pertinentes et diversifiées trouvées dans le cache local`);
+        
+        // Limiter à 4 résultats maximum (au lieu de 3)
+        return diverseResults.slice(0, 4);
     } catch (error) {
         console.error('[KNOWLEDGE] Erreur lors de la recherche locale:', error.message);
         return [];
@@ -169,17 +238,58 @@ function formatKnowledgeForPrompt(results) {
         return "Aucune information spécifique trouvée dans la base de connaissances FHIRHub.";
     }
     
-    let formattedText = "Voici des informations pertinentes trouvées dans la base de connaissances FHIRHub:\n\n";
+    let formattedText = "Voici des informations pertinentes issues de la base de connaissances FHIRHub que tu dois utiliser pour répondre à la question de l'utilisateur:\n\n";
     
-    results.forEach((item, index) => {
+    // Trier par type pour regrouper les éléments similaires
+    const typeOrder = { 'faq': 1, 'feature': 2, 'command': 3 };
+    const sortedResults = [...results].sort((a, b) => {
+        // D'abord trier par type
+        const typeDiff = typeOrder[a.type] - typeOrder[b.type];
+        if (typeDiff !== 0) return typeDiff;
+        
+        // Puis par score (du plus élevé au plus bas)
+        return b.score - a.score;
+    });
+    
+    // Ajouter des séparateurs clairs entre les sections
+    let currentType = null;
+    
+    sortedResults.forEach((item, index) => {
+        // Ajouter un séparateur de section si nous changeons de type
+        if (currentType !== item.type) {
+            currentType = item.type;
+            if (index > 0) formattedText += "----\n\n";
+            
+            // Ajouter un titre de section
+            switch (item.type) {
+                case 'faq':
+                    formattedText += "SECTION QUESTIONS FRÉQUENTES:\n\n";
+                    break;
+                case 'feature':
+                    formattedText += "SECTION FONCTIONNALITÉS:\n\n";
+                    break;
+                case 'command':
+                    formattedText += "SECTION COMMANDES:\n\n";
+                    break;
+            }
+        }
+        
+        // Formater chaque élément avec des références pour faciliter la citation
         if (item.type === 'faq') {
-            formattedText += `[FAQ] Question: ${item.question}\nRéponse: ${item.answer}\n\n`;
+            formattedText += `[INFO-${index+1}] Question: "${item.question}"\nRéponse: "${item.answer}"\n\n`;
         } else if (item.type === 'feature') {
-            formattedText += `[FONCTIONNALITÉ] ${item.name}\n${item.description}\n\n`;
+            formattedText += `[INFO-${index+1}] Fonctionnalité: "${item.name}"\nDescription: "${item.description}"\n\n`;
         } else if (item.type === 'command') {
-            formattedText += `[COMMANDE] ${item.name}\n${item.description}\n\n`;
+            formattedText += `[INFO-${index+1}] Commande: "${item.name}"\nDescription: "${item.description}"\n\n`;
         }
     });
+    
+    // Ajouter un pied de page avec des instructions supplémentaires
+    formattedText += "----\n\n";
+    formattedText += "Les informations ci-dessus sont issues de la documentation officielle de FHIRHub. ";
+    formattedText += "Tu dois les utiliser comme source principale pour répondre aux questions. ";
+    formattedText += "Quand tu te réfères à ces informations dans ta réponse, tu peux mentionner 'selon la documentation de FHIRHub' ";
+    formattedText += "ou utiliser les références [INFO-X] pour indiquer la source spécifique.";
     
     return formattedText;
 }
@@ -191,28 +301,58 @@ function formatKnowledgeForPrompt(results) {
  * @returns {Promise<string>} Le prompt système enrichi
  */
 async function getEnhancedPrompt(basePrompt, userQuery) {
-    if (!userQuery) {
+    try {
+        if (!userQuery || userQuery.trim() === '') {
+            console.log('[KNOWLEDGE] Aucune requête utilisateur fournie pour enrichir le prompt');
+            return basePrompt;
+        }
+        
+        console.log(`[KNOWLEDGE] Recherche de connaissances pour enrichir le prompt sur: "${userQuery.substring(0, 50)}..."`);
+        
+        // Récupérer les connaissances pertinentes avec notre algorithme amélioré
+        const relevantInfo = await findRelevantKnowledge(userQuery);
+        
+        // Générer le texte formaté à partir des connaissances trouvées
+        const knowledgeText = formatKnowledgeForPrompt(relevantInfo);
+        const hasRelevantInfo = relevantInfo && relevantInfo.length > 0;
+        
+        // Construire un prompt enrichi structuré
+        let enhancedPrompt = basePrompt.trim();
+        
+        // Ajouter un séparateur entre le prompt de base et nos informations
+        enhancedPrompt += "\n\n==== BASE DE CONNAISSANCES FHIRHUB ====\n\n";
+        enhancedPrompt += knowledgeText;
+        enhancedPrompt += "\n==== FIN DE LA BASE DE CONNAISSANCES ====\n\n";
+        
+        // Ajouter des instructions détaillées pour le LLM sur l'utilisation des connaissances
+        enhancedPrompt += "INSTRUCTIONS POUR RÉPONDRE:\n";
+        
+        if (hasRelevantInfo) {
+            enhancedPrompt += `1. Des informations pertinentes (${relevantInfo.length} entrées) ont été trouvées dans la base de connaissances. Utilise-les PRIORITAIREMENT pour répondre.\n`;
+            enhancedPrompt += "2. Cite ces informations en utilisant les références [INFO-X] présentes dans le texte.\n";
+        } else {
+            enhancedPrompt += "1. AUCUNE information spécifique n'a été trouvée dans la base de connaissances pour cette question.\n";
+            enhancedPrompt += "2. Sois très prudent dans ta réponse et indique clairement les limites de tes connaissances.\n";
+        }
+        
+        // Instructions communes quelle que soit la présence d'informations
+        enhancedPrompt += "3. Si la question n'est pas entièrement couverte par la base de connaissances, commence par répondre avec ce que tu sais puis précise: 'Pour cette partie, je n'ai pas d'information spécifique dans ma base de connaissances'.\n";
+        enhancedPrompt += "4. NE JAMAIS inventer des fonctionnalités, processus ou détails techniques qui ne sont pas explicitement mentionnés.\n";
+        enhancedPrompt += "5. Réponds dans la même langue que la question de l'utilisateur (français ou anglais).\n";
+        enhancedPrompt += "6. Présente les informations de manière structurée, avec des titres et des puces si nécessaire pour faciliter la lecture.\n";
+        
+        // Journaliser des informations sur le prompt enrichi
+        const promptLength = enhancedPrompt.length;
+        console.log(`[KNOWLEDGE] Prompt enrichi: ${hasRelevantInfo ? relevantInfo.length + ' informations trouvées' : 'aucune information pertinente'}`);
+        console.log(`[KNOWLEDGE] Taille totale du prompt: ${promptLength} caractères`);
+        
+        return enhancedPrompt;
+    } catch (error) {
+        console.error('[KNOWLEDGE] Erreur lors de l\'enrichissement du prompt:', error);
+        console.error('[KNOWLEDGE-DEBUG] Détail de l\'erreur:', error.stack);
+        // En cas d'erreur, retourner le prompt de base
         return basePrompt;
     }
-    
-    const relevantKnowledge = await findRelevantKnowledge(userQuery);
-    const knowledgeText = formatKnowledgeForPrompt(relevantKnowledge);
-    const hasRelevantInfo = relevantKnowledge && relevantKnowledge.length > 0;
-    
-    const enhancedPrompt = `${basePrompt}
-
-${knowledgeText}
-
-INSTRUCTIONS IMPORTANTES:
-1. Réponds UNIQUEMENT en te basant sur les informations fournies ci-dessus.
-2. Si la question n'est pas couverte par ces informations, dis clairement "Je n'ai pas suffisamment d'informations dans ma base de connaissances pour répondre à cette question avec précision. Voici ce que je peux dire:" puis fournis une réponse générale sur le sujet.
-3. NE JAMAIS inventer des fonctionnalités, des processus ou des détails techniques qui ne sont pas explicitement mentionnés dans les informations fournies.
-4. Si tu n'es pas sûr, indique les limites de ta connaissance.
-5. Informe l'utilisateur que sa question sera transmise à l'équipe pour enrichir la base de connaissances si nécessaire.
-
-${hasRelevantInfo ? 'Des informations pertinentes ont été trouvées dans la base de connaissances. Utilise-les pour répondre.' : 'Aucune information spécifique n\'a été trouvée dans la base de connaissances pour cette question. Sois très prudent dans ta réponse et indique clairement les limites de tes connaissances.'}`;
-    
-    return enhancedPrompt;
 }
 
 // Exposer les fonctions
