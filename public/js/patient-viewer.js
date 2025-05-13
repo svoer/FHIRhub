@@ -1406,10 +1406,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (serverUrl.includes('hapi.fhir.org')) {
             // Utiliser le proxy pour contourner les limitations CORS
             // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
-            url = `/api/fhir-proxy/hapi/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=50`;
+            // Modification de la requête pour utiliser une syntaxe compatible avec HAPI FHIR
+            // Au lieu d'utiliser _has, chercher d'abord les PractitionerRole liés au patient
+            url = `/api/fhir-proxy/hapi/PractitionerRole?patient=${patientId}&_include=PractitionerRole:practitioner&_count=50`;
         } else {
             // URL directe pour les serveurs locaux (déjà sur le même domaine)
-            url = `${serverUrl}/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`;
+            // Sur certains serveurs, la syntaxe avancée peut être supportée
+            url = `${serverUrl}/PractitionerRole?patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`;
         }
         
         console.log(`Chargement des praticiens depuis: ${url}`);
