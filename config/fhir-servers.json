@@ -23,17 +23,6 @@
       "isActive": true
     },
     {
-      "id": "20570320-af5b-43a8-b19f-683abb80b6a8",
-      "name": "Mon espace santé",
-      "url": "https://hapi.fhir.org/baseR4",
-      "type": "local",
-      "version": "R4",
-      "auth": "none",
-      "isDefault": false,
-      "isLocalDefault": false,
-      "isActive": true
-    },
-    {
       "id": "7a1a0af6-6c45-461d-a4a2-d79b5acbbd9a",
       "name": "Mon espace santé",
       "url": "https://www.monespacesante.fr/",

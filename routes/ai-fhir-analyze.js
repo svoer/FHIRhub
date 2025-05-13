@@ -392,54 +392,26 @@ Utilise un ton professionnel adapté au domaine médical.`;
             // Rechercher et ajouter des informations pertinentes depuis la base de connaissances
             console.log("[KNOWLEDGE] Recherche d'informations pour:", lastUserMessage.substring(0, 50), '...');
             
-            let enhancedSystemPrompt = baseSystemPrompt;
-            
-            // Utiliser un bloc try-catch séparé pour l'enrichissement du prompt
-            // afin de pouvoir continuer même si l'enrichissement échoue
+            // Utiliser getEnhancedPrompt du service de connaissances au lieu de réimplémenter la logique
+            let enhancedSystemPrompt;
             try {
-                console.log('[DEBUG-KNOWLEDGE] Début de la recherche de connaissances pour:', lastUserMessage.substring(0, 50));
+                console.log('[DEBUG-KNOWLEDGE] Appel à getEnhancedPrompt avec le message utilisateur');
                 
-                // Limiter le temps de recherche des connaissances
-                console.log('[DEBUG-KNOWLEDGE] Appel à findRelevantKnowledge avec timeout de 5000ms');
-                const relevantInfo = await Promise.race([
-                    chatbotKnowledgeService.findRelevantKnowledge(lastUserMessage),
+                // Utiliser un timeout de sécurité pour éviter les blocages
+                enhancedSystemPrompt = await Promise.race([
+                    chatbotKnowledgeService.getEnhancedPrompt(baseSystemPrompt, lastUserMessage),
                     new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Timeout lors de la recherche de connaissances')), 5000)
+                        setTimeout(() => reject(new Error('Timeout global lors de l\'enrichissement du prompt')), 7000)
                     )
                 ]);
                 
-                console.log('[DEBUG-KNOWLEDGE] Résultat de findRelevantKnowledge reçu:', 
-                            typeof relevantInfo, Array.isArray(relevantInfo) ? relevantInfo.length : 'non-array');
-                
-                if (relevantInfo && Array.isArray(relevantInfo) && relevantInfo.length > 0) {
-                    console.log(`[DEBUG-KNOWLEDGE] ${relevantInfo.length} informations pertinentes trouvées:`, 
-                              relevantInfo.map(info => info.type + (info.question || info.name || '')).join(', '));
-                    
-                    // Formater les informations pour le prompt
-                    console.log('[DEBUG-KNOWLEDGE] Appel à formatKnowledgeForPrompt');
-                    const knowledgeText = chatbotKnowledgeService.formatKnowledgeForPrompt(relevantInfo);
-                    console.log('[DEBUG-KNOWLEDGE] Texte formaté obtenu de taille:', knowledgeText.length, 'caractères');
-                    
-                    // Enrichir le prompt système - version simplifiée pour éviter les problèmes
-                    enhancedSystemPrompt = `${baseSystemPrompt}
-
-${knowledgeText}
-
-INSTRUCTIONS IMPORTANTES:
-1. Réponds en te basant sur les informations fournies ci-dessus.
-2. Si la question n'est pas couverte par ces informations, indique les limites de ta connaissance.
-3. Ne pas inventer des fonctionnalités ou des détails qui ne sont pas mentionnés.
-4. Sois concis et précis dans ta réponse.`;
-                } else {
-                    console.log('[DEBUG-KNOWLEDGE] Aucune information pertinente trouvée ou format invalide:', 
-                               typeof relevantInfo, relevantInfo);
-                }
-                
-                console.log('[DEBUG-KNOWLEDGE] Prompt enrichi généré de taille:', 
-                    enhancedSystemPrompt.length, 'caractères');
+                console.log('[DEBUG-KNOWLEDGE] Prompt enrichi reçu avec succès:', 
+                            enhancedSystemPrompt.length, 'caractères');
             } catch (error) {
-                console.error('[ERROR-KNOWLEDGE] Erreur lors de l\'enrichissement du prompt:', error.message, error.stack);
-                // Continuer avec le prompt de base en cas d'erreur
+                console.error('[ERROR-KNOWLEDGE] Erreur lors de l\'enrichissement du prompt:', error.message);
+                // Utiliser le prompt système de base en cas d'erreur
+                enhancedSystemPrompt = baseSystemPrompt;
+                console.log('[DEBUG-KNOWLEDGE] Utilisation du prompt de base suite à une erreur');
             }
             
             // Générer la réponse avec le service d'IA
