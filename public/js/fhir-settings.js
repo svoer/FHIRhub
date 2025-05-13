@@ -582,19 +582,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gérer les changements d'onglets
     tabs.forEach(tab => {
       tab.addEventListener('click', function() {
-      // Retirer la classe active de tous les onglets
-      tabs.forEach(t => t.classList.remove('active'));
-      tabPanels.forEach(p => p.classList.remove('active'));
-      
-      // Ajouter la classe active à l'onglet cliqué
-      this.classList.add('active');
-      
-      // Activer le panneau correspondant
-      const tabId = this.dataset.tab;
-      document.getElementById(`${tabId}-tab`).classList.add('active');
+        // Retirer la classe active de tous les onglets
+        tabs.forEach(t => t.classList.remove('active'));
+        tabPanels.forEach(p => p.classList.remove('active'));
+        
+        // Ajouter la classe active à l'onglet cliqué
+        this.classList.add('active');
+        
+        // Activer le panneau correspondant
+        const tabId = this.dataset.tab;
+        document.getElementById(`${tabId}-tab`).classList.add('active');
+      });
     });
-  });
+  }
   
-  // Récupérer les serveurs au chargement de la page
-  fetchServers();
+  // Démarrer l'initialisation
+  init();
 });
