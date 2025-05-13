@@ -214,8 +214,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             let widerUrl;
                             if (serverUrl.includes('hapi.fhir.org')) {
                                 // Utiliser le proxy pour contourner les limitations CORS
-                                // Utiliser un count de 150 pour les patients comme recommandé
-                                widerUrl = `/api/fhir-proxy/hapi/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=150`;
+                                // Utiliser un count de 250 pour les patients comme demandé
+                                widerUrl = `/api/fhir-proxy/hapi/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=250`;
                             } else {
                                 // URL directe pour les serveurs locaux (déjà sur le même domaine)
                                 widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
@@ -252,8 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let initialUrl;
         if (serverUrl.includes('hapi.fhir.org')) {
             // Utiliser le proxy pour contourner les limitations CORS
-            // Utiliser un count de 150 pour les patients comme recommandé
-            initialUrl = `/api/fhir-proxy/hapi/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=150`;
+            // Utiliser un count de 250 pour les patients comme demandé
+            initialUrl = `/api/fhir-proxy/hapi/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=250`;
         } else {
             // URL directe pour les serveurs locaux (déjà sur le même domaine)
             initialUrl = `${serverUrl}/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
