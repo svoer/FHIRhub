@@ -374,7 +374,8 @@ router.post('/chat', async (req, res) => {
                 prompt: formattedPrompt,
                 systemPrompt: enhancedSystemPrompt,
                 maxTokens: max_tokens,
-                temperature: 0.7
+                temperature: 0.7,
+                providerName: provider // Utiliser le fournisseur spécifié dans la requête s'il existe
             });
             
             // Journaliser la requête et la réponse (sans les données sensibles)

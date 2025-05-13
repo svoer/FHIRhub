@@ -418,6 +418,7 @@ module.exports = {
     setActiveAIProvider,
     deleteAIProvider,
     getAIProviderById,
+    getAIProviderByName,
     setTempActiveProvider,
     restoreTempActiveProvider
 };
