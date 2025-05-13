@@ -98,6 +98,9 @@ document.addEventListener('DOMContentLoaded', function() {
       publicServersContainer.appendChild(createMessageElement('Aucun serveur public configuré', 'Ajoutez un serveur public pour commencer.'));
     }
     
+    // Configurer les événements des boutons
+    setupButtonEvents();
+    
     // Configurer les événements de switch
     setupSwitchEvents();
     
@@ -428,8 +431,9 @@ document.addEventListener('DOMContentLoaded', function() {
     saveButton.addEventListener('click', addNewServer);
   }
   
-  // Fonction pour ajouter un nouveau serveur
+  // Fonction pour ajouter/modifier un serveur
   async function addNewServer() {
+    const serverId = document.getElementById('serverId')?.value;
     const name = document.getElementById('serverName').value;
     const url = document.getElementById('serverUrl').value;
     const type = document.getElementById('serverType').value;
@@ -466,9 +470,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
       
+      // Déterminer s'il s'agit d'une création ou d'une mise à jour
+      let url = '/api/fhir-config/servers';
+      let method = 'POST';
+      
+      // Si serverId existe, c'est une mise à jour
+      if (serverId) {
+        url = `/api/fhir-config/servers/${serverId}`;
+        method = 'PUT';
+        serverData.id = serverId;
+      }
+      
       // Envoi au serveur
-      const response = await fetch('/api/fhir-config/servers', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json'
         },
@@ -547,6 +562,112 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 3000);
   }
   
+  // Fonction pour configurer les événements des boutons
+  function setupButtonEvents() {
+    // Gérer les clics sur les boutons de test
+    document.querySelectorAll('.test-button').forEach(button => {
+      button.addEventListener('click', function() {
+        const serverId = this.dataset.id;
+        testServer(serverId);
+      });
+    });
+    
+    // Gérer les clics sur les boutons d'édition
+    document.querySelectorAll('.edit-button').forEach(button => {
+      button.addEventListener('click', function() {
+        const serverId = this.dataset.id;
+        editServer(serverId);
+      });
+    });
+    
+    // Gérer les clics sur les boutons de suppression
+    document.querySelectorAll('.delete-button').forEach(button => {
+      button.addEventListener('click', function() {
+        const serverId = this.dataset.id;
+        deleteServer(serverId);
+      });
+    });
+  }
+  
+  // Fonction pour éditer un serveur
+  async function editServer(serverId) {
+    const server = servers.find(s => s.id === serverId);
+    if (!server) {
+      showErrorMessage('Serveur non trouvé');
+      return;
+    }
+    
+    // Mettre à jour le titre du formulaire
+    const formTitle = document.getElementById('formTitle');
+    if (formTitle) {
+      formTitle.textContent = 'Modifier le serveur FHIR';
+    }
+    
+    // Remplir les champs du formulaire avec les données du serveur
+    document.getElementById('serverId').value = server.id;
+    document.getElementById('serverName').value = server.name;
+    document.getElementById('serverUrl').value = server.url;
+    document.getElementById('serverVersion').value = server.version || 'R4';
+    document.getElementById('serverType').value = server.type || 'local';
+    document.getElementById('serverAuth').value = server.auth || 'none';
+    
+    // Configurer les champs d'authentification
+    handleAuthTypeChange.call(document.getElementById('serverAuth'));
+    
+    if (server.auth === 'basic') {
+      document.getElementById('serverUsername').value = server.username || '';
+      document.getElementById('serverPassword').value = server.password || '';
+    } else if (server.auth === 'token') {
+      document.getElementById('serverToken').value = server.token || '';
+    } else if (server.auth === 'oauth') {
+      document.getElementById('serverClientId').value = server.clientId || '';
+      document.getElementById('serverClientSecret').value = server.clientSecret || '';
+      document.getElementById('serverTokenUrl').value = server.tokenUrl || '';
+    }
+    
+    // Modifier le texte du bouton de soumission
+    const submitButton = document.getElementById('submitButton');
+    if (submitButton) {
+      submitButton.textContent = 'Mettre à jour';
+    }
+    
+    // Afficher le formulaire
+    toggleServerForm(true);
+  }
+  
+  // Fonction pour supprimer un serveur
+  async function deleteServer(serverId) {
+    const server = servers.find(s => s.id === serverId);
+    if (!server) {
+      showErrorMessage('Serveur non trouvé');
+      return;
+    }
+    
+    // Demander confirmation
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le serveur "${server.name}" ?`)) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/fhir-config/servers/${serverId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      
+      // Recharger les serveurs
+      await fetchServers();
+      
+      // Afficher un message de succès
+      showSuccessMessage(`Serveur "${server.name}" supprimé avec succès`);
+    } catch (error) {
+      console.error('Erreur lors de la suppression du serveur:', error);
+      showErrorMessage(`Erreur lors de la suppression du serveur: ${error.message}`);
+    }
+  }
+
   // Fonction d'initialisation
   function init() {
     // Tenter de récupérer les serveurs
