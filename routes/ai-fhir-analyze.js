@@ -400,28 +400,35 @@ Utilise un ton professionnel adapté au domaine médical.`;
             const providerName = aiProvider.name;
             
             // Rechercher et ajouter des informations pertinentes depuis la base de connaissances
-            console.log("[KNOWLEDGE] Recherche d'informations pour:", lastUserMessage.substring(0, 50), '...');
+            console.log("[AI-CHAT-KNOWLEDGE] Début de la recherche de connaissances pour enrichir le prompt");
+            console.log(`[AI-CHAT-KNOWLEDGE] Requête de l'utilisateur: "${lastUserMessage.substring(0, 50)}${lastUserMessage.length > 50 ? '...' : ''}"`);
             
             // Utiliser getEnhancedPrompt du service de connaissances au lieu de réimplémenter la logique
             let enhancedSystemPrompt;
+            const startTime = Date.now();
             try {
-                console.log('[DEBUG-KNOWLEDGE] Appel à getEnhancedPrompt avec le message utilisateur');
+                console.log('[AI-CHAT-KNOWLEDGE] Appel à getEnhancedPrompt avec longueur du prompt de base:', baseSystemPrompt.length, 'caractères');
                 
-                // Utiliser un timeout de sécurité pour éviter les blocages
+                // Utiliser un timeout de sécurité pour éviter les blocages - augmenté à 10 secondes pour donner plus de temps
                 enhancedSystemPrompt = await Promise.race([
                     chatbotKnowledgeService.getEnhancedPrompt(baseSystemPrompt, lastUserMessage),
                     new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Timeout global lors de l\'enrichissement du prompt')), 7000)
+                        setTimeout(() => reject(new Error('Timeout global lors de l\'enrichissement du prompt')), 10000)
                     )
                 ]);
                 
-                console.log('[DEBUG-KNOWLEDGE] Prompt enrichi reçu avec succès:', 
-                            enhancedSystemPrompt.length, 'caractères');
+                const timeTaken = (Date.now() - startTime) / 1000;
+                const enrichmentSize = enhancedSystemPrompt.length - baseSystemPrompt.length;
+                
+                console.log(`[AI-CHAT-KNOWLEDGE] Prompt enrichi reçu avec succès en ${timeTaken.toFixed(2)} secondes`);
+                console.log(`[AI-CHAT-KNOWLEDGE] Taille du prompt: de ${baseSystemPrompt.length} à ${enhancedSystemPrompt.length} caractères (+${enrichmentSize} caractères)`);
+                console.log('[AI-CHAT-KNOWLEDGE] Enrichissement terminé avec succès');
             } catch (error) {
-                console.error('[ERROR-KNOWLEDGE] Erreur lors de l\'enrichissement du prompt:', error.message);
+                console.error('[AI-CHAT-KNOWLEDGE] ERREUR lors de l\'enrichissement du prompt:', error.message);
                 // Utiliser le prompt système de base en cas d'erreur
                 enhancedSystemPrompt = baseSystemPrompt;
-                console.log('[DEBUG-KNOWLEDGE] Utilisation du prompt de base suite à une erreur');
+                console.log('[AI-CHAT-KNOWLEDGE] Utilisation du prompt de base suite à une erreur');
+                console.log('[AI-CHAT-KNOWLEDGE] Taille du prompt de base:', baseSystemPrompt.length, 'caractères');
             }
             
             // Générer la réponse avec le service d'IA
