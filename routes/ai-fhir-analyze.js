@@ -39,7 +39,9 @@ try {
     // Créer un objet fake pour éviter les erreurs
     chatbotKnowledgeService = {
         getEnhancedPrompt: async (prompt) => prompt,
-        findRelevantKnowledge: async () => []
+        findRelevantKnowledge: async () => [],
+        formatKnowledgeForPrompt: (results) => "Information de la base de connaissances non disponible.",
+        loadKnowledgeBase: async () => ({ faq: [], features: [], commands: [] })
     };
 }
 const { getActiveAIProvider } = aiProviderService;

@@ -43,6 +43,17 @@ async function loadKnowledgeBase() {
         };
         
         const filePath = path.resolve('./data/chatbot-knowledge.json');
+        console.log('[KNOWLEDGE] Chemin complet du fichier:', filePath);
+        
+        // Vérifier l'existence du fichier avant de le charger
+        try {
+            const fileStats = await fs.stat(filePath);
+            console.log('[KNOWLEDGE] Fichier trouvé, taille:', fileStats.size, 'octets');
+        } catch (error) {
+            console.error('[KNOWLEDGE] ERREUR: Fichier non trouvé:', error.message);
+            throw new Error(`Fichier de connaissances introuvable: ${error.message}`);
+        }
+        
         const fileContent = await loadFileWithTimeout(filePath);
         const data = JSON.parse(fileContent);
         
