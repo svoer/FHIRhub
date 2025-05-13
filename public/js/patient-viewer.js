@@ -1401,89 +1401,149 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Déterminer si nous utilisons le proxy ou l'URL directe
-        let url;
-        if (serverUrl.includes('hapi.fhir.org')) {
-            // Utiliser le proxy pour contourner les limitations CORS
-            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
-            // Modification de la requête pour utiliser une syntaxe compatible avec HAPI FHIR
-            // Au lieu d'utiliser _has, chercher d'abord les PractitionerRole liés au patient
-            url = `/api/fhir-proxy/hapi/PractitionerRole?patient=${patientId}&_include=PractitionerRole:practitioner&_count=50`;
-        } else {
-            // URL directe pour les serveurs locaux (déjà sur le même domaine)
-            // Sur certains serveurs, la syntaxe avancée peut être supportée
-            url = `${serverUrl}/PractitionerRole?patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`;
-        }
-        
-        console.log(`Chargement des praticiens depuis: ${url}`);
-        
-        // Exécuter la requête FHIR
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération des praticiens: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSection.style.display = 'none';
-                
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    // Filtrer les praticiens (dans un Bundle, nous aurons aussi des PractitionerRole)
-                    const practitioners = data.entry
-                        .filter(entry => entry.resource.resourceType === 'Practitioner')
-                        .map(entry => entry.resource);
-                    
-                    practitionersData = practitioners;
-                    
-                    // Créer une liste de praticiens
-                    const practitionersList = document.createElement('div');
-                    practitionersList.style.display = 'grid';
-                    practitionersList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    practitionersList.style.gap = '15px';
-                    
-                    practitioners.forEach(practitioner => {
-                        const practitionerElement = document.createElement('div');
-                        practitionerElement.style.backgroundColor = '#f9f9f9';
-                        practitionerElement.style.borderRadius = '8px';
-                        practitionerElement.style.padding = '15px';
-                        practitionerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        practitionerElement.style.borderLeft = '3px solid #e83e28';
-                        
-                        const name = formatPractitionerName(practitioner.name);
-                        const roles = findPractitionerRoles(practitioner.id, data.entry);
-                        
-                        practitionerElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${practitioner.id}</p>
-                                ${practitioner.qualification ? 
-                                  `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
-                                  : ''}
-                                ${roles && roles.length > 0 ? 
-                                  `<p><strong>Rôles:</strong> ${formatRoles(roles)}</p>` 
-                                  : ''}
-                            </div>
-                        `;
-                        
-                        practitionersList.appendChild(practitionerElement);
+        // Stratégie alternative: extraire les praticiens des consultations déjà chargées
+        // Cette approche est plus fiable car elle évite les erreurs 400 et 429
+        if (encountersData && encountersData.length > 0) {
+            console.log(`Extraction des praticiens à partir des ${encountersData.length} consultations chargées`);
+            
+            // Créer un ensemble pour stocker les IDs uniques des praticiens
+            const practitionerIds = new Set();
+            
+            // Parcourir toutes les consultations pour extraire les références aux praticiens
+            encountersData.forEach(encounter => {
+                // Vérifier s'il y a des participants (praticiens) dans la consultation
+                if (encounter.participant && Array.isArray(encounter.participant)) {
+                    encounter.participant.forEach(participant => {
+                        // Vérifier si le participant a une référence à un praticien
+                        if (participant.individual && participant.individual.reference) {
+                            const reference = participant.individual.reference;
+                            // Extraire l'ID du praticien (format: "Practitioner/123456")
+                            if (reference.startsWith('Practitioner/')) {
+                                const practitionerId = reference.split('/')[1];
+                                practitionerIds.add(practitionerId);
+                            }
+                        }
                     });
-                    
-                    resourcesList.appendChild(practitionersList);
-                } else {
-                    noResourcesSection.style.display = 'block';
                 }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des praticiens:', error);
+            });
+            
+            // Si nous avons trouvé des praticiens, charger leurs détails en séquentiel avec délai
+            if (practitionerIds.size > 0) {
+                console.log(`${practitionerIds.size} praticiens identifiés dans les consultations`);
+                
+                // Convertir l'ensemble en tableau
+                const practitionerIdsArray = Array.from(practitionerIds);
+                const practitioners = [];
+                
+                // Fonction pour charger les praticiens séquentiellement
+                const loadPractitionersSequentially = async () => {
+                    for (let i = 0; i < practitionerIdsArray.length; i++) {
+                        const id = practitionerIdsArray[i];
+                        
+                        // Déterminer l'URL à utiliser
+                        let practitionerUrl;
+                        if (serverUrl.includes('hapi.fhir.org')) {
+                            practitionerUrl = `/api/fhir-proxy/hapi/Practitioner/${id}`;
+                        } else {
+                            practitionerUrl = `${serverUrl}/Practitioner/${id}`;
+                        }
+                        
+                        try {
+                            // Ajouter un délai de 500ms entre les requêtes pour éviter le rate limiting
+                            if (i > 0) {
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                            }
+                            
+                            console.log(`Chargement du praticien ${i+1}/${practitionerIdsArray.length}: ${practitionerUrl}`);
+                            const response = await fetch(practitionerUrl);
+                            
+                            if (response.ok) {
+                                const practitioner = await response.json();
+                                practitioners.push(practitioner);
+                            } else {
+                                console.warn(`Impossible de charger le praticien ${id}: ${response.status}`);
+                            }
+                        } catch (error) {
+                            console.error(`Erreur lors du chargement du praticien ${id}:`, error);
+                        }
+                    }
+                    
+                    // Une fois tous les praticiens chargés, les afficher
+                    if (practitioners.length > 0) {
+                        loadingSection.style.display = 'none';
+                        resourcesList.style.display = 'block';
+                        resourcesList.innerHTML = '';
+                        
+                        practitionersData = practitioners;
+                        
+                        // Créer une liste de praticiens
+                        const practitionersList = document.createElement('div');
+                        practitionersList.style.display = 'grid';
+                        practitionersList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                        practitionersList.style.gap = '15px';
+                        
+                        practitioners.forEach(practitioner => {
+                            const practitionerElement = document.createElement('div');
+                            practitionerElement.style.backgroundColor = '#f9f9f9';
+                            practitionerElement.style.borderRadius = '8px';
+                            practitionerElement.style.padding = '15px';
+                            practitionerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                            practitionerElement.style.borderLeft = '3px solid #e83e28';
+                            
+                            const name = formatPractitionerName(practitioner.name);
+                            
+                            practitionerElement.innerHTML = `
+                                <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                    <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
+                                </h4>
+                                <div style="margin-top: 10px; color: #555;">
+                                    <p><strong>Identifiant:</strong> ${practitioner.id}</p>
+                                    ${practitioner.qualification ? 
+                                      `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
+                                      : ''}
+                                </div>
+                            `;
+                            
+                            practitionersList.appendChild(practitionerElement);
+                        });
+                        
+                        resourcesList.appendChild(practitionersList);
+                    } else {
+                        // Aucun praticien n'a pu être chargé
+                        loadingSection.style.display = 'none';
+                        noResourcesSection.style.display = 'block';
+                        noResourcesSection.innerHTML = `
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i> Aucun praticien n'a pu être chargé.
+                            </div>
+                            <p>Des références aux praticiens existent dans les consultations, mais les détails n'ont pas pu être récupérés.</p>
+                        `;
+                    }
+                };
+                
+                // Lancer le chargement séquentiel
+                loadPractitionersSequentially();
+            } else {
+                // Aucun praticien trouvé dans les consultations
                 loadingSection.style.display = 'none';
                 noResourcesSection.style.display = 'block';
-            });
+                noResourcesSection.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Aucun praticien n'a été identifié dans les consultations.
+                    </div>
+                `;
+            }
+        } else {
+            // Aucune consultation n'a été chargée, impossible de trouver les praticiens
+            loadingSection.style.display = 'none';
+            noResourcesSection.style.display = 'block';
+            noResourcesSection.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> Pour voir les praticiens, veuillez d'abord charger les consultations.
+                </div>
+                <p>Les informations des praticiens sont extraites des consultations du patient.</p>
+            `;
+        }
     }
     
     function loadPatientOrganizations(patientId, serverUrl) {
