@@ -254,13 +254,38 @@ Le rapport doit obligatoirement intégrer et analyser toutes les sections de don
             
             // Utiliser notre service d'IA unifié
             console.log("[AI-Analyze] Génération de l'analyse avec le service d'IA unifié");
-            analysis = await aiService.generateResponse({
-                prompt,
-                maxTokens: 5000, // Augmenté pour permettre une analyse plus complète du bundle
-                temperature: 0.3,
-                retryCount: 3,
-                systemPrompt: 'Tu es un expert médical qui analyse des données FHIR pour générer un rapport clinique complet et précis.'
-            });
+            console.log("[AI-Analyze] Début de l'appel au service IA");
+            try {
+                // Ajouter des logs détaillés juste avant l'appel
+                const aiParams = {
+                    prompt,
+                    maxTokens: 5000, // Augmenté pour permettre une analyse plus complète du bundle
+                    temperature: 0.3,
+                    retryCount: 3,
+                    systemPrompt: 'Tu es un expert médical qui analyse des données FHIR pour générer un rapport clinique complet et précis.'
+                };
+                
+                console.log("[AI-Analyze] Paramètres de l'appel IA:", 
+                    JSON.stringify({
+                        maxTokens: aiParams.maxTokens,
+                        temperature: aiParams.temperature,
+                        retryCount: aiParams.retryCount,
+                        promptLength: prompt.length,
+                        systemPrompt: aiParams.systemPrompt
+                    })
+                );
+                
+                // Appel au service IA avec catch explicite
+                analysis = await aiService.generateResponse(aiParams).catch(error => {
+                    console.error("[AI-Analyze] Erreur capturée lors de l'appel à aiService.generateResponse:", error.message);
+                    throw error; // Relancer pour permettre le traitement par le catch externe
+                });
+                
+                console.log("[AI-Analyze] Appel au service IA terminé avec succès");
+            } catch (error) {
+                console.error("[AI-Analyze] Erreur lors de l'appel au service IA:", error.message);
+                throw error; // Relancer pour permettre le traitement par le catch externe
+            }
             
             console.log(`[AI-Analyze] Analyse générée avec succès via ${aiProvider.name || aiProvider.provider_name}`);
             
