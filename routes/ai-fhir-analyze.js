@@ -34,14 +34,27 @@ try {
 let chatbotKnowledgeService;
 try {
     chatbotKnowledgeService = require('../utils/chatbotKnowledgeService');
+    console.log('[DEBUG] Service de connaissances chargé avec succès');
 } catch (error) {
     console.error("Erreur lors de l'importation de chatbotKnowledgeService:", error.message);
-    // Créer un objet fake pour éviter les erreurs
+    // Créer un objet de secours avec fonctionnalités limitées
     chatbotKnowledgeService = {
-        getEnhancedPrompt: async (prompt) => prompt,
-        findRelevantKnowledge: async () => [],
-        formatKnowledgeForPrompt: (results) => "Information de la base de connaissances non disponible.",
-        loadKnowledgeBase: async () => ({ faq: [], features: [], commands: [] })
+        getEnhancedPrompt: async (prompt, userQuery) => {
+            console.log('[FALLBACK] Utilisation du service de secours pour getEnhancedPrompt');
+            return prompt;
+        },
+        findRelevantKnowledge: async () => {
+            console.log('[FALLBACK] Utilisation du service de secours pour findRelevantKnowledge');
+            return [];
+        },
+        formatKnowledgeForPrompt: (results) => {
+            console.log('[FALLBACK] Utilisation du service de secours pour formatKnowledgeForPrompt');
+            return "Information de la base de connaissances non disponible.";
+        },
+        loadKnowledgeBase: async () => {
+            console.log('[FALLBACK] Utilisation du service de secours pour loadKnowledgeBase');
+            return { faq: [], features: [], commands: [] };
+        }
     };
 }
 const { getActiveAIProvider } = aiProviderService;
