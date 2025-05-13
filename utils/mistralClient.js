@@ -70,7 +70,33 @@ async function listModels() {
     }
   }
   
-  return await mistralClient.models.list();
+  try {
+    const modelList = await mistralClient.models.list();
+    
+    // Vérifier si la réponse contient la propriété 'data' attendue
+    if (modelList && Array.isArray(modelList.data)) {
+      return modelList;
+    }
+    
+    // Si la structure est différente, retourner un format compatible
+    return {
+      data: Array.isArray(modelList) ? modelList : [
+        { id: "mistral-large-2411", object: "model" },
+        { id: "mistral-medium", object: "model" },
+        { id: "mistral-small-latest", object: "model" }
+      ]
+    };
+  } catch (error) {
+    logger.error(`Erreur lors de la récupération des modèles Mistral: ${error.message}`);
+    // Retourner des modèles par défaut en cas d'erreur
+    return {
+      data: [
+        { id: "mistral-large-2411", object: "model" },
+        { id: "mistral-medium", object: "model" },
+        { id: "mistral-small-latest", object: "model" }
+      ]
+    };
+  }
 }
 
 /**
@@ -94,11 +120,49 @@ async function generateResponse(prompt, {
   // Préparation des messages
   const messages = [];
   
+  // Ajouter un message système si fourni
   if (systemMessage) {
     messages.push({ role: 'system', content: systemMessage });
   }
   
-  messages.push({ role: 'user', content: prompt });
+  // Vérifier si le prompt est une chaîne ou un objet
+  if (typeof prompt === 'string') {
+    // Simple prompt texte
+    messages.push({ role: 'user', content: prompt });
+  } else if (typeof prompt === 'object' && prompt !== null) {
+    // Si le prompt est déjà un objet message ou une liste de messages
+    if (Array.isArray(prompt)) {
+      // C'est une liste de messages, on les ajoute tous
+      prompt.forEach(msg => {
+        if (msg && typeof msg === 'object' && msg.role && msg.content) {
+          messages.push(msg);
+        } else if (msg && typeof msg === 'string') {
+          messages.push({ role: 'user', content: msg });
+        }
+      });
+    } else if (prompt.role && prompt.content) {
+      // C'est un seul message formaté
+      messages.push(prompt);
+    } else if (prompt.messages && Array.isArray(prompt.messages)) {
+      // Format spécial avec une liste de messages
+      prompt.messages.forEach(msg => {
+        if (msg && typeof msg === 'object' && msg.role && msg.content) {
+          messages.push(msg);
+        }
+      });
+    } else {
+      // Fallback - on le transforme en string
+      messages.push({ role: 'user', content: JSON.stringify(prompt) });
+    }
+  } else {
+    // Fallback pour les cas non gérés
+    messages.push({ role: 'user', content: String(prompt || '') });
+  }
+  
+  // S'assurer qu'il y a au moins un message utilisateur
+  if (messages.length === 0 || messages.every(m => m.role !== 'user')) {
+    messages.push({ role: 'user', content: 'Analyser les données médicales fournies' });
+  }
   
   // Implémentation des tentatives avec backoff exponentiel
   let attempt = 0;
@@ -114,16 +178,32 @@ async function generateResponse(prompt, {
         setTimeout(() => reject(new Error('Timeout dépassé pour l\'appel à l\'API Mistral')), 180000);
       });
       
-      // Lancer l'appel avec un délai variable selon le nombre de tentatives
-      const apiPromise = mistralClient.chat.complete({
+      // Préparation des paramètres d'appel
+      const chatParams = {
         model,
         messages,
-        temperature,
-        max_tokens: maxTokens
+        temperature
+      };
+      
+      // Ajouter max_tokens uniquement si valide
+      if (maxTokens && maxTokens > 0) {
+        chatParams.max_tokens = maxTokens;
+      }
+      
+      // Log détaillé pour le débogage
+      logger.info(`Appel Mistral avec modèle: ${model}, ${messages.length} messages`);
+      
+      // Lancer l'appel avec un délai variable selon le nombre de tentatives
+      const apiPromise = mistralClient.chat.complete(chatParams).catch(err => {
+        logger.error(`Erreur dans l'appel de base à Mistral: ${err.message}`);
+        throw err;
       });
       
       // Utiliser celui qui se termine en premier
-      const response = await Promise.race([apiPromise, timeoutPromise]);
+      const response = await Promise.race([apiPromise, timeoutPromise]).catch(err => {
+        logger.error(`Erreur dans Promise.race: ${err.message}`);
+        throw err;
+      });
       
       // Si on arrive ici, on a une réponse valide
       logger.info(`Réponse API Mistral reçue avec succès (tentative ${attempt+1})`);
