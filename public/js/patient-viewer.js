@@ -1589,25 +1589,46 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log(`Chargement du bundle patient depuis: ${url}`);
         
-        // On récupère directement le bundle associé au patient, incluant les références
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération du bundle: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                // Stocker le bundle pour référence future
-                bundleData = data;
+        // Fonction de traitement des données du bundle
+        const processBundleData = (data, resourcesList) => {
+            // Stocker le bundle pour référence future
+            bundleData = data;
+            
+            // Afficher les informations sur le bundle
+            if (data.resourceType === 'Bundle') {
+                const resourceCount = data.entry ? data.entry.length : 0;
+                const resourceTypes = data.entry ? 
+                    [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
                 
-                if (loadingSection) loadingSection.style.display = 'none';
-                
-                // Afficher les informations sur le bundle
-                if (data.resourceType === 'Bundle') {
-                    const resourceCount = data.entry ? data.entry.length : 0;
-                    const resourceTypes = data.entry ? 
-                        [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
+                bundleInfo.innerHTML = `
+                    <p><strong>Type de bundle:</strong> ${data.type || 'Inconnu'}</p>
+                    <p><strong>Identifiant:</strong> ${data.id || 'Non spécifié'}</p>
+                    <p><strong>Nombre de ressources:</strong> ${resourceCount}</p>
+                    <p><strong>Types de ressources:</strong> ${resourceTypes.join(', ') || 'Aucun'}</p>
+                `;
+        
+                if (resourceCount > 0) {
+                    // Grouper les ressources par type
+                    const resourcesByType = {};
+                    data.entry.forEach(entry => {
+                        if (entry.resource && entry.resource.resourceType) {
+                            const type = entry.resource.resourceType;
+                            if (!resourcesByType[type]) {
+                                resourcesByType[type] = [];
+                            }
+                            resourcesByType[type].push(entry.resource);
+                        }
+                    });
+                    
+                    // Pour chaque type, créer une section dépliable
+                    Object.keys(resourcesByType).sort().forEach(type => {
+                        const resources = resourcesByType[type];
+                        const typeSection = document.createElement('div');
+                        typeSection.className = 'resource-type-section';
+                        typeSection.style.marginBottom = '20px';
+                        typeSection.style.border = '1px solid #eee';
+                        typeSection.style.borderRadius = '8px';
+                        typeSection.style.overflow = 'hidden';
                     
                     bundleInfo.innerHTML = `
                         <p><strong>Type de bundle:</strong> ${data.type || 'Inconnu'}</p>
