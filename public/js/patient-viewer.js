@@ -3052,39 +3052,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Ajouter les consultations
                     if (encounters.entry && encounters.entry.length > 0) {
                         encounters.entry.forEach(entry => {
-                    if (entry.resource.period && entry.resource.period.start) {
-                        timelineEntries.push({
-                            type: 'encounter',
-                            resource: entry.resource,
-                            date: new Date(entry.resource.period.start),
-                            title: entry.resource.type?.[0]?.coding?.[0]?.display || 'Consultation',
-                            icon: 'fa-hospital',
-                            color: '#fd7e30'
+                            if (entry.resource.period && entry.resource.period.start) {
+                                timelineEntries.push({
+                                    type: 'encounter',
+                                    resource: entry.resource,
+                                    date: new Date(entry.resource.period.start),
+                                    title: entry.resource.type?.[0]?.coding?.[0]?.display || 'Consultation',
+                                    icon: 'fa-hospital',
+                                    color: '#fd7e30'
+                                });
+                            }
                         });
                     }
-                });
-            }
-            
-            // Ajouter les observations
-            if (observations.entry && observations.entry.length > 0) {
-                observations.entry.forEach(entry => {
-                    const effectiveDate = getEffectiveDate(entry.resource, true);
-                    if (effectiveDate) {
-                        timelineEntries.push({
-                            type: 'observation',
-                            resource: entry.resource,
-                            date: new Date(effectiveDate),
-                            title: entry.resource.code?.coding?.[0]?.display || 'Observation',
-                            icon: 'fa-vial',
-                            color: '#fd7e30'
+                    
+                    // Ajouter les observations
+                    if (observations.entry && observations.entry.length > 0) {
+                        observations.entry.forEach(entry => {
+                            const effectiveDate = getEffectiveDate(entry.resource, true);
+                            if (effectiveDate) {
+                                timelineEntries.push({
+                                    type: 'observation',
+                                    resource: entry.resource,
+                                    date: new Date(effectiveDate),
+                                    title: entry.resource.code?.coding?.[0]?.display || 'Observation',
+                                    icon: 'fa-vial',
+                                    color: '#3792cb'
+                                });
+                            }
                         });
                     }
-                });
-            }
-            
-            // Ajouter les médicaments
-            if (medications.entry && medications.entry.length > 0) {
-                medications.entry.forEach(entry => {
+                    
+                    // Ajouter les médicaments
+                    if (medications.entry && medications.entry.length > 0) {
+                        medications.entry.forEach(entry => {
                     if (entry.resource.authoredOn) {
                         timelineEntries.push({
                             type: 'medication',
