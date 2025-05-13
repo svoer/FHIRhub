@@ -1094,16 +1094,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function loadPatientObservations(patientId, serverUrl) {
         const container = document.querySelector('#observationsContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des observations
         observationsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1116,83 +1109,63 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Observation?patient=${patientId}&_sort=-date&_count=1000`;
         }
         
-        console.log(`Chargement des observations depuis: ${url}`);
-        
-        // Exécuter la requête FHIR pour récupérer les observations
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                loadingSection.style.display = 'none';
+        // Fonction de traitement des données spécifique aux observations
+        const processObservationsData = (data, resourcesList) => {
+            // Stocker toutes les observations dans la variable globale
+            observationsData = data.entry.map(entry => entry.resource);
+            console.log(`${observationsData.length} observations chargées et stockées`);
+            
+            resourcesList.innerHTML = '';
+            
+            // Créer une liste d'observations
+            const observationsList = document.createElement('div');
+            observationsList.className = 'observations-list';
+            
+            data.entry.forEach(entry => {
+                const observation = entry.resource;
+                const observationElement = document.createElement('div');
+                observationElement.className = 'observation-item';
+                observationElement.style.padding = '12px';
+                observationElement.style.margin = '8px 0';
+                observationElement.style.backgroundColor = '#f9f9f9';
+                observationElement.style.borderRadius = '6px';
+                observationElement.style.borderLeft = '3px solid #fd7e30';
                 
-                if (data.entry && data.entry.length > 0) {
-                    // Stocker toutes les observations dans la variable globale
-                    observationsData = data.entry.map(entry => entry.resource);
-                    console.log(`${observationsData.length} observations chargées et stockées`);
-                    
-                    resourcesList.innerHTML = '';
-                    resourcesList.style.display = 'block';
-                    
-                    // Créer une liste d'observations
-                    const observationsList = document.createElement('div');
-                    observationsList.className = 'observations-list';
-                    
-                    data.entry.forEach(entry => {
-                        const observation = entry.resource;
-                        const observationElement = document.createElement('div');
-                        observationElement.className = 'observation-item';
-                        observationElement.style.padding = '12px';
-                        observationElement.style.margin = '8px 0';
-                        observationElement.style.backgroundColor = '#f9f9f9';
-                        observationElement.style.borderRadius = '6px';
-                        observationElement.style.borderLeft = '3px solid #fd7e30';
-                        
-                        const valueDisplay = getObservationValue(observation);
-                        const effectiveDate = getEffectiveDate(observation);
-                        
-                        observationElement.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                                    ${observation.code?.coding?.[0]?.display || observation.code?.text || 'Observation non spécifiée'}
-                                </h4>
-                                <span style="font-size: 0.85rem; background: #f8f9fa; color: #6c757d; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                                    ${observation.status || 'Non spécifié'}
-                                </span>
-                            </div>
-                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                                <strong>Valeur:</strong> ${valueDisplay}
-                            </div>
-                            <div style="font-size: 0.9rem; color: #555;">
-                                <strong>Date:</strong> ${effectiveDate}
-                            </div>
-                        `;
-                        
-                        observationsList.appendChild(observationElement);
-                    });
-                    
-                    resourcesList.appendChild(observationsList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des observations:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
+                const valueDisplay = getObservationValue(observation);
+                const effectiveDate = getEffectiveDate(observation);
+                
+                observationElement.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
+                            ${observation.code?.coding?.[0]?.display || observation.code?.text || 'Observation non spécifiée'}
+                        </h4>
+                        <span style="font-size: 0.85rem; background: #f8f9fa; color: #6c757d; padding: 3px 8px; border-radius: 12px; display: inline-block;">
+                            ${observation.status || 'Non spécifié'}
+                        </span>
+                    </div>
+                    <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
+                        <strong>Valeur:</strong> ${valueDisplay}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #555;">
+                        <strong>Date:</strong> ${effectiveDate}
+                    </div>
+                `;
+                
+                observationsList.appendChild(observationElement);
             });
+            
+            resourcesList.appendChild(observationsList);
+        };
+        
+        // Utiliser notre fonction générique pour charger les observations
+        loadFhirResourceWithDelay(url, container, processObservationsData);
     }
     
     function loadPatientMedications(patientId, serverUrl) {
         const container = document.querySelector('#medicationsContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des médicaments
         medicationsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1205,85 +1178,65 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/MedicationRequest?patient=${patientId}&_sort=-date&_count=1000`;
         }
         
-        console.log(`Chargement des médicaments depuis: ${url}`);
-        
-        // Exécuter la requête FHIR pour récupérer les médicaments
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                loadingSection.style.display = 'none';
+        // Fonction de traitement des données spécifique aux médicaments
+        const processMedicationsData = (data, resourcesList) => {
+            // Stocker tous les médicaments dans la variable globale
+            medicationsData = data.entry.map(entry => entry.resource);
+            console.log(`${medicationsData.length} médicaments chargés et stockés`);
+            
+            resourcesList.innerHTML = '';
+            
+            // Créer une liste de médicaments
+            const medicationsList = document.createElement('div');
+            medicationsList.className = 'medications-list';
+            
+            data.entry.forEach(entry => {
+                const medication = entry.resource;
+                const medicationElement = document.createElement('div');
+                medicationElement.className = 'medication-item';
+                medicationElement.style.padding = '12px';
+                medicationElement.style.margin = '8px 0';
+                medicationElement.style.backgroundColor = '#f9f9f9';
+                medicationElement.style.borderRadius = '6px';
+                medicationElement.style.borderLeft = '3px solid #e83e28';
                 
-                if (data.entry && data.entry.length > 0) {
-                    // Stocker tous les médicaments dans la variable globale
-                    medicationsData = data.entry.map(entry => entry.resource);
-                    console.log(`${medicationsData.length} médicaments chargés et stockés`);
-                    
-                    resourcesList.innerHTML = '';
-                    resourcesList.style.display = 'block';
-                    
-                    // Créer une liste de médicaments
-                    const medicationsList = document.createElement('div');
-                    medicationsList.className = 'medications-list';
-                    
-                    data.entry.forEach(entry => {
-                        const medication = entry.resource;
-                        const medicationElement = document.createElement('div');
-                        medicationElement.className = 'medication-item';
-                        medicationElement.style.padding = '12px';
-                        medicationElement.style.margin = '8px 0';
-                        medicationElement.style.backgroundColor = '#f9f9f9';
-                        medicationElement.style.borderRadius = '6px';
-                        medicationElement.style.borderLeft = '3px solid #e83e28';
-                        
-                        const status = medication.status || 'Non spécifié';
-                        const authDate = medication.authoredOn ? new Date(medication.authoredOn).toLocaleDateString('fr-FR') : 'Non spécifiée';
-                        
-                        medicationElement.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                                    ${medication.medicationCodeableConcept?.coding?.[0]?.display || 
-                                      medication.medicationCodeableConcept?.text || 
-                                      'Médicament non spécifié'}
-                                </h4>
-                                <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                                    ${status}
-                                </span>
-                            </div>
-                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                                <strong>Dosage:</strong> ${medication.dosageInstruction?.[0]?.text || 'Non spécifié'}
-                            </div>
-                            <div style="font-size: 0.9rem; color: #555;">
-                                <strong>Date de prescription:</strong> ${authDate}
-                            </div>
-                        `;
-                        
-                        medicationsList.appendChild(medicationElement);
-                    });
-                    
-                    resourcesList.appendChild(medicationsList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des médicaments:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
+                const status = medication.status || 'Non spécifié';
+                const authDate = medication.authoredOn ? new Date(medication.authoredOn).toLocaleDateString('fr-FR') : 'Non spécifiée';
+                
+                medicationElement.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
+                            ${medication.medicationCodeableConcept?.coding?.[0]?.display || 
+                              medication.medicationCodeableConcept?.text || 
+                              'Médicament non spécifié'}
+                        </h4>
+                        <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
+                            ${status}
+                        </span>
+                    </div>
+                    <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
+                        <strong>Dosage:</strong> ${medication.dosageInstruction?.[0]?.text || 'Non spécifié'}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #555;">
+                        <strong>Date de prescription:</strong> ${authDate}
+                    </div>
+                `;
+                
+                medicationsList.appendChild(medicationElement);
             });
+            
+            resourcesList.appendChild(medicationsList);
+        };
+        
+        // Utiliser notre fonction générique pour charger les médicaments
+        loadFhirResourceWithDelay(url, container, processMedicationsData);
     }
     
     function loadPatientEncounters(patientId, serverUrl) {
         const container = document.querySelector('#encountersContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des consultations
         encountersData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1296,88 +1249,68 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Encounter?patient=${patientId}&_sort=-date&_count=1000`;
         }
         
-        console.log(`Chargement des consultations depuis: ${url}`);
-        
-        // Exécuter la requête FHIR pour récupérer les consultations
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                loadingSection.style.display = 'none';
+        // Fonction de traitement des données spécifique aux consultations
+        const processEncountersData = (data, resourcesList) => {
+            // Stocker toutes les consultations dans la variable globale
+            encountersData = data.entry.map(entry => entry.resource);
+            console.log(`${encountersData.length} consultations chargées et stockées`);
+            
+            resourcesList.innerHTML = '';
+            
+            // Créer une liste de consultations
+            const encountersList = document.createElement('div');
+            encountersList.className = 'encounters-list';
+            
+            data.entry.forEach(entry => {
+                const encounter = entry.resource;
+                const encounterElement = document.createElement('div');
+                encounterElement.className = 'encounter-item';
+                encounterElement.style.padding = '12px';
+                encounterElement.style.margin = '8px 0';
+                encounterElement.style.backgroundColor = '#f9f9f9';
+                encounterElement.style.borderRadius = '6px';
+                encounterElement.style.borderLeft = '3px solid #fd7e30';
                 
-                if (data.entry && data.entry.length > 0) {
-                    // Stocker toutes les consultations dans la variable globale
-                    encountersData = data.entry.map(entry => entry.resource);
-                    console.log(`${encountersData.length} consultations chargées et stockées`);
-                    
-                    resourcesList.innerHTML = '';
-                    resourcesList.style.display = 'block';
-                    
-                    // Créer une liste de consultations
-                    const encountersList = document.createElement('div');
-                    encountersList.className = 'encounters-list';
-                    
-                    data.entry.forEach(entry => {
-                        const encounter = entry.resource;
-                        const encounterElement = document.createElement('div');
-                        encounterElement.className = 'encounter-item';
-                        encounterElement.style.padding = '12px';
-                        encounterElement.style.margin = '8px 0';
-                        encounterElement.style.backgroundColor = '#f9f9f9';
-                        encounterElement.style.borderRadius = '6px';
-                        encounterElement.style.borderLeft = '3px solid #fd7e30';
-                        
-                        const status = encounter.status || 'Non spécifié';
-                        const periodStart = encounter.period?.start ? new Date(encounter.period.start).toLocaleDateString('fr-FR') : 'Non spécifiée';
-                        const periodEnd = encounter.period?.end ? new Date(encounter.period.end).toLocaleDateString('fr-FR') : 'En cours';
-                        
-                        encounterElement.innerHTML = `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                                    ${encounter.type?.[0]?.coding?.[0]?.display || encounter.type?.[0]?.text || 'Consultation'}
-                                </h4>
-                                <span style="font-size: 0.85rem; background: ${status === 'finished' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'finished' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                                    ${status}
-                                </span>
-                            </div>
-                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                                <strong>Début:</strong> ${periodStart}
-                            </div>
-                            <div style="font-size: 0.9rem; color: #555;">
-                                <strong>Fin:</strong> ${periodEnd}
-                            </div>
-                            <div style="font-size: 0.9rem; color: #555; margin-top: 5px;">
-                                <strong>Service:</strong> ${encounter.serviceType?.coding?.[0]?.display || encounter.serviceType?.text || 'Non spécifié'}
-                            </div>
-                        `;
-                        
-                        encountersList.appendChild(encounterElement);
-                    });
-                    
-                    resourcesList.appendChild(encountersList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des consultations:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
+                const status = encounter.status || 'Non spécifié';
+                const periodStart = encounter.period?.start ? new Date(encounter.period.start).toLocaleDateString('fr-FR') : 'Non spécifiée';
+                const periodEnd = encounter.period?.end ? new Date(encounter.period.end).toLocaleDateString('fr-FR') : 'En cours';
+                
+                encounterElement.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
+                            ${encounter.type?.[0]?.coding?.[0]?.display || encounter.type?.[0]?.text || 'Consultation'}
+                        </h4>
+                        <span style="font-size: 0.85rem; background: ${status === 'finished' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'finished' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
+                            ${status}
+                        </span>
+                    </div>
+                    <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
+                        <strong>Début:</strong> ${periodStart}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #555;">
+                        <strong>Fin:</strong> ${periodEnd}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #555; margin-top: 5px;">
+                        <strong>Service:</strong> ${encounter.serviceType?.coding?.[0]?.display || encounter.serviceType?.text || 'Non spécifié'}
+                    </div>
+                `;
+                
+                encountersList.appendChild(encounterElement);
             });
+            
+            resourcesList.appendChild(encountersList);
+        };
+        
+        // Utiliser notre fonction générique pour charger les consultations
+        loadFhirResourceWithDelay(url, container, processEncountersData);
     }
     
     // Fonctions pour charger les ressources supplémentaires
     function loadPatientPractitioners(patientId, serverUrl) {
         const container = document.querySelector('#practitionersContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des praticiens
         practitionersData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1390,75 +1323,55 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`;
         }
         
-        console.log(`Chargement des praticiens depuis: ${url}`);
-        
-        // Exécuter la requête FHIR
-        fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erreur de récupération des praticiens: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                loadingSection.style.display = 'none';
+        // Fonction de traitement des données spécifique aux praticiens
+        const processPractitionersData = (data, resourcesList) => {
+            // Filtrer les praticiens (dans un Bundle, nous aurons aussi des PractitionerRole)
+            const practitioners = data.entry
+                .filter(entry => entry.resource.resourceType === 'Practitioner')
+                .map(entry => entry.resource);
+            
+            practitionersData = practitioners;
+            
+            // Créer une liste de praticiens
+            const practitionersList = document.createElement('div');
+            practitionersList.style.display = 'grid';
+            practitionersList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+            practitionersList.style.gap = '15px';
+            
+            practitioners.forEach(practitioner => {
+                const practitionerElement = document.createElement('div');
+                practitionerElement.style.backgroundColor = '#f9f9f9';
+                practitionerElement.style.borderRadius = '8px';
+                practitionerElement.style.padding = '15px';
+                practitionerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                practitionerElement.style.borderLeft = '3px solid #e83e28';
                 
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    // Filtrer les praticiens (dans un Bundle, nous aurons aussi des PractitionerRole)
-                    const practitioners = data.entry
-                        .filter(entry => entry.resource.resourceType === 'Practitioner')
-                        .map(entry => entry.resource);
-                    
-                    practitionersData = practitioners;
-                    
-                    // Créer une liste de praticiens
-                    const practitionersList = document.createElement('div');
-                    practitionersList.style.display = 'grid';
-                    practitionersList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    practitionersList.style.gap = '15px';
-                    
-                    practitioners.forEach(practitioner => {
-                        const practitionerElement = document.createElement('div');
-                        practitionerElement.style.backgroundColor = '#f9f9f9';
-                        practitionerElement.style.borderRadius = '8px';
-                        practitionerElement.style.padding = '15px';
-                        practitionerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        practitionerElement.style.borderLeft = '3px solid #e83e28';
-                        
-                        const name = formatPractitionerName(practitioner.name);
-                        const roles = findPractitionerRoles(practitioner.id, data.entry);
-                        
-                        practitionerElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${practitioner.id}</p>
-                                ${practitioner.qualification ? 
-                                  `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
-                                  : ''}
-                                ${roles && roles.length > 0 ? 
-                                  `<p><strong>Rôles:</strong> ${formatRoles(roles)}</p>` 
-                                  : ''}
-                            </div>
-                        `;
-                        
-                        practitionersList.appendChild(practitionerElement);
-                    });
-                    
-                    resourcesList.appendChild(practitionersList);
-                } else {
-                    noResourcesSection.style.display = 'block';
-                }
-            })
-            .catch(error => {
-                console.error('Erreur lors du chargement des praticiens:', error);
-                loadingSection.style.display = 'none';
-                noResourcesSection.style.display = 'block';
+                const name = formatPractitionerName(practitioner.name);
+                const roles = findPractitionerRoles(practitioner.id, data.entry);
+                
+                practitionerElement.innerHTML = `
+                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
+                    </h4>
+                    <div style="margin-top: 10px; color: #555;">
+                        <p><strong>Identifiant:</strong> ${practitioner.id}</p>
+                        ${practitioner.qualification ? 
+                          `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
+                          : ''}
+                        ${roles && roles.length > 0 ? 
+                          `<p><strong>Rôles:</strong> ${formatRoles(roles)}</p>` 
+                          : ''}
+                    </div>
+                `;
+                
+                practitionersList.appendChild(practitionerElement);
             });
+            
+            resourcesList.appendChild(practitionersList);
+        };
+        
+        // Utiliser notre fonction générique pour charger les praticiens
+        loadFhirResourceWithDelay(url, container, processPractitionersData);
     }
     
     function loadPatientOrganizations(patientId, serverUrl) {
