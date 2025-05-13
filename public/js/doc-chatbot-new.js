@@ -212,25 +212,35 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonction pour envoyer le message à l'API et afficher la réponse
     async function fetchAIResponse(message) {
         try {
-            const response = await fetch('/api/ai-knowledge/search', {
+            console.log("Envoi de la requête à l'API pour:", message);
+            
+            // Utiliser le point d'API direct pour le chat
+            const response = await fetch('/api/ai/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ query: message })
+                body: JSON.stringify({ 
+                    message: message,
+                    useKnowledge: true,
+                    context: "Documentation technique"
+                })
             });
+            
+            console.log("Réponse reçue du serveur:", response.status);
             
             if (!response.ok) {
                 throw new Error(`Erreur HTTP: ${response.status}`);
             }
             
             const data = await response.json();
+            console.log("Données reçues:", data);
             
             // Supprimer l'indicateur de frappe
             removeTypingIndicator();
             
             // Ajouter la réponse de l'IA au chat
-            addMessageToChat('assistant', data.response);
+            addMessageToChat('assistant', data.response || data.message || "Désolé, je n'ai pas pu trouver d'information pertinente.");
             
             return data;
         } catch (error) {
