@@ -365,10 +365,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (show) {
       // Réinitialiser le formulaire d'abord
+      document.getElementById('serverId').value = ''; // Réinitialiser l'ID caché
       document.getElementById('serverName').value = '';
       document.getElementById('serverUrl').value = '';
       document.getElementById('serverVersion').value = 'R4';
       document.getElementById('serverAuth').value = 'none';
+      
+      // Modifier le texte du bouton de soumission
+      const submitButton = document.getElementById('submitButton');
+      if (submitButton) {
+        submitButton.textContent = 'Enregistrer';
+      }
       
       // Cacher les champs d'authentification
       const authFields = document.getElementById('authFields');
