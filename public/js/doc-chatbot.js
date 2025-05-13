@@ -104,9 +104,15 @@ document.addEventListener('DOMContentLoaded', () => {
     chatbotToggle.addEventListener('click', () => {
         chatbotContainer.classList.toggle('open');
         
-        // Scroll au bas des messages quand on ouvre
+        // Changer l'icône du bouton
+        const icon = chatbotToggle.querySelector('i');
         if (chatbotContainer.classList.contains('open')) {
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
             scrollToBottom();
+        } else {
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
         }
     });
     
