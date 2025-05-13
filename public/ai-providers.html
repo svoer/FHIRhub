@@ -11,6 +11,9 @@
   <link rel="stylesheet" href="css/sidebar-menu.css">
   <link rel="stylesheet" href="css/support-chatbot.css">
   <link rel="stylesheet" href="css/ai-indicator.css">
+  
+  <!-- Inclusion directe de l'indicateur de fournisseur d'IA -->
+  <script src="/js/ai-provider-indicator.js" defer></script>
   <style>
     /* Styles pour les modèles dans la liste déroulante */
     .loading-select {
@@ -682,13 +685,7 @@
         });
       }
       
-      // Chargement de l'indicateur d'IA
-      setTimeout(function() {
-        const script = document.createElement('script');
-        script.src = '/js/ai-provider-indicator.js';
-        script.defer = true;
-        document.head.appendChild(script);
-      }, 500);
+      // L'indicateur d'IA est maintenant chargé directement dans le head
     });
   </script>
 </body>
