@@ -33,7 +33,20 @@ document.addEventListener('DOMContentLoaded', function() {
         throw new Error(`Erreur HTTP: ${response.status}`);
       }
       
-      servers = await response.json();
+      const data = await response.json();
+      
+      // Vérifier la structure de la réponse
+      if (data && data.servers) {
+        // La réponse est au format { defaultServer, servers }
+        servers = data.servers;
+      } else if (Array.isArray(data)) {
+        // La réponse est directement un tableau de serveurs
+        servers = data;
+      } else {
+        console.warn('Format de réponse inattendu:', data);
+        servers = [];
+      }
+      
       renderServers();
       
       return servers;
