@@ -210,7 +210,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Si aucun résultat et c'est la première tentative, essayer une recherche plus large
                         if (!hasResults && !isSecondAttempt) {
-                            const widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
+                            // Déterminer si nous utilisons le proxy ou l'URL directe pour la recherche élargie
+                            let widerUrl;
+                            if (serverUrl.includes('hapi.fhir.org')) {
+                                // Utiliser le proxy pour contourner les limitations CORS
+                                widerUrl = `/api/fhir-proxy/hapi/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
+                            } else {
+                                // URL directe pour les serveurs locaux (déjà sur le même domaine)
+                                widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
+                            }
+                            
+                            console.log(`Recherche élargie de patients depuis: ${widerUrl}`);
                             secureSearch(widerUrl, true);
                         } else if (!hasResults) {
                             patientSelect.innerHTML = '<option value="">-- Aucun patient trouvé --</option>';
@@ -237,8 +247,19 @@ document.addEventListener('DOMContentLoaded', function() {
             xhr.send();
         }
         
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let initialUrl;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            initialUrl = `/api/fhir-proxy/hapi/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            initialUrl = `${serverUrl}/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
+        }
+        
+        console.log(`Commencer la recherche de patients depuis: ${initialUrl}`);
+        
         // Commencer par la recherche sur le nom de famille avec un nombre élevé de résultats (contexte hospitalier)
-        const initialUrl = `${serverUrl}/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
         secureSearch(initialUrl);
     }
     
