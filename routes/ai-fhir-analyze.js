@@ -338,16 +338,17 @@ router.post('/chat', async (req, res) => {
         clearTimeout(timeoutHandle);
     });
     
-    // Log pour debug
+    // Logs améliorés pour debug
     console.log('[AI-CHAT] Route /api/ai/chat accessible sans authentification');
+    console.log('[AI-CHAT] Timestamp de la requête:', new Date().toISOString());
     
     try {
         const { messages, max_tokens = 1000, provider = null } = req.body;
         
-        console.log('[DEBUG-CHATBOT] Paramètres reçus:', { 
+        console.log('[AI-CHAT] Paramètres reçus:', { 
             messagesCount: messages?.length || 0, 
             max_tokens, 
-            provider 
+            providerRequested: provider || 'par défaut' 
         });
         
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
@@ -370,12 +371,21 @@ Utilise un ton professionnel adapté au domaine médical.`;
             .filter(msg => msg.role === 'user')
             .map(msg => msg.content)
             .pop() || '';
+            
+        // Logs détaillés sur le dernier message (limité pour éviter les logs trop longs)
+        const truncatedMessage = lastUserMessage.length > 100 
+            ? lastUserMessage.substring(0, 100) + '...' 
+            : lastUserMessage;
+        console.log(`[AI-CHAT] Dernier message utilisateur: "${truncatedMessage}"`);
+        console.log(`[AI-CHAT] Longueur du dernier message: ${lastUserMessage.length} caractères`);
         
         // Formater les messages pour notre service d'IA unifié
         const formattedPrompt = userMessages.map(msg => {
             const prefix = msg.role === 'user' ? 'Utilisateur: ' : 'Assistant: ';
             return `${prefix}${msg.content}`;
         }).join('\n\n');
+        
+        console.log(`[AI-CHAT] Historique de messages formaté: ${formattedPrompt.length} caractères`);
         
         try {
             // Obtenir le fournisseur actif
