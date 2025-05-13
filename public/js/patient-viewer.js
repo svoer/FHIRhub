@@ -28,6 +28,14 @@ document.addEventListener('DOMContentLoaded', function() {
     let bundleData = null;
     let lastBundleResponse = null; // Pour stocker la réponse de transaction du serveur FHIR
     
+    // Fonction utilitaire pour faire des requêtes avec un délai pour éviter les erreurs 429 (Too Many Requests)
+    async function fetchWithDelay(url, delay = 500) {
+        showStatus(`Chargement progressif des données (délai ${delay}ms entre requêtes pour éviter les erreurs 429)...`, 'info');
+        // On attend le délai avant d'exécuter la requête
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetch(url);
+    }
+    
     // Navigation par onglets
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -1006,35 +1014,30 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log(`Chargement des conditions depuis: ${url}`);
         
-        // Utiliser XMLHttpRequest pour une meilleure compatibilité et gestion d'erreurs
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        
-        xhr.onload = function() {
-            loadingSection.style.display = 'none';
-            
-            if (xhr.status >= 200 && xhr.status < 300) {
-                try {
-                    const data = JSON.parse(xhr.responseText);
+        // Utiliser fetchWithDelay pour éviter les erreurs 429 (Too Many Requests)
+        fetchWithDelay(url)
+            .then(response => response.json())
+            .then(data => {
+                loadingSection.style.display = 'none';
+                
+                if (data.entry && data.entry.length > 0) {
+                    // Stocker toutes les conditions dans la variable globale
+                    conditionsData = data.entry.map(entry => entry.resource);
+                    console.log(`${conditionsData.length} conditions chargées et stockées`);
                     
-                    if (data.entry && data.entry.length > 0) {
-                        // Stocker toutes les conditions dans la variable globale
-                        conditionsData = data.entry.map(entry => entry.resource);
-                        console.log(`${conditionsData.length} conditions chargées et stockées`);
-                        
-                        resourcesList.innerHTML = '';
-                        resourcesList.style.display = 'block';
-                        
-                        // Créer une liste de conditions
-                        const conditionsList = document.createElement('div');
-                        conditionsList.className = 'conditions-list';
-                        
-                        data.entry.forEach(entry => {
-                            const condition = entry.resource;
-                            const conditionElement = document.createElement('div');
-                            conditionElement.className = 'condition-item';
-                            conditionElement.style.padding = '12px';
-                            conditionElement.style.margin = '8px 0';
+                    resourcesList.innerHTML = '';
+                    resourcesList.style.display = 'block';
+                    
+                    // Créer une liste de conditions
+                    const conditionsList = document.createElement('div');
+                    conditionsList.className = 'conditions-list';
+                    
+                    data.entry.forEach(entry => {
+                        const condition = entry.resource;
+                        const conditionElement = document.createElement('div');
+                        conditionElement.className = 'condition-item';
+                        conditionElement.style.padding = '12px';
+                        conditionElement.style.margin = '8px 0';
                             conditionElement.style.backgroundColor = '#f9f9f9';
                             conditionElement.style.borderRadius = '6px';
                             conditionElement.style.borderLeft = '3px solid #e83e28';
