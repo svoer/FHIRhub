@@ -1,186 +1,268 @@
-# Guide d'enrichissement de la base de connaissances RAG
+# Guide du système RAG et de la base de connaissances
 
-## Introduction
+## Introduction au système RAG
 
-Ce guide détaille la procédure pour enrichir et maintenir la base de connaissances utilisée par le système RAG (Retrieval-Augmented Generation) dans le chatbot de FHIRHub. La bonne maintenance de cette base de connaissances est essentielle pour garantir des réponses précises et utiles aux utilisateurs.
+Le système RAG (Retrieval-Augmented Generation) de FHIRHub est conçu pour améliorer la précision et la pertinence des réponses du chatbot d'assistance en récupérant des informations contextuelles spécifiques avant de générer une réponse. Cette approche permet de :
+
+- Fournir des réponses factuelles et précises sur les fonctionnalités de FHIRHub
+- Éviter les "hallucinations" (génération d'informations inexactes ou inventées)
+- Maintenir la cohérence des réponses même après les mises à jour du système
+- Assurer que le chatbot reste à jour avec les dernières fonctionnalités
+
+## Architecture du système RAG
+
+### Composants principaux
+
+1. **Base de connaissances structurée** (`data/chatbot-knowledge.json`)
+2. **Service de récupération** (`utils/chatbotKnowledgeService.js`)
+3. **Intégration avec le service IA** (`routes/ai-chat.js`)
+
+### Diagramme d'architecture
+
+```
+┌──────────────────┐     ┌─────────────────────┐     ┌───────────────┐
+│ Question         │────▶│ chatbotKnowledge    │────▶│ Informations  │
+│ utilisateur      │     │ Service             │     │ pertinentes   │
+└──────────────────┘     └─────────────────────┘     └───────┬───────┘
+                                   │                         │
+                                   ▼                         ▼
+                         ┌─────────────────────┐   ┌─────────────────┐
+                         │ Base de             │   │ aiService       │
+                         │ connaissances JSON  │   │ (requête IA)    │
+                         └─────────────────────┘   └────────┬────────┘
+                                                            │
+                                                            ▼
+                                                  ┌─────────────────┐
+                                                  │ Réponse finale  │
+                                                  │ au format       │
+                                                  │ Markdown        │
+                                                  └─────────────────┘
+```
 
 ## Structure de la base de connaissances
 
-La base de connaissances est stockée dans un fichier JSON situé à `data/chatbot-knowledge.json`. Ce fichier contient trois sections principales :
-
-1. **FAQ** : Questions fréquemment posées et leurs réponses
-2. **Features** : Description des fonctionnalités de FHIRHub
-3. **Commands** : Liste des commandes et scripts disponibles
-
-## Comment ajouter de nouvelles connaissances
-
-### Ajouter une nouvelle FAQ
-
-Pour ajouter une nouvelle question à la FAQ :
-
-```json
-{
-  "question": "Votre nouvelle question ici ?",
-  "answer": "Réponse détaillée à la question. Essayez d'être précis et complet, tout en restant concis."
-}
-```
-
-Exemple concret :
-
-```json
-{
-  "question": "Comment puis-je extraire des statistiques sur les messages traités ?",
-  "answer": "Pour extraire des statistiques sur les messages traités, utilisez l'API /api/stats qui renvoie un JSON avec toutes les données de performance. Vous pouvez spécifier une période avec les paramètres start_date et end_date au format YYYY-MM-DD. Ces statistiques sont également visibles dans le tableau de bord sous forme de graphiques."
-}
-```
-
-### Ajouter une nouvelle fonctionnalité
-
-Pour documenter une nouvelle fonctionnalité :
-
-```json
-{
-  "name": "Nom de la fonctionnalité",
-  "description": "Description détaillée de la fonctionnalité, son utilité, et comment l'utiliser."
-}
-```
-
-Exemple concret :
-
-```json
-{
-  "name": "Export de données en CSV",
-  "description": "Permet d'exporter les résultats de recherche FHIR au format CSV pour une analyse dans des outils externes comme Excel. Cette fonctionnalité est accessible depuis l'explorateur FHIR via le bouton 'Exporter' en haut à droite des résultats. L'export inclut toutes les propriétés principales des ressources et peut être filtré selon les mêmes critères que la recherche."
-}
-```
-
-### Ajouter une nouvelle commande
-
-Pour documenter un nouvel utilitaire ou script :
-
-```json
-{
-  "name": "nom-du-script.sh / nom-du-script.bat",
-  "description": "Description de ce que fait le script, quand l'utiliser, et les paramètres qu'il accepte."
-}
-```
-
-Exemple concret :
-
-```json
-{
-  "name": "reset-admin-compatible.js",
-  "description": "Script qui réinitialise le mot de passe administrateur à 'admin123' de manière compatible avec tous les hachages supportés (pbkdf2, bcrypt, etc.). À utiliser en cas de perte du mot de passe administrateur. Exécutez 'node reset-admin-compatible.js' depuis la racine du projet."
-}
-```
-
-## Bonnes pratiques pour la base de connaissances
-
-### Qualité des informations
-
-- **Précision** : Vérifiez que toutes les informations sont exactes et à jour
-- **Concision** : Soyez clair et direct, mais fournissez suffisamment de contexte
-- **Cohérence** : Utilisez une terminologie cohérente dans toute la base de connaissances
-- **Complétude** : Couvrez tous les aspects importants de chaque sujet
-
-### Organisation et maintenance
-
-- **Catégorisation** : Placez chaque information dans la section appropriée
-- **Suppression des doublons** : Évitez les entrées redondantes ou très similaires
-- **Mise à jour régulière** : Révisez et actualisez la base de connaissances lorsque l'application évolue
-- **Vérification des références** : Assurez-vous que les chemins de fichiers, noms de commandes, etc. sont corrects
-
-## Comment tester la base de connaissances
-
-Après avoir ajouté de nouvelles informations, il est recommandé de tester le chatbot pour vérifier que les réponses sont correctes.
-
-### Procédure de test
-
-1. Redémarrez le serveur FHIRHub pour recharger la base de connaissances
-2. Accédez au tableau de bord et ouvrez le chatbot
-3. Posez des questions liées aux nouvelles informations ajoutées
-4. Vérifiez que les réponses sont précises et contiennent les informations attendues
-5. Testez également avec des variantes de la question pour évaluer la robustesse
-
-### Exemples de tests
-
-Si vous avez ajouté une FAQ sur l'exportation CSV, testez avec :
-- "Comment exporter en CSV ?"
-- "Est-il possible d'obtenir mes données en format Excel ?"
-- "Où se trouve le bouton d'exportation ?"
-
-## Algorithme de recherche et optimisation
-
-### Comment fonctionne l'algorithme
-
-L'algorithme de recherche dans `chatbotKnowledgeService.js` fonctionne comme suit :
-
-1. La requête de l'utilisateur est normalisée (minuscules, suppression des caractères spéciaux)
-2. Des mots-clés sont extraits (mots de plus de 3 caractères)
-3. Un score de pertinence est calculé pour chaque entrée de la base de connaissances :
-   - Correspondance exacte de la requête : +3 points
-   - Correspondance de mots-clés individuels : +1 point par mot-clé
-4. Les entrées avec les scores les plus élevés sont sélectionnées
-
-### Optimisation pour la recherche
-
-Pour améliorer la détectabilité de vos entrées :
-
-- **Utilisez des termes descriptifs** : Incluez les termes que les utilisateurs sont susceptibles d'utiliser dans leurs questions
-- **Variez le vocabulaire** : Utilisez différentes formulations pour décrire le même concept
-- **Incluez des synonymes** : Pensez aux différentes façons dont les utilisateurs pourraient décrire une fonctionnalité
-- **Structurez les réponses** : Commencez par l'information la plus importante, puis ajoutez des détails
-
-## Format complet du fichier JSON
+La base de connaissances est stockée dans `data/chatbot-knowledge.json` sous forme d'un document JSON structuré en sections thématiques :
 
 ```json
 {
   "faq": [
     {
-      "question": "Question 1 ?",
-      "answer": "Réponse 1"
+      "question": "Comment convertir un message HL7 vers FHIR ?",
+      "answer": "Pour convertir un message HL7 vers FHIR, accédez à la page 'Conversion' dans le menu principal. Collez votre message HL7 dans la zone de texte, sélectionnez les options de conversion souhaitées et cliquez sur le bouton 'Convertir'. Le résultat au format FHIR apparaîtra dans la zone de droite. Vous pourrez ensuite le télécharger ou l'envoyer directement à un serveur FHIR."
     },
-    {
-      "question": "Question 2 ?",
-      "answer": "Réponse 2"
-    }
+    // ... autres entrées FAQ
   ],
   "features": [
     {
-      "name": "Fonctionnalité 1",
-      "description": "Description de la fonctionnalité 1"
+      "name": "Conversion HL7 vers FHIR",
+      "description": "Convertit les messages HL7v2.5 en ressources FHIR R4 (v4.0.1) conformes aux spécifications de l'ANS française. Prend en charge les types de messages courants comme ADT, ORU, ORM, MDM, SIU, etc. Les ressources générées peuvent être visualisées, téléchargées ou envoyées directement à un serveur FHIR."
     },
-    {
-      "name": "Fonctionnalité 2",
-      "description": "Description de la fonctionnalité 2"
-    }
+    // ... autres fonctionnalités
   ],
   "commands": [
     {
-      "name": "commande1.sh",
-      "description": "Description de la commande 1"
+      "name": "install.sh / install.bat",
+      "description": "Script d'installation qui configure l'environnement et télécharge les dépendances nécessaires. À exécuter une seule fois avant la première utilisation de FHIRHub."
     },
-    {
-      "name": "commande2.sh",
-      "description": "Description de la commande 2"
-    }
+    // ... autres commandes
   ]
 }
 ```
 
-## Gestion des versions et sauvegarde
+Chaque section est conçue pour répondre à différents types de questions :
+- **faq** : Questions fréquemment posées avec leurs réponses détaillées
+- **features** : Descriptions des fonctionnalités principales de FHIRHub
+- **commands** : Informations sur les commandes et scripts disponibles
 
-- **Versionnez la base de connaissances** : Utilisez Git pour suivre les modifications
-- **Créez des sauvegardes** : Avant d'effectuer des modifications importantes
-- **Documentez les changements** : Notez pourquoi et quand des modifications ont été apportées
+## Service de récupération d'informations
 
-## Extension future du système RAG
+Le service `chatbotKnowledgeService.js` est responsable de :
 
-Le système RAG peut être étendu de plusieurs façons :
+1. Charger la base de connaissances
+2. Analyser les questions des utilisateurs
+3. Identifier et extraire les informations pertinentes
+4. Formater ces informations pour l'inclusion dans le prompt
 
-1. **Ajout de nouvelles catégories** : Par exemple, "troubleshooting", "glossary", "api_endpoints"
-2. **Intégration de sources externes** : Documentation technique, articles de blog, manuels d'utilisation
-3. **Apprentissage automatique** : Amélioration de l'algorithme de recherche avec des techniques d'apprentissage automatique
-4. **Feedback utilisateur** : Ajout d'un mécanisme permettant aux utilisateurs de signaler des réponses incorrectes ou incomplètes
+```javascript
+// utils/chatbotKnowledgeService.js
+const fs = require('fs').promises;
+const path = require('path');
 
-Pour étendre la structure actuelle, modifiez à la fois `chatbotKnowledgeService.js` et `data/chatbot-knowledge.json` en ajoutant les nouvelles catégories et les fonctions de recherche correspondantes.
+// Chemin vers la base de connaissances
+const KNOWLEDGE_BASE_PATH = path.join(__dirname, '../data/chatbot-knowledge.json');
+
+// Charge la base de connaissances
+async function loadKnowledgeBase() {
+  try {
+    const data = await fs.readFile(KNOWLEDGE_BASE_PATH, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Erreur lors du chargement de la base de connaissances:', error);
+    return { faq: [], features: [], commands: [] };
+  }
+}
+
+// Calcul de pertinence simple basé sur la correspondance de mots-clés
+function calculateRelevance(text, query) {
+  const textLower = text.toLowerCase();
+  const queryTerms = query.toLowerCase().split(/\s+/);
+  
+  // Compte le nombre de termes de la requête présents dans le texte
+  let matchCount = 0;
+  for (const term of queryTerms) {
+    if (term.length > 3 && textLower.includes(term)) {
+      matchCount++;
+    }
+  }
+  
+  return matchCount / queryTerms.length;
+}
+
+// Récupère les informations pertinentes pour une question donnée
+async function getRelevantInfo(question, threshold = 0.3) {
+  const kb = await loadKnowledgeBase();
+  const relevantInfo = [];
+  
+  // Recherche dans les FAQ
+  for (const faqItem of kb.faq) {
+    const relevanceQuestion = calculateRelevance(faqItem.question, question);
+    if (relevanceQuestion > threshold) {
+      relevantInfo.push(`Question fréquente: ${faqItem.question}\nRéponse: ${faqItem.answer}`);
+    }
+  }
+  
+  // Recherche dans les fonctionnalités
+  for (const feature of kb.features) {
+    const relevanceName = calculateRelevance(feature.name, question);
+    const relevanceDesc = calculateRelevance(feature.description, question);
+    
+    if (Math.max(relevanceName, relevanceDesc) > threshold) {
+      relevantInfo.push(`Fonctionnalité: ${feature.name}\nDescription: ${feature.description}`);
+    }
+  }
+  
+  // Recherche dans les commandes
+  for (const command of kb.commands) {
+    const relevanceName = calculateRelevance(command.name, question);
+    const relevanceDesc = calculateRelevance(command.description, question);
+    
+    if (Math.max(relevanceName, relevanceDesc) > threshold) {
+      relevantInfo.push(`Commande: ${command.name}\nUtilisation: ${command.description}`);
+    }
+  }
+  
+  // Limite le nombre d'informations retournées pour éviter de surcharger le contexte
+  return relevantInfo.slice(0, 3).join('\n\n');
+}
+
+module.exports = {
+  getRelevantInfo,
+  loadKnowledgeBase
+};
+```
+
+## Intégration dans le système de chatbot
+
+Le système RAG s'intègre au chatbot via la route `/api/ai/chat` :
+
+```javascript
+// routes/ai-chat.js
+const express = require('express');
+const router = express.Router();
+const aiService = require('../utils/aiService');
+const chatbotKnowledgeService = require('../utils/chatbotKnowledgeService');
+
+router.post('/chat', async (req, res) => {
+  try {
+    const { message, conversationHistory = [] } = req.body;
+    
+    // Récupération des informations pertinentes de la base de connaissances
+    const relevantInfo = await chatbotKnowledgeService.getRelevantInfo(message);
+    
+    // Construction du prompt avec contexte et instructions anti-hallucination
+    const prompt = `
+      Tu es un assistant expert pour le logiciel FHIRHub, une plateforme de 
+      conversion HL7 vers FHIR et d'interopérabilité en santé.
+      
+      Voici des informations spécifiques sur FHIRHub qui pourraient être pertinentes 
+      pour répondre à la question de l'utilisateur:
+      
+      ${relevantInfo || "Aucune information spécifique trouvée dans la base de connaissances."}
+      
+      Historique de la conversation:
+      ${conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
+      
+      Question de l'utilisateur: ${message}
+      
+      INSTRUCTIONS IMPORTANTES:
+      - Réponds en utilisant UNIQUEMENT les informations fournies ci-dessus.
+      - Si tu ne connais pas la réponse exacte, indique clairement que tu n'as pas 
+        cette information spécifique. Exemple: "Je ne trouve pas d'information précise 
+        sur ce sujet dans ma base de connaissances FHIRHub."
+      - Ne fabrique JAMAIS de fonctionnalités ou d'informations qui ne sont pas 
+        mentionnées explicitement.
+      - Sois concis et précis.
+      - Réponds en français.
+    `;
+    
+    // Appel au service IA unifié
+    const response = await aiService.queryAIProvider(prompt, {
+      maxTokens: 1000,
+      temperature: 0.7
+    });
+    
+    res.json({ response });
+  } catch (error) {
+    console.error('Erreur lors de la génération de réponse:', error);
+    res.status(500).json({ error: 'Erreur lors de la génération de réponse' });
+  }
+});
+
+module.exports = router;
+```
+
+## Mise à jour de la base de connaissances
+
+La base de connaissances est conçue pour être facilement mise à jour :
+
+1. Ouvrir le fichier `data/chatbot-knowledge.json`
+2. Ajouter, modifier ou supprimer des entrées dans les sections appropriées
+3. Enregistrer le fichier - les modifications sont prises en compte immédiatement
+
+### Bonnes pratiques pour les entrées FAQ
+
+- Écrire des questions claires et complètes, telles qu'un utilisateur pourrait les poser
+- Fournir des réponses détaillées mais concises
+- Inclure des instructions pas à pas quand c'est pertinent
+- Éviter le jargon technique excessif
+- Mettre à jour les réponses quand les fonctionnalités évoluent
+
+### Exemples d'enrichissement
+
+Pour les nouvelles fonctionnalités :
+
+```json
+{
+  "name": "Nouvelle Fonctionnalité",
+  "description": "Description détaillée de la nouvelle fonctionnalité, ses capacités, et comment l'utiliser efficacement."
+}
+```
+
+Pour de nouvelles FAQ :
+
+```json
+{
+  "question": "Comment utiliser la nouvelle fonctionnalité X?",
+  "answer": "Pour utiliser la fonctionnalité X, accédez à la page 'X' via le menu principal. Ensuite, configurez les paramètres selon vos besoins et cliquez sur 'Appliquer'. Vous verrez les résultats s'afficher immédiatement."
+}
+```
+
+## Améliorations futures
+
+Le système RAG peut être amélioré de plusieurs façons :
+
+1. **Recherche sémantique avancée** : Remplacer la correspondance par mots-clés par des embeddings vectoriels pour une meilleure compréhension sémantique
+2. **Expansion de la base de connaissances** : Ajouter des sections pour les tutoriels, les études de cas et les erreurs courantes
+3. **Feedback utilisateur** : Intégrer un système de feedback pour identifier les questions fréquentes mal répondues
+4. **Indexation automatique** : Développer un système qui indexe automatiquement la documentation technique
+5. **Personnalisation contextuelle** : Adapter les réponses en fonction du rôle de l'utilisateur (développeur, administrateur, utilisateur final)
