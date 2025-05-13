@@ -404,6 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         if (resourcesByType.Practitioner) {
+                            console.log("Praticiens trouvés dans le bundle:", resourcesByType.Practitioner);
                             practitionersData = resourcesByType.Practitioner;
                             updatePractitionersTab(practitionersData);
                         }
@@ -1394,15 +1395,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
         
-        // Réinitialiser les données des praticiens
-        practitionersData = [];
-        
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Stratégie alternative: extraire les praticiens des consultations déjà chargées
-        // Cette approche est plus fiable car elle évite les erreurs 400 et 429
+        // Première priorité : utiliser les praticiens déjà dans le bundle complet (récupéré via $everything)
+        // Vérifier si nous avons déjà des praticiens chargés dans le cache
+        if (practitionersData && practitionersData.length > 0) {
+            console.log("Des praticiens sont déjà disponibles dans le cache:", practitionersData.length);
+            updatePractitionersTab(practitionersData);
+            return;
+        }
+        
+        // Deuxième priorité : extraire les praticiens des consultations déjà chargées
         if (encountersData && encountersData.length > 0) {
             console.log(`Extraction des praticiens à partir des ${encountersData.length} consultations chargées`);
             
@@ -1470,44 +1475,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Une fois tous les praticiens chargés, les afficher
                     if (practitioners.length > 0) {
-                        loadingSection.style.display = 'none';
-                        resourcesList.style.display = 'block';
-                        resourcesList.innerHTML = '';
-                        
                         practitionersData = practitioners;
-                        
-                        // Créer une liste de praticiens
-                        const practitionersList = document.createElement('div');
-                        practitionersList.style.display = 'grid';
-                        practitionersList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                        practitionersList.style.gap = '15px';
-                        
-                        practitioners.forEach(practitioner => {
-                            const practitionerElement = document.createElement('div');
-                            practitionerElement.style.backgroundColor = '#f9f9f9';
-                            practitionerElement.style.borderRadius = '8px';
-                            practitionerElement.style.padding = '15px';
-                            practitionerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                            practitionerElement.style.borderLeft = '3px solid #e83e28';
-                            
-                            const name = formatPractitionerName(practitioner.name);
-                            
-                            practitionerElement.innerHTML = `
-                                <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                    <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
-                                </h4>
-                                <div style="margin-top: 10px; color: #555;">
-                                    <p><strong>Identifiant:</strong> ${practitioner.id}</p>
-                                    ${practitioner.qualification ? 
-                                      `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
-                                      : ''}
-                                </div>
-                            `;
-                            
-                            practitionersList.appendChild(practitionerElement);
-                        });
-                        
-                        resourcesList.appendChild(practitionersList);
+                        updatePractitionersTab(practitioners);
                     } else {
                         // Aucun praticien n'a pu être chargé
                         loadingSection.style.display = 'none';
