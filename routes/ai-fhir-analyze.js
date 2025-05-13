@@ -384,7 +384,10 @@ Utilise un ton professionnel adapté au domaine médical.`;
             // Utiliser un bloc try-catch séparé pour l'enrichissement du prompt
             // afin de pouvoir continuer même si l'enrichissement échoue
             try {
+                console.log('[DEBUG-KNOWLEDGE] Début de la recherche de connaissances pour:', lastUserMessage.substring(0, 50));
+                
                 // Limiter le temps de recherche des connaissances
+                console.log('[DEBUG-KNOWLEDGE] Appel à findRelevantKnowledge avec timeout de 5000ms');
                 const relevantInfo = await Promise.race([
                     chatbotKnowledgeService.findRelevantKnowledge(lastUserMessage),
                     new Promise((_, reject) => 
@@ -392,11 +395,17 @@ Utilise un ton professionnel adapté au domaine médical.`;
                     )
                 ]);
                 
-                if (relevantInfo && relevantInfo.length > 0) {
-                    console.log(`[DEBUG-KNOWLEDGE] ${relevantInfo.length} informations pertinentes trouvées`);
+                console.log('[DEBUG-KNOWLEDGE] Résultat de findRelevantKnowledge reçu:', 
+                            typeof relevantInfo, Array.isArray(relevantInfo) ? relevantInfo.length : 'non-array');
+                
+                if (relevantInfo && Array.isArray(relevantInfo) && relevantInfo.length > 0) {
+                    console.log(`[DEBUG-KNOWLEDGE] ${relevantInfo.length} informations pertinentes trouvées:`, 
+                              relevantInfo.map(info => info.type + (info.question || info.name || '')).join(', '));
                     
                     // Formater les informations pour le prompt
+                    console.log('[DEBUG-KNOWLEDGE] Appel à formatKnowledgeForPrompt');
                     const knowledgeText = chatbotKnowledgeService.formatKnowledgeForPrompt(relevantInfo);
+                    console.log('[DEBUG-KNOWLEDGE] Texte formaté obtenu de taille:', knowledgeText.length, 'caractères');
                     
                     // Enrichir le prompt système - version simplifiée pour éviter les problèmes
                     enhancedSystemPrompt = `${baseSystemPrompt}
@@ -409,13 +418,14 @@ INSTRUCTIONS IMPORTANTES:
 3. Ne pas inventer des fonctionnalités ou des détails qui ne sont pas mentionnés.
 4. Sois concis et précis dans ta réponse.`;
                 } else {
-                    console.log('[DEBUG-KNOWLEDGE] Aucune information pertinente trouvée');
+                    console.log('[DEBUG-KNOWLEDGE] Aucune information pertinente trouvée ou format invalide:', 
+                               typeof relevantInfo, relevantInfo);
                 }
                 
                 console.log('[DEBUG-KNOWLEDGE] Prompt enrichi généré de taille:', 
                     enhancedSystemPrompt.length, 'caractères');
             } catch (error) {
-                console.error('[ERROR-KNOWLEDGE] Erreur lors de l\'enrichissement du prompt:', error);
+                console.error('[ERROR-KNOWLEDGE] Erreur lors de l\'enrichissement du prompt:', error.message, error.stack);
                 // Continuer avec le prompt de base en cas d'erreur
             }
             

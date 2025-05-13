@@ -241,4 +241,40 @@ router.post('/update', async (req, res) => {
     }
 });
 
+/**
+ * Route de test pour vérifier le formatage des connaissances pour le prompt
+ */
+router.get('/test-format', async (req, res) => {
+    try {
+        const query = req.query.query || 'visualiseur patient';
+        console.log(`[AI-KNOWLEDGE-TEST] Test de formatage pour la query: "${query}"`);
+        
+        // Rechercher les connaissances pertinentes
+        console.log('[AI-KNOWLEDGE-TEST] Appel à findRelevantKnowledge');
+        const relevantInfo = await chatbotKnowledgeService.findRelevantKnowledge(query);
+        console.log(`[AI-KNOWLEDGE-TEST] ${relevantInfo.length} informations trouvées`);
+        
+        // Formater pour le prompt
+        console.log('[AI-KNOWLEDGE-TEST] Appel à formatKnowledgeForPrompt');
+        const formattedText = chatbotKnowledgeService.formatKnowledgeForPrompt(relevantInfo);
+        console.log(`[AI-KNOWLEDGE-TEST] Texte formaté de ${formattedText.length} caractères`);
+        
+        // Retourner les résultats avec des informations détaillées
+        res.json({
+            success: true,
+            query,
+            relevantInfo: relevantInfo.map(info => ({
+                type: info.type,
+                title: info.question || info.name || 'Inconnu',
+                score: info.score
+            })),
+            formattedText,
+            textLength: formattedText.length
+        });
+    } catch (error) {
+        console.error(`[AI-KNOWLEDGE-TEST] Erreur test formatage: ${error.message}`, error.stack);
+        res.status(500).json({ error: `Erreur lors du test de formatage: ${error.message}` });
+    }
+});
+
 module.exports = router;
