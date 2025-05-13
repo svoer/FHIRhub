@@ -1617,8 +1617,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (noResourcesSection) noResourcesSection.style.display = 'none';
         if (bundleResourcesList) bundleResourcesList.innerHTML = '';
         
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let url;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            url = `/api/fhir-proxy/hapi/Patient/${patientId}/$everything?_count=100&_include=*`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            url = `${serverUrl}/Patient/${patientId}/$everything?_count=100&_include=*`;
+        }
+        
+        console.log(`Chargement du bundle patient depuis: ${url}`);
+        
         // On récupère directement le bundle associé au patient, incluant les références
-        fetch(`${serverUrl}/Patient/${patientId}/$everything?_count=100&_include=*`)
+        fetch(url)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération du bundle: ${response.status}`);
