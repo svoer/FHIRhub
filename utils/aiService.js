@@ -18,84 +18,32 @@ const fetch = require('node-fetch');
  * @param {number} options.retryCount - Nombre de tentatives en cas d'erreur (défaut: 2)
  * @returns {Promise<string>} - La réponse générée par l'IA
  */
-async function generateResponse({ prompt, systemPrompt = '', maxTokens = 1000, temperature = 0.7, retryCount = 2, systemMessage = null }) {
-    let debugInfo = {};
-    
+async function generateResponse({ prompt, systemPrompt = '', maxTokens = 1000, temperature = 0.7, retryCount = 2 }) {
     try {
-        // Vérifier et nettoyer les paramètres
-        if (!prompt && !Array.isArray(prompt)) {
-            console.warn(`[AI-SERVICE] Aucun prompt fourni. Utilisation d'une valeur par défaut.`);
-            prompt = "Analyser les données médicales disponibles";
-        }
-        
-        // Utiliser systemMessage comme fallback si systemPrompt n'est pas fourni
-        if (!systemPrompt && systemMessage) {
-            systemPrompt = systemMessage;
-        }
-        
-        // S'assurer que maxTokens est un nombre valide
-        maxTokens = parseInt(maxTokens, 10) || 1000;
-        
-        // S'assurer que temperature est un nombre valide
-        temperature = parseFloat(temperature) || 0.7;
-        if (temperature < 0) temperature = 0;
-        if (temperature > 1) temperature = 1;
-        
-        console.log(`[AI-SERVICE] Paramètres validés: maxTokens=${maxTokens}, temperature=${temperature}, retryCount=${retryCount}`);
-        
         // Récupérer le fournisseur d'IA actif
         const aiProvider = await getActiveAIProvider();
         
-        debugInfo.aiProvider = aiProvider ? {
-            id: aiProvider.id || aiProvider.provider_id,
-            type: aiProvider.provider_type,
-            name: aiProvider.name || aiProvider.provider_name,
-            hasApiKey: !!aiProvider.api_key
-        } : null;
-        
         if (!aiProvider) {
-            console.error(`[AI-SERVICE] Erreur: Aucun fournisseur d'IA actif configuré`);
             throw new Error('Aucun fournisseur d\'IA actif configuré');
         }
         
-        console.log(`[AI-SERVICE] Utilisation du fournisseur: ${aiProvider.provider_type || aiProvider.type}, modèle: ${aiProvider.model_id || aiProvider.model_name || 'par défaut'}`);
+        console.log(`[AI-SERVICE] Utilisation du fournisseur: ${aiProvider.provider_type}`);
 
         // Utiliser le fournisseur approprié en fonction du type
         switch (aiProvider.provider_type) {
             case 'mistral':
-                // Récupérer le modèle (en tenant compte des différentes façons de le stocker)
-                const mistralModel = aiProvider.model_id || aiProvider.model_name || 'mistral-large-2411';
-                
-                console.log(`[AI-SERVICE] Appel Mistral avec modèle: ${mistralModel}`);
-                
-                try {
-                    const response = await mistralClient.generateResponse(prompt, {
-                        model: mistralModel,
-                        temperature,
-                        maxTokens,
-                        systemMessage: systemPrompt, // Utiliser systemPrompt comme fallback
-                        retryCount
-                    });
-                    
-                    console.log(`[AI-SERVICE] Réponse Mistral reçue avec succès`);
-                    return response;
-                } catch (mistralError) {
-                    console.error(`[AI-SERVICE] Erreur avec le client Mistral:`, mistralError);
-                    // Ne pas relancer l'erreur ici, mais utiliser le fallback local si configuré
-                    throw new Error(`Erreur du service Mistral: ${mistralError.message}`);
-                }
+                // Utiliser le client Mistral
+                return await mistralClient.generateResponse(prompt, {
+                    model: aiProvider.model_id || 'mistral-large-2411',
+                    temperature,
+                    maxTokens,
+                    retryCount,
+                    systemPrompt
+                });
                 
             case 'ollama':
                 // Utiliser le client Ollama
-                console.log(`[AI-SERVICE] Appel Ollama`);
-                try {
-                    const response = await ollamaClient.generateText(prompt);
-                    console.log(`[AI-SERVICE] Réponse Ollama reçue avec succès`);
-                    return response;
-                } catch (ollamaError) {
-                    console.error(`[AI-SERVICE] Erreur avec le client Ollama:`, ollamaError);
-                    throw new Error(`Erreur du service Ollama: ${ollamaError.message}`);
-                }
+                return await ollamaClient.generateText(prompt);
                 
             case 'deepseek':
                 // Utiliser DeepSeek (API compatible OpenAI)
@@ -103,168 +51,45 @@ async function generateResponse({ prompt, systemPrompt = '', maxTokens = 1000, t
                 const apiKey = aiProvider.api_key;
                 
                 if (!apiKey) {
-                    console.error(`[AI-SERVICE] Erreur: Clé API DeepSeek manquante`);
                     throw new Error('Clé API DeepSeek manquante');
                 }
-                
-                console.log(`[AI-SERVICE] Appel DeepSeek via endpoint: ${endpoint}`);
                 
                 // Préparer les messages pour DeepSeek (format OpenAI)
                 const messages = [];
                 if (systemPrompt) {
                     messages.push({ role: 'system', content: systemPrompt });
                 }
+                messages.push({ role: 'user', content: prompt });
                 
-                // Adapter le prompt selon son type
-                if (typeof prompt === 'string') {
-                    messages.push({ role: 'user', content: prompt });
-                } else if (Array.isArray(prompt)) {
-                    // Si c'est un tableau, considérer que ce sont des messages
-                    prompt.forEach(msg => {
-                        if (typeof msg === 'string') {
-                            messages.push({ role: 'user', content: msg });
-                        } else if (msg && typeof msg === 'object' && msg.role && msg.content) {
-                            messages.push(msg);
-                        }
-                    });
-                } else if (prompt && typeof prompt === 'object') {
-                    // Si c'est un objet, l'ajouter comme message utilisateur
-                    messages.push({ role: 'user', content: JSON.stringify(prompt) });
+                // Faire l'appel API
+                const deepseekResponse = await fetch(`${endpoint}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: aiProvider.model_id || 'deepseek-chat',
+                        messages,
+                        temperature,
+                        max_tokens: maxTokens
+                    })
+                });
+                
+                if (!deepseekResponse.ok) {
+                    const errorData = await deepseekResponse.json();
+                    throw new Error(errorData.error?.message || `Erreur HTTP: ${deepseekResponse.status}`);
                 }
                 
-                try {
-                    // Faire l'appel API
-                    const deepseekResponse = await fetch(`${endpoint}/chat/completions`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${apiKey}`
-                        },
-                        body: JSON.stringify({
-                            model: aiProvider.model_id || aiProvider.model_name || 'deepseek-chat',
-                            messages,
-                            temperature,
-                            max_tokens: maxTokens
-                        })
-                    });
-                    
-                    if (!deepseekResponse.ok) {
-                        let errorMessage = `Erreur HTTP: ${deepseekResponse.status}`;
-                        try {
-                            const errorData = await deepseekResponse.json();
-                            errorMessage = errorData.error?.message || errorMessage;
-                        } catch (parseError) {
-                            // Si on ne peut pas parser la réponse JSON, utiliser le message d'erreur HTTP
-                        }
-                        console.error(`[AI-SERVICE] Erreur DeepSeek: ${errorMessage}`);
-                        throw new Error(errorMessage);
-                    }
-                    
-                    const data = await deepseekResponse.json();
-                    console.log(`[AI-SERVICE] Réponse DeepSeek reçue avec succès`);
-                    return data.choices[0]?.message?.content || "Je n'ai pas pu générer une réponse cohérente.";
-                } catch (deepseekError) {
-                    console.error(`[AI-SERVICE] Erreur avec le client DeepSeek:`, deepseekError);
-                    throw new Error(`Erreur du service DeepSeek: ${deepseekError.message}`);
-                }
+                const data = await deepseekResponse.json();
+                return data.choices[0]?.message?.content || "Je n'ai pas pu générer une réponse cohérente.";
                 
             default:
-                console.error(`[AI-SERVICE] Erreur: Fournisseur non pris en charge: ${aiProvider.provider_type}`);
                 throw new Error(`Fournisseur d'IA ${aiProvider.provider_type} non pris en charge`);
         }
     } catch (error) {
-        console.error(`[AI-SERVICE] Erreur lors de la génération de texte:`, error.message);
-        console.error(`[AI-SERVICE] Détails du contexte:`, JSON.stringify(debugInfo));
-        
-        // Génération d'une réponse de fallback en dernier recours
-        if (prompt && typeof prompt === 'object' && prompt.patientData) {
-            console.log(`[AI-SERVICE] Tentative de génération d'un résumé basique comme fallback`);
-            return generateBasicSummary(prompt.patientData);
-        }
-        
+        console.error(`[AI-SERVICE] Erreur lors de la génération de texte:`, error);
         throw error;
-    }
-}
-
-/**
- * Génère un résumé basique des données patient en cas d'échec de l'IA
- * @param {Object} patientData - Données du patient
- * @returns {string} - Résumé formaté en HTML
- */
-function generateBasicSummary(patientData) {
-    try {
-        if (!patientData) return "Impossible de générer un résumé: données patient manquantes.";
-
-        const patient = patientData.patient || {};
-        const conditions = patientData.conditions || [];
-        const observations = patientData.observations || [];
-        const medications = patientData.medications || [];
-        const encounters = patientData.encounters || [];
-
-        let summary = `<h3>Résumé du patient (généré localement)</h3>`;
-        
-        // Informations patient
-        summary += `<p><strong>Patient:</strong> ${patient.name || 'Non spécifié'}, `;
-        summary += `${patient.gender ? (patient.gender === 'male' ? 'Homme' : (patient.gender === 'female' ? 'Femme' : patient.gender)) : 'Genre non spécifié'}, `;
-        summary += `${patient.birthDate ? `né(e) le ${patient.birthDate}` : 'date de naissance non spécifiée'}</p>`;
-        
-        // Problèmes médicaux
-        if (conditions && conditions.length > 0) {
-            summary += `<p><strong>Problèmes médicaux (${conditions.length}):</strong></p><ul>`;
-            conditions.slice(0, 5).forEach(condition => {
-                summary += `<li>${condition.code?.text || condition.code?.coding?.[0]?.display || 'Non codé'} `;
-                if (condition.onsetDateTime) summary += `(début: ${condition.onsetDateTime.substring(0, 10)})`;
-                summary += `</li>`;
-            });
-            if (conditions.length > 5) summary += `<li>... et ${conditions.length - 5} autres conditions</li>`;
-            summary += `</ul>`;
-        }
-        
-        // Observations
-        if (observations && observations.length > 0) {
-            summary += `<p><strong>Observations récentes (${observations.length}):</strong></p><ul>`;
-            observations.slice(0, 5).forEach(obs => {
-                const value = obs.valueQuantity ? 
-                    `${obs.valueQuantity.value} ${obs.valueQuantity.unit || ''}` : 
-                    (obs.valueString || obs.valueCodeableConcept?.text || 'Non spécifié');
-                summary += `<li>${obs.code?.text || obs.code?.coding?.[0]?.display || 'Non codé'}: ${value}</li>`;
-            });
-            if (observations.length > 5) summary += `<li>... et ${observations.length - 5} autres observations</li>`;
-            summary += `</ul>`;
-        }
-        
-        // Médicaments
-        if (medications && medications.length > 0) {
-            summary += `<p><strong>Médicaments (${medications.length}):</strong></p><ul>`;
-            medications.forEach(med => {
-                summary += `<li>${med.medicationCodeableConcept?.text || med.medicationCodeableConcept?.coding?.[0]?.display || 'Médicament non codé'}`;
-                if (med.dosageInstruction && med.dosageInstruction.length > 0) {
-                    const dosage = med.dosageInstruction[0];
-                    if (dosage.text) summary += ` (${dosage.text})`;
-                }
-                summary += `</li>`;
-            });
-            summary += `</ul>`;
-        }
-        
-        // Visites
-        if (encounters && encounters.length > 0) {
-            summary += `<p><strong>Dernières visites (${encounters.length}):</strong></p><ul>`;
-            encounters.slice(0, 3).forEach(encounter => {
-                summary += `<li>${encounter.type?.[0]?.text || encounter.class?.display || 'Visite'} `;
-                if (encounter.period?.start) summary += `(${encounter.period.start.substring(0, 10)})`;
-                summary += `</li>`;
-            });
-            if (encounters.length > 3) summary += `<li>... et ${encounters.length - 3} autres visites</li>`;
-            summary += `</ul>`;
-        }
-        
-        summary += `<p><em>Note: Ce résumé a été généré localement suite à une indisponibilité du service d'IA.</em></p>`;
-        
-        return summary;
-    } catch (error) {
-        console.error('[AI-SERVICE] Erreur lors de la génération du résumé basique:', error);
-        return "<p>Le service d'IA n'est pas disponible actuellement et la génération du résumé de secours a échoué. Veuillez réessayer plus tard.</p>";
     }
 }
 

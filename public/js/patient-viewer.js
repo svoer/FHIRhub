@@ -441,84 +441,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             // Fonction pour charger les ressources de façon traditionnelle
             function loadResourcesTraditionnally() {
-                showStatus('Chargement séquentiel des ressources en cours (peut prendre 10-15 secondes)...', 'info');
-                
-                // Indiquer à l'utilisateur que le chargement est progressif
-                const infoDiv = document.createElement('div');
-                infoDiv.id = 'sequential-loading-info';
-                infoDiv.style.margin = '10px 0';
-                infoDiv.style.padding = '10px';
-                infoDiv.style.backgroundColor = '#FFF9E6';
-                infoDiv.style.border = '1px solid #FFE0B2';
-                infoDiv.style.borderRadius = '4px';
-                infoDiv.style.color = '#A66321';
-                infoDiv.innerHTML = `
-                    <p><i class="fas fa-info-circle"></i> <strong>Chargement optimisé</strong></p>
-                    <p>Les données sont chargées progressivement pour éviter les limitations du serveur FHIR.</p>
-                    <p>Les onglets se rempliront au fur et à mesure que les données seront disponibles.</p>
-                `;
-                
-                const patientContainer = document.getElementById('patientContainer');
-                const firstChild = patientContainer.firstChild;
-                patientContainer.insertBefore(infoDiv, firstChild);
-                // Charger les ressources avec des délais pour éviter les erreurs 429
-                
-                // Charger d'abord les données essentielles
+                showStatus('Chargement individuel des ressources...', 'info');
+                // Charger toutes les ressources associées au patient individuellement
                 loadPatientConditions(patientId, server);
-                
-                // Puis charger les autres ressources avec des délais entre elles
-                setTimeout(() => {
-                    loadPatientObservations(patientId, server);
-                }, 500);
-                
-                setTimeout(() => {
-                    loadPatientMedications(patientId, server);
-                }, 1000);
-                
-                setTimeout(() => {
-                    loadPatientEncounters(patientId, server);
-                }, 1500);
-                
-                setTimeout(() => {
-                    generateTimeline(patientId, server);
-                }, 2000);
-                
-                // Charger les données secondaires avec un délai plus important
-                setTimeout(() => {
-                    loadPatientPractitioners(patientId, server);
-                }, 2500);
-                
-                setTimeout(() => {
-                    loadPatientOrganizations(patientId, server);
-                }, 3000);
-                
-                setTimeout(() => {
-                    loadPatientRelatedPersons(patientId, server);
-                }, 3500);
-                
-                setTimeout(() => {
-                    loadPatientCoverage(patientId, server);
-                }, 4000);
-                
-                // Charger le bundle en dernier
-                setTimeout(() => {
-                    loadPatientBundle(patientId, server);
-                    
-                    // Supprimer le message d'information sur le chargement progressif après un délai
-                    setTimeout(() => {
-                        const infoDiv = document.getElementById('sequential-loading-info');
-                        if (infoDiv) {
-                            infoDiv.style.transition = 'opacity 0.5s ease-out';
-                            infoDiv.style.opacity = '0';
-                            setTimeout(() => {
-                                if (infoDiv.parentNode) {
-                                    infoDiv.parentNode.removeChild(infoDiv);
-                                }
-                            }, 500);
-                        }
-                        showStatus('Chargement des données patient terminé!', 'success');
-                    }, 2000);
-                }, 4500);
+                loadPatientObservations(patientId, server);
+                loadPatientMedications(patientId, server);
+                loadPatientEncounters(patientId, server);
+                loadPatientPractitioners(patientId, server);
+                loadPatientOrganizations(patientId, server);
+                loadPatientRelatedPersons(patientId, server);
+                loadPatientCoverage(patientId, server);
+                generateTimeline(patientId, server);
+                loadPatientBundle(patientId, server);
             }
             
             // Fonction pour générer une chronologie à partir d'un bundle
@@ -3292,11 +3226,7 @@ document.addEventListener('DOMContentLoaded', function() {
         aiAnalysisDiv.innerHTML = `
             <div style="text-align: center; padding: 30px;">
                 <div style="display: inline-block; width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="margin-top: 15px; color: #666;">Analyse IA en cours... (peut prendre jusqu'à 4 minutes)</p>
-                <div style="margin-top: 10px; background: #fff8ee; padding: 10px; border-radius: 5px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
-                    <p style="margin: 0; color: #A66321; font-size: 0.9em;"><i class="fas fa-info-circle"></i> <strong>Information</strong></p>
-                    <p style="margin: 5px 0 0 0; color: #A66321; font-size: 0.9em;">L'analyse IA du dossier patient complet nécessite un temps de traitement conséquent pour garantir une analyse détaillée et complète. Durant cette période, vous pouvez continuer à explorer les autres onglets.</p>
-                </div>
+                <p style="margin-top: 15px; color: #666;">Analyse IA en cours...</p>
             </div>
             <style>
                 @keyframes spin {
@@ -3323,7 +3253,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/ai/analyze-patient');
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 240000; // 240 secondes de timeout (4 minutes, augmenté pour permettre l'analyse complète du bundle)
+        xhr.timeout = 90000; // 90 secondes de timeout (augmenté pour permettre l'analyse complète)
         
         xhr.onload = function() {
             if (xhr.status >= 200 && xhr.status < 300) {
@@ -3353,19 +3283,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // Créer un objet complet avec toutes les données du patient de tous les onglets
-            // Inclure aussi le JSON complet pour l'analyse exhaustive
             const completePatientData = {
                 patient: patientData,
                 conditions: conditionsData,
                 observations: observationsData,
                 medications: medicationsData,
-                encounters: encountersData,
-                practitioners: practitionersData,
-                organizations: organizationsData,
-                relatedPersons: relatedPersonsData,
-                coverages: coveragesData,
-                bundle: patientBundle,
-                jsonContent: patientData // Inclure aussi les données JSON brutes pour l'analyse complète
+                encounters: encountersData
             };
             
             console.log("Envoi de l'analyse IA avec données complètes:", 
@@ -3373,12 +3296,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 `Conditions: ${conditionsData.length}, ` +
                 `Observations: ${observationsData.length}, ` + 
                 `Médicaments: ${medicationsData.length}, ` +
-                `Consultations: ${encountersData.length}, ` +
-                `Praticiens: ${practitionersData?.length || 0}, ` +
-                `Organisations: ${organizationsData?.length || 0}, ` +
-                `Personnes liées: ${relatedPersonsData?.length || 0}, ` +
-                `Couvertures: ${coveragesData?.length || 0}, ` +
-                `Bundle: ${patientBundle ? 'OK' : 'Manquant'}`
+                `Consultations: ${encountersData.length}`
             );
             
             xhr.send(JSON.stringify({

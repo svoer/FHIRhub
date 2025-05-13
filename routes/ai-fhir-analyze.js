@@ -2,8 +2,6 @@
  * Routes pour l'analyse de ressources FHIR via des fournisseurs d'IA
  * Comprend également les routes pour le chatbot de support
  * @module routes/ai-fhir-analyze
- * 
- * LOGS DÉTAILLÉS ACTIVÉS POUR DÉBOGAGE
  */
 
 const express = require('express');
@@ -92,16 +90,14 @@ const { authCombined } = require('../middleware/auth');
  */
 // Route pour l'analyse de patient - désactive l'authentification
 router.post('/analyze-patient', async (req, res) => {
-    console.log('========== DÉBUT NOUVELLE REQUÊTE ANALYSE PATIENT ==========');
-    console.log('[AI-Analyze] Requête reçue à:', new Date().toISOString());
     // Logs pour debug
     console.log('Route /api/ai/analyze-patient accessible sans authentification - BYPASS_AUTH:', process.env.BYPASS_AUTH);
     
-    // Ajouter un timeout global pour la route entière (5 minutes)
+    // Ajouter un timeout global pour la route entière (4 minutes)
     // Ceci permet de s'assurer que la requête répond toujours, même si le service IA est bloqué
-    const ROUTE_TIMEOUT = 300000; // 300 secondes = 5 minutes
+    const ROUTE_TIMEOUT = 240000; // 240 secondes = 4 minutes
     let timeoutHandle = setTimeout(() => {
-        console.warn('Timeout global dépassé pour l\'analyse du patient après', ROUTE_TIMEOUT/1000, 'secondes (5 minutes)');
+        console.warn('Timeout global dépassé pour l\'analyse du patient après', ROUTE_TIMEOUT/1000, 'secondes');
         if (!res.headersSent) {
             res.status(503).json({
                 success: false,
@@ -183,13 +179,6 @@ router.post('/analyze-patient', async (req, res) => {
                 medications = patientSummary.medications || [];
                 encounters = patientSummary.encounters || [];
                 
-                // Récupérer les données supplémentaires envoyées par le client
-                const practitioners = patientSummary.practitioners || [];
-                const organizations = patientSummary.organizations || [];
-                const relatedPersons = patientSummary.relatedPersons || [];
-                const coverages = patientSummary.coverages || [];
-                const bundle = patientSummary.bundle || null;
-                
                 // Log détaillé des données disponibles pour le débogage
                 console.log('[AI-Analyze] Statistiques des données reçues:');
                 console.log(`  - Patient: ${patientInfo ? 'Présent' : 'Manquant'}`);
@@ -197,20 +186,10 @@ router.post('/analyze-patient', async (req, res) => {
                 console.log(`  - Observations: ${observations.length} éléments`);
                 console.log(`  - Médicaments: ${medications.length} éléments`);
                 console.log(`  - Consultations: ${encounters.length} éléments`);
-                console.log(`  - Praticiens: ${practitioners.length} éléments`);
-                console.log(`  - Organisations: ${organizations.length} éléments`);
-                console.log(`  - Personnes liées: ${relatedPersons.length} éléments`);
-                console.log(`  - Couvertures: ${coverages.length} éléments`);
-                console.log(`  - Bundle complet: ${bundle ? 'Présent' : 'Manquant'}`);
             }
             
-            // Créer un objet structuré pour l'IA qui contient toutes les données
-            // Cela permet à l'IA de mieux traiter les données et évite les problèmes de taille de prompt
-            console.log("[AI-Analyze] Préparation des données pour l'IA dans un format structuré");
-            
-            // Objet structuré pour l'IA
-            const promptData = {
-                instructions: `Tu es un assistant médical qui analyse des données FHIR de patient.
+            // Construire le prompt pour l'IA avec toutes les données disponibles
+            const prompt = `Tu es un assistant médical qui analyse des données FHIR de patient.
                 
 En tant qu'expert médical, analyse ces données de patient et génère un rapport médical complet comprenant:
 1. Un résumé des informations démographiques
@@ -218,121 +197,38 @@ En tant qu'expert médical, analyse ces données de patient et génère un rappo
 3. Une analyse des problèmes de santé actifs et passés
 4. Une synthèse des résultats de laboratoire et observations
 5. L'historique des consultations et hospitalisations
-6. Une analyse des praticiens impliqués dans la prise en charge
-7. Une analyse des organisations de santé impliquées
-8. Une synthèse des personnes liées au patient (famille, contacts d'urgence)
-9. Une analyse des couvertures d'assurance du patient
-10. Une synthèse chronologique des événements majeurs
-11. Des recommandations médicales basées sur l'ensemble des données
+6. Une synthèse chronologique des événements majeurs
+7. Des recommandations médicales basées sur l'ensemble des données
 
+Voici les données FHIR du patient sous format JSON, incluant les informations des différentes sections (patient, conditions, observations, médicaments, consultations):
+
+INFORMATIONS PATIENT:
+${JSON.stringify(patientInfo, null, 2)}
+
+CONDITIONS MÉDICALES (${conditions.length}):
+${JSON.stringify(conditions, null, 2)}
+
+OBSERVATIONS ET RÉSULTATS DE LABORATOIRE (${observations.length}):
+${JSON.stringify(observations, null, 2)}
+
+MÉDICAMENTS (${medications.length}):
+${JSON.stringify(medications, null, 2)}
+
+CONSULTATIONS ET HOSPITALISATIONS (${encounters.length}):
+${JSON.stringify(encounters, null, 2)}
+                
 Réponds avec un rapport HTML bien structuré pour faciliter la lecture. Utilise les éléments HTML comme <div>, <h3>, <ul>, <li>, <p> avec des styles CSS en ligne pour créer un rapport visuellement organisé. Utilise des tableaux pour regrouper les données quand c'est pertinent.
 
-Le rapport doit obligatoirement intégrer et analyser toutes les sections de données disponibles, y compris les praticiens, organisations, personnes liées et couvertures si ces données sont présentes.`,
-                patientData: {
-                    patient: patientInfo,
-                    conditions: conditions,
-                    observations: observations, 
-                    medications: medications,
-                    encounters: encounters,
-                    practitioners: patientSummary.practitioners || [],
-                    organizations: patientSummary.organizations || [],
-                    relatedPersons: patientSummary.relatedPersons || [],
-                    coverages: patientSummary.coverages || [],
-                    hasBundleData: !!patientSummary.bundle
-                }
-            };
-            
-            // Si le bundle complet est disponible, l'ajouter
-            if (patientSummary.bundle) {
-                promptData.bundleData = patientSummary.bundle;
-            }
-            
-            console.log("[AI-Analyze] Données structurées préparées pour l'IA avec", 
-                Object.keys(promptData.patientData).length, "catégories principales");
-                
-            // Utiliser l'objet promptData comme prompt pour l'IA
-            const prompt = promptData;
+Le rapport doit obligatoirement intégrer et analyser toutes les sections de données disponibles (pas seulement les données de base du patient).`;
             
             // Utiliser notre service d'IA unifié
             console.log("[AI-Analyze] Génération de l'analyse avec le service d'IA unifié");
-            console.log("[AI-Analyze] Début de l'appel au service IA");
-            try {
-                // Ajouter des logs détaillés juste avant l'appel
-                const aiParams = {
-                    prompt,
-                    maxTokens: 5000, // Augmenté pour permettre une analyse plus complète du bundle
-                    temperature: 0.3,
-                    retryCount: 3,
-                    systemPrompt: 'Tu es un expert médical qui analyse des données FHIR pour générer un rapport clinique complet et précis.'
-                };
-                
-                console.log("[AI-Analyze] Paramètres de l'appel IA:", 
-                    JSON.stringify({
-                        maxTokens: aiParams.maxTokens,
-                        temperature: aiParams.temperature,
-                        retryCount: aiParams.retryCount,
-                        promptLength: prompt.length,
-                        systemPrompt: aiParams.systemPrompt
-                    })
-                );
-                
-                // Appel simple au service IA
-                try {
-                    console.log("[AI-Analyze] TEST: Vérification du fournisseur d'IA actif...");
-                    const activeProvider = await getActiveAIProvider();
-                    console.log(`[AI-Analyze] TEST: Fournisseur actif = ${activeProvider ? activeProvider.provider_name : 'NONE'}, type = ${activeProvider ? activeProvider.provider_type : 'NONE'}`);
-                    console.log(`[AI-Analyze] TEST: API key = ${activeProvider && activeProvider.api_key ? '*****' + activeProvider.api_key.substring(activeProvider.api_key.length - 4) : 'NON DÉFINIE'}`);
-                    
-                    console.log("[AI-Analyze] TEST: Appel du chat simple pour vérification de connexion");
-                    try {
-                        // Test simple avec un prompt court
-                        const testResult = await aiService.generateResponse({
-                            prompt: "Test de connexion à l'API d'IA",
-                            maxTokens: 10,
-                            temperature: 0.1,
-                            retryCount: 0
-                        });
-                        console.log("[AI-Analyze] TEST: Appel simple réussi:", testResult.substring(0, 50));
-                    } catch (testError) {
-                        console.error("[AI-Analyze] TEST: Échec de l'appel de test simple:", testError.message);
-                        // Ne pas relancer l'erreur ici, continuer avec l'appel principal
-                    }
-                
-                    console.log("[AI-Analyze] Tentative d'appel au service IA pour l'analyse patient");
-                    
-                    // Limiter à 15 observations pour éviter les dépassements de tokens
-                    if (typeof aiParams.prompt === 'object' && 
-                        aiParams.prompt.patientData && 
-                        aiParams.prompt.patientData.observations && 
-                        aiParams.prompt.patientData.observations.length > 15) {
-                        
-                        console.log(`[AI-Analyze] Limitation des observations à 15 au lieu de ${aiParams.prompt.patientData.observations.length}`);
-                        aiParams.prompt.patientData.observations = aiParams.prompt.patientData.observations.slice(0, 15);
-                    }
-                    
-                    // Réduire aussi la limite de tokens pour éviter les timeouts
-                    aiParams.maxTokens = Math.min(aiParams.maxTokens || 5000, 1500);
-                    console.log(`[AI-Analyze] Limite de tokens: ${aiParams.maxTokens}`);
-                    
-                    // Afficher un extrait du prompt pour vérifier ce qui est envoyé
-                    if (typeof aiParams.prompt === 'object') {
-                        console.log('[AI-Analyze] Prompt type:', typeof aiParams.prompt);
-                        console.log('[AI-Analyze] Prompt échantillon:', JSON.stringify(aiParams.prompt).substring(0, 100) + '...');
-                    } else {
-                        console.log('[AI-Analyze] Prompt type:', typeof aiParams.prompt);
-                        console.log('[AI-Analyze] Prompt échantillon:', aiParams.prompt?.substring(0, 100) + '...');
-                    }
-                    
-                    analysis = await aiService.generateResponse(aiParams);
-                    console.log("[AI-Analyze] Appel au service IA terminé avec succès");
-                } catch (error) {
-                    console.error("[AI-Analyze] Erreur lors de l'appel au service IA:", error.message);
-                    throw error; // Relancer pour permettre le traitement par le handler de fallback
-                }
-            } catch (error) {
-                console.error("[AI-Analyze] Erreur lors de l'appel au service IA:", error.message);
-                throw error; // Relancer pour permettre le traitement par le catch externe
-            }
+            analysis = await aiService.generateResponse({
+                prompt,
+                maxTokens: 3000,
+                temperature: 0.3,
+                retryCount: 3
+            });
             
             console.log(`[AI-Analyze] Analyse générée avec succès via ${aiProvider.name || aiProvider.provider_name}`);
             

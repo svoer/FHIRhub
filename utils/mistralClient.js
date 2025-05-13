@@ -28,7 +28,7 @@ async function initializeClient() {
       apiKey: activeProvider.api_key,
       // Configuration améliorée pour gérer les problèmes de timeout
       maxRetries: 3,
-      timeout: 180000 // Définir un timeout de 180 secondes (3 minutes)
+      timeout: 120000 // Définir un timeout de 120 secondes (2 minutes)
     });
     
     logger.info('Client Mistral initialisé avec succès avec la clé API du fournisseur actif');
@@ -70,33 +70,7 @@ async function listModels() {
     }
   }
   
-  try {
-    const modelList = await mistralClient.models.list();
-    
-    // Vérifier si la réponse contient la propriété 'data' attendue
-    if (modelList && Array.isArray(modelList.data)) {
-      return modelList;
-    }
-    
-    // Si la structure est différente, retourner un format compatible
-    return {
-      data: Array.isArray(modelList) ? modelList : [
-        { id: "mistral-large-2411", object: "model" },
-        { id: "mistral-medium", object: "model" },
-        { id: "mistral-small-latest", object: "model" }
-      ]
-    };
-  } catch (error) {
-    logger.error(`Erreur lors de la récupération des modèles Mistral: ${error.message}`);
-    // Retourner des modèles par défaut en cas d'erreur
-    return {
-      data: [
-        { id: "mistral-large-2411", object: "model" },
-        { id: "mistral-medium", object: "model" },
-        { id: "mistral-small-latest", object: "model" }
-      ]
-    };
-  }
+  return await mistralClient.models.list();
 }
 
 /**
@@ -120,49 +94,11 @@ async function generateResponse(prompt, {
   // Préparation des messages
   const messages = [];
   
-  // Ajouter un message système si fourni
   if (systemMessage) {
     messages.push({ role: 'system', content: systemMessage });
   }
   
-  // Vérifier si le prompt est une chaîne ou un objet
-  if (typeof prompt === 'string') {
-    // Simple prompt texte
-    messages.push({ role: 'user', content: prompt });
-  } else if (typeof prompt === 'object' && prompt !== null) {
-    // Si le prompt est déjà un objet message ou une liste de messages
-    if (Array.isArray(prompt)) {
-      // C'est une liste de messages, on les ajoute tous
-      prompt.forEach(msg => {
-        if (msg && typeof msg === 'object' && msg.role && msg.content) {
-          messages.push(msg);
-        } else if (msg && typeof msg === 'string') {
-          messages.push({ role: 'user', content: msg });
-        }
-      });
-    } else if (prompt.role && prompt.content) {
-      // C'est un seul message formaté
-      messages.push(prompt);
-    } else if (prompt.messages && Array.isArray(prompt.messages)) {
-      // Format spécial avec une liste de messages
-      prompt.messages.forEach(msg => {
-        if (msg && typeof msg === 'object' && msg.role && msg.content) {
-          messages.push(msg);
-        }
-      });
-    } else {
-      // Fallback - on le transforme en string
-      messages.push({ role: 'user', content: JSON.stringify(prompt) });
-    }
-  } else {
-    // Fallback pour les cas non gérés
-    messages.push({ role: 'user', content: String(prompt || '') });
-  }
-  
-  // S'assurer qu'il y a au moins un message utilisateur
-  if (messages.length === 0 || messages.every(m => m.role !== 'user')) {
-    messages.push({ role: 'user', content: 'Analyser les données médicales fournies' });
-  }
+  messages.push({ role: 'user', content: prompt });
   
   // Implémentation des tentatives avec backoff exponentiel
   let attempt = 0;
@@ -173,127 +109,20 @@ async function generateResponse(prompt, {
       logger.info(`Tentative d'appel à l'API Mistral (${attempt+1}/${retryCount+1})`);
       
       // Ajouter un timeout explicite en utilisant Promise.race
-      // Augmenter à 180 secondes pour laisser plus de temps à l'analyse des grands bundles FHIR
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout dépassé pour l\'appel à l\'API Mistral')), 180000);
+        setTimeout(() => reject(new Error('Timeout dépassé pour l\'appel à l\'API Mistral')), 60000);
       });
       
-      // Vérification de la clé API (sans la révéler)
-      try {
-        console.log(`[MISTRAL-CLIENT] Vérification de la clé API configurée:`, 
-          apiKey ? `*****${apiKey.substring(apiKey.length - 5)}` : 'NON DÉFINIE');
-        
-        if (!apiKey) {
-          throw new Error('API_KEY_MISSING');
-        }
-      } catch (apiKeyError) {
-        console.error(`[MISTRAL-CLIENT] Erreur de configuration - Clé API manquante ou invalide`);
-        throw new Error('API_KEY_MISSING');
-      }
-      
-      // Vérification du endpoint de l'API
-      try {
-        console.log(`[MISTRAL-CLIENT] Endpoint configuré:`, 
-          mistralClient?.basePath || 'NON DÉFINI');
-          
-        if (!mistralClient?.basePath) {
-          throw new Error('API_ENDPOINT_MISSING');
-        }
-      } catch (endpointError) {
-        console.error(`[MISTRAL-CLIENT] Erreur de configuration - Endpoint API manquant ou invalide`);
-        throw new Error('API_ENDPOINT_MISSING');
-      }
-      
-      // Préparation des paramètres d'appel
-      const chatParams = {
+      // Lancer l'appel avec un délai variable selon le nombre de tentatives
+      const apiPromise = mistralClient.chat.complete({
         model,
         messages,
-        temperature
-      };
-      
-      // Ajouter max_tokens uniquement si valide
-      if (maxTokens && maxTokens > 0) {
-        chatParams.max_tokens = maxTokens;
-      }
-      
-      // Log détaillé pour le débogage
-      logger.info(`Appel Mistral avec modèle: ${model}, ${messages.length} messages`);
-      
-      // Lancer l'appel avec un délai variable selon le nombre de tentatives
-      console.log(`Tentative d'appel à l'API Mistral (${attempt+1}/${retryCount+1})`);
-      console.log(`Appel Mistral avec modèle: ${model}, ${messages.length} messages`);
-      
-      // Afficher un échantillon du contenu pour vérifier ce qui est envoyé
-      if (messages && messages.length > 0 && messages[messages.length - 1].content) {
-        const lastMessageContent = messages[messages.length - 1].content;
-        const contentSample = typeof lastMessageContent === 'string' 
-          ? lastMessageContent.substring(0, 200) + '...' 
-          : JSON.stringify(lastMessageContent).substring(0, 200) + '...';
-        console.log(`Échantillon du dernier message: ${contentSample}`);
-      }
-      
-      // Vérification que le modèle est bien défini
-      if (!model) {
-        console.error(`[MISTRAL-CLIENT] Erreur de configuration - Modèle non spécifié`);
-        throw new Error('MODEL_MISSING');
-      }
-      
-      try {
-        console.log('[MISTRAL-CLIENT] Vérification de la méthode mistralClient.chat.complete', 
-          typeof mistralClient.chat.complete === 'function' ? 'OK' : 'NON DISPONIBLE');
-      } catch (methodError) {
-        console.error('[MISTRAL-CLIENT] Erreur lors de la vérification des méthodes clients:', methodError);
-      }
-        
-      // Évaluer si le client est bien initialisé et a les méthodes requises
-      if (!mistralClient?.chat?.complete || typeof mistralClient.chat.complete !== 'function') {
-        console.error('[MISTRAL-CLIENT] Client Mistral mal initialisé - Méthode chat.complete manquante');
-        throw new Error('CLIENT_METHOD_MISSING');
-      }
-       
-      console.log('[MISTRAL-CLIENT] Paramètres de l\'appel:', JSON.stringify({
-        model: chatParams.model,
-        temperature: chatParams.temperature,
-        max_tokens: chatParams.max_tokens,
-        messages_count: messages.length
-      }));
-      
-      // Version simplifiée de l'appel avec try/catch explicite pour capturer les erreurs
-      let apiPromise;
-      try {
-        console.log('[MISTRAL-CLIENT] Tentative d\'appel direct à mistralClient.chat.complete()');
-        apiPromise = mistralClient.chat.complete(chatParams);
-      } catch (directError) {
-        console.error('[MISTRAL-CLIENT] Erreur directe lors de l\'appel:', directError);
-        throw directError;
-      }
-      
-      // Ajouter un gestionnaire d'erreur au niveau de la promesse
-      apiPromise = apiPromise.catch(err => {
-        console.error(`[MISTRAL-CLIENT] Erreur dans l'appel de base à Mistral:`, err);
-        logger.error(`Erreur dans l'appel de base à Mistral: ${err.message}`);
-        
-        // Log plus détaillé du contexte d'erreur
-        try {
-          console.error(`Contexte de l'erreur: API URL=${mistralClient?.basePath}, ` +
-            `Paramètres API=${JSON.stringify({
-              model: chatParams.model,
-              temperature: chatParams.temperature,
-              max_tokens: chatParams.max_tokens,
-              nb_messages: messages.length
-            })}`);
-        } catch (debugError) {
-          console.error("Erreur lors de l'affichage du contexte:", debugError.message);
-        }
-        
-        throw new Error(`MISTRAL_API_ERROR: ${err.message}`);
+        temperature,
+        max_tokens: maxTokens
       });
       
       // Utiliser celui qui se termine en premier
-      const response = await Promise.race([apiPromise, timeoutPromise]).catch(err => {
-        logger.error(`Erreur dans Promise.race: ${err.message}`);
-        throw err;
-      });
+      const response = await Promise.race([apiPromise, timeoutPromise]);
       
       // Si on arrive ici, on a une réponse valide
       logger.info(`Réponse API Mistral reçue avec succès (tentative ${attempt+1})`);
