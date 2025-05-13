@@ -28,48 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let bundleData = null;
     let lastBundleResponse = null; // Pour stocker la réponse de transaction du serveur FHIR
     
-    // Fonction utilitaire pour faire des requêtes avec un délai pour éviter les erreurs 429 (Too Many Requests)
-    async function fetchWithDelay(url, delay = 500) {
-        showStatus(`Chargement progressif des données (délai ${delay}ms entre requêtes pour éviter les erreurs 429)...`, 'info');
-        // On attend le délai avant d'exécuter la requête
-        await new Promise(resolve => setTimeout(resolve, delay));
-        return fetch(url);
-    }
-    
-    // Fonction générique pour charger des ressources FHIR avec gestion du délai
-    async function loadFhirResourceWithDelay(url, container, processData) {
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
-        
-        console.log(`Chargement des ressources depuis: ${url}`);
-        
-        try {
-            // Utiliser fetchWithDelay pour éviter les erreurs 429
-            const response = await fetchWithDelay(url);
-            const data = await response.json();
-            
-            loadingSection.style.display = 'none';
-            
-            if (data.entry && data.entry.length > 0) {
-                resourcesList.style.display = 'block';
-                // Exécuter la fonction de traitement spécifique fournie
-                processData(data, resourcesList);
-            } else {
-                noResourcesSection.style.display = 'block';
-            }
-        } catch (error) {
-            console.error(`Erreur lors du chargement des ressources: ${error}`);
-            loadingSection.style.display = 'none';
-            noResourcesSection.style.display = 'block';
-            noResourcesSection.innerHTML = `<p>Erreur lors du chargement des ressources: ${error.message}</p>`;
-        }
-    }
-    
     // Navigation par onglets
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -1023,9 +981,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonctions pour charger les ressources liées au patient
     function loadPatientConditions(patientId, serverUrl) {
         const container = document.querySelector('#conditionsContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des conditions
         conditionsData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1039,64 +1004,100 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Condition?patient=${patientId}&_sort=-recorded-date&_count=1000`;
         }
         
-        // Fonction de traitement des données spécifique aux conditions
-        const processConditionsData = (data, resourcesList) => {
-            // Stocker toutes les conditions dans la variable globale
-            conditionsData = data.entry.map(entry => entry.resource);
-            console.log(`${conditionsData.length} conditions chargées et stockées`);
+        console.log(`Chargement des conditions depuis: ${url}`);
+        
+        // Utiliser XMLHttpRequest pour une meilleure compatibilité et gestion d'erreurs
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url);
+        
+        xhr.onload = function() {
+            loadingSection.style.display = 'none';
             
-            resourcesList.innerHTML = '';
-            
-            // Créer une liste de conditions
-            const conditionsList = document.createElement('div');
-            conditionsList.className = 'conditions-list';
-            
-            data.entry.forEach(entry => {
-                const condition = entry.resource;
-                const conditionElement = document.createElement('div');
-                conditionElement.className = 'condition-item';
-                conditionElement.style.padding = '12px';
-                conditionElement.style.margin = '8px 0';
-                conditionElement.style.backgroundColor = '#f9f9f9';
-                conditionElement.style.borderRadius = '6px';
-                conditionElement.style.borderLeft = '3px solid #e83e28';
-                
-                const severity = condition.severity?.coding?.[0]?.display || '';
-                const status = condition.clinicalStatus?.coding?.[0]?.display || condition.clinicalStatus?.coding?.[0]?.code || condition.clinicalStatus || '';
-                const recordedDate = condition.recordedDate ? new Date(condition.recordedDate).toLocaleDateString('fr-FR') : 'Non spécifiée';
-                
-                conditionElement.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                            ${condition.code?.coding?.[0]?.display || condition.code?.text || 'Condition non spécifiée'}
-                        </h4>
-                        <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                            ${status || 'Non spécifié'}
-                        </span>
-                    </div>
-                    <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                        <strong>Sévérité:</strong> ${severity || 'Non spécifiée'}
-                    </div>
-                    <div style="font-size: 0.9rem; color: #555;">
-                        <strong>Date d'enregistrement:</strong> ${recordedDate}
-                    </div>
-                `;
-                
-                conditionsList.appendChild(conditionElement);
-            });
-            
-            resourcesList.appendChild(conditionsList);
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    
+                    if (data.entry && data.entry.length > 0) {
+                        // Stocker toutes les conditions dans la variable globale
+                        conditionsData = data.entry.map(entry => entry.resource);
+                        console.log(`${conditionsData.length} conditions chargées et stockées`);
+                        
+                        resourcesList.innerHTML = '';
+                        resourcesList.style.display = 'block';
+                        
+                        // Créer une liste de conditions
+                        const conditionsList = document.createElement('div');
+                        conditionsList.className = 'conditions-list';
+                        
+                        data.entry.forEach(entry => {
+                            const condition = entry.resource;
+                            const conditionElement = document.createElement('div');
+                            conditionElement.className = 'condition-item';
+                            conditionElement.style.padding = '12px';
+                            conditionElement.style.margin = '8px 0';
+                            conditionElement.style.backgroundColor = '#f9f9f9';
+                            conditionElement.style.borderRadius = '6px';
+                            conditionElement.style.borderLeft = '3px solid #e83e28';
+                            
+                            const severity = condition.severity?.coding?.[0]?.display || '';
+                            const status = condition.clinicalStatus?.coding?.[0]?.display || condition.clinicalStatus?.coding?.[0]?.code || condition.clinicalStatus || '';
+                            const recordedDate = condition.recordedDate ? new Date(condition.recordedDate).toLocaleDateString('fr-FR') : 'Non spécifiée';
+                            
+                            conditionElement.innerHTML = `
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
+                                        ${condition.code?.coding?.[0]?.display || condition.code?.text || 'Condition non spécifiée'}
+                                    </h4>
+                                    <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
+                                        ${status || 'Non spécifié'}
+                                    </span>
+                                </div>
+                                <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
+                                    <strong>Sévérité:</strong> ${severity || 'Non spécifiée'}
+                                </div>
+                                <div style="font-size: 0.9rem; color: #555;">
+                                    <strong>Date d'enregistrement:</strong> ${recordedDate}
+                                </div>
+                            `;
+                            
+                            conditionsList.appendChild(conditionElement);
+                        });
+                        
+                        resourcesList.appendChild(conditionsList);
+                    } else {
+                        noResourcesSection.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Erreur parsing JSON conditions:', error);
+                    noResourcesSection.style.display = 'block';
+                }
+            } else {
+                console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
+                noResourcesSection.style.display = 'block';
+            }
         };
         
-        // Utiliser notre fonction générique pour charger les conditions
-        loadFhirResourceWithDelay(url, container, processConditionsData);
+        xhr.onerror = function() {
+            console.error(`Erreur réseau lors de la récupération des conditions: ${url}`);
+            loadingSection.style.display = 'none';
+            noResourcesSection.style.display = 'block';
+        };
+        
+        xhr.send();
     }
     
     function loadPatientObservations(patientId, serverUrl) {
         const container = document.querySelector('#observationsContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des observations
         observationsData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1109,63 +1110,83 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Observation?patient=${patientId}&_sort=-date&_count=1000`;
         }
         
-        // Fonction de traitement des données spécifique aux observations
-        const processObservationsData = (data, resourcesList) => {
-            // Stocker toutes les observations dans la variable globale
-            observationsData = data.entry.map(entry => entry.resource);
-            console.log(`${observationsData.length} observations chargées et stockées`);
-            
-            resourcesList.innerHTML = '';
-            
-            // Créer une liste d'observations
-            const observationsList = document.createElement('div');
-            observationsList.className = 'observations-list';
-            
-            data.entry.forEach(entry => {
-                const observation = entry.resource;
-                const observationElement = document.createElement('div');
-                observationElement.className = 'observation-item';
-                observationElement.style.padding = '12px';
-                observationElement.style.margin = '8px 0';
-                observationElement.style.backgroundColor = '#f9f9f9';
-                observationElement.style.borderRadius = '6px';
-                observationElement.style.borderLeft = '3px solid #fd7e30';
-                
-                const valueDisplay = getObservationValue(observation);
-                const effectiveDate = getEffectiveDate(observation);
-                
-                observationElement.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                            ${observation.code?.coding?.[0]?.display || observation.code?.text || 'Observation non spécifiée'}
-                        </h4>
-                        <span style="font-size: 0.85rem; background: #f8f9fa; color: #6c757d; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                            ${observation.status || 'Non spécifié'}
-                        </span>
-                    </div>
-                    <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                        <strong>Valeur:</strong> ${valueDisplay}
-                    </div>
-                    <div style="font-size: 0.9rem; color: #555;">
-                        <strong>Date:</strong> ${effectiveDate}
-                    </div>
-                `;
-                
-                observationsList.appendChild(observationElement);
-            });
-            
-            resourcesList.appendChild(observationsList);
-        };
+        console.log(`Chargement des observations depuis: ${url}`);
         
-        // Utiliser notre fonction générique pour charger les observations
-        loadFhirResourceWithDelay(url, container, processObservationsData);
+        // Exécuter la requête FHIR pour récupérer les observations
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                loadingSection.style.display = 'none';
+                
+                if (data.entry && data.entry.length > 0) {
+                    // Stocker toutes les observations dans la variable globale
+                    observationsData = data.entry.map(entry => entry.resource);
+                    console.log(`${observationsData.length} observations chargées et stockées`);
+                    
+                    resourcesList.innerHTML = '';
+                    resourcesList.style.display = 'block';
+                    
+                    // Créer une liste d'observations
+                    const observationsList = document.createElement('div');
+                    observationsList.className = 'observations-list';
+                    
+                    data.entry.forEach(entry => {
+                        const observation = entry.resource;
+                        const observationElement = document.createElement('div');
+                        observationElement.className = 'observation-item';
+                        observationElement.style.padding = '12px';
+                        observationElement.style.margin = '8px 0';
+                        observationElement.style.backgroundColor = '#f9f9f9';
+                        observationElement.style.borderRadius = '6px';
+                        observationElement.style.borderLeft = '3px solid #fd7e30';
+                        
+                        const valueDisplay = getObservationValue(observation);
+                        const effectiveDate = getEffectiveDate(observation);
+                        
+                        observationElement.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
+                                    ${observation.code?.coding?.[0]?.display || observation.code?.text || 'Observation non spécifiée'}
+                                </h4>
+                                <span style="font-size: 0.85rem; background: #f8f9fa; color: #6c757d; padding: 3px 8px; border-radius: 12px; display: inline-block;">
+                                    ${observation.status || 'Non spécifié'}
+                                </span>
+                            </div>
+                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
+                                <strong>Valeur:</strong> ${valueDisplay}
+                            </div>
+                            <div style="font-size: 0.9rem; color: #555;">
+                                <strong>Date:</strong> ${effectiveDate}
+                            </div>
+                        `;
+                        
+                        observationsList.appendChild(observationElement);
+                    });
+                    
+                    resourcesList.appendChild(observationsList);
+                } else {
+                    noResourcesSection.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des observations:', error);
+                loadingSection.style.display = 'none';
+                noResourcesSection.style.display = 'block';
+            });
     }
     
     function loadPatientMedications(patientId, serverUrl) {
         const container = document.querySelector('#medicationsContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des médicaments
         medicationsData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1178,65 +1199,85 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/MedicationRequest?patient=${patientId}&_sort=-date&_count=1000`;
         }
         
-        // Fonction de traitement des données spécifique aux médicaments
-        const processMedicationsData = (data, resourcesList) => {
-            // Stocker tous les médicaments dans la variable globale
-            medicationsData = data.entry.map(entry => entry.resource);
-            console.log(`${medicationsData.length} médicaments chargés et stockés`);
-            
-            resourcesList.innerHTML = '';
-            
-            // Créer une liste de médicaments
-            const medicationsList = document.createElement('div');
-            medicationsList.className = 'medications-list';
-            
-            data.entry.forEach(entry => {
-                const medication = entry.resource;
-                const medicationElement = document.createElement('div');
-                medicationElement.className = 'medication-item';
-                medicationElement.style.padding = '12px';
-                medicationElement.style.margin = '8px 0';
-                medicationElement.style.backgroundColor = '#f9f9f9';
-                medicationElement.style.borderRadius = '6px';
-                medicationElement.style.borderLeft = '3px solid #e83e28';
-                
-                const status = medication.status || 'Non spécifié';
-                const authDate = medication.authoredOn ? new Date(medication.authoredOn).toLocaleDateString('fr-FR') : 'Non spécifiée';
-                
-                medicationElement.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                            ${medication.medicationCodeableConcept?.coding?.[0]?.display || 
-                              medication.medicationCodeableConcept?.text || 
-                              'Médicament non spécifié'}
-                        </h4>
-                        <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                            ${status}
-                        </span>
-                    </div>
-                    <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                        <strong>Dosage:</strong> ${medication.dosageInstruction?.[0]?.text || 'Non spécifié'}
-                    </div>
-                    <div style="font-size: 0.9rem; color: #555;">
-                        <strong>Date de prescription:</strong> ${authDate}
-                    </div>
-                `;
-                
-                medicationsList.appendChild(medicationElement);
-            });
-            
-            resourcesList.appendChild(medicationsList);
-        };
+        console.log(`Chargement des médicaments depuis: ${url}`);
         
-        // Utiliser notre fonction générique pour charger les médicaments
-        loadFhirResourceWithDelay(url, container, processMedicationsData);
+        // Exécuter la requête FHIR pour récupérer les médicaments
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                loadingSection.style.display = 'none';
+                
+                if (data.entry && data.entry.length > 0) {
+                    // Stocker tous les médicaments dans la variable globale
+                    medicationsData = data.entry.map(entry => entry.resource);
+                    console.log(`${medicationsData.length} médicaments chargés et stockés`);
+                    
+                    resourcesList.innerHTML = '';
+                    resourcesList.style.display = 'block';
+                    
+                    // Créer une liste de médicaments
+                    const medicationsList = document.createElement('div');
+                    medicationsList.className = 'medications-list';
+                    
+                    data.entry.forEach(entry => {
+                        const medication = entry.resource;
+                        const medicationElement = document.createElement('div');
+                        medicationElement.className = 'medication-item';
+                        medicationElement.style.padding = '12px';
+                        medicationElement.style.margin = '8px 0';
+                        medicationElement.style.backgroundColor = '#f9f9f9';
+                        medicationElement.style.borderRadius = '6px';
+                        medicationElement.style.borderLeft = '3px solid #e83e28';
+                        
+                        const status = medication.status || 'Non spécifié';
+                        const authDate = medication.authoredOn ? new Date(medication.authoredOn).toLocaleDateString('fr-FR') : 'Non spécifiée';
+                        
+                        medicationElement.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
+                                    ${medication.medicationCodeableConcept?.coding?.[0]?.display || 
+                                      medication.medicationCodeableConcept?.text || 
+                                      'Médicament non spécifié'}
+                                </h4>
+                                <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
+                                    ${status}
+                                </span>
+                            </div>
+                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
+                                <strong>Dosage:</strong> ${medication.dosageInstruction?.[0]?.text || 'Non spécifié'}
+                            </div>
+                            <div style="font-size: 0.9rem; color: #555;">
+                                <strong>Date de prescription:</strong> ${authDate}
+                            </div>
+                        `;
+                        
+                        medicationsList.appendChild(medicationElement);
+                    });
+                    
+                    resourcesList.appendChild(medicationsList);
+                } else {
+                    noResourcesSection.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des médicaments:', error);
+                loadingSection.style.display = 'none';
+                noResourcesSection.style.display = 'block';
+            });
     }
     
     function loadPatientEncounters(patientId, serverUrl) {
         const container = document.querySelector('#encountersContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des consultations
         encountersData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1249,68 +1290,88 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Encounter?patient=${patientId}&_sort=-date&_count=1000`;
         }
         
-        // Fonction de traitement des données spécifique aux consultations
-        const processEncountersData = (data, resourcesList) => {
-            // Stocker toutes les consultations dans la variable globale
-            encountersData = data.entry.map(entry => entry.resource);
-            console.log(`${encountersData.length} consultations chargées et stockées`);
-            
-            resourcesList.innerHTML = '';
-            
-            // Créer une liste de consultations
-            const encountersList = document.createElement('div');
-            encountersList.className = 'encounters-list';
-            
-            data.entry.forEach(entry => {
-                const encounter = entry.resource;
-                const encounterElement = document.createElement('div');
-                encounterElement.className = 'encounter-item';
-                encounterElement.style.padding = '12px';
-                encounterElement.style.margin = '8px 0';
-                encounterElement.style.backgroundColor = '#f9f9f9';
-                encounterElement.style.borderRadius = '6px';
-                encounterElement.style.borderLeft = '3px solid #fd7e30';
-                
-                const status = encounter.status || 'Non spécifié';
-                const periodStart = encounter.period?.start ? new Date(encounter.period.start).toLocaleDateString('fr-FR') : 'Non spécifiée';
-                const periodEnd = encounter.period?.end ? new Date(encounter.period.end).toLocaleDateString('fr-FR') : 'En cours';
-                
-                encounterElement.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                        <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                            ${encounter.type?.[0]?.coding?.[0]?.display || encounter.type?.[0]?.text || 'Consultation'}
-                        </h4>
-                        <span style="font-size: 0.85rem; background: ${status === 'finished' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'finished' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                            ${status}
-                        </span>
-                    </div>
-                    <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                        <strong>Début:</strong> ${periodStart}
-                    </div>
-                    <div style="font-size: 0.9rem; color: #555;">
-                        <strong>Fin:</strong> ${periodEnd}
-                    </div>
-                    <div style="font-size: 0.9rem; color: #555; margin-top: 5px;">
-                        <strong>Service:</strong> ${encounter.serviceType?.coding?.[0]?.display || encounter.serviceType?.text || 'Non spécifié'}
-                    </div>
-                `;
-                
-                encountersList.appendChild(encounterElement);
-            });
-            
-            resourcesList.appendChild(encountersList);
-        };
+        console.log(`Chargement des consultations depuis: ${url}`);
         
-        // Utiliser notre fonction générique pour charger les consultations
-        loadFhirResourceWithDelay(url, container, processEncountersData);
+        // Exécuter la requête FHIR pour récupérer les consultations
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                loadingSection.style.display = 'none';
+                
+                if (data.entry && data.entry.length > 0) {
+                    // Stocker toutes les consultations dans la variable globale
+                    encountersData = data.entry.map(entry => entry.resource);
+                    console.log(`${encountersData.length} consultations chargées et stockées`);
+                    
+                    resourcesList.innerHTML = '';
+                    resourcesList.style.display = 'block';
+                    
+                    // Créer une liste de consultations
+                    const encountersList = document.createElement('div');
+                    encountersList.className = 'encounters-list';
+                    
+                    data.entry.forEach(entry => {
+                        const encounter = entry.resource;
+                        const encounterElement = document.createElement('div');
+                        encounterElement.className = 'encounter-item';
+                        encounterElement.style.padding = '12px';
+                        encounterElement.style.margin = '8px 0';
+                        encounterElement.style.backgroundColor = '#f9f9f9';
+                        encounterElement.style.borderRadius = '6px';
+                        encounterElement.style.borderLeft = '3px solid #fd7e30';
+                        
+                        const status = encounter.status || 'Non spécifié';
+                        const periodStart = encounter.period?.start ? new Date(encounter.period.start).toLocaleDateString('fr-FR') : 'Non spécifiée';
+                        const periodEnd = encounter.period?.end ? new Date(encounter.period.end).toLocaleDateString('fr-FR') : 'En cours';
+                        
+                        encounterElement.innerHTML = `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
+                                    ${encounter.type?.[0]?.coding?.[0]?.display || encounter.type?.[0]?.text || 'Consultation'}
+                                </h4>
+                                <span style="font-size: 0.85rem; background: ${status === 'finished' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'finished' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
+                                    ${status}
+                                </span>
+                            </div>
+                            <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
+                                <strong>Début:</strong> ${periodStart}
+                            </div>
+                            <div style="font-size: 0.9rem; color: #555;">
+                                <strong>Fin:</strong> ${periodEnd}
+                            </div>
+                            <div style="font-size: 0.9rem; color: #555; margin-top: 5px;">
+                                <strong>Service:</strong> ${encounter.serviceType?.coding?.[0]?.display || encounter.serviceType?.text || 'Non spécifié'}
+                            </div>
+                        `;
+                        
+                        encountersList.appendChild(encounterElement);
+                    });
+                    
+                    resourcesList.appendChild(encountersList);
+                } else {
+                    noResourcesSection.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des consultations:', error);
+                loadingSection.style.display = 'none';
+                noResourcesSection.style.display = 'block';
+            });
     }
     
     // Fonctions pour charger les ressources supplémentaires
     function loadPatientPractitioners(patientId, serverUrl) {
         const container = document.querySelector('#practitionersContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des praticiens
         practitionersData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1323,62 +1384,89 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`;
         }
         
-        // Fonction de traitement des données spécifique aux praticiens
-        const processPractitionersData = (data, resourcesList) => {
-            // Filtrer les praticiens (dans un Bundle, nous aurons aussi des PractitionerRole)
-            const practitioners = data.entry
-                .filter(entry => entry.resource.resourceType === 'Practitioner')
-                .map(entry => entry.resource);
-            
-            practitionersData = practitioners;
-            
-            // Créer une liste de praticiens
-            const practitionersList = document.createElement('div');
-            practitionersList.style.display = 'grid';
-            practitionersList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-            practitionersList.style.gap = '15px';
-            
-            practitioners.forEach(practitioner => {
-                const practitionerElement = document.createElement('div');
-                practitionerElement.style.backgroundColor = '#f9f9f9';
-                practitionerElement.style.borderRadius = '8px';
-                practitionerElement.style.padding = '15px';
-                practitionerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                practitionerElement.style.borderLeft = '3px solid #e83e28';
-                
-                const name = formatPractitionerName(practitioner.name);
-                const roles = findPractitionerRoles(practitioner.id, data.entry);
-                
-                practitionerElement.innerHTML = `
-                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
-                    </h4>
-                    <div style="margin-top: 10px; color: #555;">
-                        <p><strong>Identifiant:</strong> ${practitioner.id}</p>
-                        ${practitioner.qualification ? 
-                          `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
-                          : ''}
-                        ${roles && roles.length > 0 ? 
-                          `<p><strong>Rôles:</strong> ${formatRoles(roles)}</p>` 
-                          : ''}
-                    </div>
-                `;
-                
-                practitionersList.appendChild(practitionerElement);
-            });
-            
-            resourcesList.appendChild(practitionersList);
-        };
+        console.log(`Chargement des praticiens depuis: ${url}`);
         
-        // Utiliser notre fonction générique pour charger les praticiens
-        loadFhirResourceWithDelay(url, container, processPractitionersData);
+        // Exécuter la requête FHIR
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur de récupération des praticiens: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                loadingSection.style.display = 'none';
+                
+                if (data.entry && data.entry.length > 0) {
+                    resourcesList.style.display = 'block';
+                    resourcesList.innerHTML = '';
+                    
+                    // Filtrer les praticiens (dans un Bundle, nous aurons aussi des PractitionerRole)
+                    const practitioners = data.entry
+                        .filter(entry => entry.resource.resourceType === 'Practitioner')
+                        .map(entry => entry.resource);
+                    
+                    practitionersData = practitioners;
+                    
+                    // Créer une liste de praticiens
+                    const practitionersList = document.createElement('div');
+                    practitionersList.style.display = 'grid';
+                    practitionersList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                    practitionersList.style.gap = '15px';
+                    
+                    practitioners.forEach(practitioner => {
+                        const practitionerElement = document.createElement('div');
+                        practitionerElement.style.backgroundColor = '#f9f9f9';
+                        practitionerElement.style.borderRadius = '8px';
+                        practitionerElement.style.padding = '15px';
+                        practitionerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                        practitionerElement.style.borderLeft = '3px solid #e83e28';
+                        
+                        const name = formatPractitionerName(practitioner.name);
+                        const roles = findPractitionerRoles(practitioner.id, data.entry);
+                        
+                        practitionerElement.innerHTML = `
+                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
+                            </h4>
+                            <div style="margin-top: 10px; color: #555;">
+                                <p><strong>Identifiant:</strong> ${practitioner.id}</p>
+                                ${practitioner.qualification ? 
+                                  `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
+                                  : ''}
+                                ${roles && roles.length > 0 ? 
+                                  `<p><strong>Rôles:</strong> ${formatRoles(roles)}</p>` 
+                                  : ''}
+                            </div>
+                        `;
+                        
+                        practitionersList.appendChild(practitionerElement);
+                    });
+                    
+                    resourcesList.appendChild(practitionersList);
+                } else {
+                    noResourcesSection.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des praticiens:', error);
+                loadingSection.style.display = 'none';
+                noResourcesSection.style.display = 'block';
+            });
     }
     
     function loadPatientOrganizations(patientId, serverUrl) {
         const container = document.querySelector('#organizationsContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des organisations
         organizationsData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1391,58 +1479,85 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Organization?_has:Patient:organization:_id=${patientId}&_count=100`;
         }
         
-        // Fonction de traitement des données spécifique aux organisations
-        const processOrganizationsData = (data, resourcesList) => {
-            const organizations = data.entry.map(entry => entry.resource);
-            organizationsData = organizations;
-            
-            // Créer une liste d'organisations
-            const organizationsList = document.createElement('div');
-            organizationsList.style.display = 'grid';
-            organizationsList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-            organizationsList.style.gap = '15px';
-            
-            organizations.forEach(organization => {
-                const organizationElement = document.createElement('div');
-                organizationElement.style.backgroundColor = '#f9f9f9';
-                organizationElement.style.borderRadius = '8px';
-                organizationElement.style.padding = '15px';
-                organizationElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                organizationElement.style.borderLeft = '3px solid #fd7e30';
-                
-                organizationElement.innerHTML = `
-                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> ${organization.name || 'Organisation sans nom'}
-                    </h4>
-                    <div style="margin-top: 10px; color: #555;">
-                        <p><strong>Identifiant:</strong> ${organization.id}</p>
-                        ${organization.alias && organization.alias.length > 0 ? 
-                          `<p><strong>Alias:</strong> ${organization.alias.join(', ')}</p>` 
-                          : ''}
-                        ${organization.telecom ? 
-                          `<p><strong>Contact:</strong> ${formatTelecom(organization.telecom)}</p>` 
-                          : ''}
-                        ${organization.address ? 
-                          `<p><strong>Adresse:</strong> ${formatAddress(organization.address[0])}</p>` 
-                          : ''}
-                    </div>
-                `;
-                
-                organizationsList.appendChild(organizationElement);
-            });
-            
-            resourcesList.appendChild(organizationsList);
-        };
+        console.log(`Chargement des organisations depuis: ${url}`);
         
-        // Utiliser notre fonction générique pour charger les organisations
-        loadFhirResourceWithDelay(url, container, processOrganizationsData);
+        // Exécuter la requête FHIR pour récupérer les organisations
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur de récupération des organisations: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                loadingSection.style.display = 'none';
+                
+                if (data.entry && data.entry.length > 0) {
+                    resourcesList.style.display = 'block';
+                    resourcesList.innerHTML = '';
+                    
+                    const organizations = data.entry.map(entry => entry.resource);
+                    organizationsData = organizations;
+                    
+                    // Créer une liste d'organisations
+                    const organizationsList = document.createElement('div');
+                    organizationsList.style.display = 'grid';
+                    organizationsList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                    organizationsList.style.gap = '15px';
+                    
+                    organizations.forEach(organization => {
+                        const organizationElement = document.createElement('div');
+                        organizationElement.style.backgroundColor = '#f9f9f9';
+                        organizationElement.style.borderRadius = '8px';
+                        organizationElement.style.padding = '15px';
+                        organizationElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                        organizationElement.style.borderLeft = '3px solid #fd7e30';
+                        
+                        organizationElement.innerHTML = `
+                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> ${organization.name || 'Organisation sans nom'}
+                            </h4>
+                            <div style="margin-top: 10px; color: #555;">
+                                <p><strong>Identifiant:</strong> ${organization.id}</p>
+                                ${organization.alias && organization.alias.length > 0 ? 
+                                  `<p><strong>Alias:</strong> ${organization.alias.join(', ')}</p>` 
+                                  : ''}
+                                ${organization.telecom ? 
+                                  `<p><strong>Contact:</strong> ${formatTelecom(organization.telecom)}</p>` 
+                                  : ''}
+                                ${organization.address ? 
+                                  `<p><strong>Adresse:</strong> ${formatAddress(organization.address[0])}</p>` 
+                                  : ''}
+                            </div>
+                        `;
+                        
+                        organizationsList.appendChild(organizationElement);
+                    });
+                    
+                    resourcesList.appendChild(organizationsList);
+                } else {
+                    noResourcesSection.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des organisations:', error);
+                loadingSection.style.display = 'none';
+                noResourcesSection.style.display = 'block';
+            });
     }
     
     function loadPatientRelatedPersons(patientId, serverUrl) {
         const container = document.querySelector('#relatedContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des personnes liées
         relatedPersonsData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1455,58 +1570,85 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`;
         }
         
-        // Fonction de traitement des données spécifique aux personnes liées
-        const processRelatedPersonsData = (data, resourcesList) => {
-            const relatedPersons = data.entry.map(entry => entry.resource);
-            relatedPersonsData = relatedPersons;
-            
-            // Créer une liste de personnes liées
-            const relatedList = document.createElement('div');
-            relatedList.style.display = 'grid';
-            relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-            relatedList.style.gap = '15px';
-            
-            relatedPersons.forEach(person => {
-                const personElement = document.createElement('div');
-                personElement.style.backgroundColor = '#f9f9f9';
-                personElement.style.borderRadius = '8px';
-                personElement.style.padding = '15px';
-                personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                personElement.style.borderLeft = '3px solid #e83e28';
-                
-                personElement.innerHTML = `
-                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-users" style="color: #e83e28;"></i> ${formatPatientName(person.name) || 'Personne sans nom'}
-                    </h4>
-                    <div style="margin-top: 10px; color: #555;">
-                        <p><strong>Identifiant:</strong> ${person.id}</p>
-                        ${person.relationship ? 
-                          `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>` 
-                          : ''}
-                        ${person.telecom ? 
-                          `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>` 
-                          : ''}
-                        ${person.address ? 
-                          `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>` 
-                          : ''}
-                    </div>
-                `;
-                
-                relatedList.appendChild(personElement);
-            });
-            
-            resourcesList.appendChild(relatedList);
-        };
+        console.log(`Chargement des personnes liées depuis: ${url}`);
         
-        // Utiliser notre fonction générique pour charger les personnes liées
-        loadFhirResourceWithDelay(url, container, processRelatedPersonsData);
+        // Exécuter la requête FHIR pour récupérer les personnes liées
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur de récupération des personnes liées: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                loadingSection.style.display = 'none';
+                
+                if (data.entry && data.entry.length > 0) {
+                    resourcesList.style.display = 'block';
+                    resourcesList.innerHTML = '';
+                    
+                    const relatedPersons = data.entry.map(entry => entry.resource);
+                    relatedPersonsData = relatedPersons;
+                    
+                    // Créer une liste de personnes liées
+                    const relatedList = document.createElement('div');
+                    relatedList.style.display = 'grid';
+                    relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                    relatedList.style.gap = '15px';
+                    
+                    relatedPersons.forEach(person => {
+                        const personElement = document.createElement('div');
+                        personElement.style.backgroundColor = '#f9f9f9';
+                        personElement.style.borderRadius = '8px';
+                        personElement.style.padding = '15px';
+                        personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                        personElement.style.borderLeft = '3px solid #e83e28';
+                        
+                        personElement.innerHTML = `
+                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-users" style="color: #e83e28;"></i> ${formatPatientName(person.name) || 'Personne sans nom'}
+                            </h4>
+                            <div style="margin-top: 10px; color: #555;">
+                                <p><strong>Identifiant:</strong> ${person.id}</p>
+                                ${person.relationship ? 
+                                  `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>` 
+                                  : ''}
+                                ${person.telecom ? 
+                                  `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>` 
+                                  : ''}
+                                ${person.address ? 
+                                  `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>` 
+                                  : ''}
+                            </div>
+                        `;
+                        
+                        relatedList.appendChild(personElement);
+                    });
+                    
+                    resourcesList.appendChild(relatedList);
+                } else {
+                    noResourcesSection.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des personnes liées:', error);
+                loadingSection.style.display = 'none';
+                noResourcesSection.style.display = 'block';
+            });
     }
     
     function loadPatientCoverage(patientId, serverUrl) {
         const container = document.querySelector('#coverageContent');
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des couvertures
         coverageData = [];
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1519,50 +1661,70 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`;
         }
         
-        // Fonction de traitement des données spécifique aux couvertures
-        const processCoverageData = (data, resourcesList) => {
-            const coverages = data.entry.map(entry => entry.resource);
-            coverageData = coverages;
-            
-            // Créer une liste de couvertures
-            const coverageList = document.createElement('div');
-            coverageList.style.display = 'grid';
-            coverageList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-            coverageList.style.gap = '15px';
-            
-            coverages.forEach(coverage => {
-                const coverageElement = document.createElement('div');
-                coverageElement.style.backgroundColor = '#f9f9f9';
-                coverageElement.style.borderRadius = '8px';
-                coverageElement.style.padding = '15px';
-                coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                coverageElement.style.borderLeft = '3px solid #fd7e30';
-                
-                coverageElement.innerHTML = `
-                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
-                        ${coverage.type?.coding?.[0]?.display || coverage.type?.text || 'Couverture'}
-                    </h4>
-                    <div style="margin-top: 10px; color: #555;">
-                        <p><strong>Identifiant:</strong> ${coverage.id}</p>
-                        <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
-                        ${coverage.period ? 
-                          `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>` 
-                          : ''}
-                        ${coverage.payor ? 
-                          `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>` 
-                          : ''}
-                    </div>
-                `;
-                
-                coverageList.appendChild(coverageElement);
-            });
-            
-            resourcesList.appendChild(coverageList);
-        };
+        console.log(`Chargement des couvertures depuis: ${url}`);
         
-        // Utiliser notre fonction générique pour charger les couvertures
-        loadFhirResourceWithDelay(url, container, processCoverageData);
+        // Exécuter la requête FHIR pour récupérer les couvertures
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur de récupération des couvertures: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                loadingSection.style.display = 'none';
+                
+                if (data.entry && data.entry.length > 0) {
+                    resourcesList.style.display = 'block';
+                    resourcesList.innerHTML = '';
+                    
+                    const coverages = data.entry.map(entry => entry.resource);
+                    coverageData = coverages;
+                    
+                    // Créer une liste de couvertures
+                    const coverageList = document.createElement('div');
+                    coverageList.style.display = 'grid';
+                    coverageList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                    coverageList.style.gap = '15px';
+                    
+                    coverages.forEach(coverage => {
+                        const coverageElement = document.createElement('div');
+                        coverageElement.style.backgroundColor = '#f9f9f9';
+                        coverageElement.style.borderRadius = '8px';
+                        coverageElement.style.padding = '15px';
+                        coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                        coverageElement.style.borderLeft = '3px solid #fd7e30';
+                        
+                        coverageElement.innerHTML = `
+                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
+                                ${coverage.type?.coding?.[0]?.display || coverage.type?.text || 'Couverture'}
+                            </h4>
+                            <div style="margin-top: 10px; color: #555;">
+                                <p><strong>Identifiant:</strong> ${coverage.id}</p>
+                                <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
+                                ${coverage.period ? 
+                                  `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>` 
+                                  : ''}
+                                ${coverage.payor ? 
+                                  `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>` 
+                                  : ''}
+                            </div>
+                        `;
+                        
+                        coverageList.appendChild(coverageElement);
+                    });
+                    
+                    resourcesList.appendChild(coverageList);
+                } else {
+                    noResourcesSection.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Erreur lors du chargement des couvertures:', error);
+                loadingSection.style.display = 'none';
+                noResourcesSection.style.display = 'block';
+            });
     }
     
     function loadPatientBundle(patientId, serverUrl) {
@@ -1589,46 +1751,25 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log(`Chargement du bundle patient depuis: ${url}`);
         
-        // Fonction de traitement des données du bundle
-        const processBundleData = (data, resourcesList) => {
-            // Stocker le bundle pour référence future
-            bundleData = data;
-            
-            // Afficher les informations sur le bundle
-            if (data.resourceType === 'Bundle') {
-                const resourceCount = data.entry ? data.entry.length : 0;
-                const resourceTypes = data.entry ? 
-                    [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
+        // On récupère directement le bundle associé au patient, incluant les références
+        fetch(url)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erreur de récupération du bundle: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Stocker le bundle pour référence future
+                bundleData = data;
                 
-                bundleInfo.innerHTML = `
-                    <p><strong>Type de bundle:</strong> ${data.type || 'Inconnu'}</p>
-                    <p><strong>Identifiant:</strong> ${data.id || 'Non spécifié'}</p>
-                    <p><strong>Nombre de ressources:</strong> ${resourceCount}</p>
-                    <p><strong>Types de ressources:</strong> ${resourceTypes.join(', ') || 'Aucun'}</p>
-                `;
-        
-                if (resourceCount > 0) {
-                    // Grouper les ressources par type
-                    const resourcesByType = {};
-                    data.entry.forEach(entry => {
-                        if (entry.resource && entry.resource.resourceType) {
-                            const type = entry.resource.resourceType;
-                            if (!resourcesByType[type]) {
-                                resourcesByType[type] = [];
-                            }
-                            resourcesByType[type].push(entry.resource);
-                        }
-                    });
-                    
-                    // Pour chaque type, créer une section dépliable
-                    Object.keys(resourcesByType).sort().forEach(type => {
-                        const resources = resourcesByType[type];
-                        const typeSection = document.createElement('div');
-                        typeSection.className = 'resource-type-section';
-                        typeSection.style.marginBottom = '20px';
-                        typeSection.style.border = '1px solid #eee';
-                        typeSection.style.borderRadius = '8px';
-                        typeSection.style.overflow = 'hidden';
+                if (loadingSection) loadingSection.style.display = 'none';
+                
+                // Afficher les informations sur le bundle
+                if (data.resourceType === 'Bundle') {
+                    const resourceCount = data.entry ? data.entry.length : 0;
+                    const resourceTypes = data.entry ? 
+                        [...new Set(data.entry.map(e => e.resource.resourceType))].sort() : [];
                     
                     bundleInfo.innerHTML = `
                         <p><strong>Type de bundle:</strong> ${data.type || 'Inconnu'}</p>
