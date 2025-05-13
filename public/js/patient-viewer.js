@@ -214,8 +214,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             let widerUrl;
                             if (serverUrl.includes('hapi.fhir.org')) {
                                 // Utiliser le proxy pour contourner les limitations CORS
-                                // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
-                                widerUrl = `/api/fhir-proxy/hapi/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=50`;
+                                // Utiliser un count de 150 pour les patients comme recommandé
+                                widerUrl = `/api/fhir-proxy/hapi/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=150`;
                             } else {
                                 // URL directe pour les serveurs locaux (déjà sur le même domaine)
                                 widerUrl = `${serverUrl}/Patient?name=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
@@ -252,8 +252,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let initialUrl;
         if (serverUrl.includes('hapi.fhir.org')) {
             // Utiliser le proxy pour contourner les limitations CORS
-            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
-            initialUrl = `/api/fhir-proxy/hapi/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=50`;
+            // Utiliser un count de 150 pour les patients comme recommandé
+            initialUrl = `/api/fhir-proxy/hapi/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=150`;
         } else {
             // URL directe pour les serveurs locaux (déjà sur le même domaine)
             initialUrl = `${serverUrl}/Patient?family=${encodeURIComponent(searchValue)}&_sort=family&_count=1000`;
@@ -346,7 +346,8 @@ document.addEventListener('DOMContentLoaded', function() {
             let url;
             if (server.includes('hapi.fhir.org')) {
                 // Utiliser le proxy pour contourner les limitations CORS
-                // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
+                // Utiliser un count de 50 pour l'opération $everything qui est déjà très lourde
+                // Note: Pour la recherche de patients, nous utilisons 150
                 url = `/api/fhir-proxy/hapi/Patient/${patientId}/$everything?_count=50&_include=*`;
             } else {
                 // URL directe pour les serveurs locaux (déjà sur le même domaine)
