@@ -305,8 +305,10 @@ Le rapport doit obligatoirement intégrer et analyser toutes les sections de don
 router.post('/chat', async (req, res) => {
     // Mettre en place un timeout de 30 secondes
     const CHAT_TIMEOUT = 30000; // 30 secondes
+    let requestTimedOut = false;
     const timeoutHandle = setTimeout(() => {
         console.warn('[AI-CHAT] Timeout dépassé pour la requête de chat après', CHAT_TIMEOUT/1000, 'secondes');
+        requestTimedOut = true;
         if (!res.headersSent) {
             res.status(503).json({
                 success: false,
@@ -430,23 +432,30 @@ INSTRUCTIONS IMPORTANTES:
             // Journaliser le succès avec le nom correct du fournisseur utilisé
             console.log(`[CHATBOT] Réponse générée avec succès par ${targetProviderName}`);
             
-            // Répondre avec la réponse générée
+            // Répondre avec la réponse générée uniquement si le délai n'a pas expiré
             clearTimeout(timeoutHandle);
-            return res.status(200).json({
-                success: true,
-                message: 'Réponse générée avec succès',
-                content: response,
-                provider: targetProviderName
-            });
+            if (!requestTimedOut && !res.headersSent) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'Réponse générée avec succès',
+                    content: response,
+                    provider: targetProviderName
+                });
+            } else {
+                console.log('[CHATBOT] Réponse reçue mais requête déjà terminée (timeout)');
+                return;
+            }
             
         } catch (error) {
             clearTimeout(timeoutHandle);
             console.error('[AI-CHAT] Erreur lors de la génération de la réponse:', error);
-            return res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la communication avec le fournisseur d\'IA',
-                error: error.message
-            });
+            if (!requestTimedOut && !res.headersSent) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Erreur lors de la communication avec le fournisseur d\'IA',
+                    error: error.message
+                });
+            }
         }
         
     } catch (error) {
