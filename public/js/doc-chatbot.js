@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatbotInput = document.getElementById('doc-chatbot-input-text');
     const chatbotSend = document.getElementById('doc-chatbot-send');
     
+    // Vérifier si tous les éléments sont présents
+    if (!chatbotContainer || !chatbotToggle || !chatbotMessages || !chatbotInput || !chatbotSend) {
+        console.error("Certains éléments du chatbot sont manquants dans le DOM");
+        return; // Sortir de la fonction si des éléments sont manquants
+    }
+    
     // Variables d'état
     let isTyping = false;
     let isChatbotOpen = false;
@@ -43,19 +49,29 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialiser l'état du chatbot (fermé par défaut)
     function initChatbotState() {
-        // Vérifier si le chatbot était ouvert précédemment (stocké dans localStorage)
-        const storedState = localStorage.getItem('docChatbotOpen');
-        isChatbotOpen = storedState === 'true';
-        
-        // Appliquer l'état initial
-        if (isChatbotOpen) {
-            chatbotContainer.classList.add('open');
-            chatbotToggle.querySelector('i').classList.remove('fa-chevron-down');
-            chatbotToggle.querySelector('i').classList.add('fa-chevron-up');
-        } else {
-            chatbotContainer.classList.remove('open');
-            chatbotToggle.querySelector('i').classList.remove('fa-chevron-up');
-            chatbotToggle.querySelector('i').classList.add('fa-chevron-down');
+        try {
+            // Vérifier si le chatbot était ouvert précédemment (stocké dans localStorage)
+            const storedState = localStorage.getItem('docChatbotOpen');
+            isChatbotOpen = storedState === 'true';
+            
+            // Appliquer l'état initial
+            if (isChatbotOpen) {
+                chatbotContainer.classList.add('open');
+                const iconElement = chatbotToggle.querySelector('i');
+                if (iconElement) {
+                    iconElement.classList.remove('fa-chevron-down');
+                    iconElement.classList.add('fa-chevron-up');
+                }
+            } else {
+                chatbotContainer.classList.remove('open');
+                const iconElement = chatbotToggle.querySelector('i');
+                if (iconElement) {
+                    iconElement.classList.remove('fa-chevron-up');
+                    iconElement.classList.add('fa-chevron-down');
+                }
+            }
+        } catch (error) {
+            console.error("Erreur lors de l'initialisation du chatbot:", error);
         }
     }
     
@@ -63,22 +79,32 @@ document.addEventListener('DOMContentLoaded', () => {
     function setupChatbotEvents() {
         // Fonction pour basculer l'état du chatbot
         function toggleChatbot() {
-            isChatbotOpen = !isChatbotOpen;
-            
-            // Sauvegarder l'état
-            localStorage.setItem('docChatbotOpen', isChatbotOpen);
-            
-            // Mettre à jour l'interface
-            if (isChatbotOpen) {
-                chatbotContainer.classList.add('open');
-                chatbotToggle.querySelector('i').classList.remove('fa-chevron-down');
-                chatbotToggle.querySelector('i').classList.add('fa-chevron-up');
-                // Faire défiler jusqu'au dernier message
-                scrollToBottom();
-            } else {
-                chatbotContainer.classList.remove('open');
-                chatbotToggle.querySelector('i').classList.remove('fa-chevron-up');
-                chatbotToggle.querySelector('i').classList.add('fa-chevron-down');
+            try {
+                isChatbotOpen = !isChatbotOpen;
+                
+                // Sauvegarder l'état
+                localStorage.setItem('docChatbotOpen', isChatbotOpen);
+                
+                // Mettre à jour l'interface
+                if (isChatbotOpen) {
+                    chatbotContainer.classList.add('open');
+                    const iconElement = chatbotToggle.querySelector('i');
+                    if (iconElement) {
+                        iconElement.classList.remove('fa-chevron-down');
+                        iconElement.classList.add('fa-chevron-up');
+                    }
+                    // Faire défiler jusqu'au dernier message
+                    scrollToBottom();
+                } else {
+                    chatbotContainer.classList.remove('open');
+                    const iconElement = chatbotToggle.querySelector('i');
+                    if (iconElement) {
+                        iconElement.classList.remove('fa-chevron-up');
+                        iconElement.classList.add('fa-chevron-down');
+                    }
+                }
+            } catch (error) {
+                console.error("Erreur lors du basculement du chatbot:", error);
             }
         }
         
@@ -89,12 +115,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         // Permettre de cliquer sur tout le header pour ouvrir/fermer
-        document.querySelector('.doc-chatbot-header').addEventListener('click', function(e) {
-            // Ne pas déclencher si on a cliqué sur le bouton (déjà géré)
-            if (e.target !== chatbotToggle && !chatbotToggle.contains(e.target)) {
-                toggleChatbot();
-            }
-        });
+        const chatbotHeader = document.querySelector('.doc-chatbot-header');
+        if (chatbotHeader) {
+            chatbotHeader.addEventListener('click', function(e) {
+                // Ne pas déclencher si on a cliqué sur le bouton (déjà géré)
+                if (e.target !== chatbotToggle && !chatbotToggle.contains(e.target)) {
+                    toggleChatbot();
+                }
+            });
+        } else {
+            console.error("L'élément .doc-chatbot-header n'a pas été trouvé");
+        }
         
         // Événement pour envoyer un message (bouton)
         chatbotSend.addEventListener('click', () => {
