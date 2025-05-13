@@ -221,7 +221,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ 
-                    message: message,
+                    messages: [
+                        { role: "system", content: "Vous êtes l'assistant de documentation technique FHIRHub. Répondez aux questions concernant l'utilisation du logiciel, ses fonctionnalités et son architecture technique." },
+                        { role: "user", content: message }
+                    ],
                     useKnowledge: true,
                     context: "Documentation technique"
                 })
@@ -240,7 +243,15 @@ document.addEventListener('DOMContentLoaded', function() {
             removeTypingIndicator();
             
             // Ajouter la réponse de l'IA au chat
-            addMessageToChat('assistant', data.response || data.message || "Désolé, je n'ai pas pu trouver d'information pertinente.");
+            // Le format de réponse varie selon l'API, essayons plusieurs chemins possibles
+            const aiResponse = data.response || 
+                              (data.message ? data.message : null) || 
+                              (data.content ? data.content : null) ||
+                              (data.choices && data.choices[0] ? data.choices[0].message.content : null) ||
+                              "Désolé, je n'ai pas pu trouver d'information pertinente.";
+            
+            console.log("Message extrait:", aiResponse);
+            addMessageToChat('assistant', aiResponse);
             
             return data;
         } catch (error) {
