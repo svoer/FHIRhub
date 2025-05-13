@@ -1545,6 +1545,10 @@ const fhirAiRoutes = require('./routes/fhir-ai'); // Intégration d'IA avec FHIR
 const aiProvidersRoutes = require('./routes/ai-providers'); // Gestion des fournisseurs d'IA
 const aiFhirAnalyzeRoutes = require('./routes/ai-fhir-analyze'); // Analyse FHIR avec l'IA active
 
+// Routes pour la base de connaissances de l'IA
+const aiKnowledgeApiRoutes = require('./routes/ai-knowledge-api');
+app.use('/api/ai-knowledge', aiKnowledgeApiRoutes);
+
 // Enregistrement des routes
 app.use('/api/applications', applicationsRoutes);
 app.use('/applications', applicationViewsRoutes);  // Nouveau router pour les vues des applications
