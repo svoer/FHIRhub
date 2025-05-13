@@ -200,8 +200,13 @@ router.post('/analyze-patient', async (req, res) => {
                 console.log(`  - Bundle complet: ${bundle ? 'Présent' : 'Manquant'}`);
             }
             
-            // Construire le prompt pour l'IA avec toutes les données disponibles
-            const prompt = `Tu es un assistant médical qui analyse des données FHIR de patient.
+            // Créer un objet structuré pour l'IA qui contient toutes les données
+            // Cela permet à l'IA de mieux traiter les données et évite les problèmes de taille de prompt
+            console.log("[AI-Analyze] Préparation des données pour l'IA dans un format structuré");
+            
+            // Objet structuré pour l'IA
+            const promptData = {
+                instructions: `Tu es un assistant médical qui analyse des données FHIR de patient.
                 
 En tant qu'expert médical, analyse ces données de patient et génère un rapport médical complet comprenant:
 1. Un résumé des informations démographiques
@@ -216,41 +221,33 @@ En tant qu'expert médical, analyse ces données de patient et génère un rappo
 10. Une synthèse chronologique des événements majeurs
 11. Des recommandations médicales basées sur l'ensemble des données
 
-Voici les données FHIR du patient sous format JSON, incluant les informations des différentes sections:
-
-INFORMATIONS PATIENT:
-${JSON.stringify(patientInfo, null, 2)}
-
-CONDITIONS MÉDICALES (${conditions.length}):
-${JSON.stringify(conditions, null, 2)}
-
-OBSERVATIONS ET RÉSULTATS DE LABORATOIRE (${observations.length}):
-${JSON.stringify(observations, null, 2)}
-
-MÉDICAMENTS (${medications.length}):
-${JSON.stringify(medications, null, 2)}
-
-CONSULTATIONS ET HOSPITALISATIONS (${encounters.length}):
-${JSON.stringify(encounters, null, 2)}
-
-PRATICIENS (${patientSummary.practitioners ? patientSummary.practitioners.length : 0}):
-${JSON.stringify(patientSummary.practitioners || [], null, 2)}
-
-ORGANISATIONS (${patientSummary.organizations ? patientSummary.organizations.length : 0}):
-${JSON.stringify(patientSummary.organizations || [], null, 2)}
-
-PERSONNES LIÉES (${patientSummary.relatedPersons ? patientSummary.relatedPersons.length : 0}):
-${JSON.stringify(patientSummary.relatedPersons || [], null, 2)}
-
-COUVERTURES D'ASSURANCE (${patientSummary.coverages ? patientSummary.coverages.length : 0}):
-${JSON.stringify(patientSummary.coverages || [], null, 2)}
-
-BUNDLE COMPLET:
-${patientSummary.bundle ? JSON.stringify(patientSummary.bundle, null, 2).substring(0, 5000) + "... (tronqué pour limite de taille)" : "Non disponible"}
-                
 Réponds avec un rapport HTML bien structuré pour faciliter la lecture. Utilise les éléments HTML comme <div>, <h3>, <ul>, <li>, <p> avec des styles CSS en ligne pour créer un rapport visuellement organisé. Utilise des tableaux pour regrouper les données quand c'est pertinent.
 
-Le rapport doit obligatoirement intégrer et analyser toutes les sections de données disponibles, y compris les praticiens, organisations, personnes liées et couvertures si ces données sont présentes.`;
+Le rapport doit obligatoirement intégrer et analyser toutes les sections de données disponibles, y compris les praticiens, organisations, personnes liées et couvertures si ces données sont présentes.`,
+                patientData: {
+                    patient: patientInfo,
+                    conditions: conditions,
+                    observations: observations, 
+                    medications: medications,
+                    encounters: encounters,
+                    practitioners: patientSummary.practitioners || [],
+                    organizations: patientSummary.organizations || [],
+                    relatedPersons: patientSummary.relatedPersons || [],
+                    coverages: patientSummary.coverages || [],
+                    hasBundleData: !!patientSummary.bundle
+                }
+            };
+            
+            // Si le bundle complet est disponible, l'ajouter
+            if (patientSummary.bundle) {
+                promptData.bundleData = patientSummary.bundle;
+            }
+            
+            console.log("[AI-Analyze] Données structurées préparées pour l'IA avec", 
+                Object.keys(promptData.patientData).length, "catégories principales");
+                
+            // Utiliser l'objet promptData comme prompt pour l'IA
+            const prompt = promptData;
             
             // Utiliser notre service d'IA unifié
             console.log("[AI-Analyze] Génération de l'analyse avec le service d'IA unifié");
