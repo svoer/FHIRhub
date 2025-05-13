@@ -8,7 +8,6 @@ const router = express.Router();
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const { db } = require('../utils/dbService');
 const packageInfo = require('../package.json');
 
 // Health check pour les conteneurs Docker et les outils de monitoring
@@ -29,7 +28,8 @@ router.get('/health', (req, res) => {
     // Vérifier l'accès à la base de données
     try {
       // Requête simple pour vérifier la connectivité à la base de données
-      const result = db.prepare('SELECT 1').get();
+      // Utiliser l'objet db partagé par l'application dans req.app.locals
+      const result = req.app.locals.db.prepare('SELECT 1').get();
       if (!result) {
         health.database = 'DOWN';
         health.status = 'DEGRADED';

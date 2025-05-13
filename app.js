@@ -1532,6 +1532,7 @@ const authRoutes = require('./routes/auth');
 const devApiRoutes = require('./routes/dev-api');
 const cacheRoutes = require('./routes/cache');
 const terminologyRoutes = require('./routes/terminology');
+const systemRoutes = require('./routes/systemRoutes');
 // Routes IA supprimées
 // Les routes hl7-ai et workflows ont été supprimées
 const adminRoutes = require('./routes/adminRoutes');
@@ -1551,6 +1552,7 @@ app.use('/api/api-keys', apiKeysRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/dev', devApiRoutes);
+app.use('/api/system', systemRoutes);  // Routes pour le health check et les informations système
 app.use('/api/cache', cacheRoutes);
 app.use('/api/terminology', terminologyRoutes);
 // Routes IA supprimées
