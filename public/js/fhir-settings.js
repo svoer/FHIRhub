@@ -401,6 +401,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Afficher le formulaire
       formOverlay.classList.add('show');
+      
+      // Reconfigurer le bouton d'enregistrement pour s'assurer qu'il fonctionne
+      setupSaveButton();
     } else {
       // Cacher le formulaire
       formOverlay.classList.remove('show');
@@ -432,20 +435,32 @@ document.addEventListener('DOMContentLoaded', function() {
     cancelButton.addEventListener('click', () => toggleServerForm(false));
   }
   
-  // Bouton d'enregistrement
-  const saveButton = document.getElementById('saveButton');
-  if (saveButton) {
-    saveButton.addEventListener('click', addNewServer);
+  // Préparation du bouton d'enregistrement
+  function setupSaveButton() {
+    const saveButton = document.getElementById('saveButton');
+    if (saveButton) {
+      // Supprimer les anciens écouteurs pour éviter les doublons
+      saveButton.removeEventListener('click', addNewServer);
+      // Ajouter le nouvel écouteur
+      saveButton.addEventListener('click', addNewServer);
+    }
   }
+  
+  // Initialiser le bouton d'enregistrement
+  setupSaveButton();
   
   // Fonction pour ajouter/modifier un serveur
   async function addNewServer() {
+    console.log('Fonction addNewServer appelée');
+    
     const serverId = document.getElementById('serverId')?.value;
     const name = document.getElementById('serverName').value;
     const url = document.getElementById('serverUrl').value;
     const type = document.getElementById('serverType').value;
     const version = document.getElementById('serverVersion').value;
     const auth = document.getElementById('serverAuth').value;
+    
+    console.log('Données collectées:', { serverId, name, url, type, version, auth });
     
     // Validation simple
     if (!name || !url) {
@@ -478,18 +493,18 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       // Déterminer s'il s'agit d'une création ou d'une mise à jour
-      let url = '/api/fhir-config/servers';
+      let apiUrl = '/api/fhir-config/servers';
       let method = 'POST';
       
       // Si serverId existe, c'est une mise à jour
       if (serverId) {
-        url = `/api/fhir-config/servers/${serverId}`;
+        apiUrl = `/api/fhir-config/servers/${serverId}`;
         method = 'PUT';
         serverData.id = serverId;
       }
       
       // Envoi au serveur
-      const response = await fetch(url, {
+      const response = await fetch(apiUrl, {
         method: method,
         headers: {
           'Content-Type': 'application/json'

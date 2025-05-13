@@ -21,18 +21,6 @@
       "isDefault": true,
       "isLocalDefault": false,
       "isActive": true
-    },
-    {
-      "id": "3f40fb36-c2d9-4a02-8b5d-d05b4316ce85",
-      "name": "TEST SERVEUR",
-      "url": "https://hapi.fhir.org/baseR4",
-      "type": "public",
-      "version": "R4",
-      "auth": "token",
-      "token": "",
-      "isDefault": false,
-      "isLocalDefault": false,
-      "isActive": false
     }
   ]
 }
