@@ -1,186 +1,242 @@
-# Guide de déploiement Docker pour FHIRHub + HAPI FHIR
+# Guide de Déploiement Docker pour FHIRHub
 
-Ce document explique comment déployer FHIRHub et HAPI FHIR dans des conteneurs Docker pour créer un environnement de développement ou de production complet.
+Ce document détaille le processus de déploiement de FHIRHub et HAPI FHIR à l'aide de Docker. Cette approche permet un déploiement rapide et cohérent dans différents environnements.
 
 ## Prérequis
 
 - Docker Engine (version 20.10.0 ou supérieure)
 - Docker Compose (version 2.0.0 ou supérieure)
 - 2 Go de RAM minimum
-- 5 Go d'espace disque pour les images et les données
+- 5 Go d'espace disque disponible
+- Ports 5000 et 8080 disponibles
 
-## Architecture
+## Architecture des conteneurs
 
-L'architecture de déploiement comprend deux services principaux :
+Le déploiement comprend deux services principaux :
 
-1. **FHIRHub** (port 5000) : Application de conversion HL7v2 vers FHIR et explorateur de ressources FHIR
-2. **HAPI FHIR** (port 8080) : Serveur FHIR R4 pour stocker et interroger les ressources FHIR
+1. **FHIRHub** : l'application Node.js pour la conversion HL7 vers FHIR et l'interface utilisateur
+2. **HAPI FHIR** : le serveur FHIR de référence pour le stockage des ressources FHIR
 
-Les données sont stockées de manière persistante dans les répertoires suivants :
+Ces services sont configurés pour fonctionner ensemble via un réseau Docker partagé, avec des volumes persistants pour assurer la durabilité des données.
+
+## Organisation des données persistantes
+
+Toutes les données sont stockées en dehors des conteneurs pour assurer leur persistance :
 
 ```
 ./data/
 ├── fhirhub/
+│   ├── storage/
+│   │   ├── db/            # Base de données SQLite
+│   │   └── data/cache/    # Cache des ressources converties
 │   ├── french_terminology/ # Terminologies médicales françaises
-│   ├── logs/               # Journaux d'application
-│   ├── storage/            # Base de données SQLite et cache
-│   └── temp/               # Fichiers temporaires
-└── hapi-fhir/              # Base de données H2 du serveur HAPI FHIR
+│   ├── logs/              # Journaux d'application
+│   └── temp/              # Fichiers temporaires
+└── hapi-fhir/             # Base de données H2 de HAPI FHIR
 ```
 
-## Installation rapide
+## Installation
 
-Pour déployer l'environnement complet, exécutez simplement :
+### Méthode automatisée (recommandée)
 
-```bash
-chmod +x docker-install.sh
-./docker-install.sh
-```
-
-Ce script :
-1. Vérifie la présence de Docker et Docker Compose
-2. Crée les répertoires nécessaires pour les données persistantes
-3. Construit et démarre les conteneurs
-4. Effectue des tests de connectivité basiques
-
-## Déploiement manuel
-
-Si vous préférez une installation manuelle, suivez ces étapes :
-
-1. Créer les répertoires de données nécessaires :
+1. Clonez ou téléchargez le projet FHIRHub
+2. Rendez le script d'installation exécutable :
    ```bash
-   mkdir -p data/fhirhub/storage/db
-   mkdir -p data/fhirhub/storage/data/cache
-   mkdir -p data/fhirhub/french_terminology
-   mkdir -p data/fhirhub/logs
-   mkdir -p data/fhirhub/temp
-   mkdir -p data/hapi-fhir
-   chmod -R 777 data/fhirhub/storage data/fhirhub/logs data/fhirhub/temp
+   chmod +x docker-install.sh
+   ```
+3. Exécutez le script d'installation :
+   ```bash
+   ./docker-install.sh
    ```
 
-2. Démarrer les conteneurs :
+Le script effectuera les actions suivantes :
+- Vérification de l'installation de Docker
+- Création des répertoires nécessaires
+- Configuration des permissions
+- Construction et démarrage des conteneurs Docker
+- Vérification de la disponibilité des services
+
+### Installation manuelle
+
+Si vous préférez une installation manuelle :
+
+1. Créez les répertoires de données :
+   ```bash
+   mkdir -p ./data/fhirhub/storage/db
+   mkdir -p ./data/fhirhub/storage/data/cache
+   mkdir -p ./data/fhirhub/french_terminology
+   mkdir -p ./data/fhirhub/logs
+   mkdir -p ./data/fhirhub/temp
+   mkdir -p ./data/hapi-fhir
+   chmod -R 755 ./data
+   chmod -R 777 ./data/fhirhub/storage ./data/fhirhub/logs ./data/fhirhub/temp
+   ```
+
+2. Démarrez les conteneurs :
    ```bash
    docker compose up -d
    ```
 
-3. Vérifier le statut des conteneurs :
-   ```bash
-   docker compose ps
-   ```
-
 ## Accès aux applications
+
+Une fois le déploiement terminé, les services sont accessibles aux adresses suivantes :
 
 - **FHIRHub** : http://localhost:5000
 - **HAPI FHIR** : http://localhost:8080/fhir
 
-## Visualisation des journaux
+Les identifiants par défaut pour FHIRHub :
+- Utilisateur : admin
+- Mot de passe : admin123
 
-Pour afficher les journaux en temps réel :
+## Surveillance et maintenance
+
+### Vérification de l'état des conteneurs
 
 ```bash
+docker compose ps
+```
+
+### Affichage des journaux
+
+```bash
+# Tous les journaux
+docker compose logs
+
+# Journaux en temps réel
 docker compose logs -f
+
+# Journaux d'un service spécifique
+docker compose logs fhirhub
+docker compose logs hapi-fhir
 ```
 
-Pour visualiser uniquement les journaux de FHIRHub :
+### Redémarrage des services
 
 ```bash
-docker compose logs -f fhirhub
+# Redémarrer tous les services
+docker compose restart
+
+# Redémarrer un service spécifique
+docker compose restart fhirhub
+docker compose restart hapi-fhir
 ```
 
-## Arrêt et suppression des conteneurs
-
-Pour arrêter les conteneurs sans les supprimer :
+### Arrêt des services
 
 ```bash
+# Arrêter sans supprimer les conteneurs
 docker compose stop
-```
 
-Pour arrêter et supprimer les conteneurs (les données persistantes sont conservées dans le répertoire `./data/`) :
-
-```bash
+# Arrêter et supprimer les conteneurs (les données persistent)
 docker compose down
+
+# Arrêter, supprimer les conteneurs et les volumes (⚠️ perte de données)
+docker compose down -v
 ```
 
-## Sauvegarde des données
+## Paramètres avancés
 
-Les données sont stockées dans le répertoire `./data/` et peuvent être sauvegardées simplement en copiant ce répertoire. Pour une sauvegarde à chaud :
+Le fichier `docker-compose.yml` peut être modifié pour personnaliser divers aspects du déploiement :
 
-```bash
-# Arrêter les conteneurs
-docker compose stop
+### Modification des ports exposés
 
-# Sauvegarder les données
-tar -czf fhirhub-backup-$(date +%Y%m%d).tar.gz data/
+Pour changer les ports d'accès externes, modifiez la section `ports` dans le fichier `docker-compose.yml` :
 
-# Redémarrer les conteneurs
-docker compose start
+```yaml
+ports:
+  - "8081:5000"  # Changez 5000 pour FHIRHub
+  - "8082:8080"  # Changez 8080 pour HAPI FHIR
 ```
 
-## Résolution des problèmes
+### Personnalisation des variables d'environnement
 
-### Si FHIRHub ne démarre pas
+Modifiez la section `environment` pour chaque service pour ajuster les paramètres :
 
-Vérifiez les journaux :
+```yaml
+environment:
+  - NODE_ENV=production
+  - PORT=5000
+  - HAPI_FHIR_URL=http://hapi-fhir:8080/fhir
+  # Ajoutez d'autres variables selon vos besoins
+```
+
+## Dépannage
+
+### FHIRHub ne démarre pas
+
+Vérifiez les journaux pour identifier la cause :
 ```bash
 docker compose logs fhirhub
 ```
 
-Les problèmes courants incluent :
-- Erreurs de permission sur les répertoires de données
-- Ports déjà utilisés par d'autres applications
+Causes possibles :
+- Problème de permission sur les volumes
+- Conflit de port
+- Problème de configuration
 
-### Si HAPI FHIR ne démarre pas
+### HAPI FHIR ne démarre pas
 
 Vérifiez les journaux :
 ```bash
 docker compose logs hapi-fhir
 ```
 
-HAPI FHIR peut prendre jusqu'à 2 minutes pour démarrer complètement, particulièrement lors du premier démarrage lorsque la base de données est initialisée.
+Causes possibles :
+- Mémoire insuffisante (le serveur HAPI FHIR nécessite au moins 512 Mo de RAM)
+- Problème de permission sur les volumes
+- Conflit de port
 
-## Configuration HTTPS (optionnel)
+### Problèmes de connexion entre FHIRHub et HAPI FHIR
 
-Pour activer le HTTPS, nous recommandons d'utiliser un reverse proxy comme Nginx ou Traefik. Un exemple de configuration Nginx est fourni ci-dessous :
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name fhirhub.example.com;
-
-    ssl_certificate /path/to/certificate.crt;
-    ssl_certificate_key /path/to/private.key;
-
-    location / {
-        proxy_pass http://localhost:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-
-server {
-    listen 443 ssl;
-    server_name hapi-fhir.example.com;
-
-    ssl_certificate /path/to/certificate.crt;
-    ssl_certificate_key /path/to/private.key;
-
-    location / {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+Vérifiez que les deux services sont en cours d'exécution :
+```bash
+docker compose ps
 ```
 
-## Sécurité
+Si les services fonctionnent mais ne peuvent pas communiquer, vérifiez la configuration du réseau et les URL de connexion.
 
-Pour renforcer la sécurité en production, envisagez ces mesures additionnelles :
+## Mise à jour
 
-1. Ne pas exposer les ports directement sur Internet
-2. Utiliser un pare-feu pour limiter l'accès aux ports 5000 et 8080
-3. Configurer l'authentification pour les deux services
-4. Activer HTTPS via un reverse proxy
+Pour mettre à jour les conteneurs vers une nouvelle version :
+
+1. Tirez les dernières modifications du code :
+   ```bash
+   git pull
+   ```
+   
+2. Reconstruisez et redémarrez les conteneurs :
+   ```bash
+   docker compose down
+   docker compose build --no-cache
+   docker compose up -d
+   ```
+
+## Sauvegarde et restauration des données
+
+### Sauvegarde
+
+1. Sauvegardez le répertoire `./data` complet :
+   ```bash
+   tar -czf fhirhub_backup_$(date +%Y%m%d).tar.gz ./data
+   ```
+
+### Restauration
+
+1. Arrêtez les services :
+   ```bash
+   docker compose down
+   ```
+
+2. Restaurez le répertoire de données à partir de la sauvegarde :
+   ```bash
+   tar -xzf fhirhub_backup_YYYYMMDD.tar.gz
+   ```
+
+3. Redémarrez les services :
+   ```bash
+   docker compose up -d
+   ```
+
+## Support
+
+Pour toute assistance supplémentaire ou en cas de problèmes, veuillez consulter la documentation complète du projet ou utiliser le chatbot intégré dans l'interface FHIRHub.
