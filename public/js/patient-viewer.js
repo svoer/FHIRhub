@@ -1651,7 +1651,8 @@ document.addEventListener('DOMContentLoaded', function() {
         let url;
         if (serverUrl.includes('hapi.fhir.org')) {
             // Utiliser le proxy pour contourner les limitations CORS
-            url = `/api/fhir-proxy/hapi/Coverage?beneficiary=${patientId}&_count=100`;
+            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
+            url = `/api/fhir-proxy/hapi/Coverage?beneficiary=${patientId}&_count=50`;
         } else {
             // URL directe pour les serveurs locaux (déjà sur le même domaine)
             url = `${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`;
