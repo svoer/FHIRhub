@@ -278,16 +278,49 @@ Le rapport doit obligatoirement intégrer et analyser toutes les sections de don
                 
                 // Appel simple au service IA
                 try {
-                    console.log("[AI-Analyze] Tentative d'appel au service IA");
+                    console.log("[AI-Analyze] TEST: Vérification du fournisseur d'IA actif...");
+                    const activeProvider = await getActiveAIProvider();
+                    console.log(`[AI-Analyze] TEST: Fournisseur actif = ${activeProvider ? activeProvider.provider_name : 'NONE'}, type = ${activeProvider ? activeProvider.provider_type : 'NONE'}`);
+                    console.log(`[AI-Analyze] TEST: API key = ${activeProvider && activeProvider.api_key ? '*****' + activeProvider.api_key.substring(activeProvider.api_key.length - 4) : 'NON DÉFINIE'}`);
                     
-                    // Limiter à 20 observations pour éviter les dépassements de tokens
+                    console.log("[AI-Analyze] TEST: Appel du chat simple pour vérification de connexion");
+                    try {
+                        // Test simple avec un prompt court
+                        const testResult = await aiService.generateResponse({
+                            prompt: "Test de connexion à l'API d'IA",
+                            maxTokens: 10,
+                            temperature: 0.1,
+                            retryCount: 0
+                        });
+                        console.log("[AI-Analyze] TEST: Appel simple réussi:", testResult.substring(0, 50));
+                    } catch (testError) {
+                        console.error("[AI-Analyze] TEST: Échec de l'appel de test simple:", testError.message);
+                        // Ne pas relancer l'erreur ici, continuer avec l'appel principal
+                    }
+                
+                    console.log("[AI-Analyze] Tentative d'appel au service IA pour l'analyse patient");
+                    
+                    // Limiter à 15 observations pour éviter les dépassements de tokens
                     if (typeof aiParams.prompt === 'object' && 
                         aiParams.prompt.patientData && 
                         aiParams.prompt.patientData.observations && 
-                        aiParams.prompt.patientData.observations.length > 20) {
+                        aiParams.prompt.patientData.observations.length > 15) {
                         
-                        console.log(`[AI-Analyze] Limitation des observations à 20 au lieu de ${aiParams.prompt.patientData.observations.length}`);
-                        aiParams.prompt.patientData.observations = aiParams.prompt.patientData.observations.slice(0, 20);
+                        console.log(`[AI-Analyze] Limitation des observations à 15 au lieu de ${aiParams.prompt.patientData.observations.length}`);
+                        aiParams.prompt.patientData.observations = aiParams.prompt.patientData.observations.slice(0, 15);
+                    }
+                    
+                    // Réduire aussi la limite de tokens pour éviter les timeouts
+                    aiParams.maxTokens = Math.min(aiParams.maxTokens || 5000, 1500);
+                    console.log(`[AI-Analyze] Limite de tokens: ${aiParams.maxTokens}`);
+                    
+                    // Afficher un extrait du prompt pour vérifier ce qui est envoyé
+                    if (typeof aiParams.prompt === 'object') {
+                        console.log('[AI-Analyze] Prompt type:', typeof aiParams.prompt);
+                        console.log('[AI-Analyze] Prompt échantillon:', JSON.stringify(aiParams.prompt).substring(0, 100) + '...');
+                    } else {
+                        console.log('[AI-Analyze] Prompt type:', typeof aiParams.prompt);
+                        console.log('[AI-Analyze] Prompt échantillon:', aiParams.prompt?.substring(0, 100) + '...');
                     }
                     
                     analysis = await aiService.generateResponse(aiParams);
