@@ -243,14 +243,39 @@ document.addEventListener('DOMContentLoaded', function() {
             removeTypingIndicator();
             
             // Ajouter la réponse de l'IA au chat
-            // Le format de réponse varie selon l'API, essayons plusieurs chemins possibles
-            const aiResponse = data.response || 
-                              (data.message ? data.message : null) || 
-                              (data.content ? data.content : null) ||
-                              (data.choices && data.choices[0] ? data.choices[0].message.content : null) ||
-                              "Désolé, je n'ai pas pu trouver d'information pertinente.";
+            // Extraction correcte du message de la réponse
+            console.log("Structure complète de la réponse:", JSON.stringify(data));
             
-            console.log("Message extrait:", aiResponse);
+            let aiResponse = null;
+            
+            // Cas 1: format de l'API FHIRHub standard
+            if (data.content) {
+                aiResponse = data.content;
+            } 
+            // Cas 2: message dans la propriété message
+            else if (data.message && typeof data.message === 'string') {
+                aiResponse = data.message;
+            }
+            // Cas 3: réponse dans la propriété response
+            else if (data.response) {
+                aiResponse = data.response;
+            }
+            // Cas 4: format OpenAI avec choices
+            else if (data.choices && data.choices.length > 0) {
+                const choice = data.choices[0];
+                if (choice.message && choice.message.content) {
+                    aiResponse = choice.message.content;
+                } else if (choice.text) {
+                    aiResponse = choice.text;
+                }
+            }
+            
+            // Message par défaut si aucun format ne correspond
+            if (!aiResponse) {
+                aiResponse = "Désolé, je n'ai pas pu extraire la réponse correctement.";
+            }
+            
+            console.log("Message final extrait:", aiResponse);
             addMessageToChat('assistant', aiResponse);
             
             return data;
