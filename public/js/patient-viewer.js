@@ -1534,14 +1534,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
             }
         } else {
-            // Aucune consultation n'a été chargée, impossible de trouver les praticiens
+            // Aucune consultation n'a été chargée, afficher un message générique
             loadingSection.style.display = 'none';
             noResourcesSection.style.display = 'block';
             noResourcesSection.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i> Pour voir les praticiens, veuillez d'abord charger les consultations.
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Aucun praticien n'a été trouvé pour ce patient.
                 </div>
-                <p>Les informations des praticiens sont extraites des consultations du patient.</p>
             `;
         }
     }
@@ -3370,7 +3369,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/ai/analyze-patient');
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 90000; // 90 secondes de timeout (augmenté pour permettre l'analyse complète)
+        xhr.timeout = 180000; // 3 minutes de timeout (augmenté pour permettre l'analyse complète de patients avec beaucoup de données)
         
         xhr.onload = function() {
             if (xhr.status >= 200 && xhr.status < 300) {
