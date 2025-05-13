@@ -1344,7 +1344,20 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        fetch(`${serverUrl}/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`)
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let url;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            url = `/api/fhir-proxy/hapi/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            url = `${serverUrl}/Practitioner?_has:PractitionerRole:practitioner:patient=${patientId}&_include=PractitionerRole:practitioner&_count=100`;
+        }
+        
+        console.log(`Chargement des praticiens depuis: ${url}`);
+        
+        // Exécuter la requête FHIR
+        fetch(url)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération des praticiens: ${response.status}`);
@@ -2882,13 +2895,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             };
             
+            // Déterminer si nous utilisons le proxy ou l'URL directe
+            let baseUrl;
+            if (serverUrl.includes('hapi.fhir.org')) {
+                // Utiliser le proxy pour contourner les limitations CORS
+                baseUrl = `/api/fhir-proxy/hapi`;
+            } else {
+                // URL directe pour les serveurs locaux (déjà sur le même domaine)
+                baseUrl = serverUrl;
+            }
+            
+            console.log(`Chargement des ressources pour la chronologie depuis: ${baseUrl}`);
+            
             // Récupérer toutes les ressources pour la chronologie (consultations, médicaments, observations, etc.)
             // Utiliser _count=1000 pour récupérer beaucoup plus de résultats (presque tous)
             Promise.all([
-                fetchSafely(`${serverUrl}/Encounter?patient=${patientId}&_count=1000`),
-                fetchSafely(`${serverUrl}/Observation?patient=${patientId}&_count=1000`),
-                fetchSafely(`${serverUrl}/MedicationRequest?patient=${patientId}&_count=1000`),
-                fetchSafely(`${serverUrl}/Condition?patient=${patientId}&_count=1000`)
+                fetchSafely(`${baseUrl}/Encounter?patient=${patientId}&_count=1000`),
+                fetchSafely(`${baseUrl}/Observation?patient=${patientId}&_count=1000`),
+                fetchSafely(`${baseUrl}/MedicationRequest?patient=${patientId}&_count=1000`),
+                fetchSafely(`${baseUrl}/Condition?patient=${patientId}&_count=1000`)
             ])
         .then(([encounters, observations, medications, conditions]) => {
             loadingSection.style.display = 'none';
