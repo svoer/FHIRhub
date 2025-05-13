@@ -92,6 +92,8 @@ const { authCombined } = require('../middleware/auth');
  */
 // Route pour l'analyse de patient - désactive l'authentification
 router.post('/analyze-patient', async (req, res) => {
+    console.log('========== DÉBUT NOUVELLE REQUÊTE ANALYSE PATIENT ==========');
+    console.log('[AI-Analyze] Requête reçue à:', new Date().toISOString());
     // Logs pour debug
     console.log('Route /api/ai/analyze-patient accessible sans authentification - BYPASS_AUTH:', process.env.BYPASS_AUTH);
     
@@ -274,13 +276,64 @@ Le rapport doit obligatoirement intégrer et analyser toutes les sections de don
                     })
                 );
                 
-                // Appel au service IA avec catch explicite
-                analysis = await aiService.generateResponse(aiParams).catch(error => {
-                    console.error("[AI-Analyze] Erreur capturée lors de l'appel à aiService.generateResponse:", error.message);
-                    throw error; // Relancer pour permettre le traitement par le catch externe
-                });
-                
-                console.log("[AI-Analyze] Appel au service IA terminé avec succès");
+                // Avant d'appeler le service IA, effectuer une vérification de l'API
+                try {
+                    // Simplifier le prompt pour détecter si c'est bien un problème avec le contenu ou avec l'API
+                    const testMessage = "Texte de test pour vérifier que l'API Mistral fonctionne correctement";
+                    console.log("[AI-Analyze] Test préliminaire de l'API Mistral avec un message simple");
+                    
+                    // Réduire le prompt pour une première tentative simple
+                    const simplifiedParams = {
+                        prompt: testMessage,
+                        maxTokens: 50,
+                        temperature: 0.3,
+                        retryCount: 1,
+                        systemPrompt: 'Test de fonctionnement de l\'API'
+                    };
+                    
+                    // Test simple avant l'appel complet
+                    const testResult = await aiService.generateResponse(simplifiedParams);
+                    console.log("[AI-Analyze] Test préliminaire de l'API réussi");
+                    
+                    // Si le test simple réussit, alors on tente l'appel complet
+                    console.log("[AI-Analyze] Tentative d'appel complet au service IA");
+                    analysis = await aiService.generateResponse(aiParams);
+                    console.log("[AI-Analyze] Appel au service IA terminé avec succès");
+                } catch (apiTestError) {
+                    console.error("[AI-Analyze] Erreur lors du test préliminaire de l'API:", apiTestError.message);
+                    
+                    // Si le test échoue, on essaie encore une approche simplifiée avec le vrai contenu
+                    console.log("[AI-Analyze] Tentative avec un format simplifié du prompt");
+                    
+                    // Essayer avec un résumé textuel au lieu d'un objet complexe
+                    try {
+                        const simplifiedPrompt = `Analyse médicale du patient:
+                        ID Patient: ${promptData.patientData.patient?.id || 'Non spécifié'}
+                        Nom: ${promptData.patientData.patient?.name || 'Non spécifié'}
+                        Genre: ${promptData.patientData.patient?.gender || 'Non spécifié'}
+                        Date de naissance: ${promptData.patientData.patient?.birthDate || 'Non spécifiée'}
+                        Nombre de conditions: ${promptData.patientData.conditions?.length || 0}
+                        Nombre d'observations: ${promptData.patientData.observations?.length || 0}
+                        Nombre de médicaments: ${promptData.patientData.medications?.length || 0}
+                        Nombre de consultations: ${promptData.patientData.encounters?.length || 0}
+                        
+                        Générer un résumé médical détaillé basé sur ces informations.`;
+                        
+                        const textOnlyParams = {
+                            prompt: simplifiedPrompt,
+                            maxTokens: 1000,
+                            temperature: 0.3,
+                            retryCount: 2,
+                            systemPrompt: 'Tu es un expert médical qui analyse des données de patient pour générer un rapport clinique.'
+                        };
+                        
+                        analysis = await aiService.generateResponse(textOnlyParams);
+                        console.log("[AI-Analyze] Analyse générée avec format simplifié");
+                    } catch (finalError) {
+                        console.error("[AI-Analyze] Échec de toutes les tentatives d'appel IA:", finalError);
+                        throw finalError;
+                    }
+                }
             } catch (error) {
                 console.error("[AI-Analyze] Erreur lors de l'appel au service IA:", error.message);
                 throw error; // Relancer pour permettre le traitement par le catch externe

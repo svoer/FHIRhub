@@ -194,8 +194,34 @@ async function generateResponse(prompt, {
       logger.info(`Appel Mistral avec modèle: ${model}, ${messages.length} messages`);
       
       // Lancer l'appel avec un délai variable selon le nombre de tentatives
+      console.log(`Tentative d'appel à l'API Mistral (${attempt+1}/${retryCount+1})`);
+      console.log(`Appel Mistral avec modèle: ${model}, ${messages.length} messages`);
+      
+      // Afficher un échantillon du contenu pour vérifier ce qui est envoyé
+      if (messages && messages.length > 0 && messages[messages.length - 1].content) {
+        const lastMessageContent = messages[messages.length - 1].content;
+        const contentSample = typeof lastMessageContent === 'string' 
+          ? lastMessageContent.substring(0, 200) + '...' 
+          : JSON.stringify(lastMessageContent).substring(0, 200) + '...';
+        console.log(`Échantillon du dernier message: ${contentSample}`);
+      }
+      
       const apiPromise = mistralClient.chat.complete(chatParams).catch(err => {
         logger.error(`Erreur dans l'appel de base à Mistral: ${err.message}`);
+        
+        // Log plus détaillé du contexte d'erreur
+        try {
+          console.error(`Contexte de l'erreur: API URL=${mistralClient?.basePath}, ` +
+            `Paramètres API=${JSON.stringify({
+              model: chatParams.model,
+              temperature: chatParams.temperature,
+              max_tokens: chatParams.max_tokens,
+              nb_messages: messages.length
+            })}`);
+        } catch (debugError) {
+          console.error("Erreur lors de l'affichage du contexte:", debugError.message);
+        }
+        
         throw err;
       });
       
