@@ -61,8 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Configurer les événements du chatbot
     function setupChatbotEvents() {
-        // Événement pour ouvrir/fermer le chatbot
-        chatbotToggle.addEventListener('click', () => {
+        // Fonction pour basculer l'état du chatbot
+        function toggleChatbot() {
             isChatbotOpen = !isChatbotOpen;
             
             // Sauvegarder l'état
@@ -79,6 +79,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatbotContainer.classList.remove('open');
                 chatbotToggle.querySelector('i').classList.remove('fa-chevron-up');
                 chatbotToggle.querySelector('i').classList.add('fa-chevron-down');
+            }
+        }
+        
+        // Événement pour ouvrir/fermer le chatbot via le bouton
+        chatbotToggle.addEventListener('click', (e) => {
+            e.stopPropagation(); // Éviter le déclenchement multiple
+            toggleChatbot();
+        });
+        
+        // Permettre de cliquer sur tout le header pour ouvrir/fermer
+        document.querySelector('.doc-chatbot-header').addEventListener('click', function(e) {
+            // Ne pas déclencher si on a cliqué sur le bouton (déjà géré)
+            if (e.target !== chatbotToggle && !chatbotToggle.contains(e.target)) {
+                toggleChatbot();
             }
         });
         
