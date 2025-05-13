@@ -3292,7 +3292,11 @@ document.addEventListener('DOMContentLoaded', function() {
         aiAnalysisDiv.innerHTML = `
             <div style="text-align: center; padding: 30px;">
                 <div style="display: inline-block; width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="margin-top: 15px; color: #666;">Analyse IA en cours... (peut prendre jusqu'à 3 minutes)</p>
+                <p style="margin-top: 15px; color: #666;">Analyse IA en cours... (peut prendre jusqu'à 4 minutes)</p>
+                <div style="margin-top: 10px; background: #fff8ee; padding: 10px; border-radius: 5px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    <p style="margin: 0; color: #A66321; font-size: 0.9em;"><i class="fas fa-info-circle"></i> <strong>Information</strong></p>
+                    <p style="margin: 5px 0 0 0; color: #A66321; font-size: 0.9em;">L'analyse IA du dossier patient complet nécessite un temps de traitement conséquent pour garantir une analyse détaillée et complète. Durant cette période, vous pouvez continuer à explorer les autres onglets.</p>
+                </div>
             </div>
             <style>
                 @keyframes spin {
@@ -3319,7 +3323,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/ai/analyze-patient');
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 180000; // 180 secondes de timeout (3 minutes, augmenté pour permettre l'analyse complète du bundle)
+        xhr.timeout = 240000; // 240 secondes de timeout (4 minutes, augmenté pour permettre l'analyse complète du bundle)
         
         xhr.onload = function() {
             if (xhr.status >= 200 && xhr.status < 300) {
@@ -3360,7 +3364,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 organizations: organizationsData,
                 relatedPersons: relatedPersonsData,
                 coverages: coveragesData,
-                bundle: bundleData,
+                bundle: patientBundle,
                 jsonContent: patientData // Inclure aussi les données JSON brutes pour l'analyse complète
             };
             
@@ -3374,7 +3378,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 `Organisations: ${organizationsData?.length || 0}, ` +
                 `Personnes liées: ${relatedPersonsData?.length || 0}, ` +
                 `Couvertures: ${coveragesData?.length || 0}, ` +
-                `Bundle: ${bundleData ? 'OK' : 'Manquant'}`
+                `Bundle: ${patientBundle ? 'OK' : 'Manquant'}`
             );
             
             xhr.send(JSON.stringify({
