@@ -2979,13 +2979,14 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log(`Chargement des ressources pour la chronologie depuis: ${baseUrl}`);
             
-            // Récupérer toutes les ressources pour la chronologie (consultations, médicaments, observations, etc.)
-            // Utiliser _count=1000 pour récupérer beaucoup plus de résultats (presque tous)
+            // Récupérer les ressources pour la chronologie (consultations, médicaments, observations, etc.)
+            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests) avec les serveurs publics
+            const countValue = serverUrl.includes('hapi.fhir.org') ? 50 : 1000;
             Promise.all([
-                fetchSafely(`${baseUrl}/Encounter?patient=${patientId}&_count=1000`),
-                fetchSafely(`${baseUrl}/Observation?patient=${patientId}&_count=1000`),
-                fetchSafely(`${baseUrl}/MedicationRequest?patient=${patientId}&_count=1000`),
-                fetchSafely(`${baseUrl}/Condition?patient=${patientId}&_count=1000`)
+                fetchSafely(`${baseUrl}/Encounter?patient=${patientId}&_count=${countValue}`),
+                fetchSafely(`${baseUrl}/Observation?patient=${patientId}&_count=${countValue}`),
+                fetchSafely(`${baseUrl}/MedicationRequest?patient=${patientId}&_count=${countValue}`),
+                fetchSafely(`${baseUrl}/Condition?patient=${patientId}&_count=${countValue}`)
             ])
         .then(([encounters, observations, medications, conditions]) => {
             loadingSection.style.display = 'none';
