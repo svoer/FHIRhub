@@ -15,9 +15,15 @@ document.addEventListener('DOMContentLoaded', function() {
   const tabs = document.querySelectorAll('.tab-button');
   const tabPanels = document.querySelectorAll('.tab-panel');
   const formOverlay = document.getElementById('formOverlay');
+  
+  // Nouveau bouton d'ajout principal
+  const mainAddServerButton = document.getElementById('mainAddServerButton');
+  
+  // Boutons d'ajout originaux
   const addServerButton = document.getElementById('addServerButton');
   const addLocalServerButton = document.getElementById('addLocalServerButton');
   const addPublicServerButton = document.getElementById('addPublicServerButton');
+  
   const formClose = document.getElementById('formClose');
   const cancelButton = document.getElementById('cancelButton');
   
@@ -349,30 +355,47 @@ document.addEventListener('DOMContentLoaded', function() {
     const formTitle = document.getElementById('formTitle');
     
     if (show) {
-      if (type === 'local') {
-        formTitle.textContent = 'Ajouter un serveur local';
-        document.getElementById('serverType').value = 'local';
-      } else if (type === 'public') {
-        formTitle.textContent = 'Ajouter un serveur public';
-        document.getElementById('serverType').value = 'public';
-      } else {
-        formTitle.textContent = 'Ajouter un serveur FHIR';
-      }
-      
-      formOverlay.classList.add('show');
-    } else {
-      formOverlay.classList.remove('show');
-      
-      // Réinitialiser le formulaire
+      // Réinitialiser le formulaire d'abord
       document.getElementById('serverName').value = '';
       document.getElementById('serverUrl').value = '';
       document.getElementById('serverVersion').value = 'R4';
       document.getElementById('serverAuth').value = 'none';
-      document.getElementById('authFields').style.display = 'none';
+      
+      // Cacher les champs d'authentification
+      const authFields = document.getElementById('authFields');
+      if (authFields) {
+        authFields.style.display = 'none';
+      }
+      
+      // Configurer le type selon le bouton utilisé
+      if (type === 'local') {
+        formTitle.textContent = 'Ajouter un serveur local';
+        document.getElementById('serverType').value = 'local';
+        // Préremplir l'URL pour un serveur local
+        document.getElementById('serverUrl').value = 'http://localhost:8080/fhir';
+      } else if (type === 'public') {
+        formTitle.textContent = 'Ajouter un serveur public';
+        document.getElementById('serverType').value = 'public';
+        // Préremplir l'URL pour un serveur public
+        document.getElementById('serverUrl').value = 'https://hapi.fhir.org/baseR4';
+      } else {
+        formTitle.textContent = 'Ajouter un serveur FHIR';
+        document.getElementById('serverType').value = 'local';
+      }
+      
+      // Afficher le formulaire
+      formOverlay.classList.add('show');
+    } else {
+      // Cacher le formulaire
+      formOverlay.classList.remove('show');
     }
   }
   
   // Gérer les événements du formulaire
+  if (mainAddServerButton) {
+    mainAddServerButton.addEventListener('click', () => toggleServerForm(true));
+  }
+  
   if (addServerButton) {
     addServerButton.addEventListener('click', () => toggleServerForm(true));
   }
@@ -391,6 +414,79 @@ document.addEventListener('DOMContentLoaded', function() {
   
   if (cancelButton) {
     cancelButton.addEventListener('click', () => toggleServerForm(false));
+  }
+  
+  // Bouton d'enregistrement
+  const saveButton = document.getElementById('saveButton');
+  if (saveButton) {
+    saveButton.addEventListener('click', addNewServer);
+  }
+  
+  // Fonction pour ajouter un nouveau serveur
+  async function addNewServer() {
+    const name = document.getElementById('serverName').value;
+    const url = document.getElementById('serverUrl').value;
+    const type = document.getElementById('serverType').value;
+    const version = document.getElementById('serverVersion').value;
+    const auth = document.getElementById('serverAuth').value;
+    
+    // Validation simple
+    if (!name || !url) {
+      showErrorMessage('Le nom et l\'URL du serveur sont requis');
+      return;
+    }
+    
+    try {
+      // Préparation des données
+      const serverData = {
+        name,
+        url,
+        type,
+        version,
+        auth
+      };
+      
+      // Ajout des informations d'authentification si nécessaire
+      if (auth !== 'none') {
+        if (auth === 'basic') {
+          serverData.username = document.getElementById('serverUsername').value;
+          serverData.password = document.getElementById('serverPassword').value;
+        } else if (auth === 'token') {
+          serverData.token = document.getElementById('serverToken').value;
+        } else if (auth === 'oauth') {
+          serverData.clientId = document.getElementById('serverClientId').value;
+          serverData.clientSecret = document.getElementById('serverClientSecret').value;
+          serverData.tokenUrl = document.getElementById('serverTokenUrl').value;
+        }
+      }
+      
+      // Envoi au serveur
+      const response = await fetch('/api/fhir-config/servers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(serverData)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      // Fermer le formulaire
+      toggleServerForm(false);
+      
+      // Recharger les serveurs
+      await fetchServers();
+      
+      // Afficher un message de succès
+      showSuccessMessage('Serveur ajouté avec succès');
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du serveur:', error);
+      showErrorMessage(`Erreur lors de l'ajout du serveur: ${error.message}`);
+    }
   }
   
   // Fonction pour afficher un message d'erreur
@@ -445,9 +541,47 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 3000);
   }
   
-  // Gérer les changements d'onglets
-  tabs.forEach(tab => {
-    tab.addEventListener('click', function() {
+  // Fonction d'initialisation
+  function init() {
+    // Tenter de récupérer les serveurs
+    fetchServers();
+    
+    // Activer les gestionnaires d'onglets
+    setupTabHandlers();
+    
+    // Configurer le changement du type d'authentification
+    const authSelect = document.getElementById('serverAuth');
+    if (authSelect) {
+      authSelect.addEventListener('change', handleAuthTypeChange);
+    }
+    
+    console.log('Initialisation de la page FHIRSettings terminée');
+  }
+  
+  // Configurer le changement du type d'authentification
+  function handleAuthTypeChange() {
+    const authType = this.value;
+    const authFields = document.getElementById('authFields');
+    
+    if (!authFields) return;
+    
+    if (authType === 'none') {
+      authFields.style.display = 'none';
+    } else {
+      authFields.style.display = 'block';
+      
+      // Afficher les champs appropriés
+      document.getElementById('basicAuthSection').style.display = authType === 'basic' ? 'block' : 'none';
+      document.getElementById('tokenAuthSection').style.display = authType === 'token' ? 'block' : 'none';
+      document.getElementById('oauthSection').style.display = authType === 'oauth' ? 'block' : 'none';
+    }
+  }
+  
+  // Configurer les gestionnaires d'onglets
+  function setupTabHandlers() {
+    // Gérer les changements d'onglets
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
       // Retirer la classe active de tous les onglets
       tabs.forEach(t => t.classList.remove('active'));
       tabPanels.forEach(p => p.classList.remove('active'));
