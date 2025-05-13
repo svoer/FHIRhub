@@ -1618,7 +1618,20 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        fetch(`${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`)
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let url;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            url = `/api/fhir-proxy/hapi/Coverage?beneficiary=${patientId}&_count=100`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            url = `${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`;
+        }
+        
+        console.log(`Chargement des couvertures depuis: ${url}`);
+        
+        // Exécuter la requête FHIR pour récupérer les couvertures
+        fetch(url)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération des couvertures: ${response.status}`);
