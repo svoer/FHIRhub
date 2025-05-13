@@ -307,7 +307,13 @@ router.post('/chat', async (req, res) => {
     console.log('Route /api/ai/chat accessible sans authentification - BYPASS_AUTH:', process.env.BYPASS_AUTH);
     
     try {
-        const { messages, max_tokens = 1000 } = req.body;
+        const { messages, max_tokens = 1000, provider = null } = req.body;
+        
+        console.log('[DEBUG-CHATBOT] Paramètres reçus:', { 
+            messagesCount: messages?.length || 0, 
+            max_tokens, 
+            provider 
+        });
         
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
             return res.status(400).json({

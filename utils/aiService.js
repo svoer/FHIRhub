@@ -3,25 +3,39 @@
  * @module utils/aiService
  */
 
-const { getActiveAIProvider } = require('./aiProviderService');
+const { getActiveAIProvider, getAIProviderByName } = require('./aiProviderService');
 const mistralClient = require('./mistralClient');
 const ollamaClient = require('./ollamaClient');
 const fetch = require('node-fetch');
 
 /**
- * Méthode unique qui génère une réponse depuis n'importe quel fournisseur d'IA configuré comme actif
+ * Méthode unique qui génère une réponse depuis n'importe quel fournisseur d'IA 
  * @param {Object} options - Options pour la génération
  * @param {string} options.prompt - Le prompt à envoyer à l'IA
  * @param {string} options.systemPrompt - Prompt système optionnel (pour les modèles qui le supportent)
  * @param {number} options.maxTokens - Nombre maximum de tokens à générer (défaut: 1000)
  * @param {number} options.temperature - Température de la génération (défaut: 0.7)
  * @param {number} options.retryCount - Nombre de tentatives en cas d'erreur (défaut: 2)
+ * @param {string} options.providerName - Nom spécifique du fournisseur à utiliser (optionnel)
  * @returns {Promise<string>} - La réponse générée par l'IA
  */
-async function generateResponse({ prompt, systemPrompt = '', maxTokens = 1000, temperature = 0.7, retryCount = 2 }) {
+async function generateResponse({ prompt, systemPrompt = '', maxTokens = 1000, temperature = 0.7, retryCount = 2, providerName = null }) {
     try {
-        // Récupérer le fournisseur d'IA actif
-        const aiProvider = await getActiveAIProvider();
+        // Récupérer le fournisseur d'IA spécifié ou l'actif
+        let aiProvider;
+        
+        if (providerName) {
+            console.log(`[AI-SERVICE] Tentative d'utilisation du fournisseur spécifié: ${providerName}`);
+            aiProvider = await getAIProviderByName(providerName);
+            
+            if (!aiProvider) {
+                console.warn(`[AI-SERVICE] Fournisseur spécifié '${providerName}' non trouvé, utilisation du fournisseur actif par défaut`);
+                aiProvider = await getActiveAIProvider();
+            }
+        } else {
+            // Utiliser le fournisseur actif par défaut
+            aiProvider = await getActiveAIProvider();
+        }
         
         if (!aiProvider) {
             throw new Error('Aucun fournisseur d\'IA actif configuré');
