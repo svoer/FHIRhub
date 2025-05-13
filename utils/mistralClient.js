@@ -178,6 +178,32 @@ async function generateResponse(prompt, {
         setTimeout(() => reject(new Error('Timeout dépassé pour l\'appel à l\'API Mistral')), 180000);
       });
       
+      // Vérification de la clé API (sans la révéler)
+      try {
+        console.log(`[MISTRAL-CLIENT] Vérification de la clé API configurée:`, 
+          apiKey ? `*****${apiKey.substring(apiKey.length - 5)}` : 'NON DÉFINIE');
+        
+        if (!apiKey) {
+          throw new Error('API_KEY_MISSING');
+        }
+      } catch (apiKeyError) {
+        console.error(`[MISTRAL-CLIENT] Erreur de configuration - Clé API manquante ou invalide`);
+        throw new Error('API_KEY_MISSING');
+      }
+      
+      // Vérification du endpoint de l'API
+      try {
+        console.log(`[MISTRAL-CLIENT] Endpoint configuré:`, 
+          mistralClient?.basePath || 'NON DÉFINI');
+          
+        if (!mistralClient?.basePath) {
+          throw new Error('API_ENDPOINT_MISSING');
+        }
+      } catch (endpointError) {
+        console.error(`[MISTRAL-CLIENT] Erreur de configuration - Endpoint API manquant ou invalide`);
+        throw new Error('API_ENDPOINT_MISSING');
+      }
+      
       // Préparation des paramètres d'appel
       const chatParams = {
         model,
@@ -206,7 +232,45 @@ async function generateResponse(prompt, {
         console.log(`Échantillon du dernier message: ${contentSample}`);
       }
       
-      const apiPromise = mistralClient.chat.complete(chatParams).catch(err => {
+      // Vérification que le modèle est bien défini
+      if (!model) {
+        console.error(`[MISTRAL-CLIENT] Erreur de configuration - Modèle non spécifié`);
+        throw new Error('MODEL_MISSING');
+      }
+      
+      try {
+        console.log('[MISTRAL-CLIENT] Vérification de la méthode mistralClient.chat.complete', 
+          typeof mistralClient.chat.complete === 'function' ? 'OK' : 'NON DISPONIBLE');
+      } catch (methodError) {
+        console.error('[MISTRAL-CLIENT] Erreur lors de la vérification des méthodes clients:', methodError);
+      }
+        
+      // Évaluer si le client est bien initialisé et a les méthodes requises
+      if (!mistralClient?.chat?.complete || typeof mistralClient.chat.complete !== 'function') {
+        console.error('[MISTRAL-CLIENT] Client Mistral mal initialisé - Méthode chat.complete manquante');
+        throw new Error('CLIENT_METHOD_MISSING');
+      }
+       
+      console.log('[MISTRAL-CLIENT] Paramètres de l\'appel:', JSON.stringify({
+        model: chatParams.model,
+        temperature: chatParams.temperature,
+        max_tokens: chatParams.max_tokens,
+        messages_count: messages.length
+      }));
+      
+      // Version simplifiée de l'appel avec try/catch explicite pour capturer les erreurs
+      let apiPromise;
+      try {
+        console.log('[MISTRAL-CLIENT] Tentative d\'appel direct à mistralClient.chat.complete()');
+        apiPromise = mistralClient.chat.complete(chatParams);
+      } catch (directError) {
+        console.error('[MISTRAL-CLIENT] Erreur directe lors de l\'appel:', directError);
+        throw directError;
+      }
+      
+      // Ajouter un gestionnaire d'erreur au niveau de la promesse
+      apiPromise = apiPromise.catch(err => {
+        console.error(`[MISTRAL-CLIENT] Erreur dans l'appel de base à Mistral:`, err);
         logger.error(`Erreur dans l'appel de base à Mistral: ${err.message}`);
         
         // Log plus détaillé du contexte d'erreur
@@ -222,7 +286,7 @@ async function generateResponse(prompt, {
           console.error("Erreur lors de l'affichage du contexte:", debugError.message);
         }
         
-        throw err;
+        throw new Error(`MISTRAL_API_ERROR: ${err.message}`);
       });
       
       // Utiliser celui qui se termine en premier
