@@ -120,6 +120,108 @@ router.get('/search', async (req, res) => {
 
 /**
  * @swagger
+ * /api/ai-knowledge/faq:
+ *   get:
+ *     summary: Obtient la liste des FAQ
+ *     description: Permet à l'IA d'accéder aux questions fréquentes
+ *     tags:
+ *       - IA Knowledge
+ *     responses:
+ *       200:
+ *         description: Liste des FAQ
+ *       500:
+ *         description: Erreur serveur
+ */
+router.get('/faq', async (req, res) => {
+    try {
+        // Charger la base de connaissances complète
+        const knowledgeBase = await chatbotKnowledgeService.loadKnowledgeBase();
+        
+        // Extraire et renvoyer uniquement les FAQ
+        return res.status(200).json({
+            success: true,
+            faq: knowledgeBase.faq || []
+        });
+    } catch (error) {
+        console.error('Erreur lors du chargement des FAQ:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur lors du chargement des FAQ',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/ai-knowledge/features:
+ *   get:
+ *     summary: Obtient la liste des fonctionnalités
+ *     description: Permet à l'IA d'accéder aux fonctionnalités documentées
+ *     tags:
+ *       - IA Knowledge
+ *     responses:
+ *       200:
+ *         description: Liste des fonctionnalités
+ *       500:
+ *         description: Erreur serveur
+ */
+router.get('/features', async (req, res) => {
+    try {
+        // Charger la base de connaissances complète
+        const knowledgeBase = await chatbotKnowledgeService.loadKnowledgeBase();
+        
+        // Extraire et renvoyer uniquement les fonctionnalités
+        return res.status(200).json({
+            success: true,
+            features: knowledgeBase.features || []
+        });
+    } catch (error) {
+        console.error('Erreur lors du chargement des fonctionnalités:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur lors du chargement des fonctionnalités',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
+ * /api/ai-knowledge/commands:
+ *   get:
+ *     summary: Obtient la liste des commandes
+ *     description: Permet à l'IA d'accéder aux commandes documentées
+ *     tags:
+ *       - IA Knowledge
+ *     responses:
+ *       200:
+ *         description: Liste des commandes
+ *       500:
+ *         description: Erreur serveur
+ */
+router.get('/commands', async (req, res) => {
+    try {
+        // Charger la base de connaissances complète
+        const knowledgeBase = await chatbotKnowledgeService.loadKnowledgeBase();
+        
+        // Extraire et renvoyer uniquement les commandes
+        return res.status(200).json({
+            success: true,
+            commands: knowledgeBase.commands || []
+        });
+    } catch (error) {
+        console.error('Erreur lors du chargement des commandes:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur lors du chargement des commandes',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * @swagger
  * /api/ai-knowledge/full:
  *   get:
  *     summary: Obtient la base de connaissances complète

@@ -362,7 +362,15 @@ router.post('/chat', async (req, res) => {
         // Extraire le message système et l'historique des messages
         const baseSystemPrompt = `Tu es un assistant médical intelligent pour FHIRHub, un système de conversion HL7 vers FHIR et de gestion des données médicales. 
 Tu réponds aux questions sur l'utilisation du système, ses fonctionnalités et sur l'interopérabilité des systèmes de santé.
-Utilise un ton professionnel adapté au domaine médical.`;
+Utilise un ton professionnel adapté au domaine médical.
+
+IMPORTANT: Quand tu as besoin d'informations techniques spécifiques sur FHIRHub, tu peux accéder à la base de connaissances via l'API:
+- Pour obtenir une FAQ: GET /api/ai-knowledge/faq
+- Pour obtenir la liste des fonctionnalités: GET /api/ai-knowledge/features
+- Pour obtenir la liste des commandes: GET /api/ai-knowledge/commands
+- Pour rechercher des informations pertinentes: GET /api/ai-knowledge/search?query=ta_requête
+
+Quand un utilisateur pose une question technique, tu dois d'abord consulter cette base de connaissances avant de répondre.`;
         
         const userMessages = messages.filter(msg => msg.role !== 'system');
         
@@ -399,37 +407,14 @@ Utilise un ton professionnel adapté au domaine médical.`;
             }
             const providerName = aiProvider.name;
             
-            // Rechercher et ajouter des informations pertinentes depuis la base de connaissances
-            console.log("[AI-CHAT-KNOWLEDGE] Début de la recherche de connaissances pour enrichir le prompt");
-            console.log(`[AI-CHAT-KNOWLEDGE] Requête de l'utilisateur: "${lastUserMessage.substring(0, 50)}${lastUserMessage.length > 50 ? '...' : ''}"`);
+            // Approche simplifiée: au lieu d'enrichir le prompt, nous informons l'IA
+            // comment utiliser l'API pour accéder aux connaissances quand elle en a besoin
+            console.log("[AI-CHAT-KNOWLEDGE] Changement d'approche: utilisation des instructions API dans le prompt");
+            console.log(`[AI-CHAT-KNOWLEDGE] Le prompt système contient les informations pour accéder à l'API de connaissances`);
+            console.log(`[AI-CHAT-KNOWLEDGE] Taille du prompt système: ${baseSystemPrompt.length} caractères`);
             
-            // Utiliser getEnhancedPrompt du service de connaissances au lieu de réimplémenter la logique
-            let enhancedSystemPrompt;
-            const startTime = Date.now();
-            try {
-                console.log('[AI-CHAT-KNOWLEDGE] Appel à getEnhancedPrompt avec longueur du prompt de base:', baseSystemPrompt.length, 'caractères');
-                
-                // Utiliser un timeout de sécurité pour éviter les blocages - augmenté à 10 secondes pour donner plus de temps
-                enhancedSystemPrompt = await Promise.race([
-                    chatbotKnowledgeService.getEnhancedPrompt(baseSystemPrompt, lastUserMessage),
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Timeout global lors de l\'enrichissement du prompt')), 10000)
-                    )
-                ]);
-                
-                const timeTaken = (Date.now() - startTime) / 1000;
-                const enrichmentSize = enhancedSystemPrompt.length - baseSystemPrompt.length;
-                
-                console.log(`[AI-CHAT-KNOWLEDGE] Prompt enrichi reçu avec succès en ${timeTaken.toFixed(2)} secondes`);
-                console.log(`[AI-CHAT-KNOWLEDGE] Taille du prompt: de ${baseSystemPrompt.length} à ${enhancedSystemPrompt.length} caractères (+${enrichmentSize} caractères)`);
-                console.log('[AI-CHAT-KNOWLEDGE] Enrichissement terminé avec succès');
-            } catch (error) {
-                console.error('[AI-CHAT-KNOWLEDGE] ERREUR lors de l\'enrichissement du prompt:', error.message);
-                // Utiliser le prompt système de base en cas d'erreur
-                enhancedSystemPrompt = baseSystemPrompt;
-                console.log('[AI-CHAT-KNOWLEDGE] Utilisation du prompt de base suite à une erreur');
-                console.log('[AI-CHAT-KNOWLEDGE] Taille du prompt de base:', baseSystemPrompt.length, 'caractères');
-            }
+            // Utilisation directe du prompt de base, qui contient maintenant les instructions pour accéder à l'API
+            const enhancedSystemPrompt = baseSystemPrompt;
             
             // Générer la réponse avec le service d'IA
             const targetProviderName = provider || providerName;
