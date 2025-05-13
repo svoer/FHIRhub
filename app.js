@@ -1632,6 +1632,7 @@ app.use('/api/patient-viewer', patientViewerRoutes);  // Visualisation des dossi
 app.use('/api/fhir-search', fhirSearchRoutes);  // Recherche intelligente
 app.use('/api/fhir-ai', fhirAiRoutes);  // Intégration d'IA avec FHIR (multi-fournisseurs)
 app.use('/api/fhir-push-bundle', require('./routes/fhir-push-bundle'));  // Envoi direct de bundles FHIR vers le serveur
+app.use('/api/fhir-proxy', require('./routes/fhir-proxy'));  // Proxy pour contourner les restrictions CORS des serveurs FHIR
 // Route pour la page d'accueil de la documentation API (sans animation/clignotement)
 app.get('/api-documentation', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/api-docs-landing.html'));
