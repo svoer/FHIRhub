@@ -303,8 +303,26 @@ Le rapport doit obligatoirement intégrer et analyser toutes les sections de don
  */
 // Route pour le chatbot - désactive complètement l'authentification pour cette route
 router.post('/chat', async (req, res) => {
+    // Mettre en place un timeout de 30 secondes
+    const CHAT_TIMEOUT = 30000; // 30 secondes
+    const timeoutHandle = setTimeout(() => {
+        console.warn('[AI-CHAT] Timeout dépassé pour la requête de chat après', CHAT_TIMEOUT/1000, 'secondes');
+        if (!res.headersSent) {
+            res.status(503).json({
+                success: false,
+                message: 'Délai d\'attente dépassé pour la réponse du chatbot',
+                error: 'Service temporairement indisponible - veuillez réessayer plus tard'
+            });
+        }
+    }, CHAT_TIMEOUT);
+    
+    // S'assurer que le timeout est annulé dans tous les cas (réussite ou échec)
+    res.on('finish', () => {
+        clearTimeout(timeoutHandle);
+    });
+    
     // Log pour debug
-    console.log('Route /api/ai/chat accessible sans authentification');
+    console.log('[AI-CHAT] Route /api/ai/chat accessible sans authentification');
     
     try {
         const { messages, max_tokens = 1000, provider = null } = req.body;
@@ -316,6 +334,7 @@ router.post('/chat', async (req, res) => {
         });
         
         if (!messages || !Array.isArray(messages) || messages.length === 0) {
+            clearTimeout(timeoutHandle);
             return res.status(400).json({
                 success: false,
                 message: 'Messages requis et doivent être un tableau non vide'
@@ -345,6 +364,7 @@ Utilise un ton professionnel adapté au domaine médical.`;
             // Obtenir le fournisseur actif
             const aiProvider = await aiProviderService.getActiveAIProvider();
             if (!aiProvider) {
+                clearTimeout(timeoutHandle);
                 return res.status(500).json({
                     success: false,
                     message: 'Aucun fournisseur d\'IA n\'est actuellement configuré comme actif'
@@ -353,15 +373,20 @@ Utilise un ton professionnel adapté au domaine médical.`;
             const providerName = aiProvider.name;
             
             // Rechercher et ajouter des informations pertinentes depuis la base de connaissances
-            console.log("[KNOWLEDGE] Recherche locale d'informations pour:", lastUserMessage.substring(0, 50), '...');
+            console.log("[KNOWLEDGE] Recherche d'informations pour:", lastUserMessage.substring(0, 50), '...');
             
             let enhancedSystemPrompt = baseSystemPrompt;
+            
+            // Utiliser un bloc try-catch séparé pour l'enrichissement du prompt
+            // afin de pouvoir continuer même si l'enrichissement échoue
             try {
-                // Chargement préalable de la base de connaissances
-                await chatbotKnowledgeService.loadKnowledgeBase();
-                
-                // Recherche des informations pertinentes
-                const relevantInfo = await chatbotKnowledgeService.findRelevantKnowledge(lastUserMessage);
+                // Limiter le temps de recherche des connaissances
+                const relevantInfo = await Promise.race([
+                    chatbotKnowledgeService.findRelevantKnowledge(lastUserMessage),
+                    new Promise((_, reject) => 
+                        setTimeout(() => reject(new Error('Timeout lors de la recherche de connaissances')), 5000)
+                    )
+                ]);
                 
                 if (relevantInfo && relevantInfo.length > 0) {
                     console.log(`[DEBUG-KNOWLEDGE] ${relevantInfo.length} informations pertinentes trouvées`);
@@ -369,16 +394,16 @@ Utilise un ton professionnel adapté au domaine médical.`;
                     // Formater les informations pour le prompt
                     const knowledgeText = chatbotKnowledgeService.formatKnowledgeForPrompt(relevantInfo);
                     
-                    // Enrichir le prompt système
+                    // Enrichir le prompt système - version simplifiée pour éviter les problèmes
                     enhancedSystemPrompt = `${baseSystemPrompt}
 
 ${knowledgeText}
 
 INSTRUCTIONS IMPORTANTES:
-1. Réponds UNIQUEMENT en te basant sur les informations fournies ci-dessus.
-2. Si la question n'est pas couverte par ces informations, dis clairement "Je n'ai pas suffisamment d'informations dans ma base de connaissances pour répondre à cette question avec précision. Voici ce que je peux dire:" puis fournis une réponse générale sur le sujet.
-3. NE JAMAIS inventer des fonctionnalités, des processus ou des détails techniques qui ne sont pas explicitement mentionnés dans les informations fournies.
-4. Si tu n'es pas sûr, indique les limites de ta connaissance.`;
+1. Réponds en te basant sur les informations fournies ci-dessus.
+2. Si la question n'est pas couverte par ces informations, indique les limites de ta connaissance.
+3. Ne pas inventer des fonctionnalités ou des détails qui ne sont pas mentionnés.
+4. Sois concis et précis dans ta réponse.`;
                 } else {
                     console.log('[DEBUG-KNOWLEDGE] Aucune information pertinente trouvée');
                 }
@@ -406,6 +431,7 @@ INSTRUCTIONS IMPORTANTES:
             console.log(`[CHATBOT] Réponse générée avec succès par ${targetProviderName}`);
             
             // Répondre avec la réponse générée
+            clearTimeout(timeoutHandle);
             return res.status(200).json({
                 success: true,
                 message: 'Réponse générée avec succès',
@@ -414,6 +440,7 @@ INSTRUCTIONS IMPORTANTES:
             });
             
         } catch (error) {
+            clearTimeout(timeoutHandle);
             console.error('[AI-CHAT] Erreur lors de la génération de la réponse:', error);
             return res.status(500).json({
                 success: false,
@@ -423,6 +450,7 @@ INSTRUCTIONS IMPORTANTES:
         }
         
     } catch (error) {
+        clearTimeout(timeoutHandle);
         console.error('[AI-CHAT] Erreur lors du traitement de la requête du chatbot:', error);
         return res.status(500).json({
             success: false,
