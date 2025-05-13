@@ -319,7 +319,17 @@ document.addEventListener('DOMContentLoaded', function() {
             showStatus('Chargement de toutes les données médicales du patient...', 'info');
             
             // Tenter de charger toutes les ressources en une seule requête avec $everything
-            fetch(`${server}/Patient/${patientId}/$everything`)
+            // Déterminer si nous utilisons le proxy ou l'URL directe
+            let url;
+            if (server.includes('hapi.fhir.org')) {
+                // Utiliser le proxy pour contourner les limitations CORS
+                url = `/api/fhir-proxy/hapi/Patient/${patientId}/$everything?_count=100&_include=*`;
+            } else {
+                // URL directe pour les serveurs locaux (déjà sur le même domaine)
+                url = `${server}/Patient/${patientId}/$everything`;
+            }
+            
+            fetch(url)
                 .then(response => {
                     if (!response.ok) {
                         // Si $everything n'est pas supporté, on utilise l'approche traditionnelle
@@ -957,8 +967,17 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // URL de la requête FHIR (limite augmentée à 1000 pour avoir toutes les données)
-        const url = `${serverUrl}/Condition?patient=${patientId}&_sort=-recorded-date&_count=1000`;
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let url;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            const fhirPath = `Condition?patient=${patientId}&_sort=-recorded-date&_count=1000`;
+            url = `/api/fhir-proxy/hapi/${fhirPath}`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            url = `${serverUrl}/Condition?patient=${patientId}&_sort=-recorded-date&_count=1000`;
+        }
+        
         console.log(`Chargement des conditions depuis: ${url}`);
         
         // Utiliser XMLHttpRequest pour une meilleure compatibilité et gestion d'erreurs
