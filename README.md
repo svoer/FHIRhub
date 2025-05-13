@@ -1,135 +1,95 @@
-# FHIRHub - Écosystème d'interopérabilité santé (HL7v2.5 vers FHIR)
+# 🔥 FHIRHub 🔥
 
-FHIRHub est une plateforme complète d'interopérabilité pour la santé qui convertit les messages HL7v2.5 vers le format FHIR (standard R4 version 4.0.1 conforme ANS). Cette solution portable fonctionne sans dépendances lourdes et intègre un CRM/DPI médical intelligent.
+## 🏥 Vue d'ensemble
+FHIRHub est une plateforme d'interopérabilité santé propriétaire conçue pour recevoir des messages HL7, les convertir au format FHIR (Fast Healthcare Interoperability Resources), et éventuellement stocker les données FHIR résultantes dans un entrepôt de données HAPI FHIR. La plateforme sert de hub central pour la transformation et la gestion des données de santé interopérables, alliant performance ⚡ et intelligence artificielle 🤖.
 
-## Fonctionnalités clés
+## 🏥 Qu'est-ce que HAPI FHIR?
+HAPI FHIR est un serveur FHIR open-source officiel développé et maintenu par la communauté HL7.org. Il fournit une implémentation complète des spécifications FHIR, comprenant le stockage des ressources, la validation, et la prise en charge des requêtes. FHIRHub s'interface directement avec un ou plusieurs serveurs HAPI FHIR.
 
-- Conversion de messages HL7v2.5 vers FHIR R4 (v4.0.1)
-- Interface utilisateur moderne avec design en dégradé rouge-orange
-- API REST sécurisée avec système d'authentification
-- Base de données SQLite pour les logs et la persistance des données
-- Terminologies médicales françaises préchargées
-- Fonctionnement hors-ligne sans appels API externes
-- Éditeur de workflow visuel (EAI)
-- Navigation intelligente des ressources FHIR et exploration des données patient
-- Intégration native avec divers fournisseurs d'IA (Mistral, Ollama, OpenAI, DeepSeek)
-- Visualisateur patient avec génération de rapports assistée par IA
-- Exportation et importation de templates en JSON
+## ✨ Fonctionnalités principales
 
-## Architecture optimisée
+### 👥 Gestion des utilisateurs
+- Contrôle d'accès basé sur les rôles
+- Privilèges différents entre administrateurs et utilisateurs réguliers
 
-Version production qui présente :
+### 📊 Tableau de bord
+Indicateurs en temps réel comprenant:
+- Nombre total de conversions
+- Applications enregistrées
+- Clés API actives
+- Temps économisé ⏱️
+- Taux de réussite
+- Ressources générées
+- Métriques avancées
 
-- Une arborescence de fichiers nettoyée sans données de test
-- Une base de données réinitialisée et optimisée
-- Des volumes Docker nommés pour une isolation et persistance des données
-- Téléchargement automatique des dépendances volumineuses
-- Support du fonctionnement hors-ligne avec fichiers préchargés
-- Une solution légère sans services de monitoring
-- Une configuration adaptée à la production (journalisation optimisée, authentification obligatoire)
+### 🔄 Interface de conversion HL7 vers FHIR
+- Test et prévisualisation des messages HL7
+- Vérification de la conversion correcte au format FHIR
+- Support de multiples versions de messages HL7
+- Performances optimisées ⚡
 
-## Installation
+### 🔍 Explorateur FHIR
+- Exploration des ressources FHIR stockées
+- Affichage du nombre de ressources par type
+- Vérification de l'état du référentiel de données
 
-### Prérequis
+### 📤 Téléchargement manuel de bundles FHIR
+- Support pour le téléchargement manuel de bundles FHIR
+- Validation et tests de stockage
+- Possibilité de pousser les bundles vers le serveur HAPI FHIR
 
-- Node.js 18+ et NPM (installation standalone)
-- ou Docker et Docker Compose v2.0+ (installation containerisée)
-- Java 11+ (pour le serveur HAPI FHIR local)
+### 📚 Documentation Swagger
+- Documentation disponible pour les endpoints HAPI FHIR
+- Exploration interactive des API
 
-### Installation standalone
+### ⚙️ Configuration des serveurs
+- Configuration de plusieurs serveurs FHIR (locaux ou externes)
+- Options pour la lecture/écriture des données
+- Gestion des paramètres de connexion et d'authentification
 
-```bash
-# Cloner le dépôt
-git clone https://github.com/svoer/FHIRhub.git
-cd FHIRhub
+### 👨‍⚕️ Visualiseur de patients
+- Interface permettant aux professionnels de santé de sélectionner un patient
+- Affichage des données médicales organisées par onglet (consultations, prescriptions, organisations, etc.)
+- Génération d'un résumé IA 🤖 du dossier médical du patient basé sur toutes les données disponibles
 
-# Installer les dépendances et configurer l'application
-bash ./install.sh
+### 🤖 Chatbot IA avec RAG
+- Chatbot de support intégré utilisant la Génération Augmentée par Récupération (RAG)
+- Formé sur la documentation propre à la plateforme
+- Assistance contextuelle pour les utilisateurs
 
-# Télécharger les dépendances volumineuses (HAPI FHIR, terminologies françaises)
-bash ./download-dependencies.sh
+### 🔑 Outils d'administration
+- Gestion des clés API par application
+- Configuration de sécurité via CORS
+- Interfaces de suivi des performances et d'utilisation
 
-# Démarrer l'application (démarre automatiquement HAPI FHIR et FHIRHub)
-bash ./start.sh
-```
+### 📖 Gestion de la terminologie FHIR
+- Mise à jour et gestion des terminologies FHIR directement depuis la plateforme
+- Support des terminologies françaises spécifiques
+- Adaptation des systèmes de codage internationaux
 
-### Installation Docker
+### 🤖 Configuration IA
+- Intégration avec des outils comme OLLAMA pour exécuter des modèles IA localement
+- Fonctionnement sans connectivité externe requise
+- Support pour plusieurs fournisseurs d'IA (Mistral, DeepSeek, etc.)
+- Configuration flexible des modèles et des paramètres
 
-```bash
-# Cloner le dépôt (ou télécharger l'archive)
-git clone https://github.com/votre-organisation/fhirhub.git
-cd fhirhub
+### 🌟 Autres fonctionnalités
+- Prise en charge multilingue (français/anglais)
+- Proxy FHIR pour contourner les limitations CORS
+- Gestion des erreurs avancée et mécanismes de reprise
+- Système de logs détaillé pour le suivi des conversions
+- Interface réactive avec design en dégradé rouge-orange
 
-# Initialiser l'environnement Docker
-bash ./docker-init-simple.sh
+## 🔧 Architecture technique
+- API REST Node.js pour le backend
+- Interface utilisateur en JavaScript/HTML5
+- Base de données SQLite pour les logs et la configuration
+- Conteneurisation Docker pour un déploiement simplifié ⚡
+- Fonctionnement possible en mode portable, sans dépendances externes
 
-# Démarrer l'application avec Docker (intègre HAPI FHIR)
-docker-compose up -d
-```
-
-### Architecture intégrée "tout-en-un"
-
-FHIRHub intègre désormais le serveur HAPI FHIR de manière transparente :
-
-- En mode standalone, `start.sh` lance automatiquement le serveur HAPI FHIR en arrière-plan
-- En mode Docker, le serveur HAPI FHIR est intégré dans le même conteneur que l'application principale
-- Les données du serveur HAPI FHIR sont stockées dans des volumes dédiés pour assurer leur persistance
-
-Cette approche simplifie considérablement le déploiement tout en maintenant une séparation logique des données pour faciliter la maintenance et les mises à jour.
-
-## Accès à l'application
-
-- Interface Web: http://localhost:5000
-- API: http://localhost:5000/api
-- Serveur HAPI FHIR: http://localhost:8080/fhir
-
-## Identifiants par défaut
-
-- Utilisateur: admin
-- Mot de passe: admin123
-
-## Structure des dossiers
-
-- `data/` - Données persistantes (historique, conversions, cache, etc.)
-- `storage/` - Structure optimisée pour les données locales
-  - `db/` - Base de données SQLite
-  - `data/` - Cache et résultats d'analyses IA
-  - `logs/` - Journaux d'application
-  - `backups/` - Sauvegardes automatiques
-- `french_terminology/` - Terminologies médicales françaises
-- `public/` - Interface utilisateur
-- `routes/` - Routes API
-- `utils/` - Utilitaires et services
-- `middleware/` - Middleware d'authentification et de sécurité
-
-## Configuration
-
-Le fichier `.env` contient toutes les variables de configuration. Pour la production, assurez-vous de :
-
-- Générer un `SESSION_SECRET` fort et unique
-- Configurer `NODE_ENV=production`
-- Désactiver `BYPASS_AUTH=false` pour renforcer la sécurité
-- Configurer `METRICS_ENABLED=false` pour optimiser les performances
-
-## Intégration IA
-
-FHIRHub intègre plusieurs modèles d'IA pour l'analyse des données patient :
-
-- Mistral AI (via API)
-- Ollama (local)
-- OpenAI
-- DeepSeek
-
-Pour utiliser l'IA, configurez la clé API correspondante dans le fichier `.env` ou dans l'interface d'administration.
-
-## Documentation technique
-
-Pour plus de détails sur le fonctionnement interne du code et les API disponibles, consultez la documentation technique disponible à l'adresse `/documentation.html` après le démarrage de l'application.
-
-## Support et maintenance
-
-Pour toute question ou assistance, consultez la documentation incluse ou contactez l'équipe de support.
+## ⚠️ Licence
+FHIRHub est un logiciel propriétaire. Tous droits réservés. Non disponible en licence open-source.
 
 ---
 
-© 2025 FHIRHub - Écosystème d'interopérabilité HL7-FHIR et CRM/DPI intelligent pour la santé numérique
+Le FHIRHub représente une solution complète pour l'interopérabilité des données de santé, permettant un flux efficace ⚡ des informations entre les systèmes utilisant HL7 et ceux basés sur FHIR, avec des capacités d'analyse IA 🤖 pour améliorer l'utilisation clinique des données.
