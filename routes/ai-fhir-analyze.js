@@ -599,5 +599,59 @@ router.get('/test-knowledge', async (req, res) => {
     }
 });
 
+// Route de test pour vérifier l'intégration du chatbot avec le fournisseur d'IA
+router.get('/test-chatbot-ai-provider', async (req, res) => {
+    try {
+        // Récupérer le fournisseur d'IA actif
+        const activeProvider = await getActiveAIProvider();
+        
+        if (!activeProvider) {
+            return res.status(404).json({
+                success: false,
+                message: 'Aucun fournisseur d\'IA actif trouvé'
+            });
+        }
+        
+        // Tester la fonction getEnhancedPrompt avec une question simple
+        const testQuery = "Comment fonctionne le système RAG du chatbot ?";
+        const basePrompt = "Tu es un assistant pour FHIRHub, un système de conversion HL7 vers FHIR.";
+        
+        console.log('[DEBUG] Test d\'enrichissement du prompt avec la question:', testQuery);
+        const enhancedPrompt = await chatbotKnowledgeService.getEnhancedPrompt(basePrompt, testQuery);
+        
+        // Tester l'appel au service d'IA avec le fournisseur actif
+        console.log('[DEBUG] Test d\'appel au service d\'IA avec le fournisseur:', activeProvider.provider_name);
+        
+        // Appel au service d'IA avec un prompt court pour éviter de consommer trop de ressources
+        const response = await aiService.generateResponse({
+            prompt: "Réponds en une phrase courte à: " + testQuery,
+            systemPrompt: enhancedPrompt,
+            maxTokens: 100,
+            temperature: 0.7,
+            providerName: activeProvider.provider_name
+        });
+        
+        return res.status(200).json({
+            success: true,
+            message: 'Test chatbot avec fournisseur d\'IA réussi',
+            provider: {
+                name: activeProvider.provider_name,
+                type: activeProvider.provider_type,
+                model: activeProvider.model_name
+            },
+            promptLength: enhancedPrompt.length,
+            response: response
+        });
+        
+    } catch (error) {
+        console.error('[ERROR] Erreur lors du test du chatbot avec fournisseur d\'IA:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur lors du test du chatbot avec fournisseur d\'IA',
+            error: error.message
+        });
+    }
+});
+
 // Export du routeur
 module.exports = router;
