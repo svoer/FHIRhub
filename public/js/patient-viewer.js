@@ -3032,159 +3032,172 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 fetchSafely(`${baseUrl}/Condition?patient=${patientId}&_count=${countValue}`)
                                                     .then(conditions => {
                                                         // Traiter les résultats des 4 requêtes
-                                                        processTimelineData(encounters, observations, medications, conditions);
+                                                        loadingSection.style.display = 'none';
+                                                        
+                                                        // Combiner toutes les entrées
+                                                        const timelineEntries = [];
+                                                        
+                                                        // Ajouter les consultations
+                                                        if (encounters.entry && encounters.entry.length > 0) {
+                                                            encounters.entry.forEach(entry => {
+                                                                if (entry.resource.period && entry.resource.period.start) {
+                                                                    timelineEntries.push({
+                                                                        type: 'encounter',
+                                                                        resource: entry.resource,
+                                                                        date: new Date(entry.resource.period.start),
+                                                                        title: entry.resource.type?.[0]?.coding?.[0]?.display || 'Consultation',
+                                                                        icon: 'fa-hospital',
+                                                                        color: '#fd7e30'
+                                                                    });
+                                                                }
+                                                            });
+                                                        }
+                                                        
+                                                        // Ajouter les observations
+                                                        if (observations.entry && observations.entry.length > 0) {
+                                                            observations.entry.forEach(entry => {
+                                                                const effectiveDate = getEffectiveDate(entry.resource, true);
+                                                                if (effectiveDate) {
+                                                                    timelineEntries.push({
+                                                                        type: 'observation',
+                                                                        resource: entry.resource,
+                                                                        date: new Date(effectiveDate),
+                                                                        title: entry.resource.code?.coding?.[0]?.display || 'Observation',
+                                                                        icon: 'fa-vial',
+                                                                        color: '#fd7e30'
+                                                                    });
+                                                                }
+                                                            });
+                                                        }
+                                                        
+                                                        // Ajouter les médicaments
+                                                        if (medications.entry && medications.entry.length > 0) {
+                                                            medications.entry.forEach(entry => {
+                                                                if (entry.resource.authoredOn) {
+                                                                    timelineEntries.push({
+                                                                        type: 'medication',
+                                                                        resource: entry.resource,
+                                                                        date: new Date(entry.resource.authoredOn),
+                                                                        title: entry.resource.medicationCodeableConcept?.coding?.[0]?.display || 'Médicament',
+                                                                        icon: 'fa-pills',
+                                                                        color: '#e83e28'
+                                                                    });
+                                                                }
+                                                            });
+                                                        }
+                                                        
+                                                        // Ajouter les conditions
+                                                        if (conditions.entry && conditions.entry.length > 0) {
+                                                            conditions.entry.forEach(entry => {
+                                                                if (entry.resource.recordedDate) {
+                                                                    timelineEntries.push({
+                                                                        type: 'condition',
+                                                                        resource: entry.resource,
+                                                                        date: new Date(entry.resource.recordedDate),
+                                                                        title: entry.resource.code?.coding?.[0]?.display || 'Condition',
+                                                                        icon: 'fa-heartbeat',
+                                                                        color: '#e83e28'
+                                                                    });
+                                                                }
+                                                            });
+                                                        }
+                                                        
+                                                        // Trier les entrées chronologiquement
+                                                        timelineEntries.sort((a, b) => b.date - a.date);
+                                                        
+                                                        if (timelineEntries.length > 0) {
+                                                            resourcesList.innerHTML = '';
+                                                            resourcesList.style.display = 'block';
+                                                            
+                                                            // Créer la chronologie
+                                                            const timelineElement = document.createElement('div');
+                                                            timelineElement.className = 'timeline';
+                                                            timelineElement.style.position = 'relative';
+                                                            timelineElement.style.padding = '0 0 0 30px';
+                                                            
+                                                            timelineEntries.forEach((entry, index) => {
+                                                                const entryElement = document.createElement('div');
+                                                                entryElement.className = 'timeline-entry';
+                                                                entryElement.style.position = 'relative';
+                                                                entryElement.style.paddingBottom = '20px';
+                                                                entryElement.style.borderLeft = '2px solid #ddd';
+                                                                entryElement.style.paddingLeft = '20px';
+                                                                entryElement.style.marginLeft = '-1px';
+                                                                
+                                                                // Formater la date
+                                                                const formattedDate = entry.date.toLocaleDateString('fr-FR', {
+                                                                    day: '2-digit', 
+                                                                    month: '2-digit',
+                                                                    year: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                });
+                                                                
+                                                                entryElement.innerHTML = `
+                                                                    <div style="position: absolute; left: -10px; background-color: ${entry.color}; width: 18px; height: 18px; border-radius: 50%; text-align: center; color: white; top: 0;">
+                                                                        <i class="fas ${entry.icon}" style="font-size: 10px; line-height: 18px;"></i>
+                                                                    </div>
+                                                                    <div style="background-color: #f9f9f9; padding: 10px 15px; border-radius: 6px; border-left: 3px solid ${entry.color};">
+                                                                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                                            <h4 style="margin: 0; font-size: 1rem; color: #333;">${entry.title}</h4>
+                                                                            <span style="font-size: 0.8rem; color: #777;">${formattedDate}</span>
+                                                                        </div>
+                                                                        <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #555;">
+                                                                            ${getTimelineDescription(entry)}
+                                                                        </p>
+                                                                    </div>
+                                                                `;
+                                                                
+                                                                timelineElement.appendChild(entryElement);
+                                                            });
+                                                            
+                                                            resourcesList.appendChild(timelineElement);
+                                                        } else {
+                                                            noResourcesSection.style.display = 'block';
+                                                        }
+                                                    })
+                                                    .catch(error => {
+                                                        console.error('Erreur lors de la récupération des conditions:', error);
+                                                        handleTimelineError(error);
                                                     });
                                             }, 500);
+                                        })
+                                        .catch(error => {
+                                            console.error('Erreur lors de la récupération des médicaments:', error);
+                                            handleTimelineError(error);
                                         });
                                 }, 500);
+                            })
+                            .catch(error => {
+                                console.error('Erreur lors de la récupération des observations:', error);
+                                handleTimelineError(error);
                             });
                     }, 500);
+                })
+                .catch(error => {
+                    console.error('Erreur lors de la récupération des consultations:', error);
+                    handleTimelineError(error);
                 });
                 
-            // Fonction pour traiter les données récupérées séquentiellement
-            function processTimelineData(encounters, observations, medications, conditions) {
+            // Gestion des erreurs uniformisée
+            function handleTimelineError(error) {
+                console.error('Erreur dans la génération de la chronologie:', error);
                 loadingSection.style.display = 'none';
-                
-                // Combiner toutes les entrées
-                const timelineEntries = [];
-            
-            // Ajouter les consultations
-            if (encounters.entry && encounters.entry.length > 0) {
-                encounters.entry.forEach(entry => {
-                    if (entry.resource.period && entry.resource.period.start) {
-                        timelineEntries.push({
-                            type: 'encounter',
-                            resource: entry.resource,
-                            date: new Date(entry.resource.period.start),
-                            title: entry.resource.type?.[0]?.coding?.[0]?.display || 'Consultation',
-                            icon: 'fa-hospital',
-                            color: '#fd7e30'
-                        });
-                    }
-                });
-            }
-            
-            // Ajouter les observations
-            if (observations.entry && observations.entry.length > 0) {
-                observations.entry.forEach(entry => {
-                    const effectiveDate = getEffectiveDate(entry.resource, true);
-                    if (effectiveDate) {
-                        timelineEntries.push({
-                            type: 'observation',
-                            resource: entry.resource,
-                            date: new Date(effectiveDate),
-                            title: entry.resource.code?.coding?.[0]?.display || 'Observation',
-                            icon: 'fa-vial',
-                            color: '#fd7e30'
-                        });
-                    }
-                });
-            }
-            
-            // Ajouter les médicaments
-            if (medications.entry && medications.entry.length > 0) {
-                medications.entry.forEach(entry => {
-                    if (entry.resource.authoredOn) {
-                        timelineEntries.push({
-                            type: 'medication',
-                            resource: entry.resource,
-                            date: new Date(entry.resource.authoredOn),
-                            title: entry.resource.medicationCodeableConcept?.coding?.[0]?.display || 'Médicament',
-                            icon: 'fa-pills',
-                            color: '#e83e28'
-                        });
-                    }
-                });
-            }
-            
-            // Ajouter les conditions
-            if (conditions.entry && conditions.entry.length > 0) {
-                conditions.entry.forEach(entry => {
-                    if (entry.resource.recordedDate) {
-                        timelineEntries.push({
-                            type: 'condition',
-                            resource: entry.resource,
-                            date: new Date(entry.resource.recordedDate),
-                            title: entry.resource.code?.coding?.[0]?.display || 'Condition',
-                            icon: 'fa-heartbeat',
-                            color: '#e83e28'
-                        });
-                    }
-                });
-            }
-            
-            // Trier les entrées chronologiquement
-            timelineEntries.sort((a, b) => b.date - a.date);
-            
-            if (timelineEntries.length > 0) {
-                resourcesList.innerHTML = '';
-                resourcesList.style.display = 'block';
-                
-                // Créer la chronologie
-                const timelineElement = document.createElement('div');
-                timelineElement.className = 'timeline';
-                timelineElement.style.position = 'relative';
-                timelineElement.style.padding = '0 0 0 30px';
-                
-                timelineEntries.forEach((entry, index) => {
-                    const entryElement = document.createElement('div');
-                    entryElement.className = 'timeline-entry';
-                    entryElement.style.position = 'relative';
-                    entryElement.style.paddingBottom = '20px';
-                    entryElement.style.borderLeft = '2px solid #ddd';
-                    entryElement.style.paddingLeft = '20px';
-                    entryElement.style.marginLeft = '-1px';
-                    
-                    // Formater la date
-                    const formattedDate = entry.date.toLocaleDateString('fr-FR', {
-                        day: '2-digit', 
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    });
-                    
-                    entryElement.innerHTML = `
-                        <div style="position: absolute; left: -10px; background-color: ${entry.color}; width: 18px; height: 18px; border-radius: 50%; text-align: center; color: white; top: 0;">
-                            <i class="fas ${entry.icon}" style="font-size: 10px; line-height: 18px;"></i>
-                        </div>
-                        <div style="background-color: #f9f9f9; padding: 10px 15px; border-radius: 6px; border-left: 3px solid ${entry.color};">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <h4 style="margin: 0; font-size: 1rem; color: #333;">${entry.title}</h4>
-                                <span style="font-size: 0.8rem; color: #777;">${formattedDate}</span>
-                            </div>
-                            <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #555;">
-                                ${getTimelineDescription(entry)}
-                            </p>
-                        </div>
-                    `;
-                    
-                    timelineElement.appendChild(entryElement);
-                });
-                
-                resourcesList.appendChild(timelineElement);
-            } else {
                 noResourcesSection.style.display = 'block';
+                resourcesList.style.display = 'none';
+                
+                noResourcesSection.innerHTML = `
+                    <div class="alert alert-warning">
+                        <h4>Erreur lors de la génération de la chronologie</h4>
+                        <p>Nous n'avons pas pu générer la chronologie pour ce patient. Veuillez réessayer ultérieurement.</p>
+                        <details>
+                            <summary>Détails techniques</summary>
+                            <pre>${error.message || 'Erreur inconnue'}</pre>
+                        </details>
+                    </div>
+                `;
             }
-        })
-        .catch(error => {
-            console.error('Erreur lors de la génération de la chronologie:', error);
-            loadingSection.style.display = 'none';
-            noResourcesSection.style.display = 'block';
-            resourcesList.style.display = 'none';
-            
-            // Afficher un message d'erreur plus explicite
-            noResourcesSection.innerHTML = `
-                <div class="alert alert-warning">
-                    <h4>Erreur lors de la génération de la chronologie</h4>
-                    <p>Nous n'avons pas pu générer la chronologie pour ce patient. Veuillez réessayer ultérieurement.</p>
-                    <details>
-                        <summary>Détails techniques</summary>
-                        <pre>${error.message || 'Erreur inconnue'}</pre>
-                    </details>
-                </div>
-            `;
-        });
+        }
     } catch (error) {
         console.error('Exception globale dans generateTimeline:', error);
         // Afficher un message d'erreur dans l'interface si possible
