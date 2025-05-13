@@ -179,6 +179,13 @@ router.post('/analyze-patient', async (req, res) => {
                 medications = patientSummary.medications || [];
                 encounters = patientSummary.encounters || [];
                 
+                // Récupérer les données supplémentaires envoyées par le client
+                const practitioners = patientSummary.practitioners || [];
+                const organizations = patientSummary.organizations || [];
+                const relatedPersons = patientSummary.relatedPersons || [];
+                const coverages = patientSummary.coverages || [];
+                const bundle = patientSummary.bundle || null;
+                
                 // Log détaillé des données disponibles pour le débogage
                 console.log('[AI-Analyze] Statistiques des données reçues:');
                 console.log(`  - Patient: ${patientInfo ? 'Présent' : 'Manquant'}`);
@@ -186,6 +193,11 @@ router.post('/analyze-patient', async (req, res) => {
                 console.log(`  - Observations: ${observations.length} éléments`);
                 console.log(`  - Médicaments: ${medications.length} éléments`);
                 console.log(`  - Consultations: ${encounters.length} éléments`);
+                console.log(`  - Praticiens: ${practitioners.length} éléments`);
+                console.log(`  - Organisations: ${organizations.length} éléments`);
+                console.log(`  - Personnes liées: ${relatedPersons.length} éléments`);
+                console.log(`  - Couvertures: ${coverages.length} éléments`);
+                console.log(`  - Bundle complet: ${bundle ? 'Présent' : 'Manquant'}`);
             }
             
             // Construire le prompt pour l'IA avec toutes les données disponibles
@@ -197,10 +209,14 @@ En tant qu'expert médical, analyse ces données de patient et génère un rappo
 3. Une analyse des problèmes de santé actifs et passés
 4. Une synthèse des résultats de laboratoire et observations
 5. L'historique des consultations et hospitalisations
-6. Une synthèse chronologique des événements majeurs
-7. Des recommandations médicales basées sur l'ensemble des données
+6. Une analyse des praticiens impliqués dans la prise en charge
+7. Une analyse des organisations de santé impliquées
+8. Une synthèse des personnes liées au patient (famille, contacts d'urgence)
+9. Une analyse des couvertures d'assurance du patient
+10. Une synthèse chronologique des événements majeurs
+11. Des recommandations médicales basées sur l'ensemble des données
 
-Voici les données FHIR du patient sous format JSON, incluant les informations des différentes sections (patient, conditions, observations, médicaments, consultations):
+Voici les données FHIR du patient sous format JSON, incluant les informations des différentes sections:
 
 INFORMATIONS PATIENT:
 ${JSON.stringify(patientInfo, null, 2)}
@@ -216,10 +232,25 @@ ${JSON.stringify(medications, null, 2)}
 
 CONSULTATIONS ET HOSPITALISATIONS (${encounters.length}):
 ${JSON.stringify(encounters, null, 2)}
+
+PRATICIENS (${patientSummary.practitioners ? patientSummary.practitioners.length : 0}):
+${JSON.stringify(patientSummary.practitioners || [], null, 2)}
+
+ORGANISATIONS (${patientSummary.organizations ? patientSummary.organizations.length : 0}):
+${JSON.stringify(patientSummary.organizations || [], null, 2)}
+
+PERSONNES LIÉES (${patientSummary.relatedPersons ? patientSummary.relatedPersons.length : 0}):
+${JSON.stringify(patientSummary.relatedPersons || [], null, 2)}
+
+COUVERTURES D'ASSURANCE (${patientSummary.coverages ? patientSummary.coverages.length : 0}):
+${JSON.stringify(patientSummary.coverages || [], null, 2)}
+
+BUNDLE COMPLET:
+${patientSummary.bundle ? JSON.stringify(patientSummary.bundle, null, 2).substring(0, 5000) + "... (tronqué pour limite de taille)" : "Non disponible"}
                 
 Réponds avec un rapport HTML bien structuré pour faciliter la lecture. Utilise les éléments HTML comme <div>, <h3>, <ul>, <li>, <p> avec des styles CSS en ligne pour créer un rapport visuellement organisé. Utilise des tableaux pour regrouper les données quand c'est pertinent.
 
-Le rapport doit obligatoirement intégrer et analyser toutes les sections de données disponibles (pas seulement les données de base du patient).`;
+Le rapport doit obligatoirement intégrer et analyser toutes les sections de données disponibles, y compris les praticiens, organisations, personnes liées et couvertures si ces données sont présentes.`;
             
             // Utiliser notre service d'IA unifié
             console.log("[AI-Analyze] Génération de l'analyse avec le service d'IA unifié");
