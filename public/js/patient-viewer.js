@@ -441,18 +441,84 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             // Fonction pour charger les ressources de façon traditionnelle
             function loadResourcesTraditionnally() {
-                showStatus('Chargement individuel des ressources...', 'info');
-                // Charger toutes les ressources associées au patient individuellement
+                showStatus('Chargement séquentiel des ressources en cours (peut prendre 10-15 secondes)...', 'info');
+                
+                // Indiquer à l'utilisateur que le chargement est progressif
+                const infoDiv = document.createElement('div');
+                infoDiv.id = 'sequential-loading-info';
+                infoDiv.style.margin = '10px 0';
+                infoDiv.style.padding = '10px';
+                infoDiv.style.backgroundColor = '#FFF9E6';
+                infoDiv.style.border = '1px solid #FFE0B2';
+                infoDiv.style.borderRadius = '4px';
+                infoDiv.style.color = '#A66321';
+                infoDiv.innerHTML = `
+                    <p><i class="fas fa-info-circle"></i> <strong>Chargement optimisé</strong></p>
+                    <p>Les données sont chargées progressivement pour éviter les limitations du serveur FHIR.</p>
+                    <p>Les onglets se rempliront au fur et à mesure que les données seront disponibles.</p>
+                `;
+                
+                const patientContainer = document.getElementById('patientContainer');
+                const firstChild = patientContainer.firstChild;
+                patientContainer.insertBefore(infoDiv, firstChild);
+                // Charger les ressources avec des délais pour éviter les erreurs 429
+                
+                // Charger d'abord les données essentielles
                 loadPatientConditions(patientId, server);
-                loadPatientObservations(patientId, server);
-                loadPatientMedications(patientId, server);
-                loadPatientEncounters(patientId, server);
-                loadPatientPractitioners(patientId, server);
-                loadPatientOrganizations(patientId, server);
-                loadPatientRelatedPersons(patientId, server);
-                loadPatientCoverage(patientId, server);
-                generateTimeline(patientId, server);
-                loadPatientBundle(patientId, server);
+                
+                // Puis charger les autres ressources avec des délais entre elles
+                setTimeout(() => {
+                    loadPatientObservations(patientId, server);
+                }, 500);
+                
+                setTimeout(() => {
+                    loadPatientMedications(patientId, server);
+                }, 1000);
+                
+                setTimeout(() => {
+                    loadPatientEncounters(patientId, server);
+                }, 1500);
+                
+                setTimeout(() => {
+                    generateTimeline(patientId, server);
+                }, 2000);
+                
+                // Charger les données secondaires avec un délai plus important
+                setTimeout(() => {
+                    loadPatientPractitioners(patientId, server);
+                }, 2500);
+                
+                setTimeout(() => {
+                    loadPatientOrganizations(patientId, server);
+                }, 3000);
+                
+                setTimeout(() => {
+                    loadPatientRelatedPersons(patientId, server);
+                }, 3500);
+                
+                setTimeout(() => {
+                    loadPatientCoverage(patientId, server);
+                }, 4000);
+                
+                // Charger le bundle en dernier
+                setTimeout(() => {
+                    loadPatientBundle(patientId, server);
+                    
+                    // Supprimer le message d'information sur le chargement progressif après un délai
+                    setTimeout(() => {
+                        const infoDiv = document.getElementById('sequential-loading-info');
+                        if (infoDiv) {
+                            infoDiv.style.transition = 'opacity 0.5s ease-out';
+                            infoDiv.style.opacity = '0';
+                            setTimeout(() => {
+                                if (infoDiv.parentNode) {
+                                    infoDiv.parentNode.removeChild(infoDiv);
+                                }
+                            }, 500);
+                        }
+                        showStatus('Chargement des données patient terminé!', 'success');
+                    }, 2000);
+                }, 4500);
             }
             
             // Fonction pour générer une chronologie à partir d'un bundle
