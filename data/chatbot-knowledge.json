@@ -43,40 +43,92 @@
     {
       "question": "Comment puis-je nettoyer les fichiers temporaires ?",
       "answer": "Pour nettoyer les fichiers temporaires, utilisez le script clean-temp-files.sh qui supprime les réponses IA stockées, les assets attachés, les fichiers de cache et les logs de conversion. Ce nettoyage aide à maintenir les performances du système et à réduire l'espace disque utilisé. Le script conserve la structure des dossiers et crée des fichiers .gitkeep pour maintenir la structure du projet."
+    },
+    {
+      "question": "Quels types de messages HL7 sont supportés ?",
+      "answer": "FHIRHub prend en charge plusieurs types de messages HL7 v2.5. Le type ADT (Admission, Discharge, Transfer) est entièrement implémenté avec tous ses événements (A01, A02, A03, etc.). Les types ORU, SIU, MDM et ORM sont documentés et en cours d'implémentation. Chaque type génère des ressources FHIR spécifiques selon les standards."
+    },
+    {
+      "question": "Comment fonctionne le parser HL7 ?",
+      "answer": "Le parser HL7 analyse les messages en plusieurs phases : identification des séparateurs, découpage en segments, analyse des champs, décomposition hiérarchique et construction de l'arbre de données. Il gère les spécificités françaises comme les prénoms composés, les accents et les identifiants spécifiques (IPP, INS, INS-C) selon les OIDs français."
+    },
+    {
+      "question": "Comment utiliser le système de processus visuels ?",
+      "answer": "Le système de processus permet de créer des chaînes de traitement personnalisées. Accédez à 'Processus' dans le menu principal, sélectionnez l'application cible, puis utilisez l'éditeur visuel en glisser-déposer pour créer des flux. Les nœuds disponibles incluent l'entrée/sortie, la transformation, la logique, l'intégration et l'analyse."
+    },
+    {
+      "question": "Comment fonctionne le système de cache ?",
+      "answer": "FHIRHub utilise un système de cache intelligent à deux niveaux : un cache mémoire LRU stockant les 500 dernières conversions et un cache persistant sur disque. Le cache utilise un hachage SHA-256 du message HL7 comme clé, permettant des performances optimales (<1ms avec cache mémoire, 2-5ms avec cache disque contre 10-50ms sans cache)."
+    },
+    {
+      "question": "Quelles sont les exigences système pour FHIRHub ?",
+      "answer": "FHIRHub nécessite Node.js 18.x ou 20.x (v20.15.1 recommandée), SQLite3 (inclus), au minimum 2 Go de RAM (4 Go recommandé), 200 Mo d'espace disque et un navigateur moderne. Fonctionne sur Windows, macOS et Linux. Attention : des problèmes sont connus avec Node.js v22."
+    },
+    {
+      "question": "Comment fonctionne le système RAG du chatbot ?",
+      "answer": "Le système RAG (Retrieval-Augmented Generation) utilise une base de connaissances structurée stockée dans data/chatbot-knowledge.json. Lorsqu'une question est posée, il recherche les informations pertinentes, enrichit le prompt envoyé au modèle d'IA et empêche les hallucinations avec des instructions explicites."
+    },
+    {
+      "question": "Comment fonctionnent les API de FHIRHub ?",
+      "answer": "FHIRHub expose des APIs RESTful avec double authentification (JWT + clés API). Les principales catégories incluent l'authentification, la conversion HL7-FHIR, la gestion des terminologies et des applications. Une documentation interactive est disponible à /api-reference.html avec des exemples de code pour curl, JavaScript et Python."
+    },
+    {
+      "question": "Comment gérer les nomenclatures médicales ?",
+      "answer": "Accédez à 'Nomenclatures' dans le menu pour gérer les terminologies médicales françaises. L'interface permet d'importer des fichiers JSON (ValueSets, CodeSystems, OIDs), visualiser les stats, éditer les descriptions et exporter les terminologies. Les fichiers système (ANS) sont protégés contre la suppression."
+    },
+    {
+      "question": "Comment déployer FHIRHub avec Docker ?",
+      "answer": "Utilisez le script docker-init.sh pour l'initialisation automatique, puis docker-compose -f docker-compose.prod.yml up -d pour démarrer. Les données sont stockées dans des volumes persistants. L'approche Docker garantit un déploiement cohérent avec sauvegarde automatique, multi-environnement et support HTTPS via reverse proxy."
     }
   ],
   "features": [
     {
       "name": "Conversion HL7 vers FHIR",
-      "description": "Convertit les messages HL7v2.5 en ressources FHIR R4 (v4.0.1) conformes aux spécifications de l'ANS française. Prend en charge les types de messages courants comme ADT, ORU, ORM, MDM, SIU, etc. Les ressources générées peuvent être visualisées, téléchargées ou envoyées directement à un serveur FHIR."
+      "description": "Convertit les messages HL7v2.5 en ressources FHIR R4 (v4.0.1) conformes aux spécifications de l'ANS française. Prend en charge les types de messages courants comme ADT, ORU, ORM, MDM, SIU. Les ressources générées peuvent être visualisées, téléchargées ou envoyées directement à un serveur FHIR. Le convertisseur conserve l'information complète, assure la traçabilité et enrichit contextuellement les données."
     },
     {
       "name": "Visualiseur Patient",
-      "description": "Interface intuitive pour explorer les données FHIR d'un patient. Affiche les informations personnelles, conditions médicales, observations, médicaments, consultations et autres ressources associées dans des onglets bien organisés. Inclut une fonction d'analyse IA qui génère un rapport médical complet basé sur toutes les données disponibles."
+      "description": "Interface intuitive pour explorer les données FHIR d'un patient. Affiche les informations personnelles, conditions médicales, observations, médicaments, consultations et autres ressources dans des onglets bien organisés. Inclut une fonction d'analyse IA qui génère un rapport médical complet basé sur toutes les données disponibles, avec connexion multi-serveur et identitovigilance intégrée."
     },
     {
       "name": "Explorateur FHIR",
-      "description": "Outil pour interroger et visualiser les ressources d'un serveur FHIR. Permet la recherche par type de ressource avec des filtres avancés, l'affichage détaillé des ressources au format JSON ou dans une vue structurée, et la navigation entre les ressources liées."
+      "description": "Outil pour interroger et visualiser les ressources d'un serveur FHIR. Permet la recherche par type de ressource avec des filtres avancés, l'affichage détaillé des ressources au format JSON ou dans une vue structurée, et la navigation entre les ressources liées. Compatible avec tout serveur FHIR R4 standard."
     },
     {
       "name": "Intégration IA",
-      "description": "Intègre plusieurs fournisseurs d'IA (Mistral, Ollama, DeepSeek) pour l'analyse des données médicales, le chatbot de support et d'autres fonctionnalités intelligentes. Le fournisseur actif peut être configuré dans les paramètres IA et est utilisé par toutes les fonctionnalités d'IA de l'application."
+      "description": "Intègre plusieurs fournisseurs d'IA (Mistral, Ollama, DeepSeek) pour l'analyse des données médicales, le chatbot de support et d'autres fonctionnalités intelligentes. Le système RAG enrichit les réponses avec la documentation, génère des analyses patient factuelles et fournit une assistance contextuelle intelligente."
     },
     {
       "name": "Terminologies françaises",
-      "description": "Support complet des terminologies médicales françaises conformes aux standards de l'ANS. Ces terminologies sont utilisées pour standardiser les données lors de la conversion HL7 vers FHIR, assurant la compatibilité avec les systèmes de santé français."
+      "description": "Support complet des terminologies médicales françaises conformes aux standards de l'ANS. Inclut CIM-10, CCAM, LOINC, ATC, UCD, SNOMED CT français, RPPS, FINESS. Fonctionnement hors-ligne garanti avec terminologies préchargées et système de cache optimisé."
     },
     {
       "name": "API complète",
-      "description": "API RESTful pour intégrer FHIRHub à d'autres applications. Prend en charge l'authentification par clés API et JWT, offre des endpoints pour la conversion, la recherche, la gestion des utilisateurs et plus encore. Une documentation Swagger complète est disponible dans la section 'Référence API'."
+      "description": "API RESTful pour intégrer FHIRHub à d'autres applications. Double mécanisme d'authentification JWT + API Keys, endpoints pour conversion, terminologie, applications. Documentation OpenAPI/Swagger interactive disponible. Support CORS, rate limiting configurable et journalisation détaillée."
     },
     {
       "name": "Tableau de bord",
-      "description": "Vue d'ensemble des activités et performances du système, incluant des statistiques sur les conversions, la répartition des types de messages et l'état du système. Les widgets sont personnalisables et les données peuvent être actualisées en temps réel."
+      "description": "Vue d'ensemble des activités et performances du système, incluant des statistiques sur les conversions (nombre total, temps moyen, taux de cache), la répartition des types de messages, l'état du système et les métriques temps réel. Widgets personnalisables avec actualisation instantanée."
     },
     {
-      "name": "Serveur HAPI FHIR intégré",
-      "description": "FHIRHub inclut un serveur HAPI FHIR qui peut être démarré automatiquement avec l'application principale. Ce serveur stocke les ressources FHIR et peut être utilisé comme destination pour les conversions ou comme source pour le visualiseur patient et l'explorateur FHIR."
+      "name": "Système de processus visuels",
+      "description": "Éditeur visuel intuitif en glisser-déposer pour créer des chaînes de traitement personnalisées. Nœuds spécialisés pour l'analyse HL7, conversion FHIR, notifications, transformations. Configuration par application avec sauvegarde en base de données et exécution automatique des processus."
+    },
+    {
+      "name": "Parser HL7 optimisé",
+      "description": "Module d'analyse syntaxique des messages HL7 v2.5 avec gestion des spécificités françaises : prénoms composés ANS, accents et caractères spéciaux, structures non-standard des SIH français, analyse contextuelle pour les identifiants IPP, INS, INS-C selon les OIDs."
+    },
+    {
+      "name": "Gestion des nomenclatures médicales",
+      "description": "Interface complète pour gérer les nomenclatures médicales françaises. Import/export de fichiers JSON, visualisation des stats, support des ValueSets et CodeSystems FHIR, OIDs français. Fichiers système protégés et extensibilité pour nomenclatures personnalisées."
+    },
+    {
+      "name": "Cache intelligent",
+      "description": "Système de cache à deux niveaux (mémoire LRU + disque persistant) utilisant SHA-256 pour optimiser les performances. Cache mémoire <1ms, cache disque 2-5ms vs 10-50ms sans cache. API de gestion du cache avec statistiques et nettoyage automatique."
+    },
+    {
+      "name": "Architecture modulaire",
+      "description": "Architecture API-first avec modules interconnectés : Parser HL7, Service de terminologie, Convertisseur FHIR, API RESTful. Backend Node.js/Express, SQLite portable, Frontend HTML5/CSS3/JS moderne. Format cible FHIR R4 v4.0.1 conforme ANS."
     }
   ],
   "commands": [
@@ -99,6 +151,221 @@
     {
       "name": "backup-docker-data.sh",
       "description": "Script qui sauvegarde les données de FHIRHub dans une archive compressée. Utile pour créer des points de restauration avant les mises à jour ou les modifications importantes."
+    },
+    {
+      "name": "docker-init.sh",
+      "description": "Script d'initialisation Docker qui automatise la configuration pour un déploiement rapide et simplifié. Configure les volumes persistants et les variables d'environnement."
+    },
+    {
+      "name": "npm install",
+      "description": "Commande pour installer toutes les dépendances Node.js nécessaires. À exécuter dans le dossier racine de FHIRHub après décompression de l'archive."
+    },
+    {
+      "name": "npm start",
+      "description": "Alternative au script start.sh pour démarrer l'application. Lance le serveur sur le port 5000 par défaut."
+    }
+  ],
+  "api_endpoints": {
+    "authentication": [
+      {
+        "method": "POST",
+        "path": "/api/login",
+        "description": "Authentification des utilisateurs et génération de JWT"
+      },
+      {
+        "method": "POST",
+        "path": "/api/logout",
+        "description": "Invalidation des jetons actifs"
+      },
+      {
+        "method": "GET",
+        "path": "/api/user",
+        "description": "Récupération des informations de l'utilisateur authentifié"
+      }
+    ],
+    "conversion": [
+      {
+        "method": "POST",
+        "path": "/api/convert",
+        "description": "Conversion HL7 v2.5 → FHIR R4 (format JSON)"
+      },
+      {
+        "method": "POST",
+        "path": "/api/convert/raw",
+        "description": "Conversion de texte HL7 pur (format text/plain)"
+      },
+      {
+        "method": "POST",
+        "path": "/api/convert/validate",
+        "description": "Validation syntaxique des messages HL7"
+      },
+      {
+        "method": "POST",
+        "path": "/api/convert/file",
+        "description": "Conversion de fichiers HL7 (multipart/form-data)"
+      },
+      {
+        "method": "GET",
+        "path": "/api/convert/options",
+        "description": "Options de conversion disponibles"
+      }
+    ],
+    "terminology": [
+      {
+        "method": "GET",
+        "path": "/api/terminology/french",
+        "description": "Nomenclatures françaises disponibles"
+      },
+      {
+        "method": "GET",
+        "path": "/api/terminology/files",
+        "description": "Fichiers de terminologie chargés"
+      },
+      {
+        "method": "POST",
+        "path": "/api/terminology/refresh",
+        "description": "Rafraîchir le cache de terminologies"
+      },
+      {
+        "method": "POST",
+        "path": "/api/terminology/analyze",
+        "description": "Analyse statistique des terminologies"
+      },
+      {
+        "method": "POST",
+        "path": "/api/terminology/import",
+        "description": "Import de nouveaux fichiers"
+      },
+      {
+        "method": "GET",
+        "path": "/api/terminology/files/:filename",
+        "description": "Accès à un fichier spécifique"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/terminology/files/:filename",
+        "description": "Suppression de fichier"
+      },
+      {
+        "method": "POST",
+        "path": "/api/terminology/export",
+        "description": "Export au format ZIP"
+      }
+    ],
+    "applications": [
+      {
+        "method": "GET",
+        "path": "/api/applications",
+        "description": "Liste des applications"
+      },
+      {
+        "method": "POST",
+        "path": "/api/applications",
+        "description": "Création d'application"
+      },
+      {
+        "method": "GET",
+        "path": "/api/applications/:id",
+        "description": "Détails d'une application"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/applications/:id",
+        "description": "Mise à jour d'application"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/applications/:id",
+        "description": "Suppression d'application"
+      },
+      {
+        "method": "GET",
+        "path": "/api/applications/:id/stats",
+        "description": "Statistiques d'utilisation"
+      }
+    ],
+    "cache": [
+      {
+        "method": "GET",
+        "path": "/api/cache/stats",
+        "description": "Statistiques du cache (taille, hits, misses)"
+      },
+      {
+        "method": "POST",
+        "path": "/api/cache/clear",
+        "description": "Vider le cache (admin uniquement)"
+      }
+    ],
+    "processus": [
+      {
+        "method": "POST",
+        "path": "/api/processus/execute/:id",
+        "description": "Exécuter un processus configuré"
+      }
+    ]
+  },
+  "technical_specs": {
+    "requirements": {
+      "nodejs": "18.x ou 20.x (v20.15.1 recommandée, problèmes connus avec v22)",
+      "sqlite": "3 (inclus, pas d'installation séparée)",
+      "os": "Windows, macOS ou Linux",
+      "ram": "2 Go minimum, 4 Go recommandé",
+      "disk": "200 Mo minimum",
+      "browser": "Chrome, Firefox, Edge ou Safari récent"
+    },
+    "architecture": {
+      "backend": "Node.js avec Express.js",
+      "database": "SQLite pour la portabilité",
+      "frontend": "HTML5, CSS3 et JavaScript moderne",
+      "auth": "JWT + clés API + HTTPS",
+      "cache": "LRU en mémoire + persistance disque"
+    },
+    "storage": {
+      "database": "storage/db/fhirhub.db",
+      "cache": "storage/data/cache",
+      "terminology": "french_terminology/",
+      "assets": "storage/assets/",
+      "logs": "logs/"
+    }
+  },
+  "deployment": {
+    "docker": {
+      "quick_start": "./docker-init.sh && docker-compose -f docker-compose.prod.yml up -d",
+      "access": "http://localhost:5000",
+      "default_credentials": "admin / admin123",
+      "volumes": [
+        "fhirhub_data (données persistantes)",
+        "fhirhub_logs (journaux)",
+        "fhirhub_cache (cache des conversions)"
+      ]
+    },
+    "standalone": {
+      "install": "npm install",
+      "start": "bash start.sh ou npm start",
+      "access": "http://localhost:5000",
+      "default_credentials": "admin / admin123"
+    }
+  },
+  "french_oids": {
+    "INS": "1.2.250.1.213.1.4.8",
+    "INS-C": "1.2.250.1.213.1.4.2",
+    "RPPS": "1.2.250.1.71.4.2.1",
+    "ADELI": "1.2.250.1.71.4.2.1",
+    "FINESS": "1.2.250.1.71.4.2.2",
+    "IPP": "1.2.250.1.71.4.2.7"
+  },
+  "ai_providers": [
+    {
+      "name": "Mistral AI",
+      "description": "Service d'IA français avec des modèles performants (mistral-large-2411) et compatibles RGPD"
+    },
+    {
+      "name": "Ollama",
+      "description": "Modèles locaux (installation locale requise, idéal pour les environnements isolés et le fonctionnement hors-ligne)"
+    },
+    {
+      "name": "DeepSeek",
+      "description": "Service d'IA alternatif avec des modèles performants"
     }
   ]
 }
