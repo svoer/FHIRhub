@@ -2,6 +2,8 @@
  * Routes pour l'analyse de ressources FHIR via des fournisseurs d'IA
  * Comprend également les routes pour le chatbot de support
  * @module routes/ai-fhir-analyze
+ * 
+ * LOGS DÉTAILLÉS ACTIVÉS POUR DÉBOGAGE
  */
 
 const express = require('express');
