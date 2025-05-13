@@ -87,6 +87,36 @@ Indicateurs en temps réel comprenant:
 - Conteneurisation Docker pour un déploiement simplifié ⚡
 - Fonctionnement possible en mode portable, sans dépendances externes
 
+## 🐳 Déploiement avec Docker
+
+FHIRHub et HAPI FHIR peuvent être déployés facilement avec Docker. Le déploiement inclut :
+
+### 📋 Prérequis
+- Docker Engine v20.10.0+
+- Docker Compose v2.0.0+
+- 2 Go de RAM minimum
+- 5 Go d'espace disque
+
+### 🚀 Installation en un clic
+```bash
+# Rendre le script d'installation exécutable
+chmod +x docker-install.sh
+
+# Lancer l'installation
+./docker-install.sh
+```
+
+### 📁 Organisation des données
+Les données sont stockées de manière persistante dans le répertoire `./data/` :
+- `./data/fhirhub/` : Configuration, logs, cache et terminologies de FHIRHub
+- `./data/hapi-fhir/` : Base de données H2 de HAPI FHIR
+
+### 🌐 Accès aux applications
+- FHIRHub : http://localhost:5000
+- HAPI FHIR : http://localhost:8080/fhir
+
+Pour plus de détails sur le déploiement Docker, consultez la [documentation détaillée](./docs/docker-deployment.md).
+
 ## ⚠️ Licence
 FHIRHub est un logiciel propriétaire. Tous droits réservés. Non disponible en licence open-source.
 
