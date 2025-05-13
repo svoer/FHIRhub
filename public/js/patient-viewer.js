@@ -36,6 +36,40 @@ document.addEventListener('DOMContentLoaded', function() {
         return fetch(url);
     }
     
+    // Fonction générique pour charger des ressources FHIR avec gestion du délai
+    async function loadFhirResourceWithDelay(url, container, processData) {
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
+        
+        loadingSection.style.display = 'block';
+        noResourcesSection.style.display = 'none';
+        resourcesList.style.display = 'none';
+        
+        console.log(`Chargement des ressources depuis: ${url}`);
+        
+        try {
+            // Utiliser fetchWithDelay pour éviter les erreurs 429
+            const response = await fetchWithDelay(url);
+            const data = await response.json();
+            
+            loadingSection.style.display = 'none';
+            
+            if (data.entry && data.entry.length > 0) {
+                resourcesList.style.display = 'block';
+                // Exécuter la fonction de traitement spécifique fournie
+                processData(data, resourcesList);
+            } else {
+                noResourcesSection.style.display = 'block';
+            }
+        } catch (error) {
+            console.error(`Erreur lors du chargement des ressources: ${error}`);
+            loadingSection.style.display = 'none';
+            noResourcesSection.style.display = 'block';
+            noResourcesSection.innerHTML = `<p>Erreur lors du chargement des ressources: ${error.message}</p>`;
+        }
+    }
+    
     // Navigation par onglets
     const tabs = document.querySelectorAll('.tab');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -989,16 +1023,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fonctions pour charger les ressources liées au patient
     function loadPatientConditions(patientId, serverUrl) {
         const container = document.querySelector('#conditionsContent');
-        const loadingSection = container.querySelector('.loading-resources');
-        const noResourcesSection = container.querySelector('.no-resources');
-        const resourcesList = container.querySelector('.resources-list');
         
         // Réinitialiser les données des conditions
         conditionsData = [];
-        
-        loadingSection.style.display = 'block';
-        noResourcesSection.style.display = 'none';
-        resourcesList.style.display = 'none';
         
         // Déterminer si nous utilisons le proxy ou l'URL directe
         let url;
@@ -1012,81 +1039,57 @@ document.addEventListener('DOMContentLoaded', function() {
             url = `${serverUrl}/Condition?patient=${patientId}&_sort=-recorded-date&_count=1000`;
         }
         
-        console.log(`Chargement des conditions depuis: ${url}`);
-        
-        // Utiliser fetchWithDelay pour éviter les erreurs 429 (Too Many Requests)
-        fetchWithDelay(url)
-            .then(response => response.json())
-            .then(data => {
-                loadingSection.style.display = 'none';
+        // Fonction de traitement des données spécifique aux conditions
+        const processConditionsData = (data, resourcesList) => {
+            // Stocker toutes les conditions dans la variable globale
+            conditionsData = data.entry.map(entry => entry.resource);
+            console.log(`${conditionsData.length} conditions chargées et stockées`);
+            
+            resourcesList.innerHTML = '';
+            
+            // Créer une liste de conditions
+            const conditionsList = document.createElement('div');
+            conditionsList.className = 'conditions-list';
+            
+            data.entry.forEach(entry => {
+                const condition = entry.resource;
+                const conditionElement = document.createElement('div');
+                conditionElement.className = 'condition-item';
+                conditionElement.style.padding = '12px';
+                conditionElement.style.margin = '8px 0';
+                conditionElement.style.backgroundColor = '#f9f9f9';
+                conditionElement.style.borderRadius = '6px';
+                conditionElement.style.borderLeft = '3px solid #e83e28';
                 
-                if (data.entry && data.entry.length > 0) {
-                    // Stocker toutes les conditions dans la variable globale
-                    conditionsData = data.entry.map(entry => entry.resource);
-                    console.log(`${conditionsData.length} conditions chargées et stockées`);
-                    
-                    resourcesList.innerHTML = '';
-                    resourcesList.style.display = 'block';
-                    
-                    // Créer une liste de conditions
-                    const conditionsList = document.createElement('div');
-                    conditionsList.className = 'conditions-list';
-                    
-                    data.entry.forEach(entry => {
-                        const condition = entry.resource;
-                        const conditionElement = document.createElement('div');
-                        conditionElement.className = 'condition-item';
-                        conditionElement.style.padding = '12px';
-                        conditionElement.style.margin = '8px 0';
-                            conditionElement.style.backgroundColor = '#f9f9f9';
-                            conditionElement.style.borderRadius = '6px';
-                            conditionElement.style.borderLeft = '3px solid #e83e28';
-                            
-                            const severity = condition.severity?.coding?.[0]?.display || '';
-                            const status = condition.clinicalStatus?.coding?.[0]?.display || condition.clinicalStatus?.coding?.[0]?.code || condition.clinicalStatus || '';
-                            const recordedDate = condition.recordedDate ? new Date(condition.recordedDate).toLocaleDateString('fr-FR') : 'Non spécifiée';
-                            
-                            conditionElement.innerHTML = `
-                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                                    <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
-                                        ${condition.code?.coding?.[0]?.display || condition.code?.text || 'Condition non spécifiée'}
-                                    </h4>
-                                    <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
-                                        ${status || 'Non spécifié'}
-                                    </span>
-                                </div>
-                                <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
-                                    <strong>Sévérité:</strong> ${severity || 'Non spécifiée'}
-                                </div>
-                                <div style="font-size: 0.9rem; color: #555;">
-                                    <strong>Date d'enregistrement:</strong> ${recordedDate}
-                                </div>
-                            `;
-                            
-                            conditionsList.appendChild(conditionElement);
-                        });
-                        
-                        resourcesList.appendChild(conditionsList);
-                    } else {
-                        noResourcesSection.style.display = 'block';
-                    }
-                } catch (error) {
-                    console.error('Erreur parsing JSON conditions:', error);
-                    noResourcesSection.style.display = 'block';
-                }
-            } else {
-                console.warn(`Problème de récupération: ${url}, statut: ${xhr.status}`);
-                noResourcesSection.style.display = 'block';
-            }
+                const severity = condition.severity?.coding?.[0]?.display || '';
+                const status = condition.clinicalStatus?.coding?.[0]?.display || condition.clinicalStatus?.coding?.[0]?.code || condition.clinicalStatus || '';
+                const recordedDate = condition.recordedDate ? new Date(condition.recordedDate).toLocaleDateString('fr-FR') : 'Non spécifiée';
+                
+                conditionElement.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                        <h4 style="margin: 0 0 8px 0; color: #444; font-size: 1.1rem;">
+                            ${condition.code?.coding?.[0]?.display || condition.code?.text || 'Condition non spécifiée'}
+                        </h4>
+                        <span style="font-size: 0.85rem; background: ${status === 'active' ? '#e8f4fd' : '#f8f9fa'}; color: ${status === 'active' ? '#0077cc' : '#6c757d'}; padding: 3px 8px; border-radius: 12px; display: inline-block;">
+                            ${status || 'Non spécifié'}
+                        </span>
+                    </div>
+                    <div style="margin-bottom: 5px; font-size: 0.9rem; color: #555;">
+                        <strong>Sévérité:</strong> ${severity || 'Non spécifiée'}
+                    </div>
+                    <div style="font-size: 0.9rem; color: #555;">
+                        <strong>Date d'enregistrement:</strong> ${recordedDate}
+                    </div>
+                `;
+                
+                conditionsList.appendChild(conditionElement);
+            });
+            
+            resourcesList.appendChild(conditionsList);
         };
         
-        xhr.onerror = function() {
-            console.error(`Erreur réseau lors de la récupération des conditions: ${url}`);
-            loadingSection.style.display = 'none';
-            noResourcesSection.style.display = 'block';
-        };
-        
-        xhr.send();
+        // Utiliser notre fonction générique pour charger les conditions
+        loadFhirResourceWithDelay(url, container, processConditionsData);
     }
     
     function loadPatientObservations(patientId, serverUrl) {
