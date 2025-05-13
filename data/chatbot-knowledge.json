@@ -367,5 +367,326 @@
       "name": "DeepSeek",
       "description": "Service d'IA alternatif avec des modèles performants"
     }
-  ]
+  ],
+  "complete_documentation": {
+    "overview": "FHIRHub est une solution robuste de conversion de messages HL7 v2.5 vers le format FHIR R4 (version 4.0.1), conçue spécifiquement pour l'écosystème de santé français et conforme aux standards de l'ANS. Cette documentation explique les mécanismes internes du système et comment l'utiliser efficacement. Le futur du partage de données santé, dès aujourd'hui. Modernisez votre interop, sans refonte, sans complexité. FHIRHub – L'upgrade FHIR, aussi simple qu'un glisser-déposer.",
+    "interface": {
+      "description": "FHIRHub présente une interface utilisateur intuitive avec une identité visuelle distinctive",
+      "features": {
+        "charte_graphique": "Design en dégradé rouge-orange, identité visuelle cohérente sur toutes les pages",
+        "navigation": "Menu latéral rétractable permettant un accès rapide à toutes les fonctionnalités",
+        "recherche": "Champ de recherche intégré au menu pour accéder rapidement aux fonctionnalités",
+        "favoris": "Possibilité d'ajouter des pages fréquemment utilisées aux favoris",
+        "responsive": "Adaptation automatique à tous les types d'écrans (ordinateurs, tablettes, mobiles)",
+        "typographie": "Police Roboto pour une lisibilité optimale sur tous les supports"
+      }
+    },
+    "architecture": {
+      "components": [
+        {
+          "name": "Parser HL7",
+          "description": "Module d'analyse syntaxique des messages HL7 v2.5 qui extrait et structure chaque composant"
+        },
+        {
+          "name": "Service de Terminologie",
+          "description": "Gestion des mappings entre les codes HL7 et les terminologies françaises (ANS)"
+        },
+        {
+          "name": "Convertisseur FHIR",
+          "description": "Transformation des données structurées en ressources FHIR R4 complètes"
+        },
+        {
+          "name": "API RESTful",
+          "description": "Endpoints pour l'intégration dans des systèmes existants, avec authentification sécurisée"
+        }
+      ],
+      "tech_stack": {
+        "backend": "Node.js avec Express.js",
+        "database": "SQLite pour la portabilité",
+        "frontend": "Interface moderne basée sur HTML5, CSS3 et JavaScript",
+        "target_format": "FHIR R4 (v4.0.1) conforme aux spécifications ANS",
+        "security": "JWT + clés API + HTTPS"
+      }
+    },
+    "parser_details": {
+      "process": [
+        "Identification des séparateurs: Le parser détecte automatiquement les séparateurs utilisés dans le message (champ, composant, répétition, échappement) à partir de l'en-tête MSH",
+        "Découpage en segments: Le message est divisé en segments (lignes) identifiés par leur code de 3 caractères (MSH, PID, PV1, etc.)",
+        "Analyse des champs: Chaque segment est divisé en champs selon le séparateur principal (généralement |)",
+        "Décomposition hiérarchique: Les champs complexes sont décomposés en composants, sous-composants et répétitions selon les séparateurs secondaires (^, &, ~)",
+        "Construction de l'arbre de données: Une structure de données hiérarchique est générée, permettant l'accès aux éléments via des chemins logiques"
+      ],
+      "optimizations": [
+        "Détection intelligente des prénoms composés dans les champs PID-5, conformément aux recommandations de l'ANS",
+        "Support des accents et caractères spéciaux fréquents dans les noms français (é, è, ê, à, ç, etc.)",
+        "Gestion des exceptions pour les structures non-standard parfois rencontrées dans les SIH français",
+        "Analyse contextuelle pour déterminer le bon type d'identifiant (IPP, INS, INS-C) selon les OIDs français"
+      ]
+    },
+    "message_types": {
+      "supported": {
+        "ADT": {
+          "status": "Implémenté",
+          "description": "Admission, Discharge, Transfer",
+          "resources": "Patient, Encounter, Location, EpisodeOfCare",
+          "events": ["A01", "A02", "A03", "A04", "A05", "A08", "A11", "A13", "A28", "A31", "A40"]
+        },
+        "ORU": {
+          "status": "Documentation",
+          "description": "Observation Results Unsolicited",
+          "resources": "Patient, Observation, DiagnosticReport, Specimen"
+        },
+        "SIU": {
+          "status": "Documentation",
+          "description": "Scheduling Information Unsolicited",
+          "resources": "Patient, Appointment, Schedule, Slot"
+        },
+        "MDM": {
+          "status": "Documentation",
+          "description": "Medical Document Management",
+          "resources": "Patient, DocumentReference, Binary"
+        },
+        "ORM": {
+          "status": "Documentation",
+          "description": "Order Message",
+          "resources": "Patient, ServiceRequest, Task"
+        }
+      }
+    },
+    "converter_principles": {
+      "core": [
+        "Conservation complète de l'information : aucune donnée n'est perdue pendant la conversion",
+        "Conformité stricte aux profils FHIR français de l'ANS",
+        "Traçabilité : chaque élément FHIR peut être relié à son origine dans le message HL7",
+        "Enrichissement contextuel : ajout d'informations déduites du contexte pour améliorer l'interopérabilité"
+      ],
+      "process": [
+        "Identification du type de message: Détermination du type d'événement (ADT, ORU, SIU, etc.) pour adapter le processus de conversion",
+        "Extraction des entités principales: Création des ressources primaires comme Patient, Encounter, Organization à partir des segments PID, PV1, MSH",
+        "Mappage des terminologies: Conversion des codes HL7 en codes FHIR à l'aide des terminologies françaises de l'ANS",
+        "Établissement des relations: Création des références entre ressources pour maintenir la cohérence du modèle",
+        "Construction du Bundle transaction: Assemblage de toutes les ressources dans un Bundle FHIR de type transaction"
+      ],
+      "french_adaptations": [
+        "Structure des identifiants INS/INS-C avec les bons OIDs (1.2.250.1.213.1.4.8 et 1.2.250.1.213.1.4.2)",
+        "Gestion intelligente des établissements de santé avec les identifiants FINESS",
+        "Intégration des nomenclatures françaises pour les professions, spécialités et modes de prise en charge",
+        "Support de l'extension encounter-expectedExitDate pour les dates de sortie prévue",
+        "Structuration des adresses selon le format postal français (code postal à 5 chiffres, etc.)"
+      ]
+    },
+    "patient_viewer": {
+      "features": [
+        "Informations personnelles: Données démographiques, contacts, identifiants et détails administratifs du patient",
+        "Observations cliniques: Résultats de laboratoire, signes vitaux et autres observations médicales, présentés sous forme de tableau avec valeurs et interprétations",
+        "Conditions & Problèmes: Diagnostics, pathologies et problèmes médicaux identifiés, avec détails sur leur statut et gravité",
+        "Traitements médicamenteux: Médicaments prescrits, posologies, voies d'administration et historique des prescriptions",
+        "Consultations & Hospitalisations: Historique des visites médicales, admissions, consultations et séjours hospitaliers",
+        "Chronologie médicale: Vue temporelle de tous les événements médicaux du patient, permettant d'identifier les tendances et corrélations",
+        "Analyse IA: Synthèse générée par intelligence artificielle, offrant un compte-rendu médical complet et structuré basé sur toutes les données du patient"
+      ],
+      "technical_capabilities": [
+        "Connexion multi-serveur : Compatible avec tout serveur FHIR R4 standard (HAPI FHIR, serveurs publics, etc.)",
+        "Recherche avancée : Recherche de patients par nom, identifiant ou autres critères",
+        "Identitovigilance : Effacement complet des données lors du changement de patient pour éviter les confusions",
+        "Visualisation JSON : Accès aux données brutes JSON pour les utilisateurs techniques",
+        "Interface adaptative : Design responsive permettant l'utilisation sur ordinateurs, tablettes et dispositifs mobiles",
+        "Respect des standards : Compatible avec les ressources FHIR R4 françaises (ANS) et internationales"
+      ]
+    },
+    "ai_integration": {
+      "chatbot": {
+        "description": "Chatbot intelligent disponible sur le tableau de bord pour répondre aux questions sur l'utilisation de FHIRHub",
+        "features": [
+          "Assistance contextuelle: Le chatbot comprend le contexte de votre demande et peut fournir des explications spécifiques",
+          "Documentation intelligente: Accès à toute la documentation technique à travers une interface conversationnelle simple",
+          "Diagnostic assisté: Aide à identifier et résoudre les problèmes de conversion ou de configuration"
+        ]
+      },
+      "patient_analysis": {
+        "description": "Module d'analyse par IA pour générer un compte-rendu médical complet",
+        "features": [
+          "Synthèse du dossier médical : Génération d'un résumé complet des informations médicales du patient",
+          "Mise en relation des données : L'IA analyse et met en relation les informations des différents onglets",
+          "Contextualisation : Les données sont présentées de façon chronologique et cliniquement pertinente",
+          "Analyse strictement factuelle : Basée uniquement sur les données présentes, sans ajout d'informations extérieures",
+          "Mode dégradé : Génération d'un rapport basique en cas d'indisponibilité du service IA"
+        ]
+      },
+      "providers": {
+        "mistral": {
+          "description": "Service d'IA français avec des modèles performants (mistral-large-2411) et compatibles RGPD",
+          "configuration": {
+            "api_key": "Clé API Mistral requise",
+            "model": "mistral-large-2411",
+            "base_url": "https://api.mistral.ai"
+          }
+        },
+        "ollama": {
+          "description": "Modèles locaux (installation locale requise, idéal pour les environnements isolés)",
+          "configuration": {
+            "base_url": "http://localhost:11434",
+            "models": ["llama2", "mistral", "codellama"],
+            "no_api_key_required": true
+          }
+        }
+      },
+      "rag_system": {
+        "description": "Système RAG (Génération Augmentée par Récupération) pour améliorer la précision",
+        "components": [
+          "Base de connaissances structurée : Les informations sur FHIRHub sont stockées dans une base de connaissances JSON",
+          "Recherche contextuelle : Lorsqu'une question est posée, le système recherche les informations pertinentes",
+          "Enrichissement du prompt : Les informations récupérées sont intégrées au prompt envoyé au modèle d'IA",
+          "Protection contre les hallucinations : Des instructions explicites empêchent le modèle d'inventer des réponses",
+          "Indication des limites : Le système indique clairement quand il ne dispose pas d'informations suffisantes"
+        ]
+      }
+    },
+    "database_structure": {
+      "tables": {
+        "users": {
+          "fields": ["id", "username", "password_hash", "role", "created_at"],
+          "purpose": "Informations utilisateurs (admin, user)"
+        },
+        "applications": {
+          "fields": ["id", "name", "description", "created_by"],
+          "purpose": "Applications enregistrées dans le système"
+        },
+        "api_keys": {
+          "fields": ["id", "key_hash", "application_id", "is_active", "created_at", "expires_at"],
+          "purpose": "Clés API associées aux applications"
+        },
+        "conversion_logs": {
+          "fields": ["id", "source", "user_id", "application_id", "processing_time", "resource_count", "is_cached"],
+          "purpose": "Historique des conversions HL7 vers FHIR"
+        },
+        "system_metrics": {
+          "fields": ["timestamp", "cpu_usage", "memory_usage"],
+          "purpose": "Métriques système (CPU, mémoire)"
+        },
+        "ai_providers": {
+          "fields": ["id", "name", "api_key_encrypted", "is_active", "model"],
+          "purpose": "Configuration des fournisseurs d'IA"
+        }
+      }
+    },
+    "api_architecture": {
+      "middleware_stack": [
+        "cors() - Gestion des requêtes cross-origin",
+        "helmet() - Headers de sécurité",
+        "compression() - Compression gzip des réponses",
+        "express.json({ limit: '10mb' }) - Parsing JSON avec limite",
+        "requestLogger - Journalisation des requêtes",
+        "rateLimiter - Limitation du débit",
+        "authMiddleware - Authentification JWT/API Key",
+        "validationMiddleware - Validation des entrées",
+        "errorHandler - Gestion centralisée des erreurs"
+      ],
+      "authentication": {
+        "jwt": {
+          "generation": "jwt.sign({ userId }, secret, { expiresIn: '24h' })",
+          "validation": "jwt.verify(token, secret)",
+          "refresh": "Support des refresh tokens (7 jours)"
+        },
+        "api_keys": {
+          "generation": "crypto.randomBytes(32).toString('hex')",
+          "storage": "bcrypt.hash avec salt rounds 10",
+          "validation": "Comparaison timing-safe"
+        }
+      }
+    },
+    "deployment_options": {
+      "docker": {
+        "quick_start": "./docker-init.sh && docker-compose -f docker-compose.prod.yml up -d",
+        "volumes": [
+          "fhirhub_data - Données persistantes",
+          "fhirhub_logs - Journaux d'application",
+          "fhirhub_cache - Cache des conversions"
+        ],
+        "networking": "Bridge network pour communication inter-conteneurs",
+        "health_checks": "Endpoints /health et /ready"
+      },
+      "standalone": {
+        "requirements": {
+          "nodejs": "18.x ou 20.x (v20.15.1 recommandée)",
+          "ram": "2 Go minimum, 4 Go recommandé",
+          "disk": "200 Mo minimum"
+        },
+        "installation": [
+          "npm install - Installation des dépendances",
+          "bash start.sh - Démarrage du serveur",
+          "Accès via http://localhost:5000"
+        ]
+      },
+      "kubernetes": {
+        "resources": {
+          "requests": { "memory": "256Mi", "cpu": "100m" },
+          "limits": { "memory": "1Gi", "cpu": "500m" }
+        },
+        "autoscaling": {
+          "hpa": {
+            "minReplicas": 2,
+            "maxReplicas": 10,
+            "targetCPUUtilizationPercentage": 70
+          }
+        }
+      }
+    },
+    "performance_optimizations": {
+      "caching": {
+        "levels": [
+          "Cache mémoire LRU (500 entrées max)",
+          "Cache disque persistant (7 jours TTL)"
+        ],
+        "performance": {
+          "memory_cache": "<1ms",
+          "disk_cache": "2-5ms",
+          "no_cache": "10-50ms"
+        }
+      },
+      "database": [
+        "Indexes sur champs fréquemment recherchés",
+        "Requêtes SQL optimisées sans ORM",
+        "Connection pooling (si migration vers PostgreSQL)"
+      ],
+      "api": [
+        "Compression gzip des réponses",
+        "Pagination des résultats volumineux",
+        "Rate limiting par IP et API key",
+        "CDN pour assets statiques"
+      ],
+      "processing": [
+        "Worker threads pour conversions parallèles",
+        "Streaming pour gros fichiers",
+        "Lazy loading des terminologies volumineuses"
+      ]
+    },
+    "security_measures": {
+      "authentication": [
+        "Double authentification JWT + API Keys",
+        "Bcrypt pour hachage des mots de passe",
+        "Tokens avec expiration configurable"
+      ],
+      "authorization": [
+        "RBAC (Role-Based Access Control)",
+        "Permissions granulaires par endpoint",
+        "Principe du moindre privilège"
+      ],
+      "data_protection": [
+        "HTTPS obligatoire en production",
+        "Chiffrement des données sensibles",
+        "Audit trail complet"
+      ],
+      "input_validation": [
+        "Sanitization des entrées utilisateur",
+        "Protection XSS et injection SQL",
+        "Limite de taille des payloads"
+      ],
+      "monitoring": [
+        "Logs de sécurité détaillés",
+        "Alertes sur comportements suspects",
+        "Métriques de sécurité en temps réel"
+      ]
+    }
+  }
 }

@@ -151,6 +151,12 @@ document.addEventListener('DOMContentLoaded', function() {
         <button class="action-button test-button" data-id="${server.id}">
           <i class="fas fa-vial"></i> Tester
         </button>
+        <button class="action-button edit-button" data-id="${server.id}">
+          <i class="fas fa-edit"></i> Éditer
+        </button>
+        <button class="action-button delete-button" data-id="${server.id}">
+          <i class="fas fa-trash-alt"></i> Supprimer
+        </button>
         <label class="switch-container">
           <div class="switch">
             <input type="checkbox" class="default-toggle" data-id="${server.id}" ${server.isDefault ? 'checked' : ''}>
