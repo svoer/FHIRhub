@@ -14,12 +14,19 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Variables d'état
     let isTyping = false;
+    let isChatbotOpen = false;
     
     // Historique des messages pour le contexte
     const messageHistory = [];
     
     // Section courante de la documentation (pour le contexte)
     let currentSection = '';
+    
+    // Initialiser l'état du chatbot (fermé par défaut)
+    initChatbotState();
+    
+    // Configurer les événements du chatbot
+    setupChatbotEvents();
     
     // Observer pour détecter le changement de section
     const observer = new IntersectionObserver((entries) => {
@@ -33,6 +40,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.5 });
     
     // Observer toutes les sections de documentation
+    
+    // Initialiser l'état du chatbot (fermé par défaut)
+    function initChatbotState() {
+        // Vérifier si le chatbot était ouvert précédemment (stocké dans localStorage)
+        const storedState = localStorage.getItem('docChatbotOpen');
+        isChatbotOpen = storedState === 'true';
+        
+        // Appliquer l'état initial
+        if (isChatbotOpen) {
+            chatbotContainer.classList.add('open');
+            chatbotToggle.querySelector('i').classList.remove('fa-chevron-down');
+            chatbotToggle.querySelector('i').classList.add('fa-chevron-up');
+        } else {
+            chatbotContainer.classList.remove('open');
+            chatbotToggle.querySelector('i').classList.remove('fa-chevron-up');
+            chatbotToggle.querySelector('i').classList.add('fa-chevron-down');
+        }
+    }
+    
+    // Configurer les événements du chatbot
+    function setupChatbotEvents() {
+        // Événement pour ouvrir/fermer le chatbot
+        chatbotToggle.addEventListener('click', () => {
+            isChatbotOpen = !isChatbotOpen;
+            
+            // Sauvegarder l'état
+            localStorage.setItem('docChatbotOpen', isChatbotOpen);
+            
+            // Mettre à jour l'interface
+            if (isChatbotOpen) {
+                chatbotContainer.classList.add('open');
+                chatbotToggle.querySelector('i').classList.remove('fa-chevron-down');
+                chatbotToggle.querySelector('i').classList.add('fa-chevron-up');
+                // Faire défiler jusqu'au dernier message
+                scrollToBottom();
+            } else {
+                chatbotContainer.classList.remove('open');
+                chatbotToggle.querySelector('i').classList.remove('fa-chevron-up');
+                chatbotToggle.querySelector('i').classList.add('fa-chevron-down');
+            }
+        });
+        
+        // Événement pour envoyer un message (bouton)
+        chatbotSend.addEventListener('click', () => {
+            sendMessage();
+        });
+        
+        // Événement pour envoyer un message (touche Entrée)
+        chatbotInput.addEventListener('keydown', (e) => {
+            // Entrée sans Shift pour envoyer, Shift+Entrée pour un saut de ligne
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
     document.querySelectorAll('.documentation-section').forEach(section => {
         observer.observe(section);
     });
@@ -206,16 +269,91 @@ Quand un utilisateur pose une question technique, tu dois d'abord consulter cett
         return formattedMessages;
     }
     
+    // Fonction pour enrichir le contexte avec des recherches dans la base de connaissances
+    async function enrichWithKnowledge(userMessage) {
+        try {
+            console.log(`[DOC-CHATBOT] Recherche de connaissances pour: "${userMessage.substring(0, 50)}..."`);
+            
+            // Appel à l'API de recherche de connaissances
+            const searchResponse = await fetch(`/api/ai-knowledge/search?query=${encodeURIComponent(userMessage)}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!searchResponse.ok) {
+                console.warn(`[DOC-CHATBOT] Échec de recherche dans la base de connaissances: ${searchResponse.status}`);
+                return null;
+            }
+            
+            const searchResult = await searchResponse.json();
+            
+            if (searchResult.success && searchResult.results && searchResult.results.length > 0) {
+                console.log(`[DOC-CHATBOT] ${searchResult.results.length} connaissances pertinentes trouvées`);
+                return searchResult.results;
+            } else {
+                console.log('[DOC-CHATBOT] Aucune connaissance pertinente trouvée');
+                return null;
+            }
+        } catch (error) {
+            console.error('[DOC-CHATBOT] Erreur lors de la recherche dans la base de connaissances:', error);
+            return null;
+        }
+    }
+    
     // Fonction pour interroger l'API du chatbot
     async function fetchAIResponse(userMessage) {
         try {
             // Ajouter le dernier message à l'historique
             messageHistory.push({ role: 'user', content: userMessage });
             
+            // Rechercher des connaissances pertinentes
+            const relevantKnowledge = await enrichWithKnowledge(userMessage);
+            
+            // Créer un prompt enrichi si des connaissances ont été trouvées
+            let systemMessage = {
+                role: 'system',
+                content: `Tu es un assistant spécialisé dans la documentation technique de FHIRHub. 
+Ta mission est d'aider les utilisateurs à comprendre cette documentation. 
+Utilise un ton professionnel adapté au domaine médical.
+Si la question de l'utilisateur contient un contexte de section, concentre-toi sur cette section spécifique.`
+            };
+            
+            if (relevantKnowledge && relevantKnowledge.length > 0) {
+                // Formater les connaissances pour le prompt système
+                let knowledgeText = "INFORMATIONS PERTINENTES DE LA BASE DE CONNAISSANCES FHIRHUB:\n\n";
+                
+                relevantKnowledge.forEach((info, index) => {
+                    if (info.type === 'faq' && info.question && info.answer) {
+                        knowledgeText += `[INFO-${index+1}] Q: "${info.question}"\nR: "${info.answer}"\n\n`;
+                    } else if (info.type === 'feature' && info.name && info.description) {
+                        knowledgeText += `[INFO-${index+1}] Fonctionnalité: "${info.name}"\nDescription: "${info.description}"\n\n`;
+                    } else if (info.type === 'command' && info.name && info.description) {
+                        knowledgeText += `[INFO-${index+1}] Commande: "${info.name}"\nDescription: "${info.description}"\n\n`;
+                    }
+                });
+                
+                // Ajouter les connaissances au message système
+                systemMessage.content += `\n\n${knowledgeText}`;
+                console.log(`[DOC-CHATBOT] Prompt enrichi avec ${relevantKnowledge.length} connaissances`);
+            }
+            
+            // Préparer les messages pour l'API
+            const messages = [systemMessage];
+            
+            // Ajouter l'historique des messages
+            messageHistory.forEach(msg => {
+                messages.push({
+                    role: msg.role,
+                    content: msg.content
+                });
+            });
+            
             // Préparer les données
             const data = {
-                messages: formatMessagesForAPI(),
-                max_tokens: 800
+                messages: messages,
+                max_tokens: 1000
             };
             
             // Faire la requête à l'API
