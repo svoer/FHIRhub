@@ -2,6 +2,7 @@
  * Styles pour le chatbot contextuel de la documentation
  */
 
+/* Widget du chatbot */
 .doc-chatbot-widget {
   position: fixed;
   bottom: 20px;
@@ -10,19 +11,25 @@
   height: 450px;
   background-color: #fff;
   border-radius: 10px;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 5px 25px rgba(231, 76, 60, 0.6); /* Ombre rougeâtre plus visible */
   display: flex;
   flex-direction: column;
   z-index: 9999;
-  transition: all 0.3s ease;
-  transform: translateY(390px);
   overflow: hidden;
   pointer-events: auto;
+  transition: all 0.3s ease;
 }
 
+/* État fermé */
+.doc-chatbot-widget:not(.open) {
+  height: 60px; /* Juste assez pour le header */
+  overflow: hidden;
+}
+
+/* État ouvert */
 .doc-chatbot-widget.open {
-  transform: translateY(0);
-  pointer-events: auto;
+  height: 450px;
+  box-shadow: 0 10px 30px rgba(231, 76, 60, 0.8); /* Ombre plus prononcée quand ouvert */
 }
 
 .doc-chatbot-header {

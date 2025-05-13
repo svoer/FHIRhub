@@ -4,35 +4,94 @@
  * un contexte spécifique à la documentation technique.
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Éléments du DOM
+/**
+ * Script simplifié pour le chatbot contextuel de la documentation
+ * Ce chatbot utilise la même API que le chatbot principal mais avec
+ * un contexte spécifique à la documentation technique.
+ */
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("🤖 Initialisation du chatbot de documentation...");
+    
+    // Récupération des éléments du DOM
     const chatbotContainer = document.getElementById('doc-chatbot-container');
-    const chatbotToggle = document.getElementById('doc-chatbot-toggle');
+    const chatbotHeader = document.querySelector('.doc-chatbot-header');
     const chatbotMessages = document.getElementById('doc-chatbot-messages');
     const chatbotInput = document.getElementById('doc-chatbot-input-text');
     const chatbotSend = document.getElementById('doc-chatbot-send');
     
-    // Vérifier si tous les éléments sont présents
-    if (!chatbotContainer || !chatbotToggle || !chatbotMessages || !chatbotInput || !chatbotSend) {
-        console.error("Certains éléments du chatbot sont manquants dans le DOM");
-        return; // Sortir de la fonction si des éléments sont manquants
+    // Vérifier si le chatbot existe sur cette page
+    if (!chatbotContainer) {
+        console.log("Le chatbot n'est pas présent sur cette page.");
+        return;
     }
+    
+    console.log("Container du chatbot trouvé ✅");
     
     // Variables d'état
     let isTyping = false;
-    let isChatbotOpen = false;
-    
-    // Historique des messages pour le contexte
     const messageHistory = [];
-    
-    // Section courante de la documentation (pour le contexte)
     let currentSection = '';
     
-    // Initialiser l'état du chatbot (fermé par défaut)
-    initChatbotState();
+    // Fonction pour basculer l'ouverture/fermeture du chatbot
+    function toggleChatbot() {
+        chatbotContainer.classList.toggle('open');
+        if (chatbotContainer.classList.contains('open')) {
+            chatbotInput.focus();
+            scrollToBottom();
+        }
+    }
     
-    // Configurer les événements du chatbot
-    setupChatbotEvents();
+    // Ajouter l'événement au header du chatbot
+    if (chatbotHeader) {
+        chatbotHeader.addEventListener('click', function(e) {
+            // S'assurer que le clic n'est pas sur une autre zone interactive du header
+            if (e.target === chatbotHeader || e.target.closest('.doc-chatbot-header')) {
+                toggleChatbot();
+            }
+        });
+    }
+    
+    // Ajouter les fonctionnalités d'envoi de message
+    if (chatbotSend && chatbotInput) {
+        // Envoyer le message avec le bouton
+        chatbotSend.addEventListener('click', function() {
+            sendMessage();
+        });
+        
+        // Envoyer avec la touche Entrée
+        chatbotInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    }
+    
+    // Fonction pour envoyer un message
+    function sendMessage() {
+        const message = chatbotInput.value.trim();
+        if (message === '') return;
+        
+        // Ajouter le message utilisateur à l'interface
+        addMessageToChat('user', message);
+        
+        // Vider l'input
+        chatbotInput.value = '';
+        
+        // Afficher l'indicateur "en train d'écrire"
+        addTypingIndicator();
+        
+        // Ajouter le contexte de la section actuelle si disponible
+        const enrichedMessage = addSectionContext(message);
+        
+        // Envoyer au serveur et récupérer la réponse
+        fetchAIResponse(enrichedMessage).catch(error => {
+            console.error('Erreur lors de la récupération de la réponse:', error);
+            removeTypingIndicator();
+            addMessageToChat('assistant', "Désolé, je n'ai pas pu traiter votre demande. Veuillez réessayer.");
+        });
+    }
     
     // Observer pour détecter le changement de section
     const observer = new IntersectionObserver((entries) => {
@@ -46,67 +105,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }, { threshold: 0.5 });
     
     // Observer toutes les sections de documentation
+    document.querySelectorAll('section[id], div[id].documentation-section').forEach(section => {
+        observer.observe(section);
+    });
     
-    // Initialiser l'état du chatbot (fermé par défaut)
-    function initChatbotState() {
-        try {
-            // Vérifier si le chatbot était ouvert précédemment (stocké dans localStorage)
-            const storedState = localStorage.getItem('docChatbotOpen');
-            isChatbotOpen = storedState === 'true';
-            
-            // Appliquer l'état initial
-            if (isChatbotOpen) {
-                chatbotContainer.classList.add('open');
-                const iconElement = chatbotToggle.querySelector('i');
-                if (iconElement) {
-                    iconElement.classList.remove('fa-chevron-down');
-                    iconElement.classList.add('fa-chevron-up');
-                }
-            } else {
-                chatbotContainer.classList.remove('open');
-                const iconElement = chatbotToggle.querySelector('i');
-                if (iconElement) {
-                    iconElement.classList.remove('fa-chevron-up');
-                    iconElement.classList.add('fa-chevron-down');
-                }
-            }
-        } catch (error) {
-            console.error("Erreur lors de l'initialisation du chatbot:", error);
+    // Fonctions auxiliaires pour l'interface utilisateur
+    
+    // Ajouter un message au chat
+    function addMessageToChat(role, content) {
+        if (!chatbotMessages) return;
+        
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('doc-chatbot-message', role);
+        
+        const avatarElement = document.createElement('div');
+        avatarElement.classList.add('doc-chatbot-avatar');
+        
+        const iconElement = document.createElement('i');
+        iconElement.classList.add('fas', role === 'user' ? 'fa-user' : 'fa-robot');
+        avatarElement.appendChild(iconElement);
+        
+        const textElement = document.createElement('div');
+        textElement.classList.add('doc-chatbot-text');
+        textElement.textContent = content;
+        
+        messageElement.appendChild(avatarElement);
+        messageElement.appendChild(textElement);
+        
+        chatbotMessages.appendChild(messageElement);
+        
+        // Faire défiler jusqu'au dernier message
+        scrollToBottom();
+        
+        // Ajouter le message à l'historique
+        messageHistory.push({ role, content });
+        
+        // Limiter l'historique à 10 messages
+        if (messageHistory.length > 10) {
+            messageHistory.shift();
         }
     }
-    
-    // Configurer les événements du chatbot
-    function setupChatbotEvents() {
-        // Fonction pour basculer l'état du chatbot
-        function toggleChatbot() {
-            try {
-                isChatbotOpen = !isChatbotOpen;
-                
-                // Sauvegarder l'état
-                localStorage.setItem('docChatbotOpen', isChatbotOpen);
-                
-                // Mettre à jour l'interface
-                if (isChatbotOpen) {
-                    chatbotContainer.classList.add('open');
-                    const iconElement = chatbotToggle.querySelector('i');
-                    if (iconElement) {
-                        iconElement.classList.remove('fa-chevron-down');
-                        iconElement.classList.add('fa-chevron-up');
-                    }
-                    // Faire défiler jusqu'au dernier message
-                    scrollToBottom();
-                } else {
-                    chatbotContainer.classList.remove('open');
-                    const iconElement = chatbotToggle.querySelector('i');
-                    if (iconElement) {
-                        iconElement.classList.remove('fa-chevron-up');
-                        iconElement.classList.add('fa-chevron-down');
-                    }
-                }
-            } catch (error) {
-                console.error("Erreur lors du basculement du chatbot:", error);
-            }
-        }
         
         // Événement pour ouvrir/fermer le chatbot via le bouton
         chatbotToggle.addEventListener('click', (e) => {
