@@ -3010,22 +3010,48 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Récupérer les ressources pour la chronologie (consultations, médicaments, observations, etc.)
             // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests) avec les serveurs publics
+            // Ajouter un délai de 500ms entre chaque appel pour éviter les erreurs 429
             const countValue = serverUrl.includes('hapi.fhir.org') ? 50 : 1000;
-            Promise.all([
-                fetchSafely(`${baseUrl}/Encounter?patient=${patientId}&_count=${countValue}`),
-                fetchSafely(`${baseUrl}/Observation?patient=${patientId}&_count=${countValue}`),
-                fetchSafely(`${baseUrl}/MedicationRequest?patient=${patientId}&_count=${countValue}`),
-                fetchSafely(`${baseUrl}/Condition?patient=${patientId}&_count=${countValue}`)
-            ])
-        .then(([encounters, observations, medications, conditions]) => {
-            loadingSection.style.display = 'none';
             
-            // Combiner toutes les entrées
-            const timelineEntries = [];
+            // Utiliser des promesses séquentielles avec des délais au lieu de Promise.all
+            let encounters, observations, medications, conditions;
             
-            // Ajouter les consultations
-            if (encounters.entry && encounters.entry.length > 0) {
-                encounters.entry.forEach(entry => {
+            // Première requête: Encounters
+            fetchSafely(`${baseUrl}/Encounter?patient=${patientId}&_count=${countValue}`)
+                .then(encountersData => {
+                    encounters = encountersData;
+                    
+                    // Attendre 500ms avant la prochaine requête
+                    return new Promise(resolve => setTimeout(() => {
+                        resolve(fetchSafely(`${baseUrl}/Observation?patient=${patientId}&_count=${countValue}`));
+                    }, 500));
+                })
+                .then(observationsData => {
+                    observations = observationsData;
+                    
+                    // Attendre 500ms avant la prochaine requête
+                    return new Promise(resolve => setTimeout(() => {
+                        resolve(fetchSafely(`${baseUrl}/MedicationRequest?patient=${patientId}&_count=${countValue}`));
+                    }, 500));
+                })
+                .then(medicationsData => {
+                    medications = medicationsData;
+                    
+                    // Attendre 500ms avant la prochaine requête
+                    return new Promise(resolve => setTimeout(() => {
+                        resolve(fetchSafely(`${baseUrl}/Condition?patient=${patientId}&_count=${countValue}`));
+                    }, 500));
+                })
+                .then(conditionsData => {
+                    conditions = conditionsData;
+                    loadingSection.style.display = 'none';
+                    
+                    // Combiner toutes les entrées
+                    const timelineEntries = [];
+                    
+                    // Ajouter les consultations
+                    if (encounters.entry && encounters.entry.length > 0) {
+                        encounters.entry.forEach(entry => {
                     if (entry.resource.period && entry.resource.period.start) {
                         timelineEntries.push({
                             type: 'encounter',
