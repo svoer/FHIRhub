@@ -410,6 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         
                         if (resourcesByType.Organization) {
+                            console.log("Organisations trouvées dans le bundle:", resourcesByType.Organization);
                             organizationsData = resourcesByType.Organization;
                             updateOrganizationsTab(organizationsData);
                         }
@@ -1520,14 +1521,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const noResourcesSection = container.querySelector('.no-resources');
         const resourcesList = container.querySelector('.resources-list');
         
-        // Réinitialiser les données des organisations
-        organizationsData = [];
-        
         loadingSection.style.display = 'block';
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Déterminer si nous utilisons le proxy ou l'URL directe
+        // Première priorité : utiliser les organisations déjà dans le bundle complet (récupéré via $everything)
+        // Vérifier si nous avons déjà des organisations chargées dans le cache
+        if (organizationsData && organizationsData.length > 0) {
+            console.log("Des organisations sont déjà disponibles dans le cache:", organizationsData.length);
+            updateOrganizationsTab(organizationsData);
+            return;
+        }
+        
+        // Si pas d'organisations dans le cache, effectuer la requête
         let url;
         if (serverUrl.includes('hapi.fhir.org')) {
             // Utiliser le proxy pour contourner les limitations CORS
@@ -1549,52 +1555,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 return response.json();
             })
             .then(data => {
-                loadingSection.style.display = 'none';
-                
                 if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
                     const organizations = data.entry.map(entry => entry.resource);
                     organizationsData = organizations;
-                    
-                    // Créer une liste d'organisations
-                    const organizationsList = document.createElement('div');
-                    organizationsList.style.display = 'grid';
-                    organizationsList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    organizationsList.style.gap = '15px';
-                    
-                    organizations.forEach(organization => {
-                        const organizationElement = document.createElement('div');
-                        organizationElement.style.backgroundColor = '#f9f9f9';
-                        organizationElement.style.borderRadius = '8px';
-                        organizationElement.style.padding = '15px';
-                        organizationElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
-                        organizationElement.style.borderLeft = '3px solid #fd7e30';
-                        
-                        organizationElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> ${organization.name || 'Organisation sans nom'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${organization.id}</p>
-                                ${organization.alias && organization.alias.length > 0 ? 
-                                  `<p><strong>Alias:</strong> ${organization.alias.join(', ')}</p>` 
-                                  : ''}
-                                ${organization.telecom ? 
-                                  `<p><strong>Contact:</strong> ${formatTelecom(organization.telecom)}</p>` 
-                                  : ''}
-                                ${organization.address ? 
-                                  `<p><strong>Adresse:</strong> ${formatAddress(organization.address[0])}</p>` 
-                                  : ''}
-                            </div>
-                        `;
-                        
-                        organizationsList.appendChild(organizationElement);
-                    });
-                    
-                    resourcesList.appendChild(organizationsList);
+                    console.log(`${organizations.length} organisations chargées directement via l'API`);
+                    updateOrganizationsTab(organizationsData);
                 } else {
+                    console.log("Aucune organisation trouvée via l'API directe");
+                    loadingSection.style.display = 'none';
                     noResourcesSection.style.display = 'block';
                 }
             })
@@ -1603,6 +1571,72 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadingSection.style.display = 'none';
                 noResourcesSection.style.display = 'block';
             });
+    }
+    
+    // Fonction pour mettre à jour l'onglet des organisations
+    function updateOrganizationsTab(organizations) {
+        const container = document.querySelector('#organizationsContent');
+        if (!container) {
+            console.error("Container pour les organisations non trouvé");
+            return;
+        }
+        
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
+        
+        if (!organizations || organizations.length === 0) {
+            // Aucune organisation à afficher
+            if (loadingSection) loadingSection.style.display = 'none';
+            if (noResourcesSection) noResourcesSection.style.display = 'block';
+            if (resourcesList) resourcesList.style.display = 'none';
+            return;
+        }
+        
+        // Des organisations sont disponibles, les afficher
+        if (loadingSection) loadingSection.style.display = 'none';
+        if (noResourcesSection) noResourcesSection.style.display = 'none';
+        if (resourcesList) {
+            resourcesList.style.display = 'block';
+            resourcesList.innerHTML = '';
+            
+            // Créer une liste d'organisations
+            const organizationsList = document.createElement('div');
+            organizationsList.style.display = 'grid';
+            organizationsList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+            organizationsList.style.gap = '15px';
+            
+            organizations.forEach(organization => {
+                const organizationElement = document.createElement('div');
+                organizationElement.style.backgroundColor = '#f9f9f9';
+                organizationElement.style.borderRadius = '8px';
+                organizationElement.style.padding = '15px';
+                organizationElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                organizationElement.style.borderLeft = '3px solid #fd7e30';
+                
+                organizationElement.innerHTML = `
+                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> ${organization.name || 'Organisation sans nom'}
+                    </h4>
+                    <div style="margin-top: 10px; color: #555;">
+                        <p><strong>Identifiant:</strong> ${organization.id}</p>
+                        ${organization.alias && organization.alias.length > 0 ? 
+                          `<p><strong>Alias:</strong> ${organization.alias.join(', ')}</p>` 
+                          : ''}
+                        ${organization.telecom ? 
+                          `<p><strong>Contact:</strong> ${formatTelecom(organization.telecom)}</p>` 
+                          : ''}
+                        ${organization.address ? 
+                          `<p><strong>Adresse:</strong> ${formatAddress(organization.address[0])}</p>` 
+                          : ''}
+                    </div>
+                `;
+                
+                organizationsList.appendChild(organizationElement);
+            });
+            
+            resourcesList.appendChild(organizationsList);
+        }
     }
     
     function loadPatientRelatedPersons(patientId, serverUrl) {
