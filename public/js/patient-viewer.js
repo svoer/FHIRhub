@@ -441,18 +441,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             // Fonction pour charger les ressources de façon traditionnelle
             function loadResourcesTraditionnally() {
-                showStatus('Chargement individuel des ressources...', 'info');
-                // Charger toutes les ressources associées au patient individuellement
+                showStatus('Chargement individuel des ressources avec délai de 500ms entre chaque requête...', 'info');
+                
+                // Charger séquentiellement toutes les ressources associées au patient avec un délai
+                // Utiliser des délais pour éviter les erreurs 429 (Too Many Requests)
                 loadPatientConditions(patientId, server);
-                loadPatientObservations(patientId, server);
-                loadPatientMedications(patientId, server);
-                loadPatientEncounters(patientId, server);
-                loadPatientPractitioners(patientId, server);
-                loadPatientOrganizations(patientId, server);
-                loadPatientRelatedPersons(patientId, server);
-                loadPatientCoverage(patientId, server);
-                generateTimeline(patientId, server);
-                loadPatientBundle(patientId, server);
+                
+                setTimeout(() => {
+                    loadPatientObservations(patientId, server);
+                    
+                    setTimeout(() => {
+                        loadPatientMedications(patientId, server);
+                        
+                        setTimeout(() => {
+                            loadPatientEncounters(patientId, server);
+                            
+                            setTimeout(() => {
+                                loadPatientPractitioners(patientId, server);
+                                
+                                setTimeout(() => {
+                                    loadPatientOrganizations(patientId, server);
+                                    
+                                    setTimeout(() => {
+                                        loadPatientRelatedPersons(patientId, server);
+                                        
+                                        setTimeout(() => {
+                                            loadPatientCoverage(patientId, server);
+                                            
+                                            setTimeout(() => {
+                                                generateTimeline(patientId, server);
+                                                
+                                                setTimeout(() => {
+                                                    loadPatientBundle(patientId, server);
+                                                }, 500);
+                                            }, 500);
+                                        }, 500);
+                                    }, 500);
+                                }, 500);
+                            }, 500);
+                        }, 500);
+                    }, 500);
+                }, 500);
             }
             
             // Fonction pour générer une chronologie à partir d'un bundle
@@ -2980,20 +3009,44 @@ document.addEventListener('DOMContentLoaded', function() {
             
             console.log(`Chargement des ressources pour la chronologie depuis: ${baseUrl}`);
             
-            // Récupérer les ressources pour la chronologie (consultations, médicaments, observations, etc.)
+            // Récupérer les ressources pour la chronologie de façon séquentielle avec délais
             // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests) avec les serveurs publics
             const countValue = serverUrl.includes('hapi.fhir.org') ? 50 : 1000;
-            Promise.all([
-                fetchSafely(`${baseUrl}/Encounter?patient=${patientId}&_count=${countValue}`),
-                fetchSafely(`${baseUrl}/Observation?patient=${patientId}&_count=${countValue}`),
-                fetchSafely(`${baseUrl}/MedicationRequest?patient=${patientId}&_count=${countValue}`),
-                fetchSafely(`${baseUrl}/Condition?patient=${patientId}&_count=${countValue}`)
-            ])
-        .then(([encounters, observations, medications, conditions]) => {
-            loadingSection.style.display = 'none';
             
-            // Combiner toutes les entrées
-            const timelineEntries = [];
+            console.log("Chargement séquentiel des ressources pour la chronologie avec délais de 500ms...");
+            showStatus('Chargement séquentiel des ressources pour la chronologie avec délais de 500ms...', 'info');
+            
+            // Récupérer les consultations en premier
+            fetchSafely(`${baseUrl}/Encounter?patient=${patientId}&_count=${countValue}`)
+                .then(encounters => {
+                    // Attendre 500ms puis récupérer les observations
+                    setTimeout(() => {
+                        fetchSafely(`${baseUrl}/Observation?patient=${patientId}&_count=${countValue}`)
+                            .then(observations => {
+                                // Attendre 500ms puis récupérer les prescriptions médicamenteuses
+                                setTimeout(() => {
+                                    fetchSafely(`${baseUrl}/MedicationRequest?patient=${patientId}&_count=${countValue}`)
+                                        .then(medications => {
+                                            // Attendre 500ms puis récupérer les conditions médicales
+                                            setTimeout(() => {
+                                                fetchSafely(`${baseUrl}/Condition?patient=${patientId}&_count=${countValue}`)
+                                                    .then(conditions => {
+                                                        // Traiter les résultats des 4 requêtes
+                                                        processTimelineData(encounters, observations, medications, conditions);
+                                                    });
+                                            }, 500);
+                                        });
+                                }, 500);
+                            });
+                    }, 500);
+                });
+                
+            // Fonction pour traiter les données récupérées séquentiellement
+            function processTimelineData(encounters, observations, medications, conditions) {
+                loadingSection.style.display = 'none';
+                
+                // Combiner toutes les entrées
+                const timelineEntries = [];
             
             // Ajouter les consultations
             if (encounters.entry && encounters.entry.length > 0) {
