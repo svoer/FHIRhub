@@ -100,33 +100,6 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(section);
     });
     
-    // Ouvrir/fermer le chatbot
-    chatbotToggle.addEventListener('click', () => {
-        chatbotContainer.classList.toggle('open');
-        
-        // Changer l'icône du bouton
-        const icon = chatbotToggle.querySelector('i');
-        if (chatbotContainer.classList.contains('open')) {
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
-            scrollToBottom();
-        } else {
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-        }
-    });
-    
-    // Envoyer un message quand on clique sur le bouton
-    chatbotSend.addEventListener('click', sendMessage);
-    
-    // Envoyer un message avec la touche Entrée (mais pas Shift+Entrée)
-    chatbotInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            sendMessage();
-        }
-    });
-    
     // Fonction pour envoyer un message
     function sendMessage() {
         const message = chatbotInput.value.trim();

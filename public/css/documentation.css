@@ -1,5 +1,31 @@
 /* Documentation.css - Styles pour la documentation FHIRHub */
 
+/* Styles pour la flèche de retour en haut */
+.scroll-to-top {
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  background: linear-gradient(135deg, #e74c3c, #ff5722);
+  color: white;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  opacity: 0.9;
+  z-index: 999;
+  transition: all 0.3s ease;
+}
+
+.scroll-to-top:hover {
+  opacity: 1;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+}
+
 /* Styles de base et typographie */
 .documentation-section {
   margin-bottom: 40px;

@@ -37,6 +37,31 @@
   
   <!-- Script pour le menu de navigation -->
   <script src="/js/doc-menu.js" defer></script>
+  
+  <!-- Script pour le bouton de retour en haut de page -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const scrollToTopButton = document.getElementById('scroll-to-top');
+      
+      // Ajouter l'événement de clic
+      scrollToTopButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      });
+      
+      // Afficher/masquer le bouton en fonction du défilement
+      window.addEventListener('scroll', function() {
+        if (window.scrollY > 300) {
+          scrollToTopButton.style.opacity = '1';
+        } else {
+          scrollToTopButton.style.opacity = '0';
+        }
+      });
+    });
+  </script>
 </head>
 <body>
   <!-- Le menu latéral sera chargé par include-sidebar.js -->

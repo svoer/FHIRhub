@@ -16,10 +16,12 @@
   z-index: 9999;
   transition: all 0.3s ease;
   transform: translateY(390px);
+  overflow: hidden;
 }
 
 .doc-chatbot-widget.open {
   transform: translateY(0);
+  pointer-events: auto;
 }
 
 .doc-chatbot-header {
@@ -44,6 +46,13 @@
   font-size: 1.2rem;
   cursor: pointer;
   padding: 5px;
+  z-index: 10000;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
 }
 
 .doc-chatbot-body {
