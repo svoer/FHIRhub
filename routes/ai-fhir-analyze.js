@@ -339,10 +339,29 @@ router.post('/chat', async (req, res) => {
             
             // Enrichir le prompt système avec les connaissances pertinentes
             console.log("[KNOWLEDGE] Recherche d'informations pertinentes pour:", lastUserMessage.substring(0, 50), '...');
-            const enhancedSystemPrompt = await chatbotKnowledgeService.getEnhancedPrompt(
-                baseSystemMessage, 
-                lastUserMessage
-            );
+            
+            let enhancedSystemPrompt;
+            try {
+                // Déboguer le processus d'enrichissement du prompt
+                console.log('[DEBUG-KNOWLEDGE] Appel getEnhancedPrompt avec:', 
+                    'Prompt de base:', baseSystemMessage.substring(0, 50), '...',
+                    'Query utilisateur:', lastUserMessage.substring(0, 50), '...');
+                
+                const relevantInfo = await chatbotKnowledgeService.findRelevantKnowledge(lastUserMessage);
+                console.log('[DEBUG-KNOWLEDGE] Informations pertinentes trouvées:', 
+                    JSON.stringify(relevantInfo.slice(0, 2)));
+                
+                enhancedSystemPrompt = await chatbotKnowledgeService.getEnhancedPrompt(
+                    baseSystemMessage, 
+                    lastUserMessage
+                );
+                
+                console.log('[DEBUG-KNOWLEDGE] Prompt enrichi généré de taille:', 
+                    enhancedSystemPrompt.length, 'caractères');
+            } catch (error) {
+                console.error('[ERROR-KNOWLEDGE] Erreur lors de l\'enrichissement du prompt:', error);
+                enhancedSystemPrompt = baseSystemMessage;
+            }
             
             // Générer la réponse avec notre service d'IA unifié
             const response = await aiService.generateResponse({
@@ -539,6 +558,39 @@ function getEffectiveDate(observation) {
 console.log("[DEBUG] Routes AI enregistrées:");
 console.log("[DEBUG] - /api/ai/analyze-patient");
 console.log("[DEBUG] - /api/ai/chat");
+
+// Route de test pour le chatbot knowledge
+router.get('/test-knowledge', async (req, res) => {
+    try {
+        // Tentative de chargement de la base de connaissances
+        console.log('[DEBUG] Test de chargement de la base de connaissances...');
+        const knowledge = await chatbotKnowledgeService.loadKnowledgeBase();
+        
+        // Vérification si la base a été correctement chargée
+        if (knowledge && knowledge.faq && knowledge.faq.length > 0) {
+            console.log('[DEBUG] Base de connaissances chargée avec succès:', 
+                knowledge.faq.length, 'entrées FAQ');
+            return res.status(200).json({
+                success: true, 
+                message: `Base de connaissances chargée: ${knowledge.faq.length} FAQ, ${knowledge.features?.length || 0} fonctionnalités`,
+                path: require('path').join(__dirname, '../data/chatbot-knowledge.json')
+            });
+        } else {
+            console.log('[DEBUG] Base de connaissances vide ou non valide');
+            return res.status(500).json({
+                success: false,
+                message: 'Base de connaissances vide ou invalide'
+            });
+        }
+    } catch (error) {
+        console.error('[DEBUG] Erreur test base de connaissances:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur lors du test de la base de connaissances',
+            error: error.message
+        });
+    }
+});
 
 // Export du routeur
 module.exports = router;
