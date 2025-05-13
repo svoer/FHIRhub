@@ -851,19 +851,30 @@ async function loadAvailableModels(apiKey, endpoint, providerType, targetSelectI
         // Préparer la liste déroulante
         selectElement.innerHTML = '<option value="">Sélectionnez un modèle</option>';
         
-        // Trier les modèles par ordre alphabétique
-        models.sort();
+        // Trier les modèles par ordre alphabétique avec gestion des objets et des chaînes
+        models.sort((a, b) => {
+          const aStr = typeof a === 'object' ? (a.id || '') : String(a);
+          const bStr = typeof b === 'object' ? (b.id || '') : String(b);
+          return aStr.localeCompare(bStr);
+        });
         
         // Ajouter les modèles avec des styles améliorés
         models.forEach(model => {
           const option = document.createElement('option');
-          option.value = model;
-          option.textContent = model;
+          // Vérifier si c'est un objet ou une chaîne
+          const modelId = typeof model === 'object' ? model.id : model;
+          const modelName = typeof model === 'object' ? (model.name || model.id) : model;
+          
+          option.value = modelId;
+          option.textContent = modelName;
+          
+          // Convertir en chaîne pour être sûr
+          const modelStr = String(modelId).toLowerCase();
           
           // Ajouter des classes pour différents types de modèles
-          if (model.includes('large')) {
+          if (modelStr.includes('large')) {
             option.className = 'model-option-large';
-          } else if (model.includes('small')) {
+          } else if (modelStr.includes('small')) {
             option.className = 'model-option-small';
           }
           
@@ -921,6 +932,9 @@ async function loadAvailableModels(apiKey, endpoint, providerType, targetSelectI
   } catch (error) {
     console.error('Erreur lors du chargement des modèles:', error);
     const selectElement = document.getElementById(targetSelectId);
+    
+    // Afficher un message d'erreur plus informatif
+    showError(`Erreur lors du chargement: ${error.message}. Des modèles de secours ont été chargés pour vous permettre de continuer.`);
     
     // Même en cas d'erreur, fournir des modèles de démonstration pour assurer une expérience utilisateur fluide
     if (selectElement) {
