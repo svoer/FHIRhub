@@ -1,19 +1,24 @@
 /**
  * Service de gestion de la base de connaissances pour le chatbot
- * Ce module charge et recherche des informations dans la base de connaissances JSON
+ * Ce module utilise les API /api/ai-knowledge/* pour accéder aux informations de la base de connaissances
  */
 
-const fs = require('fs');
-const path = require('path');
-const { promisify } = require('util');
-const readFileAsync = promisify(fs.readFile);
+const axios = require('axios');
 
-// Cache pour éviter de relire les fichiers à chaque requête
+// Cache pour éviter de faire trop d'appels API
 let knowledgeCache = null;
 let lastLoadTime = null;
 
+// Fonction utilitaire pour construire les URLs d'API (gère les appels internes et externes)
+function getApiUrl(endpoint) {
+    // En production, les appels sont faits à l'interne directement
+    const isProduction = process.env.NODE_ENV === 'production';
+    const baseUrl = isProduction ? 'http://localhost:5000' : 'http://localhost:5000';
+    return `${baseUrl}${endpoint}`;
+}
+
 /**
- * Charge la base de connaissances depuis le fichier JSON
+ * Charge la base de connaissances depuis l'API
  * @returns {Promise<Object>} La base de connaissances
  */
 async function loadKnowledgeBase() {
@@ -26,108 +31,96 @@ async function loadKnowledgeBase() {
             return knowledgeCache;
         }
         
-        const knowledgePath = path.join(__dirname, '../data/chatbot-knowledge.json');
-        const data = await readFileAsync(knowledgePath, 'utf8');
+        // Utiliser l'API pour récupérer la base de connaissances complète
+        const response = await axios.get(getApiUrl('/api/ai-knowledge/full'));
         
-        knowledgeCache = JSON.parse(data);
-        lastLoadTime = new Date();
-        
-        console.log('[KNOWLEDGE] Base de connaissances chargée avec succès');
-        return knowledgeCache;
+        if (response.data) {
+            knowledgeCache = response.data;
+            lastLoadTime = new Date();
+            
+            console.log('[KNOWLEDGE] Base de connaissances chargée avec succès via API');
+            return knowledgeCache;
+        } else {
+            throw new Error('Réponse API vide ou invalide');
+        }
     } catch (error) {
-        console.error('[KNOWLEDGE] Erreur lors du chargement de la base de connaissances:', error);
+        console.error('[KNOWLEDGE] Erreur lors du chargement de la base de connaissances via API:', error.message);
         return { faq: [], features: [], commands: [] };
     }
 }
 
 /**
- * Recherche des informations pertinentes dans la base de connaissances
+ * Recherche des informations pertinentes dans la base de connaissances via l'API
  * @param {string} query - La question de l'utilisateur
  * @returns {Promise<Object>} Les informations pertinentes trouvées
  */
 async function findRelevantKnowledge(query) {
-    // Normaliser la requête pour la recherche
-    const normalizedQuery = query.toLowerCase().trim();
-    
-    // Charger la base de connaissances
-    const knowledge = await loadKnowledgeBase();
-    
-    // Fonction pour calculer un score de pertinence simple
-    function calculateRelevance(text, keywords) {
-        if (!text) return 0;
-        
-        const normalizedText = text.toLowerCase();
-        let score = 0;
-        
-        // Vérifier la présence de la requête complète
-        if (normalizedText.includes(normalizedQuery)) {
-            score += 3;
-        }
-        
-        // Vérifier la présence de mots-clés
-        keywords.forEach(keyword => {
-            if (normalizedText.includes(keyword)) {
-                score += 1;
-            }
-        });
-        
-        return score;
+    if (!query || query.trim() === '') {
+        console.log('[KNOWLEDGE] Requête vide, impossible de rechercher des informations');
+        return [];
     }
     
-    // Extraire les mots-clés (mots de plus de 3 caractères)
-    const keywords = normalizedQuery
-        .replace(/[^\w\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ-]/g, '') // Autorise les accents et tirets
-        .split(/\s+/)
-        .filter(word => word.length > 3);
-    
-    // Si pas assez de mots-clés, prendre tous les mots
-    const effectiveKeywords = keywords.length < 2 
-        ? normalizedQuery.split(/\s+/).filter(word => word.length > 2) 
-        : keywords;
-    
-    console.log('[KNOWLEDGE] Recherche avec mots-clés:', effectiveKeywords.join(', '));
-    
-    // Rechercher dans la FAQ
-    const relevantFaq = knowledge.faq
-        .map(item => ({
-            type: 'faq',
-            question: item.question,
-            answer: item.answer,
-            score: calculateRelevance(item.question, effectiveKeywords) * 2 + 
-                   calculateRelevance(item.answer, effectiveKeywords)
-        }))
-        .filter(item => item.score > 0);
-    
-    // Rechercher dans les fonctionnalités
-    const relevantFeatures = knowledge.features
-        .map(item => ({
-            type: 'feature',
-            name: item.name,
-            description: item.description,
-            score: calculateRelevance(item.name, effectiveKeywords) * 2 + 
-                   calculateRelevance(item.description, effectiveKeywords)
-        }))
-        .filter(item => item.score > 0);
-    
-    // Rechercher dans les commandes
-    const relevantCommands = knowledge.commands
-        .map(item => ({
-            type: 'command',
-            name: item.name,
-            description: item.description,
-            score: calculateRelevance(item.name, effectiveKeywords) * 2 + 
-                   calculateRelevance(item.description, effectiveKeywords)
-        }))
-        .filter(item => item.score > 0);
-    
-    // Fusionner et trier par score
-    const allRelevant = [...relevantFaq, ...relevantFeatures, ...relevantCommands]
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 3);  // Prendre les 3 résultats les plus pertinents
-    
-    console.log(`[KNOWLEDGE] ${allRelevant.length} informations pertinentes trouvées pour la requête: "${query.substring(0, 50)}..."`);
-    
-    return allRelevant;
+    try {
+        // Utiliser l'API de recherche pour trouver des informations pertinentes
+        console.log(`[KNOWLEDGE] Recherche d'informations pour la requête: "${query.substring(0, 50)}..."`);
+        
+        const response = await axios.post(getApiUrl('/api/ai-knowledge/search'), { 
+            query: query.trim() 
+        });
+        
+        if (response.data && response.data.success && response.data.results) {
+            const results = response.data.results;
+            console.log(`[KNOWLEDGE] ${results.length} informations pertinentes trouvées via API`);
+            return results;
+        } else {
+            console.log('[KNOWLEDGE] Aucun résultat trouvé via API ou format de réponse invalide');
+            return [];
+        }
+    } catch (error) {
+        console.error('[KNOWLEDGE] Erreur lors de la recherche via API:', error.message);
+        
+        // En cas d'échec de l'API, tenter de rechercher manuellement dans le cache si disponible
+        if (knowledgeCache) {
+            console.log('[KNOWLEDGE] Tentative de recherche dans le cache local (fallback)');
+            
+            // Version simplifiée sans le calcul de score sophistiqué
+            const normalizedQuery = query.toLowerCase().trim();
+            const relevantItems = [];
+            
+            // Recherche dans la FAQ
+            if (knowledgeCache.faq) {
+                knowledgeCache.faq.forEach(item => {
+                    if (item.question && item.question.toLowerCase().includes(normalizedQuery)) {
+                        relevantItems.push({
+                            type: 'faq',
+                            question: item.question,
+                            answer: item.answer,
+                            score: 5
+                        });
+                    }
+                });
+            }
+            
+            // Recherche dans les fonctionnalités
+            if (knowledgeCache.features) {
+                knowledgeCache.features.forEach(item => {
+                    if ((item.name && item.name.toLowerCase().includes(normalizedQuery)) ||
+                        (item.description && item.description.toLowerCase().includes(normalizedQuery))) {
+                        relevantItems.push({
+                            type: 'feature',
+                            name: item.name,
+                            description: item.description,
+                            score: 3
+                        });
+                    }
+                });
+            }
+            
+            return relevantItems.slice(0, 3);
+        }
+        
+        return [];
+    }
 }
 
 /**
