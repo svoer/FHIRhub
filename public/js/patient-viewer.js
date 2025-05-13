@@ -1438,7 +1438,20 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        fetch(`${serverUrl}/Organization?_has:Patient:organization:_id=${patientId}&_count=100`)
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let url;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            url = `/api/fhir-proxy/hapi/Organization?_has:Patient:organization:_id=${patientId}&_count=100`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            url = `${serverUrl}/Organization?_has:Patient:organization:_id=${patientId}&_count=100`;
+        }
+        
+        console.log(`Chargement des organisations depuis: ${url}`);
+        
+        // Exécuter la requête FHIR pour récupérer les organisations
+        fetch(url)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération des organisations: ${response.status}`);
@@ -1515,7 +1528,20 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        fetch(`${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`)
+        // Déterminer si nous utilisons le proxy ou l'URL directe
+        let url;
+        if (serverUrl.includes('hapi.fhir.org')) {
+            // Utiliser le proxy pour contourner les limitations CORS
+            url = `/api/fhir-proxy/hapi/RelatedPerson?patient=${patientId}&_count=100`;
+        } else {
+            // URL directe pour les serveurs locaux (déjà sur le même domaine)
+            url = `${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`;
+        }
+        
+        console.log(`Chargement des personnes liées depuis: ${url}`);
+        
+        // Exécuter la requête FHIR pour récupérer les personnes liées
+        fetch(url)
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Erreur de récupération des personnes liées: ${response.status}`);
