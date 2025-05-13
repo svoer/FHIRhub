@@ -2897,6 +2897,72 @@ document.addEventListener('DOMContentLoaded', function() {
         }).join(', ');
     }
     
+    // Fonction pour mettre à jour l'onglet des praticiens
+    function updatePractitionersTab(practitioners) {
+        const container = document.querySelector('#practitionersContent');
+        if (!container) {
+            console.error("Container pour les praticiens non trouvé");
+            return;
+        }
+        
+        const loadingSection = container.querySelector('.loading-resources');
+        const noResourcesSection = container.querySelector('.no-resources');
+        const resourcesList = container.querySelector('.resources-list');
+        
+        if (!practitioners || practitioners.length === 0) {
+            // Aucun praticien à afficher
+            if (loadingSection) loadingSection.style.display = 'none';
+            if (noResourcesSection) noResourcesSection.style.display = 'block';
+            if (resourcesList) resourcesList.style.display = 'none';
+            return;
+        }
+        
+        // Des praticiens sont disponibles, les afficher
+        if (loadingSection) loadingSection.style.display = 'none';
+        if (noResourcesSection) noResourcesSection.style.display = 'none';
+        if (resourcesList) {
+            resourcesList.style.display = 'block';
+            resourcesList.innerHTML = '';
+            
+            // Créer une liste de praticiens
+            const practitionersList = document.createElement('div');
+            practitionersList.style.display = 'grid';
+            practitionersList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+            practitionersList.style.gap = '15px';
+            
+            practitioners.forEach(practitioner => {
+                const practitionerElement = document.createElement('div');
+                practitionerElement.style.backgroundColor = '#f9f9f9';
+                practitionerElement.style.borderRadius = '8px';
+                practitionerElement.style.padding = '15px';
+                practitionerElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                practitionerElement.style.borderLeft = '3px solid #e83e28';
+                
+                const name = formatPractitionerName(practitioner.name);
+                
+                // Contenu HTML du praticien avec icône cohérente
+                practitionerElement.innerHTML = `
+                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
+                    </h4>
+                    <div style="margin-top: 10px; color: #555;">
+                        <p><strong>Identifiant:</strong> ${practitioner.id}</p>
+                        ${practitioner.qualification ? 
+                          `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
+                          : ''}
+                        ${practitioner.telecom ? 
+                          `<p><strong>Contact:</strong> ${formatTelecom(practitioner.telecom)}</p>` 
+                          : ''}
+                    </div>
+                `;
+                
+                practitionersList.appendChild(practitionerElement);
+            });
+            
+            resourcesList.appendChild(practitionersList);
+        }
+    }
+    
     function formatTelecom(telecom) {
         if (!telecom || telecom.length === 0) return 'Non spécifié';
         
