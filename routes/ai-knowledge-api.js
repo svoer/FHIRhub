@@ -14,7 +14,7 @@ const fs = require('fs');
  * @swagger
  * /api/ai-knowledge/search:
  *   post:
- *     summary: Recherche des informations dans la base de connaissances
+ *     summary: Recherche des informations dans la base de connaissances (POST)
  *     description: Permet à l'IA de rechercher des informations pertinentes dans la base de connaissances
  *     tags:
  *       - IA Knowledge
@@ -37,7 +37,28 @@ const fs = require('fs');
  *         description: Requête invalide
  *       500:
  *         description: Erreur serveur
+ *   get:
+ *     summary: Recherche des informations dans la base de connaissances (GET)
+ *     description: Permet à l'IA de rechercher des informations pertinentes dans la base de connaissances
+ *     tags:
+ *       - IA Knowledge
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: La requête de recherche
+ *     responses:
+ *       200:
+ *         description: Résultats de recherche
+ *       400:
+ *         description: Requête invalide
+ *       500:
+ *         description: Erreur serveur
  */
+
+// POST endpoint pour la recherche (compatible avec JSON body)
 router.post('/search', async (req, res) => {
     try {
         const { query } = req.body;
@@ -57,7 +78,38 @@ router.post('/search', async (req, res) => {
             results: relevantKnowledge
         });
     } catch (error) {
-        console.error('Erreur lors de la recherche dans la base de connaissances:', error);
+        console.error('Erreur lors de la recherche dans la base de connaissances (POST):', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la recherche dans la base de connaissances',
+            error: error.message
+        });
+    }
+});
+
+// GET endpoint pour la recherche (compatible avec paramètres d'URL)
+router.get('/search', async (req, res) => {
+    try {
+        const { query } = req.query;
+        
+        if (!query) {
+            return res.status(400).json({
+                success: false,
+                message: 'Le paramètre "query" est requis'
+            });
+        }
+        
+        console.log(`[AI-KNOWLEDGE] Recherche GET avec query: "${query.substring(0, 50)}..."`);
+        
+        // Utiliser le service existant pour rechercher des connaissances pertinentes
+        const relevantKnowledge = await chatbotKnowledgeService.findRelevantKnowledge(query);
+        
+        return res.status(200).json({
+            success: true,
+            results: relevantKnowledge
+        });
+    } catch (error) {
+        console.error('Erreur lors de la recherche dans la base de connaissances (GET):', error);
         return res.status(500).json({
             success: false,
             message: 'Erreur lors de la recherche dans la base de connaissances',
