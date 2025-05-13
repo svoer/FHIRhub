@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('patientContainer').style.display = 'block';
             
             // Afficher un status de chargement
-            showStatus('Chargement de toutes les données médicales du patient...', 'info');
+            showStatus('Récupération du dossier médical complet...', 'info');
             
             // Tenter de charger toutes les ressources en une seule requête avec $everything
             // Déterminer si nous utilisons le proxy ou l'URL directe
@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .then(bundle => {
                     console.log("Bundle complet récupéré via $everything:", bundle);
-                    showStatus('Chargement complet des données réussi via $everything', 'success');
+                    showStatus('Dossier médical complet récupéré avec succès', 'success');
                     
                     // Traiter le bundle et extraire les différentes ressources par type
                     if (bundle.entry && bundle.entry.length > 0) {
@@ -441,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             // Fonction pour charger les ressources de façon traditionnelle
             function loadResourcesTraditionnally() {
-                showStatus('Chargement individuel des ressources avec délai...', 'info');
+                showStatus('Récupération progressive du dossier médical...', 'info');
                 
                 // Ajouter un délai entre les requêtes pour éviter les erreurs 429 (Too Many Requests)
                 loadPatientConditions(patientId, server);
