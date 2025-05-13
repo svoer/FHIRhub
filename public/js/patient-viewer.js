@@ -3226,7 +3226,7 @@ document.addEventListener('DOMContentLoaded', function() {
         aiAnalysisDiv.innerHTML = `
             <div style="text-align: center; padding: 30px;">
                 <div style="display: inline-block; width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #e83e28; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <p style="margin-top: 15px; color: #666;">Analyse IA en cours...</p>
+                <p style="margin-top: 15px; color: #666;">Analyse IA en cours... (peut prendre jusqu'à 3 minutes)</p>
             </div>
             <style>
                 @keyframes spin {

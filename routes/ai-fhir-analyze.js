@@ -93,11 +93,11 @@ router.post('/analyze-patient', async (req, res) => {
     // Logs pour debug
     console.log('Route /api/ai/analyze-patient accessible sans authentification - BYPASS_AUTH:', process.env.BYPASS_AUTH);
     
-    // Ajouter un timeout global pour la route entière (4 minutes)
+    // Ajouter un timeout global pour la route entière (5 minutes)
     // Ceci permet de s'assurer que la requête répond toujours, même si le service IA est bloqué
-    const ROUTE_TIMEOUT = 240000; // 240 secondes = 4 minutes
+    const ROUTE_TIMEOUT = 300000; // 300 secondes = 5 minutes
     let timeoutHandle = setTimeout(() => {
-        console.warn('Timeout global dépassé pour l\'analyse du patient après', ROUTE_TIMEOUT/1000, 'secondes');
+        console.warn('Timeout global dépassé pour l\'analyse du patient après', ROUTE_TIMEOUT/1000, 'secondes (5 minutes)');
         if (!res.headersSent) {
             res.status(503).json({
                 success: false,
@@ -225,7 +225,7 @@ Le rapport doit obligatoirement intégrer et analyser toutes les sections de don
             console.log("[AI-Analyze] Génération de l'analyse avec le service d'IA unifié");
             analysis = await aiService.generateResponse({
                 prompt,
-                maxTokens: 3000,
+                maxTokens: 4000, // Augmenté pour permettre une analyse plus complète du bundle
                 temperature: 0.3,
                 retryCount: 3
             });
