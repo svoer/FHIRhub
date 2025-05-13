@@ -263,6 +263,73 @@ function getAIProviderById(id) {
     });
 }
 
+/**
+ * Récupère un fournisseur d'IA par son nom depuis la base de données
+ * @param {string} providerName - Nom du fournisseur à récupérer
+ * @returns {Promise<Object|null>} Le fournisseur d'IA correspondant ou null s'il n'existe pas
+ */
+function getAIProviderByName(providerName) {
+    return new Promise((resolve, reject) => {
+        // Vérifier quelle structure de table est utilisée
+        db.all(`PRAGMA table_info(ai_providers)`, (err, rows) => {
+            if (err) {
+                console.error("Erreur lors de la vérification de la structure de la table:", err);
+                reject(err);
+                return;
+            }
+            
+            // Extraire tous les noms de colonnes
+            const columnNames = rows.map(row => row.name);
+            
+            // Construire une requête qui fonctionne avec les deux structures possibles
+            let query;
+            let nameColumn;
+            
+            // Déterminer quelle structure de table est utilisée
+            if (columnNames.includes('name')) {
+                nameColumn = 'name';
+                query = `SELECT * FROM ai_providers WHERE name = ?`;
+            } else if (columnNames.includes('provider_name')) {
+                nameColumn = 'provider_name';
+                query = `SELECT * FROM ai_providers WHERE provider_name = ?`;
+            } else {
+                console.error("Structure de table non supportée - impossible de trouver la colonne de nom");
+                resolve(null);
+                return;
+            }
+            
+            console.log(`[AI-PROVIDER] Recherche du fournisseur par nom: ${providerName} (colonne: ${nameColumn})`);
+            
+            db.get(query, [providerName], (err, row) => {
+                if (err) {
+                    console.error("Erreur lors de la récupération du fournisseur par nom:", err);
+                    reject(err);
+                } else {
+                    if (row) {
+                        // Normaliser les noms de colonnes pour assurer la compatibilité
+                        const provider = {
+                            id: row.id,
+                            provider_name: row.name || row.provider_name,
+                            provider_type: row.provider_type,
+                            api_key: row.api_key,
+                            endpoint: row.api_url || row.endpoint,
+                            model_id: row.model_name || row.models,
+                            enabled: row.is_active || row.enabled,
+                            created_at: row.created_at,
+                            updated_at: row.updated_at
+                        };
+                        console.log(`[AI-PROVIDER] Fournisseur trouvé: ${provider.provider_name} (${provider.provider_type})`);
+                        resolve(provider);
+                    } else {
+                        console.log(`[AI-PROVIDER] Aucun fournisseur trouvé avec le nom: ${providerName}`);
+                        resolve(null);
+                    }
+                }
+            });
+        });
+    });
+}
+
 // Variable pour stocker le fournisseur actif initial lors d'un remplacement temporaire
 let originalActiveProvider = null;
 let tempProviderActive = false;
