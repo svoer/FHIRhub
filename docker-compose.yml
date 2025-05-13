@@ -19,11 +19,31 @@ services:
       - ./data/fhirhub/logs:/app/logs             # Logs d'application
       - ./data/fhirhub/temp:/app/temp             # Fichiers temporaires
     environment:
+      # Configuration de base
       - NODE_ENV=production
       - PORT=5000
       - HAPI_FHIR_URL=http://hapi-fhir:8080/fhir  # URL du serveur HAPI FHIR (résolution DNS interne par Docker)
+      
+      # Optimisations de performance Node.js
+      - NODE_OPTIONS=--max-old-space-size=512 --max-http-header-size=16384 --no-warnings
+      
+      # Gestion du cache interne
+      - CACHE_MAX_SIZE=1000                # Nombre maximal d'entrées dans le cache
+      - CACHE_TTL=3600                     # Durée de vie des entrées du cache en secondes
+      - CACHE_CHECK_PERIOD=600             # Période de vérification du cache en secondes
+      
+      # Configuration pour la communication avec HAPI FHIR
+      - FHIR_REQUEST_TIMEOUT=30000         # Timeout pour les requêtes FHIR en ms
+      - FHIR_MAX_RETRY_ATTEMPTS=3          # Nombre maximum de tentatives pour les requêtes FHIR
+      - FHIR_RETRY_DELAY=1000              # Délai entre les tentatives en ms
     depends_on:
       - hapi-fhir  # S'assure que le service HAPI FHIR démarre avant FHIRHub
+    deploy:
+      resources:
+        limits:
+          memory: 768M  # Limite de mémoire pour le conteneur
+        reservations:
+          memory: 512M  # Réservation de mémoire minimale
     networks:
       - fhir-network
     healthcheck:
@@ -44,12 +64,31 @@ services:
       # Volume pour la persistance des données H2 (base de données par défaut de HAPI FHIR)
       - ./data/hapi-fhir:/data/hapi
     environment:
+      # Configuration FHIR
       - hapi.fhir.default_encoding=json           # Format par défaut des réponses
       - hapi.fhir.fhir_version=R4                 # Version FHIR utilisée (R4 = 4.0.1)
-      - spring.datasource.url=jdbc:h2:/data/hapi/database/h2.db  # Chemin de la base de données H2
       - hapi.fhir.allow_external_references=true  # Autorise les références externes
       - hapi.fhir.allow_multiple_delete=true      # Autorise les suppressions multiples
       - hapi.fhir.server_address=http://localhost:8080/fhir  # URL serveur pour les liens de pagination
+      - hapi.fhir.validation.enabled=false        # Désactiver la validation stricte pour améliorer la performance
+      - hapi.fhir.expunge_enabled=true            # Activer les opérations d'expunge
+      - hapi.fhir.advanced_lucene_indexing=true   # Indexation Lucene avancée pour améliorer la performance
+      
+      # Configuration de la base de données
+      - spring.datasource.url=jdbc:h2:/data/hapi/database/h2.db  # Chemin de la base de données H2
+      - spring.datasource.username=sa
+      - spring.datasource.password=
+      - spring.datasource.driverClassName=org.h2.Driver
+      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+      
+      # Configuration de la JVM et des performances
+      - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxRAMPercentage=75.0
+    deploy:
+      resources:
+        limits:
+          memory: 768M  # Limite de mémoire pour le conteneur
+        reservations:
+          memory: 512M  # Réservation de mémoire minimale
     networks:
       - fhir-network
     healthcheck:
