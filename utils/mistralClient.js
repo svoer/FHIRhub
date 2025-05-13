@@ -28,7 +28,7 @@ async function initializeClient() {
       apiKey: activeProvider.api_key,
       // Configuration améliorée pour gérer les problèmes de timeout
       maxRetries: 3,
-      timeout: 120000 // Définir un timeout de 120 secondes (2 minutes)
+      timeout: 180000 // Définir un timeout de 180 secondes (3 minutes)
     });
     
     logger.info('Client Mistral initialisé avec succès avec la clé API du fournisseur actif');
@@ -109,8 +109,9 @@ async function generateResponse(prompt, {
       logger.info(`Tentative d'appel à l'API Mistral (${attempt+1}/${retryCount+1})`);
       
       // Ajouter un timeout explicite en utilisant Promise.race
+      // Augmenter à 180 secondes pour laisser plus de temps à l'analyse des grands bundles FHIR
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout dépassé pour l\'appel à l\'API Mistral')), 60000);
+        setTimeout(() => reject(new Error('Timeout dépassé pour l\'appel à l\'API Mistral')), 180000);
       });
       
       // Lancer l'appel avec un délai variable selon le nombre de tentatives

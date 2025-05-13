@@ -256,9 +256,10 @@ Le rapport doit obligatoirement intégrer et analyser toutes les sections de don
             console.log("[AI-Analyze] Génération de l'analyse avec le service d'IA unifié");
             analysis = await aiService.generateResponse({
                 prompt,
-                maxTokens: 4000, // Augmenté pour permettre une analyse plus complète du bundle
+                maxTokens: 5000, // Augmenté pour permettre une analyse plus complète du bundle
                 temperature: 0.3,
-                retryCount: 3
+                retryCount: 3,
+                systemPrompt: 'Tu es un expert médical qui analyse des données FHIR pour générer un rapport clinique complet et précis.'
             });
             
             console.log(`[AI-Analyze] Analyse générée avec succès via ${aiProvider.name || aiProvider.provider_name}`);
