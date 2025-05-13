@@ -441,18 +441,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             // Fonction pour charger les ressources de façon traditionnelle
             function loadResourcesTraditionnally() {
-                showStatus('Chargement individuel des ressources...', 'info');
-                // Charger toutes les ressources associées au patient individuellement
+                showStatus('Chargement individuel des ressources avec délai...', 'info');
+                
+                // Ajouter un délai entre les requêtes pour éviter les erreurs 429 (Too Many Requests)
                 loadPatientConditions(patientId, server);
-                loadPatientObservations(patientId, server);
-                loadPatientMedications(patientId, server);
-                loadPatientEncounters(patientId, server);
-                loadPatientPractitioners(patientId, server);
-                loadPatientOrganizations(patientId, server);
-                loadPatientRelatedPersons(patientId, server);
-                loadPatientCoverage(patientId, server);
-                generateTimeline(patientId, server);
-                loadPatientBundle(patientId, server);
+                
+                setTimeout(() => {
+                    loadPatientObservations(patientId, server);
+                    
+                    setTimeout(() => {
+                        loadPatientMedications(patientId, server);
+                        
+                        setTimeout(() => {
+                            loadPatientEncounters(patientId, server);
+                            
+                            setTimeout(() => {
+                                loadPatientPractitioners(patientId, server);
+                                
+                                setTimeout(() => {
+                                    loadPatientOrganizations(patientId, server);
+                                    
+                                    setTimeout(() => {
+                                        loadPatientRelatedPersons(patientId, server);
+                                        
+                                        setTimeout(() => {
+                                            loadPatientCoverage(patientId, server);
+                                            
+                                            setTimeout(() => {
+                                                generateTimeline(patientId, server);
+                                                
+                                                setTimeout(() => {
+                                                    loadPatientBundle(patientId, server);
+                                                }, 500);
+                                            }, 500);
+                                        }, 500);
+                                    }, 500);
+                                }, 500);
+                            }, 500);
+                        }, 500);
+                    }, 500);
+                }, 500);
             }
             
             // Fonction pour générer une chronologie à partir d'un bundle
