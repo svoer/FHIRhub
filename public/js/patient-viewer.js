@@ -3253,7 +3253,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/ai/analyze-patient');
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 90000; // 90 secondes de timeout (augmenté pour permettre l'analyse complète)
+        xhr.timeout = 180000; // 180 secondes de timeout (3 minutes, augmenté pour permettre l'analyse complète du bundle)
         
         xhr.onload = function() {
             if (xhr.status >= 200 && xhr.status < 300) {
@@ -3283,12 +3283,19 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // Créer un objet complet avec toutes les données du patient de tous les onglets
+            // Inclure aussi le JSON complet pour l'analyse exhaustive
             const completePatientData = {
                 patient: patientData,
                 conditions: conditionsData,
                 observations: observationsData,
                 medications: medicationsData,
-                encounters: encountersData
+                encounters: encountersData,
+                practitioners: practitionersData,
+                organizations: organizationsData,
+                relatedPersons: relatedPersonsData,
+                coverages: coveragesData,
+                bundle: bundleData,
+                jsonContent: patientData // Inclure aussi les données JSON brutes pour l'analyse complète
             };
             
             console.log("Envoi de l'analyse IA avec données complètes:", 
@@ -3296,7 +3303,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 `Conditions: ${conditionsData.length}, ` +
                 `Observations: ${observationsData.length}, ` + 
                 `Médicaments: ${medicationsData.length}, ` +
-                `Consultations: ${encountersData.length}`
+                `Consultations: ${encountersData.length}, ` +
+                `Praticiens: ${practitionersData?.length || 0}, ` +
+                `Organisations: ${organizationsData?.length || 0}, ` +
+                `Personnes liées: ${relatedPersonsData?.length || 0}, ` +
+                `Couvertures: ${coveragesData?.length || 0}, ` +
+                `Bundle: ${bundleData ? 'OK' : 'Manquant'}`
             );
             
             xhr.send(JSON.stringify({
