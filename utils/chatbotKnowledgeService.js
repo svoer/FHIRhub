@@ -10,15 +10,16 @@ let knowledgeCache = null;
 let lastLoadTime = null;
 
 // Fonction utilitaire pour construire les URLs d'API (gère les appels internes et externes)
+// Désactivée pour éviter les boucles infinies - nous utilisons maintenant les données du cache local directement
 function getApiUrl(endpoint) {
-    // En production, les appels sont faits à l'interne directement
-    const isProduction = process.env.NODE_ENV === 'production';
-    const baseUrl = isProduction ? 'http://localhost:5000' : 'http://localhost:5000';
-    return `${baseUrl}${endpoint}`;
+    return endpoint; // Juste pour référence, cette fonction n'est plus utilisée
 }
 
+const fs = require('fs').promises;
+const path = require('path');
+
 /**
- * Charge la base de connaissances depuis l'API
+ * Charge la base de connaissances directement depuis le fichier JSON
  * @returns {Promise<Object>} La base de connaissances
  */
 async function loadKnowledgeBase() {
@@ -31,21 +32,29 @@ async function loadKnowledgeBase() {
             return knowledgeCache;
         }
         
-        // Utiliser l'API pour récupérer la base de connaissances complète
-        const response = await axios.get(getApiUrl('/api/ai-knowledge/full'));
+        // Charger le fichier directement depuis le système de fichiers
+        const filePath = path.resolve('./data/chatbot-knowledge.json');
+        const fileContent = await fs.readFile(filePath, 'utf8');
+        const data = JSON.parse(fileContent);
         
-        if (response.data) {
-            knowledgeCache = response.data;
+        if (data) {
+            knowledgeCache = data;
             lastLoadTime = new Date();
             
-            console.log('[KNOWLEDGE] Base de connaissances chargée avec succès via API');
+            console.log('[KNOWLEDGE] Base de connaissances chargée avec succès depuis le fichier');
             return knowledgeCache;
         } else {
-            throw new Error('Réponse API vide ou invalide');
+            throw new Error('Fichier de connaissances vide ou invalide');
         }
     } catch (error) {
-        console.error('[KNOWLEDGE] Erreur lors du chargement de la base de connaissances via API:', error.message);
-        return { faq: [], features: [], commands: [] };
+        console.error('[KNOWLEDGE] Erreur lors du chargement de la base de connaissances:', error.message);
+        
+        // En cas d'erreur, retourner une structure vide mais valide
+        return { 
+            faq: [], 
+            features: [], 
+            commands: [] 
+        };
     }
 }
 
