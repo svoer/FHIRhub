@@ -304,7 +304,7 @@ Le rapport doit obligatoirement intégrer et analyser toutes les sections de don
 // Route pour le chatbot - désactive complètement l'authentification pour cette route
 router.post('/chat', async (req, res) => {
     // Log pour debug
-    console.log('Route /api/ai/chat accessible sans authentification - BYPASS_AUTH:', process.env.BYPASS_AUTH);
+    console.log('Route /api/ai/chat accessible sans authentification');
     
     try {
         const { messages, max_tokens = 1000, provider = null } = req.body;
@@ -323,7 +323,10 @@ router.post('/chat', async (req, res) => {
         }
         
         // Extraire le message système et l'historique des messages
-        const baseSystemMessage = messages.find(msg => msg.role === 'system')?.content || '';
+        const baseSystemPrompt = `Tu es un assistant médical intelligent pour FHIRHub, un système de conversion HL7 vers FHIR et de gestion des données médicales. 
+Tu réponds aux questions sur l'utilisation du système, ses fonctionnalités et sur l'interopérabilité des systèmes de santé.
+Utilise un ton professionnel adapté au domaine médical.`;
+        
         const userMessages = messages.filter(msg => msg.role !== 'system');
         
         // Récupérer le dernier message de l'utilisateur pour enrichir le prompt
@@ -339,37 +342,57 @@ router.post('/chat', async (req, res) => {
         }).join('\n\n');
         
         try {
-            // Obtenir le fournisseur actif pour le logging
+            // Obtenir le fournisseur actif
             const aiProvider = await aiProviderService.getActiveAIProvider();
-            const providerName = aiProvider ? aiProvider.provider_name : 'inconnu';
+            if (!aiProvider) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Aucun fournisseur d\'IA n\'est actuellement configuré comme actif'
+                });
+            }
+            const providerName = aiProvider.name;
             
-            // Enrichir le prompt système avec les connaissances pertinentes
-            console.log("[KNOWLEDGE] Recherche d'informations pertinentes pour:", lastUserMessage.substring(0, 50), '...');
+            // Rechercher et ajouter des informations pertinentes depuis la base de connaissances
+            console.log("[KNOWLEDGE] Recherche locale d'informations pour:", lastUserMessage.substring(0, 50), '...');
             
-            let enhancedSystemPrompt;
+            let enhancedSystemPrompt = baseSystemPrompt;
             try {
-                // Déboguer le processus d'enrichissement du prompt
-                console.log('[DEBUG-KNOWLEDGE] Appel getEnhancedPrompt avec:', 
-                    'Prompt de base:', baseSystemMessage.substring(0, 50), '...',
-                    'Query utilisateur:', lastUserMessage.substring(0, 50), '...');
+                // Chargement préalable de la base de connaissances
+                await chatbotKnowledgeService.loadKnowledgeBase();
                 
+                // Recherche des informations pertinentes
                 const relevantInfo = await chatbotKnowledgeService.findRelevantKnowledge(lastUserMessage);
-                console.log('[DEBUG-KNOWLEDGE] Informations pertinentes trouvées:', 
-                    JSON.stringify(relevantInfo.slice(0, 2)));
                 
-                enhancedSystemPrompt = await chatbotKnowledgeService.getEnhancedPrompt(
-                    baseSystemMessage, 
-                    lastUserMessage
-                );
+                if (relevantInfo && relevantInfo.length > 0) {
+                    console.log(`[DEBUG-KNOWLEDGE] ${relevantInfo.length} informations pertinentes trouvées`);
+                    
+                    // Formater les informations pour le prompt
+                    const knowledgeText = chatbotKnowledgeService.formatKnowledgeForPrompt(relevantInfo);
+                    
+                    // Enrichir le prompt système
+                    enhancedSystemPrompt = `${baseSystemPrompt}
+
+${knowledgeText}
+
+INSTRUCTIONS IMPORTANTES:
+1. Réponds UNIQUEMENT en te basant sur les informations fournies ci-dessus.
+2. Si la question n'est pas couverte par ces informations, dis clairement "Je n'ai pas suffisamment d'informations dans ma base de connaissances pour répondre à cette question avec précision. Voici ce que je peux dire:" puis fournis une réponse générale sur le sujet.
+3. NE JAMAIS inventer des fonctionnalités, des processus ou des détails techniques qui ne sont pas explicitement mentionnés dans les informations fournies.
+4. Si tu n'es pas sûr, indique les limites de ta connaissance.`;
+                } else {
+                    console.log('[DEBUG-KNOWLEDGE] Aucune information pertinente trouvée');
+                }
                 
                 console.log('[DEBUG-KNOWLEDGE] Prompt enrichi généré de taille:', 
                     enhancedSystemPrompt.length, 'caractères');
             } catch (error) {
                 console.error('[ERROR-KNOWLEDGE] Erreur lors de l\'enrichissement du prompt:', error);
-                enhancedSystemPrompt = baseSystemMessage;
+                // Continuer avec le prompt de base en cas d'erreur
             }
             
-            // Générer la réponse avec notre service d'IA unifié
+            // Générer la réponse avec le service d'IA
+            console.log(`[DEBUG-CHAT] Envoi de la requête au fournisseur: ${providerName}`);
+            
             const response = await aiService.generateResponse({
                 prompt: formattedPrompt,
                 systemPrompt: enhancedSystemPrompt,
@@ -378,8 +401,8 @@ router.post('/chat', async (req, res) => {
                 providerName: provider // Utiliser le fournisseur spécifié dans la requête s'il existe
             });
             
-            // Journaliser la requête et la réponse (sans les données sensibles)
-            console.log(`[CHATBOT] Interaction avec ${providerName}: ${messages.length} messages traités`);
+            // Journaliser le succès
+            console.log(`[CHATBOT] Réponse générée avec succès par ${providerName}`);
             
             // Répondre avec la réponse générée
             return res.status(200).json({

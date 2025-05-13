@@ -50,7 +50,7 @@ async function loadKnowledgeBase() {
 }
 
 /**
- * Recherche des informations pertinentes dans la base de connaissances via l'API
+ * Recherche des informations pertinentes dans la base de connaissances 
  * @param {string} query - La question de l'utilisateur
  * @returns {Promise<Object>} Les informations pertinentes trouvées
  */
@@ -60,65 +60,92 @@ async function findRelevantKnowledge(query) {
         return [];
     }
     
+    // Normaliser la requête pour la recherche
+    const normalizedQuery = query.toLowerCase().trim();
+    
     try {
-        // Utiliser l'API de recherche pour trouver des informations pertinentes
-        console.log(`[KNOWLEDGE] Recherche d'informations pour la requête: "${query.substring(0, 50)}..."`);
+        // S'assurer que le cache est chargé
+        const knowledge = await loadKnowledgeBase();
         
-        const response = await axios.post(getApiUrl('/api/ai-knowledge/search'), { 
-            query: query.trim() 
-        });
-        
-        if (response.data && response.data.success && response.data.results) {
-            const results = response.data.results;
-            console.log(`[KNOWLEDGE] ${results.length} informations pertinentes trouvées via API`);
-            return results;
-        } else {
-            console.log('[KNOWLEDGE] Aucun résultat trouvé via API ou format de réponse invalide');
+        // Si nous n'avons pas pu charger la base de connaissances
+        if (!knowledge || (!knowledge.faq && !knowledge.features && !knowledge.commands)) {
+            console.log('[KNOWLEDGE] Base de connaissances non disponible');
             return [];
         }
-    } catch (error) {
-        console.error('[KNOWLEDGE] Erreur lors de la recherche via API:', error.message);
         
-        // En cas d'échec de l'API, tenter de rechercher manuellement dans le cache si disponible
-        if (knowledgeCache) {
-            console.log('[KNOWLEDGE] Tentative de recherche dans le cache local (fallback)');
+        console.log(`[KNOWLEDGE] Recherche locale d'informations pour: "${query.substring(0, 50)}..."`);
+        
+        // Fonction pour calculer un score de pertinence simple
+        function calculateRelevance(text, queryText) {
+            if (!text) return 0;
             
-            // Version simplifiée sans le calcul de score sophistiqué
-            const normalizedQuery = query.toLowerCase().trim();
-            const relevantItems = [];
+            const normalizedText = text.toLowerCase();
+            let score = 0;
             
-            // Recherche dans la FAQ
-            if (knowledgeCache.faq) {
-                knowledgeCache.faq.forEach(item => {
-                    if (item.question && item.question.toLowerCase().includes(normalizedQuery)) {
-                        relevantItems.push({
-                            type: 'faq',
-                            question: item.question,
-                            answer: item.answer,
-                            score: 5
-                        });
-                    }
-                });
+            // Vérifier la présence de la requête complète
+            if (normalizedText.includes(normalizedQuery)) {
+                score += 3;
             }
             
-            // Recherche dans les fonctionnalités
-            if (knowledgeCache.features) {
-                knowledgeCache.features.forEach(item => {
-                    if ((item.name && item.name.toLowerCase().includes(normalizedQuery)) ||
-                        (item.description && item.description.toLowerCase().includes(normalizedQuery))) {
-                        relevantItems.push({
-                            type: 'feature',
-                            name: item.name,
-                            description: item.description,
-                            score: 3
-                        });
-                    }
-                });
-            }
+            // Extraire les mots-clés (mots de plus de 3 caractères)
+            const keywords = queryText
+                .replace(/[^\w\sàáâãäåçèéêëìíîïðòóôõöùúûüýÿ-]/g, '') // Autorise les accents et tirets
+                .split(/\s+/)
+                .filter(word => word.length > 3);
             
-            return relevantItems.slice(0, 3);
+            // Vérifier la présence de mots-clés
+            keywords.forEach(keyword => {
+                if (normalizedText.includes(keyword.toLowerCase())) {
+                    score += 1;
+                }
+            });
+            
+            return score;
         }
         
+        // Rechercher dans la FAQ
+        const relevantFaq = knowledge.faq
+            ? knowledge.faq.map(item => ({
+                type: 'faq',
+                question: item.question,
+                answer: item.answer,
+                score: calculateRelevance(item.question, query) * 2 + 
+                       calculateRelevance(item.answer, query)
+              })).filter(item => item.score > 0)
+            : [];
+        
+        // Rechercher dans les fonctionnalités
+        const relevantFeatures = knowledge.features
+            ? knowledge.features.map(item => ({
+                type: 'feature',
+                name: item.name,
+                description: item.description,
+                score: calculateRelevance(item.name, query) * 2 + 
+                       calculateRelevance(item.description, query)
+              })).filter(item => item.score > 0)
+            : [];
+            
+        // Rechercher dans les commandes
+        const relevantCommands = knowledge.commands
+            ? knowledge.commands.map(item => ({
+                type: 'command',
+                name: item.name,
+                description: item.description,
+                score: calculateRelevance(item.name, query) * 2 + 
+                       calculateRelevance(item.description, query)
+              })).filter(item => item.score > 0)
+            : [];
+        
+        // Fusionner et trier par score
+        const allRelevant = [...relevantFaq, ...relevantFeatures, ...relevantCommands]
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 3);  // Prendre les 3 résultats les plus pertinents
+        
+        console.log(`[KNOWLEDGE] ${allRelevant.length} informations pertinentes trouvées dans le cache local`);
+        
+        return allRelevant;
+    } catch (error) {
+        console.error('[KNOWLEDGE] Erreur lors de la recherche locale:', error.message);
         return [];
     }
 }
