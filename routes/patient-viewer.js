@@ -646,6 +646,272 @@ router.get('/:serverId/patients/:patientId/observations', authCombined, async (r
  *       500:
  *         description: Erreur serveur
  */
+
+// Route pour récupérer les personnes liées au patient
+router.get('/:serverId/patients/:patientId/related-persons', authCombined, async (req, res) => {
+  try {
+    const { serverId, patientId } = req.params;
+    
+    // Récupération des détails du serveur
+    const server = getServerDetails(serverId);
+    if (!server) {
+      return res.status(404).json({
+        success: false,
+        message: 'Serveur FHIR non trouvé'
+      });
+    }
+    
+    try {
+      // Récupération des personnes liées au patient
+      const response = await axios.get(
+        `${server.url}/RelatedPerson?patient=${patientId}&_count=50`,
+        createAxiosConfig(server, { timeout: 20000 })
+      );
+      
+      if (response.data && response.data.resourceType === 'Bundle') {
+        // Extraction des informations des personnes liées
+        const relatedPersons = response.data.entry ? response.data.entry.map(entry => entry.resource) : [];
+        
+        res.json({
+          success: true,
+          message: 'Personnes liées récupérées avec succès',
+          data: relatedPersons
+        });
+      } else {
+        res.status(200).json({
+          success: true,
+          message: 'Aucune personne liée trouvée',
+          data: []
+        });
+      }
+    } catch (error) {
+      logger.error(`Erreur lors de la récupération des personnes liées: ${error.message}`);
+      
+      // Répondre avec un tableau vide au lieu d'une erreur pour éviter de bloquer le chargement du patient
+      res.json({
+        success: true,
+        message: 'Aucune personne liée trouvée',
+        data: []
+      });
+    }
+  } catch (error) {
+    logger.error(`Erreur lors de la récupération des personnes liées: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des personnes liées',
+      error: error.message
+    });
+  }
+});
+
+// Route pour récupérer les praticiens associés au patient
+router.get('/:serverId/patients/:patientId/practitioners', authCombined, async (req, res) => {
+  try {
+    const { serverId, patientId } = req.params;
+    
+    // Récupération des détails du serveur
+    const server = getServerDetails(serverId);
+    if (!server) {
+      return res.status(404).json({
+        success: false,
+        message: 'Serveur FHIR non trouvé'
+      });
+    }
+    
+    try {
+      // Tout d'abord, on récupère les PractitionerRole liés au patient via les Encounters
+      const encountersResponse = await axios.get(
+        `${server.url}/Encounter?patient=${patientId}&_include=Encounter:practitioner&_count=50`,
+        createAxiosConfig(server, { timeout: 20000 })
+      );
+      
+      // Liste pour stocker les identifiants uniques des praticiens
+      const practitionerIds = new Set();
+      let practitioners = [];
+      
+      if (encountersResponse.data && encountersResponse.data.resourceType === 'Bundle' && encountersResponse.data.entry) {
+        // Extraire les ressources Practitioner incluses dans la réponse
+        practitioners = encountersResponse.data.entry
+          .filter(entry => entry.resource.resourceType === 'Practitioner')
+          .map(entry => entry.resource);
+        
+        // Enregistrer les IDs des praticiens déjà récupérés
+        practitioners.forEach(p => practitionerIds.add(p.id));
+      }
+      
+      // Ensuite, on cherche les praticiens directement via PractitionerRole
+      const practitionerRoleResponse = await axios.get(
+        `${server.url}/PractitionerRole?patient=${patientId}&_include=PractitionerRole:practitioner&_count=50`,
+        createAxiosConfig(server, { timeout: 20000 })
+      );
+      
+      if (practitionerRoleResponse.data && practitionerRoleResponse.data.resourceType === 'Bundle' && practitionerRoleResponse.data.entry) {
+        // Ajouter les nouveaux praticiens non déjà présents dans la liste
+        const newPractitioners = practitionerRoleResponse.data.entry
+          .filter(entry => entry.resource.resourceType === 'Practitioner' && !practitionerIds.has(entry.resource.id))
+          .map(entry => entry.resource);
+        
+        practitioners = [...practitioners, ...newPractitioners];
+      }
+      
+      res.json({
+        success: true,
+        message: 'Praticiens récupérés avec succès',
+        data: practitioners
+      });
+    } catch (error) {
+      logger.error(`Erreur lors de la récupération des praticiens: ${error.message}`);
+      
+      // Répondre avec un tableau vide au lieu d'une erreur pour éviter de bloquer le chargement du patient
+      res.json({
+        success: true,
+        message: 'Aucun praticien trouvé',
+        data: []
+      });
+    }
+  } catch (error) {
+    logger.error(`Erreur lors de la récupération des praticiens: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des praticiens',
+      error: error.message
+    });
+  }
+});
+
+// Route pour récupérer les organisations associées au patient
+router.get('/:serverId/patients/:patientId/organizations', authCombined, async (req, res) => {
+  try {
+    const { serverId, patientId } = req.params;
+    
+    // Récupération des détails du serveur
+    const server = getServerDetails(serverId);
+    if (!server) {
+      return res.status(404).json({
+        success: false,
+        message: 'Serveur FHIR non trouvé'
+      });
+    }
+    
+    try {
+      // Recherche des organisations via le patient (organization du patient)
+      const patientOrgResponse = await axios.get(
+        `${server.url}/Patient/${patientId}?_include=Patient:organization&_count=50`,
+        createAxiosConfig(server, { timeout: 20000 })
+      );
+      
+      // Liste pour stocker les identifiants uniques des organisations
+      const organizationIds = new Set();
+      let organizations = [];
+      
+      if (patientOrgResponse.data && patientOrgResponse.data.resourceType === 'Bundle' && patientOrgResponse.data.entry) {
+        // Extraire les ressources Organization incluses dans la réponse
+        const patientOrgs = patientOrgResponse.data.entry
+          .filter(entry => entry.resource.resourceType === 'Organization')
+          .map(entry => entry.resource);
+        
+        organizations = [...patientOrgs];
+        
+        // Enregistrer les IDs des organisations déjà récupérées
+        organizations.forEach(org => organizationIds.add(org.id));
+      }
+      
+      // Recherche via la requête _has spécifique
+      const orgsResponse = await axios.get(
+        `${server.url}/Organization?_has:Patient:organization:_id=${patientId}&_count=50`,
+        createAxiosConfig(server, { timeout: 20000 })
+      );
+      
+      if (orgsResponse.data && orgsResponse.data.resourceType === 'Bundle' && orgsResponse.data.entry) {
+        // Ajouter les nouvelles organisations non déjà présentes dans la liste
+        const newOrgs = orgsResponse.data.entry
+          .filter(entry => !organizationIds.has(entry.resource.id))
+          .map(entry => entry.resource);
+        
+        organizations = [...organizations, ...newOrgs];
+      }
+      
+      res.json({
+        success: true,
+        message: 'Organisations récupérées avec succès',
+        data: organizations
+      });
+    } catch (error) {
+      logger.error(`Erreur lors de la récupération des organisations: ${error.message}`);
+      
+      // Répondre avec un tableau vide au lieu d'une erreur pour éviter de bloquer le chargement du patient
+      res.json({
+        success: true,
+        message: 'Aucune organisation trouvée',
+        data: []
+      });
+    }
+  } catch (error) {
+    logger.error(`Erreur lors de la récupération des organisations: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des organisations',
+      error: error.message
+    });
+  }
+});
+
+// Route pour récupérer les couvertures d'assurance du patient
+router.get('/:serverId/patients/:patientId/coverage', authCombined, async (req, res) => {
+  try {
+    const { serverId, patientId } = req.params;
+    
+    // Récupération des détails du serveur
+    const server = getServerDetails(serverId);
+    if (!server) {
+      return res.status(404).json({
+        success: false,
+        message: 'Serveur FHIR non trouvé'
+      });
+    }
+    
+    try {
+      // Récupération des couvertures d'assurance
+      const response = await axios.get(
+        `${server.url}/Coverage?beneficiary=Patient/${patientId}&_count=50`,
+        createAxiosConfig(server, { timeout: 20000 })
+      );
+      
+      if (response.data && response.data.resourceType === 'Bundle') {
+        // Extraction des informations des couvertures
+        const coverages = response.data.entry ? response.data.entry.map(entry => entry.resource) : [];
+        
+        res.json({
+          success: true,
+          message: 'Couvertures récupérées avec succès',
+          data: coverages
+        });
+      } else {
+        res.status(200).json({
+          success: true,
+          message: 'Aucune couverture trouvée',
+          data: []
+        });
+      }
+    } catch (error) {
+      logger.error(`Erreur lors de la récupération des couvertures: ${error.message}`);
+      
+      // Répondre avec un tableau vide au lieu d'une erreur pour éviter de bloquer le chargement du patient
+      res.json({
+        success: true,
+        message: 'Aucune couverture trouvée',
+        data: []
+      });
+    }
+  } catch (error) {
+    logger.error(`Erreur lors de la récupération des couvertures: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des couvertures',
+      error: error.message
+    });
+  }
+});
 router.get('/:serverId/patients/:patientId/medications', authCombined, async (req, res) => {
   try {
     const { serverId, patientId } = req.params;
