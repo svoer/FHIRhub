@@ -3382,7 +3382,7 @@ function createPractitionerResource(rolSegment) {
   const practitionerId = `practitioner-${rppsOrAdeliId || uuid.v4()}`;
   
   // Créer la ressource Practitioner
-  const practitionerResource = {
+  let practitionerResource = {
     resourceType: 'Practitioner',
     id: practitionerId
   };
