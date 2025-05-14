@@ -2999,21 +2999,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const name = formatPractitionerName(practitioner.name);
                 
-                // Contenu HTML du praticien avec icône cohérente
-                practitionerElement.innerHTML = `
-                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-user-md" style="color: #e83e28;"></i> ${name}
-                    </h4>
-                    <div style="margin-top: 10px; color: #555;">
-                        <p><strong>Identifiant:</strong> ${practitioner.id}</p>
-                        ${practitioner.qualification ? 
-                          `<p><strong>Qualifications:</strong> ${formatQualifications(practitioner.qualification)}</p>` 
-                          : ''}
-                        ${practitioner.telecom ? 
-                          `<p><strong>Contact:</strong> ${formatTelecom(practitioner.telecom)}</p>` 
-                          : ''}
-                    </div>
-                `;
+                // Contenu HTML du praticien avec icône cohérente - construit de manière sécurisée
+                let practitionerHtml = '<h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">' +
+                    '<i class="fas fa-user-md" style="color: #e83e28;"></i> ' + name +
+                    '</h4>' +
+                    '<div style="margin-top: 10px; color: #555;">' +
+                    '<p><strong>Identifiant:</strong> ' + practitioner.id + '</p>';
+                
+                // Ajouter les qualifications si disponibles
+                if (practitioner.qualification) {
+                    practitionerHtml += '<p><strong>Qualifications:</strong> ' + formatQualifications(practitioner.qualification) + '</p>';
+                }
+                
+                // Ajouter les contacts si disponibles
+                if (practitioner.telecom) {
+                    practitionerHtml += '<p><strong>Contact:</strong> ' + formatTelecom(practitioner.telecom) + '</p>';
+                }
+                
+                practitionerHtml += '</div>';
+                
+                practitionerElement.innerHTML = practitionerHtml;
                 
                 practitionersList.appendChild(practitionerElement);
             });
