@@ -77,7 +77,7 @@ async function listModels() {
  * Génère une réponse à partir d'un prompt avec gestion améliorée des erreurs
  */
 async function generateResponse(prompt, {
-  model = 'mistral-large-2411',
+  model = 'mistral-large-2411', // Le modèle actuel est mistral-large-2411 et non mistral-large
   temperature = 0.3,
   maxTokens = 1000,
   systemMessage = null,
