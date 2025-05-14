@@ -618,6 +618,18 @@ function convertHL7ToFHIR(hl7Message) {
       });
     }
     
+    // Traitement spécifique des segments Z français si présents
+    if (segments.ZBE || segments.ZFP || segments.ZFV || segments.ZMP || segments.ZFD || segments.ZMO || segments.ZMD) {
+      console.log('[CONVERTER] Segments Z français détectés, traitement spécifique');
+      
+      try {
+        processFrenchZSegments(segments, bundle);
+      } catch (error) {
+        console.warn(`[CONVERTER] Erreur lors du traitement des segments Z: ${error.message}`);
+        // On continue sans bloquer la conversion si le traitement des segments Z échoue
+      }
+    }
+    
     console.log(`[CONVERTER] Conversion terminée avec ${bundle.entry.length} ressources FHIR générées`);
     return bundle;
   } catch (error) {

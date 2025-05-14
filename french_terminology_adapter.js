@@ -2,10 +2,29 @@
  * Adaptateur pour les terminologies françaises FHIR
  * Compatible avec les spécifications de l'ANS (Agence du Numérique en Santé)
  * 
- * @version 1.1.1
- * @updated 2025-04-29
+ * @version 1.1.2
+ * @updated 2025-05-14
  * @module french_terminology_adapter
  */
+
+const fs = require('fs');
+const path = require('path');
+
+// Chargement du fichier de mappages
+let FRENCH_TERMINOLOGY_MAPPINGS = {};
+try {
+  const mappingsPath = path.join(__dirname, 'data', 'french_terminology_mappings.json');
+  if (fs.existsSync(mappingsPath)) {
+    const mappingsContent = fs.readFileSync(mappingsPath, 'utf8');
+    FRENCH_TERMINOLOGY_MAPPINGS = JSON.parse(mappingsContent);
+    console.log('[TERMINOLOGY] Mappings français chargés avec succès (version ' + FRENCH_TERMINOLOGY_MAPPINGS.version + ')');
+  } else {
+    console.warn('[TERMINOLOGY] Fichier de mappings français non trouvé: ' + mappingsPath);
+    console.warn('[TERMINOLOGY] Les terminologies par défaut seront utilisées');
+  }
+} catch (error) {
+  console.error('[TERMINOLOGY] Erreur lors du chargement des mappings français:', error.message);
+}
 
 // Mapping des URL de systèmes FHIR français
 const FRENCH_SYSTEMS = {
