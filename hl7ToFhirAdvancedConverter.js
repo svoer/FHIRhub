@@ -359,7 +359,7 @@ function convertHL7ToFHIR(hl7Message) {
       if (segments.IN1 && segments.IN1.length > 0) {
         segments.IN1.forEach((in1Segment, index) => {
           const in2Segment = segments.IN2 && segments.IN2.length > index ? segments.IN2[index] : null;
-          const coverageResource = createCoverageResource(in1Segment, in2Segment, patientResource.fullUrl);
+          const coverageResource = createCoverageResource(in1Segment, in2Segment, patientResource.fullUrl, bundleEntries);
           if (coverageResource) {
             bundle.entry.push(coverageResource);
           }
@@ -3765,12 +3765,16 @@ function getRelationshipDisplay(relationshipCode) {
  * @param {Array} in1Segment - Segment IN1 parsé
  * @param {Array} in2Segment - Segment IN2 parsé (optionnel)
  * @param {string} patientReference - Référence à la ressource Patient
+ * @param {Array} bundleEntries - Tableau d'entrées à ajouter au bundle principal
  * @returns {Object|null} Entrée de bundle pour un Coverage ou null si non disponible
  */
-function createCoverageResource(in1Segment, in2Segment, patientReference) {
+function createCoverageResource(in1Segment, in2Segment, patientReference, bundleEntries) {
   if (!in1Segment || !patientReference) {
     return null;
   }
+  
+  // Si bundleEntries n'est pas défini, créer un tableau vide (pour compatibilité)
+  const entries = bundleEntries || [];
   
   // IN1-2 (Plan ID)
   const planId = in1Segment.length > 2 ? in1Segment[2] || '' : '';
@@ -3845,7 +3849,7 @@ function createCoverageResource(in1Segment, in2Segment, patientReference) {
       ];
       
       // Ajouter l'organisation de l'assureur au bundle principal
-      bundleEntries.push({
+      entries.push({
         fullUrl: `urn:uuid:${insurerOrgId}`,
         resource: {
           resourceType: 'Organization',
