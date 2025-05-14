@@ -47,9 +47,11 @@ async function generateResponse({ prompt, systemPrompt = '', maxTokens = 1000, t
         switch (aiProvider.provider_type) {
             case 'mistral':
                 // Utiliser le client Mistral
-                console.log(`[AI-SERVICE] Appel à Mistral avec modèle: ${aiProvider.model_id}`);
+                // Vérifier toutes les possibilités de colonnes de stockage du modèle
+                const mistralModel = aiProvider.model_name || aiProvider.model_id || aiProvider.models || 'mistral-large-2411';
+                console.log(`[AI-SERVICE] Appel à Mistral avec modèle: ${mistralModel}`);
                 return await mistralClient.generateResponse(prompt, {
-                    model: aiProvider.model_id || 'mistral-large-2411',
+                    model: mistralModel,
                     temperature,
                     maxTokens,
                     retryCount,
@@ -196,10 +198,14 @@ async function getCurrentModel() {
         switch (aiProvider.provider_type) {
             case 'mistral':
                 // Pour Mistral, le modèle est spécifié dans la configuration
-                const mistralModelId = aiProvider.model_id || 'mistral-large-latest';
+                // Vérifier toutes les possibilités de colonnes de stockage du modèle
+                const mistralModelId = aiProvider.model_name || aiProvider.model_id || aiProvider.models || 'mistral-large-latest';
+                console.log(`[AI-SERVICE] Modèle Mistral obtenu: ${mistralModelId} (depuis ${aiProvider.model_name ? 'model_name' : aiProvider.model_id ? 'model_id' : aiProvider.models ? 'models' : 'défaut'})`);
+                
                 // Tenter d'obtenir un nom plus lisible si c'est un modèle connu
                 let mistralModelName = mistralModelId;
                 if (mistralModelId === 'mistral-large-latest') mistralModelName = 'Mistral Large (latest)';
+                else if (mistralModelId === 'mistral-large') mistralModelName = 'Mistral Large';
                 else if (mistralModelId === 'mistral-large-2411') mistralModelName = 'Mistral Large (2411)';
                 else if (mistralModelId === 'mistral-medium') mistralModelName = 'Mistral Medium';
                 else if (mistralModelId === 'mistral-small-latest') mistralModelName = 'Mistral Small (latest)';
@@ -217,7 +223,7 @@ async function getCurrentModel() {
                 }
                 
                 // Si la fonction n'existe pas dans le client, utiliser la configuration
-                const ollamaModelId = aiProvider.model_id || 'llama3';
+                const ollamaModelId = aiProvider.model_name || aiProvider.model_id || aiProvider.models || 'llama3';
                 return {
                     id: ollamaModelId,
                     name: ollamaModelId
@@ -229,8 +235,8 @@ async function getCurrentModel() {
                 const defaultModelId = aiProvider.provider_type === 'openai' ? 
                     'gpt-4o' : 'deepseek-reasoner';
                 
-                // Chercher d'abord dans model_id, puis dans models, puis valeur par défaut
-                const aiModelId = aiProvider.model_id || aiProvider.models || defaultModelId;
+                // Chercher dans toutes les colonnes possibles, puis valeur par défaut
+                const aiModelId = aiProvider.model_name || aiProvider.model_id || aiProvider.models || defaultModelId;
                 
                 // Personnaliser le nom du modèle pour une meilleure lisibilité
                 let aiModelName = aiModelId;
