@@ -91,6 +91,9 @@ async function generateResponse(prompt, {
     }
   }
   
+  // Log détaillé pour tracer le modèle reçu
+  logger.info(`[MISTRAL-CLIENT] Utilisation du modèle: ${model}`);
+  
   // Préparation des messages
   const messages = [];
   
@@ -107,15 +110,19 @@ async function generateResponse(prompt, {
   while (attempt <= retryCount) {
     try {
       logger.info(`Tentative d'appel à l'API Mistral (${attempt+1}/${retryCount+1})`);
+      logger.info(`Paramètres: modèle=${model}, maxTokens=${maxTokens}, température=${temperature}`);
       
       // Ajouter un timeout explicite en utilisant Promise.race
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Timeout dépassé pour l\'appel à l\'API Mistral')), 60000);
       });
       
+      // Garantir que le modèle est correct
+      const finalModel = model || 'mistral-large-2411';
+      
       // Lancer l'appel avec un délai variable selon le nombre de tentatives
       const apiPromise = mistralClient.chat.complete({
-        model,
+        model: finalModel, // Utiliser le modèle garanti
         messages,
         temperature,
         max_tokens: maxTokens

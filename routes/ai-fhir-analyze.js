@@ -30,6 +30,8 @@ try {
         getAllAIProviders: async () => []
     };
 }
+// Fonction raccourcie pour clarté
+const getProvider = aiProviderService.getActiveAIProvider;
 // Service de connaissances pour enrichir le chatbot
 let chatbotKnowledgeService;
 try {
@@ -172,7 +174,7 @@ router.post('/analyze-patient', async (req, res) => {
         let analysis;
         try {
             // Obtenir le fournisseur d'IA actif
-            const aiProvider = await getActiveAIProvider();
+            const aiProvider = await getProvider();
             
             if (!aiProvider) {
                 throw new Error('Aucun fournisseur d\'IA actif configuré');

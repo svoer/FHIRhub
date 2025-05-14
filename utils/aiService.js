@@ -47,12 +47,13 @@ async function generateResponse({ prompt, systemPrompt = '', maxTokens = 1000, t
         switch (aiProvider.provider_type) {
             case 'mistral':
                 // Utiliser le client Mistral
+                console.log(`[AI-SERVICE] Appel à Mistral avec modèle: ${aiProvider.model_id}`);
                 return await mistralClient.generateResponse(prompt, {
                     model: aiProvider.model_id || 'mistral-large-2411',
                     temperature,
                     maxTokens,
                     retryCount,
-                    systemPrompt
+                    systemMessage: systemPrompt // systemMessage au lieu de systemPrompt
                 });
                 
             case 'ollama':
