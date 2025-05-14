@@ -3014,8 +3014,19 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     }
   };
   
+  // Ajouter le profil FR Core à la ressource Encounter
+  encounterResource = frCoreProfileManager.addFrCoreProfile(encounterResource);
+  
   // Si des ressources additionnelles ont été créées (comme Location)
   if (bundleEntries.length > 0) {
+    // Pour chaque ressource Location, ajouter également le profil FR Core
+    bundleEntries = bundleEntries.map(entry => {
+      if (entry.resource && entry.resource.resourceType === 'Location') {
+        entry.resource = frCoreProfileManager.addFrCoreProfile(entry.resource);
+      }
+      return entry;
+    });
+    
     // Retourner l'entrée principale ET les entrées supplémentaires
     return {
       main: encounterEntry,
@@ -3190,6 +3201,20 @@ function createOrganizationResource(mshSegment, fieldIndex) {
         value: orgId
       }
     }];
+  }
+  
+  // Ajouter le profil FR Core à la ressource Organization
+  organizationResource = frCoreProfileManager.addFrCoreProfile(organizationResource);
+  
+  // Ajouter les extensions FR Core spécifiques si un identifiant FINESS est détecté
+  const finessNumber = organizationResource.identifier?.find(id => 
+    id.system === 'urn:oid:1.2.250.1.71.4.2.2')?.value;
+    
+  if (finessNumber) {
+    const orgData = {
+      finessNumber: finessNumber
+    };
+    organizationResource = frCoreProfileManager.addFrCoreExtensions(organizationResource, orgData);
   }
   
   return {
