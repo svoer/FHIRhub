@@ -1,0 +1,26 @@
+{
+  "version": "1.1.0",
+  "lastUpdated": "2025-05-14",
+  "profiles": {
+    "Patient": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient",
+    "Organization": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization",
+    "Practitioner": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner",
+    "Encounter": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter",
+    "Coverage": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage",
+    "Location": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-location",
+    "RelatedPerson": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-related-person"
+  },
+  "extensions": {
+    "PatientINS": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-ins",
+    "OrganizationIdentifier": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization-executant",
+    "PractitionerRole": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner-role"
+  },
+  "systemUrls": {
+    "FrenchInsuranceNumber": "urn:oid:1.2.250.1.213.1.4.8",
+    "RPPS": "urn:oid:1.2.250.1.71.4.2.1",
+    "ADELI": "urn:oid:1.2.250.1.71.4.2.1",
+    "FINESS": "urn:oid:1.2.250.1.71.4.2.2",
+    "INS-NIR": "urn:oid:1.2.250.1.213.1.4.1",
+    "INS-NIA": "urn:oid:1.2.250.1.213.1.4.2"
+  }
+}
