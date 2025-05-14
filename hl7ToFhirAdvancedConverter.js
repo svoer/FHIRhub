@@ -3474,7 +3474,22 @@ function createPractitionerResource(rolSegment) {
   // Extensions pour RPPS, ADELI, spécialités, etc.
   addFrenchPractitionerExtensions(practitionerResource, rolSegment);
   
-  console.log('[CONVERTER] Ressource Practitioner créée:', JSON.stringify(practitionerResource).substring(0, 200));
+  // Ajouter le profil FR Core à la ressource Practitioner
+  practitionerResource = frCoreProfileManager.addFrCoreProfile(practitionerResource);
+  
+  // Rechercher le numéro RPPS ou ADELI pour les extensions FR Core
+  const rppsIdentifier = practitionerResource.identifier?.find(id => 
+    id.system === 'urn:oid:1.2.250.1.71.4.2.1');
+    
+  if (rppsIdentifier) {
+    const practitionerData = {
+      rppsNumber: rppsIdentifier.value
+    };
+    practitionerResource = frCoreProfileManager.addFrCoreExtensions(practitionerResource, practitionerData);
+  }
+  
+  console.log('[CONVERTER] Ressource Practitioner créée avec profil FR Core:', 
+    practitionerResource.meta?.profile ? practitionerResource.meta.profile[0] : 'Aucun profil');
   
   return {
     fullUrl: `urn:uuid:${practitionerId}`,
@@ -4062,6 +4077,19 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
       }
     });
   }
+  
+  // Ajouter le profil FR Core à la ressource Coverage
+  coverageResource = frCoreProfileManager.addFrCoreProfile(coverageResource);
+  
+  // Ajouter des extensions pour la couverture d'assurance française
+  const coverageData = {
+    category: coverageResource.type?.coding?.[0]?.code || 'AMO'
+  };
+  
+  coverageResource = frCoreProfileManager.addFrCoreExtensions(coverageResource, coverageData);
+  
+  console.log('[CONVERTER] Ressource Coverage créée avec profil FR Core:', 
+    coverageResource.meta?.profile ? coverageResource.meta.profile[0] : 'Aucun profil');
   
   return {
     fullUrl: `urn:uuid:${coverageId}`,
