@@ -3695,7 +3695,7 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
   const relatedPersonId = `relatedperson-${uuid.v4()}`;
   
   // Créer la ressource RelatedPerson
-  const relatedPersonResource = {
+  let relatedPersonResource = {
     resourceType: 'RelatedPerson',
     id: relatedPersonId,
     patient: {
