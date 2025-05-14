@@ -89,13 +89,14 @@ function getActiveAIProvider() {
             let query;
             
             // Déterminer quelle structure de table est utilisée
-            if (columnNames.includes('enabled')) {
-                query = `SELECT * FROM ai_providers WHERE enabled = 1`;
-            } else if (columnNames.includes('is_active')) {
-                query = `SELECT * FROM ai_providers WHERE is_active = 1`;
+            // La table utilise is_active d'après les logs
+            if (columnNames.includes('is_active')) {
+                query = `SELECT * FROM ai_providers WHERE is_active = 1 LIMIT 1`;
+            } else if (columnNames.includes('enabled')) {
+                query = `SELECT * FROM ai_providers WHERE enabled = 1 LIMIT 1`;
             } else {
                 // Fallback: essayer les deux conditions
-                query = `SELECT * FROM ai_providers WHERE is_active = 1 OR enabled = 1`;
+                query = `SELECT * FROM ai_providers WHERE is_active = 1 OR enabled = 1 LIMIT 1`;
             }
             
             console.log(`Requête pour fournisseur actif: ${query}`);

@@ -1510,18 +1510,39 @@ router.get('/status', async (req, res) => {
     logger.debug(`Colonnes de la table ai_providers: ${columnNames.join(', ')}`);
     
     // Construire la requête en fonction des colonnes disponibles dans la table
+    // Compléter la requête avec toutes les colonnes explicites pour éviter les confusions
     let query;
     // Basé sur les logs du système, la colonne est is_active
     if (columnNames.includes('is_active')) {
       query = `
-        SELECT * FROM ai_providers 
+        SELECT 
+          id, 
+          name, 
+          provider_type, 
+          api_key, 
+          api_url, 
+          model_name, 
+          is_active, 
+          created_at, 
+          updated_at
+        FROM ai_providers 
         WHERE is_active = 1 
         ORDER BY id ASC
         LIMIT 1
       `;
     } else if (columnNames.includes('enabled')) {
       query = `
-        SELECT * FROM ai_providers 
+        SELECT 
+          id, 
+          provider_name, 
+          provider_type, 
+          api_key, 
+          endpoint, 
+          models, 
+          enabled, 
+          created_at, 
+          updated_at
+        FROM ai_providers 
         WHERE enabled = 1 
         ORDER BY id ASC
         LIMIT 1
@@ -1539,7 +1560,15 @@ router.get('/status', async (req, res) => {
     // Afficher plus d'informations sur le fournisseur récupéré
     if (activeProvider) {
       logger.info(`Fournisseur actif trouvé: ${activeProvider.name || activeProvider.provider_name} Type: ${activeProvider.provider_type}`);
-      logger.info(`Modèle configuré: ${activeProvider.model_name || 'non spécifié'}`);
+      
+      // Vérifier toutes les possibilités de colonnes pour le modèle
+      const configuredModel = activeProvider.model_name || activeProvider.models || activeProvider.model_id || 'non spécifié';
+      logger.info(`Modèle configuré: ${configuredModel}`);
+      
+      // Log explicite pour le debug des colonnes
+      logger.info(`Colonne model_name: ${activeProvider.model_name}`);
+      logger.info(`Colonne models: ${activeProvider.models}`);
+      logger.info(`Colonne model_id: ${activeProvider.model_id}`);
       
       // Afficher toutes les propriétés du fournisseur pour débogage
       Object.keys(activeProvider).forEach(key => {
@@ -1557,16 +1586,24 @@ router.get('/status', async (req, res) => {
       });
     }
     
+    // Récupérer le modèle configuré dans la base de données
+    const configuredModel = activeProvider.model_name || activeProvider.models || activeProvider.model_id || 'unknown';
+    logger.info(`Modèle identifié dans la base de données: ${configuredModel}`);
+    
     // Obtenir les informations sur le modèle actuel
     let modelInfo;
     try {
+      // Utiliser directement le service aiService pour la cohérence
       modelInfo = await aiService.getCurrentModel();
+      logger.info(`Modèle retourné par aiService.getCurrentModel(): ${JSON.stringify(modelInfo)}`);
     } catch (error) {
       logger.error(`Erreur lors de la récupération du modèle actuel: ${error.message}`);
+      // Si erreur, utiliser le modèle trouvé directement dans la base
       modelInfo = { 
-        id: activeProvider.model_name || activeProvider.models || activeProvider.model_id || 'unknown', 
-        name: activeProvider.model_name || activeProvider.models || activeProvider.model_id || 'Non spécifié' 
+        id: configuredModel, 
+        name: configuredModel 
       };
+      logger.info(`Utilisation du modèle de fallback: ${JSON.stringify(modelInfo)}`);
     }
     
     // Construire la réponse avec les informations du fournisseur et du modèle
@@ -1577,9 +1614,12 @@ router.get('/status', async (req, res) => {
         provider: {
           id: activeProvider.id,
           name: activeProvider.provider_name || activeProvider.name,
-          type: activeProvider.provider_type
+          type: activeProvider.provider_type,
+          endpoint: activeProvider.api_url || activeProvider.endpoint
         },
-        model: modelInfo
+        model: modelInfo,
+        // Ajouter la liste des modèles disponibles (au moins le modèle configuré)
+        availableModels: [configuredModel]
       }
     };
     
