@@ -2,23 +2,20 @@
  * Styles pour le chatbot contextuel de la documentation
  */
 
-/* Widget du chatbot - ajusté selon l'image de référence */
+/* Widget du chatbot - version sans bordure */
 .doc-chatbot-widget {
   position: fixed;
-  bottom: 75px; /* Plus haut que le bouton de retour en haut */
+  bottom: 105px; /* Ajusté par rapport à la flèche */
   right: 20px;
   width: 280px; /* Plus petit */
   height: 40px; /* Juste le header visible */
   background-color: transparent; /* Fond transparent */
   border-radius: 5px;
   box-shadow: none; /* Pas d'ombre */
-  display: flex;
-  flex-direction: column;
   z-index: 9999;
-  overflow: hidden;
   pointer-events: auto;
-  transition: all 0.3s ease;
   border: none; /* Pas de bordure */
+  overflow: visible; /* Permettre au contenu de déborder */
 }
 
 /* État fermé - juste le header (plus petit) */
@@ -77,8 +74,8 @@
   color: white;
   border-radius: 5px;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  border-bottom: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  border: none;
 }
 
 .doc-chatbot-header h3 {
@@ -104,13 +101,9 @@
 }
 
 .doc-chatbot-body {
-  flex: 1;
-  display: flex;
+  display: none; /* Complètement caché en mode non-ouvert */
   flex-direction: column;
   overflow: hidden;
-  border-top: none; /* Supprimer la bordure supérieure */
-  margin-top: 0;
-  padding-top: 0;
 }
 
 .doc-chatbot-messages {
