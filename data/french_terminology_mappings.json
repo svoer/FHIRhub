@@ -1,0 +1,235 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2024-07-31",
+  "systems": {
+    "SNOMED-CT-FR": "http://snomed.info/sct/1221000146105",
+    "CIM-10-FR": "http://terminology.who.int/CodeSystem/icd10-fr",
+    "CCAM": "https://mos.esante.gouv.fr/NOS/CCAM_REF/FHIR/CCAM-REF",
+    "LOINC-FR": "http://loinc.org/fr",
+    "NOS": "https://mos.esante.gouv.fr/NOS",
+    "JDV": "urn:oid:1.2.250.1.213.1.6",
+    "TA_ASIP": "urn:oid:1.2.250.1.213.1.1.4.322",
+    "CI-SIS": "https://esante.gouv.fr/ci-sis"
+  },
+  "oids": {
+    "INS-NIR": "1.2.250.1.213.1.1.1",
+    "INS-NIA": "1.2.250.1.213.1.1.5",
+    "RPPS": "1.2.250.1.71.1.2.1",
+    "FINESS": "1.2.250.1.71.4.2.1",
+    "RPPS_SPECIALTY": "1.2.250.1.71.1.2.7",
+    "ADELI": "1.2.250.1.71.1.2.5",
+    "SIRET": "1.2.250.1.71.4.2.2",
+    "JDV_SubjectRole": "1.2.250.1.213.1.6.1.19"
+  },
+  "extensions": {
+    "birthPlace": "http://hl7.org/fhir/StructureDefinition/birthPlace",
+    "patientNationality": "http://hl7.org/fhir/StructureDefinition/patient-nationality",
+    "insuranceCard": "http://interopsante.org/fhir/StructureDefinition/fr-insurance-card"
+  },
+  "coverage_types": {
+    "1": {
+      "code": "1",
+      "display": "Assuré"
+    },
+    "2": {
+      "code": "2",
+      "display": "Conjoint"
+    },
+    "3": {
+      "code": "3",
+      "display": "Enfant"
+    },
+    "4": {
+      "code": "4", 
+      "display": "Autre ayant droit"
+    },
+    "AMO": {
+      "code": "AMO",
+      "display": "Assurance Maladie Obligatoire"
+    },
+    "AMC": {
+      "code": "AMC",
+      "display": "Assurance Maladie Complémentaire"
+    }
+  },
+  "professions": {
+    "10": {
+      "code": "10",
+      "display": "Médecin"
+    },
+    "21": {
+      "code": "21",
+      "display": "Pharmacien"
+    },
+    "40": {
+      "code": "40",
+      "display": "Infirmier"
+    },
+    "60": {
+      "code": "60",
+      "display": "Kinésithérapeute"
+    },
+    "70": {
+      "code": "70",
+      "display": "Pédicure-Podologue"
+    },
+    "80": {
+      "code": "80",
+      "display": "Orthophoniste"
+    },
+    "SM26": {
+      "code": "SM26",
+      "display": "Médecin généraliste",
+      "system": "urn:oid:1.2.250.1.71.1.2.7"
+    },
+    "ODRP": {
+      "code": "ODRP",
+      "display": "Médecin généraliste",
+      "system": "http://terminology.hl7.org/CodeSystem/v2-0443",
+      "fhirCode": "GENPHYS"
+    }
+  },
+  "identifiers": {
+    "INS-C": {
+      "system": "http://ameli.fr/identifiant/INS-NIR",
+      "typeCode": "PPN",
+      "display": "Identifiant National de Santé (carte)",
+      "oid": "1.2.250.1.213.1.1.1"
+    },
+    "INS-NIR": {
+      "system": "http://ameli.fr/identifiant/INS-NIR",
+      "typeCode": "SN",
+      "display": "Numéro d'inscription au répertoire national d'identification",
+      "oid": "1.2.250.1.213.1.1.1"
+    },
+    "RPPS": {
+      "system": "http://rpps.fr/identifiant/RPPS",
+      "typeCode": "PRN",
+      "display": "Répertoire Partagé des Professionnels de Santé",
+      "oid": "1.2.250.1.71.1.2.1"
+    },
+    "ADELI": {
+      "system": "http://adeli.fr/identifiant/ADELI",
+      "typeCode": "PRN",
+      "display": "Répertoire ADELI",
+      "oid": "1.2.250.1.71.1.2.5"
+    },
+    "FINESS": {
+      "system": "http://finess.fr/structure",
+      "typeCode": "XX",
+      "display": "Fichier National des Établissements Sanitaires et Sociaux",
+      "oid": "1.2.250.1.71.4.2.1"
+    },
+    "SIRET": {
+      "system": "http://insee.fr/identifiant/SIRET",
+      "typeCode": "TAX",
+      "display": "Système d'Identification du Répertoire des Établissements",
+      "oid": "1.2.250.1.71.4.2.2"
+    },
+    "NDA": {
+      "system": "urn:oid:1.2.250.1.213.1.1.1000.5",
+      "typeCode": "MR",
+      "display": "Numéro de dossier administratif"
+    }
+  },
+  "encounter_class": {
+    "H": {
+      "code": "IMP",
+      "display": "Hospitalisation",
+      "frenchSystem": "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+    },
+    "AMB": {
+      "code": "AMB",
+      "display": "Ambulatoire",
+      "frenchSystem": "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+    },
+    "U": {
+      "code": "EMER",
+      "display": "Urgence",
+      "frenchSystem": "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+    },
+    "ER": {
+      "code": "EMER",
+      "display": "Service d'urgence",
+      "frenchSystem": "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+    },
+    "I": {
+      "code": "IMP",
+      "display": "Hospitalisation complète",
+      "frenchSystem": "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+    },
+    "O": {
+      "code": "AMB",
+      "display": "Consultation externe",
+      "frenchSystem": "http://terminology.hl7.org/CodeSystem/v3-ActCode"
+    }
+  },
+  "movement_types": {
+    "A": {
+      "code": "admit",
+      "display": "Admission"
+    },
+    "D": {
+      "code": "discharge",
+      "display": "Sortie"
+    },
+    "T": {
+      "code": "transfer",
+      "display": "Transfert"
+    },
+    "R": {
+      "code": "return",
+      "display": "Retour"
+    },
+    "P": {
+      "code": "preadmit",
+      "display": "Pré-admission"
+    }
+  },
+  "segment_Z_mappings": {
+    "ZAD": {
+      "description": "Segment d'adresse supplémentaire",
+      "fields": {
+        "1": {
+          "description": "Identifiant d'adresse supplémentaire"
+        },
+        "2": {
+          "description": "Informations complémentaires d'adresse"
+        }
+      }
+    },
+    "ZBE": {
+      "description": "Segment mouvement",
+      "fields": {
+        "1": {
+          "description": "Date/heure du mouvement"
+        },
+        "2": {
+          "description": "Type de mouvement",
+          "valueMapping": {
+            "A": "Admission",
+            "D": "Sortie",
+            "T": "Transfert"
+          }
+        }
+      }
+    },
+    "ZFP": {
+      "description": "Segment praticien supplémentaire",
+      "fields": {
+        "1": {
+          "description": "Identifiant praticien"
+        },
+        "2": {
+          "description": "Nom praticien"
+        },
+        "3": {
+          "description": "Prénom praticien"
+        },
+        "4": {
+          "description": "Type praticien"
+        }
+      }
+    }
+  }
+}
