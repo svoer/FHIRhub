@@ -709,24 +709,7 @@ function processADTMessage(parsedMessage, bundle) {
         <h2>IA & Assistance intelligente</h2>
         <p>FHIRHub intègre des fonctionnalités d'intelligence artificielle pour faciliter l'utilisation du système, aider à résoudre les problèmes et analyser les données des patients.</p>
         
-        <h3>Chatbot de support</h3>
-        <p>Un chatbot intelligent est disponible sur le tableau de bord pour répondre aux questions sur l'utilisation de FHIRHub, la conversion HL7-FHIR et les problèmes courants. Ce chatbot utilise les modèles d'IA configurés dans les paramètres.</p>
-        
-        <div class="workflow-step">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <div class="step-title">Assistance contextuelle</div>
-            <div class="step-description">Le chatbot comprend le contexte de votre demande et peut fournir des explications spécifiques sur les fonctionnalités de FHIRHub.</div>
-          </div>
-        </div>
-        
-        <div class="workflow-step">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <div class="step-title">Documentation intelligente</div>
-            <div class="step-description">Accès à toute la documentation technique à travers une interface conversationnelle simple.</div>
-          </div>
-        </div>
+        <!-- Section chatbot de support supprimée -->
         
         <div class="workflow-step">
           <div class="step-number">3</div>
@@ -778,41 +761,7 @@ function processADTMessage(parsedMessage, bundle) {
         </ul>
       </div>
       
-      <div id="rag-system" class="documentation-section">
-        <h2>Système RAG (Retrieval-Augmented Generation)</h2>
-        <p>FHIRHub utilise un système RAG (Génération Augmentée par Récupération) pour améliorer la précision et la pertinence des réponses du chatbot d'assistance.</p>
-        
-        <div class="tech-spec">
-          <div class="tech-spec-title">Fonctionnement du système RAG</div>
-          <ul>
-            <li><strong>Base de connaissances structurée :</strong> Les informations sur FHIRHub sont stockées dans une base de connaissances JSON organisée par catégories</li>
-            <li><strong>Recherche contextuelle :</strong> Lorsqu'une question est posée, le système recherche les informations les plus pertinentes dans la base</li>
-            <li><strong>Enrichissement du prompt :</strong> Les informations récupérées sont intégrées au prompt envoyé au modèle d'IA</li>
-            <li><strong>Protection contre les hallucinations :</strong> Des instructions explicites empêchent le modèle d'inventer des réponses</li>
-            <li><strong>Indication des limites :</strong> Le système indique clairement quand il ne dispose pas d'informations suffisantes</li>
-          </ul>
-        </div>
-        
-        <div class="workflow-step">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <div class="step-title">Base de connaissances dynamique</div>
-            <div class="step-description">La base de connaissances peut être facilement enrichie et mise à jour via le fichier data/chatbot-knowledge.json.</div>
-          </div>
-        </div>
-        
-        <div class="workflow-step">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <div class="step-title">Catégories d'informations</div>
-            <div class="step-description">La base contient des FAQ, des descriptions de fonctionnalités et des informations sur les commandes disponibles.</div>
-          </div>
-        </div>
-        
-        <div class="info-box">
-          <p><strong>Documentation détaillée :</strong> Pour plus d'informations sur le système RAG et son enrichissement, consultez les documents <a href="/docs/ai-integration">Guide d'intégration de l'IA</a> et <a href="/docs/rag-knowledge-base-guide">Guide du système RAG</a>.</p>
-        </div>
-      </div>
+      <!-- Section RAG supprimée car elle faisait référence au chatbot -->
       
       <div id="api" class="documentation-section">
         <h2>Architecture et Implémentation des APIs</h2>
