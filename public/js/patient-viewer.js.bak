@@ -1697,28 +1697,23 @@ document.addEventListener('DOMContentLoaded', function() {
                         personElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
                         personElement.style.borderLeft = '3px solid #e83e28';
                         
-                        // Construire le HTML sans utiliser de template literals complexes
-                        let personHtml = '<h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">' +
-                            '<i class="fas fa-users" style="color: #e83e28;"></i> ' + (formatPatientName(person.name) || 'Personne sans nom') +
-                            '</h4>' +
-                            '<div style="margin-top: 10px; color: #555;">' +
-                            '<p><strong>Identifiant:</strong> ' + person.id + '</p>';
-                            
-                        if (person.relationship) {
-                            personHtml += '<p><strong>Relation:</strong> ' + formatRelationship(person.relationship) + '</p>';
-                        }
-                        
-                        if (person.telecom) {
-                            personHtml += '<p><strong>Contact:</strong> ' + formatTelecom(person.telecom) + '</p>';
-                        }
-                        
-                        if (person.address && person.address.length > 0) {
-                            personHtml += '<p><strong>Adresse:</strong> ' + formatAddress(person.address[0]) + '</p>';
-                        }
-                        
-                        personHtml += '</div>';
-                        
-                        personElement.innerHTML = personHtml;
+                        personElement.innerHTML = `
+                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-users" style="color: #e83e28;"></i> ${formatPatientName(person.name) || 'Personne sans nom'}
+                            </h4>
+                            <div style="margin-top: 10px; color: #555;">
+                                <p><strong>Identifiant:</strong> ${person.id}</p>
+                                ${person.relationship ? 
+                                  `<p><strong>Relation:</strong> ${formatRelationship(person.relationship)}</p>` 
+                                  : ''}
+                                ${person.telecom ? 
+                                  `<p><strong>Contact:</strong> ${formatTelecom(person.telecom)}</p>` 
+                                  : ''}
+                                ${person.address ? 
+                                  `<p><strong>Adresse:</strong> ${formatAddress(person.address[0])}</p>` 
+                                  : ''}
+                            </div>
+                        `;
                         
                         relatedList.appendChild(personElement);
                     });
