@@ -1652,16 +1652,17 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Déterminer si nous utilisons le proxy ou l'URL directe
-        let url;
+        // Extraire l'ID du serveur depuis l'URL
+        let serverId = '';
         if (serverUrl.includes('hapi.fhir.org')) {
-            // Utiliser le proxy pour contourner les limitations CORS
-            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
-            url = `/api/fhir-proxy/hapi/RelatedPerson?patient=${patientId}&_count=50`;
+            serverId = 'hapi';
         } else {
-            // URL directe pour les serveurs locaux (déjà sur le même domaine)
-            url = `${serverUrl}/RelatedPerson?patient=${patientId}&_count=100`;
+            // Pour les serveurs locaux, extraire l'ID à partir de la configuration ou utiliser l'URL comme ID
+            serverId = 'local';
         }
+        
+        // Utiliser notre API dédiée pour récupérer les personnes liées
+        let url = `/api/patient-viewer/${serverId}/patients/${patientId}/related-persons`;
         
         console.log(`Chargement des personnes liées depuis: ${url}`);
         
@@ -1676,18 +1677,32 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 loadingSection.style.display = 'none';
                 
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const relatedPersons = data.entry.map(entry => entry.resource);
-                    relatedPersonsData = relatedPersons;
-                    
-                    // Créer une liste de personnes liées
-                    const relatedList = document.createElement('div');
-                    relatedList.style.display = 'grid';
-                    relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
-                    relatedList.style.gap = '15px';
+                let relatedPersons = [];
+                
+                // Format de réponse de notre API
+                if (data.success && data.data && data.data.length > 0) {
+                    relatedPersons = data.data;
+                } 
+                // Format de réponse FHIR standard (pour compatibilité)
+                else if (data.entry && data.entry.length > 0) {
+                    relatedPersons = data.entry.map(entry => entry.resource);
+                } else {
+                    // Aucune personne liée trouvée
+                    loadingSection.style.display = 'none';
+                    noResourcesSection.style.display = 'block';
+                    return;
+                }
+                
+                // Si nous avons des personnes liées, les afficher
+                relatedPersonsData = relatedPersons;
+                resourcesList.style.display = 'block';
+                resourcesList.innerHTML = '';
+                
+                // Créer une liste de personnes liées
+                const relatedList = document.createElement('div');
+                relatedList.style.display = 'grid';
+                relatedList.style.gridTemplateColumns = 'repeat(auto-fill, minmax(300px, 1fr))';
+                relatedList.style.gap = '15px';
                     
                     relatedPersons.forEach(person => {
                         const personElement = document.createElement('div');
@@ -1743,16 +1758,17 @@ document.addEventListener('DOMContentLoaded', function() {
         noResourcesSection.style.display = 'none';
         resourcesList.style.display = 'none';
         
-        // Déterminer si nous utilisons le proxy ou l'URL directe
-        let url;
+        // Extraire l'ID du serveur depuis l'URL
+        let serverId = '';
         if (serverUrl.includes('hapi.fhir.org')) {
-            // Utiliser le proxy pour contourner les limitations CORS
-            // Utiliser un count réduit (50) pour éviter les erreurs 429 (Too Many Requests)
-            url = `/api/fhir-proxy/hapi/Coverage?beneficiary=${patientId}&_count=50`;
+            serverId = 'hapi';
         } else {
-            // URL directe pour les serveurs locaux (déjà sur le même domaine)
-            url = `${serverUrl}/Coverage?beneficiary=${patientId}&_count=100`;
+            // Pour les serveurs locaux, extraire l'ID à partir de la configuration ou utiliser l'URL comme ID
+            serverId = 'local';
         }
+        
+        // Utiliser notre API dédiée pour récupérer les couvertures
+        let url = `/api/patient-viewer/${serverId}/patients/${patientId}/coverage`;
         
         console.log(`Chargement des couvertures depuis: ${url}`);
         
@@ -1767,12 +1783,26 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 loadingSection.style.display = 'none';
                 
-                if (data.entry && data.entry.length > 0) {
-                    resourcesList.style.display = 'block';
-                    resourcesList.innerHTML = '';
-                    
-                    const coverages = data.entry.map(entry => entry.resource);
-                    coverageData = coverages;
+                let coverages = [];
+                
+                // Format de réponse de notre API
+                if (data.success && data.data && data.data.length > 0) {
+                    coverages = data.data;
+                }
+                // Format de réponse FHIR standard (pour compatibilité)
+                else if (data.entry && data.entry.length > 0) {
+                    coverages = data.entry.map(entry => entry.resource);
+                } else {
+                    // Aucune couverture trouvée
+                    loadingSection.style.display = 'none';
+                    noResourcesSection.style.display = 'block';
+                    return;
+                }
+                
+                // Si nous avons des couvertures, les afficher
+                coverageData = coverages;
+                resourcesList.style.display = 'block';
+                resourcesList.innerHTML = '';
                     
                     // Créer une liste de couvertures
                     const coverageList = document.createElement('div');
