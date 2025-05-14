@@ -2910,7 +2910,7 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
   }
   
   // Créer la ressource Encounter avec extensions françaises
-  const encounterResource = {
+  let encounterResource = {
     resourceType: 'Encounter',
     id: encounterId,
     status: encounterStatus,
