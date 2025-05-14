@@ -4187,6 +4187,172 @@ function processZFMSegment(zfmSegment) {
   return zfmData;
 }
 
+/**
+ * Fonction spécialisée pour traiter les segments Z spécifiques français
+ * @param {Object} segments - Segments du message HL7
+ * @param {Object} bundle - Bundle FHIR en construction
+ */
+function processFrenchZSegments(segments, bundle) {
+  console.log('[CONVERTER] Traitement des segments Z français');
+  
+  // 1. Extraire les informations des segments Z pertinents
+  
+  // Segment ZBE - Mouvement hospitalier français
+  if (segments.ZBE && segments.ZBE.length > 0) {
+    const zbeSegment = segments.ZBE[0];
+    // Format: ZBE|3517108^MED|20240918060000||INSERT|N||ACE ST JEAN^^^^^MED^UF^^^1000
+    
+    // Identifier l'encounter à mettre à jour
+    let encounterEntry = null;
+    for (const entry of bundle.entry) {
+      if (entry.resource.resourceType === 'Encounter') {
+        encounterEntry = entry;
+        break;
+      }
+    }
+    
+    if (encounterEntry) {
+      console.log('[CONVERTER] Enrichissement Encounter avec données ZBE');
+      
+      // Ajouter des identifiants si disponibles (ZBE-1)
+      if (zbeSegment[1]) {
+        if (!encounterEntry.resource.identifier) {
+          encounterEntry.resource.identifier = [];
+        }
+        
+        const zbeId = Array.isArray(zbeSegment[1]) ? zbeSegment[1][0] : zbeSegment[1];
+        const zbeSystem = Array.isArray(zbeSegment[1]) && zbeSegment[1].length > 1 ? zbeSegment[1][1] : 'MED';
+        
+        encounterEntry.resource.identifier.push({
+          system: `urn:oid:1.2.250.1.213.1.1.${zbeSystem === 'MED' ? '4.6' : '4.2'}`,
+          value: zbeId,
+          type: {
+            coding: [{
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'VN',
+              display: 'Visit Number'
+            }]
+          }
+        });
+      }
+      
+      // Ajouter des informations sur l'unité fonctionnelle (ZBE-7)
+      if (zbeSegment[7] && Array.isArray(zbeSegment[7])) {
+        const serviceName = zbeSegment[7][0] || '';
+        
+        if (serviceName && !encounterEntry.resource.serviceProvider) {
+          const serviceProviderUuid = `organization-${uuid.v4()}`;
+          
+          // Ajouter l'organisation de service
+          bundle.entry.push({
+            fullUrl: `urn:uuid:${serviceProviderUuid}`,
+            resource: {
+              resourceType: 'Organization',
+              id: serviceProviderUuid,
+              name: serviceName,
+              type: [{
+                coding: [{
+                  system: 'http://terminology.hl7.org/CodeSystem/organization-type',
+                  code: 'dept',
+                  display: 'Hospital Department'
+                }]
+              }]
+            },
+            request: {
+              method: 'POST',
+              url: 'Organization'
+            }
+          });
+          
+          // Référencer cette organisation dans l'encounter
+          encounterEntry.resource.serviceProvider = {
+            reference: `urn:uuid:${serviceProviderUuid}`
+          };
+        }
+      }
+    }
+  }
+  
+  // Segment ZFV - Informations de visite supplémentaires
+  if (segments.ZFV && segments.ZFV.length > 0) {
+    const zfvSegment = segments.ZFV[0];
+    // Format typique: ZFV| ^20240918000000
+    
+    // Chercher l'encounter à enrichir
+    let encounterEntry = null;
+    for (const entry of bundle.entry) {
+      if (entry.resource.resourceType === 'Encounter') {
+        encounterEntry = entry;
+        break;
+      }
+    }
+    
+    if (encounterEntry && zfvSegment[1] && Array.isArray(zfvSegment[1])) {
+      const visitDate = zfvSegment[1][1] || '';
+      
+      // Date au format YYYYMMDDHHMMSS
+      if (visitDate && /^\d{12,14}$/.test(visitDate)) {
+        const year = visitDate.substring(0, 4);
+        const month = visitDate.substring(4, 6);
+        const day = visitDate.substring(6, 8);
+        const hour = visitDate.substring(8, 10) || '00';
+        const minute = visitDate.substring(10, 12) || '00';
+        const second = visitDate.substring(12, 14) || '00';
+        
+        const isoDate = `${year}-${month}-${day}T${hour}:${minute}:${second}+00:00`;
+        
+        // Ajouter aux périodes de l'encounter
+        if (!encounterEntry.resource.period) {
+          encounterEntry.resource.period = {};
+        }
+        
+        encounterEntry.resource.period.start = isoDate;
+      }
+    }
+  }
+  
+  // Segment ZFP - Praticien français supplémentaire
+  if (segments.ZFP && segments.ZFP.length > 0) {
+    // Traitement spécifique si nécessaire
+    console.log('[CONVERTER] ZFP segment détecté, pas d\'information complémentaire')
+  }
+  
+  // Segment ZMP - Mode de prise en charge (spécifique français)
+  if (segments.ZMP && segments.ZMP.length > 0) {
+    const zmpSegment = segments.ZMP[0];
+    // Format: ZMP|0||||1^M.^MED|P
+    
+    // Identifier l'encounter à mettre à jour
+    let encounterEntry = null;
+    for (const entry of bundle.entry) {
+      if (entry.resource.resourceType === 'Encounter') {
+        encounterEntry = entry;
+        break;
+      }
+    }
+    
+    if (encounterEntry && zmpSegment[5] && Array.isArray(zmpSegment[5])) {
+      // Extraire le titre et le préfixe du zmpSegment[5] (format 1^M.^MED)
+      const titlePrefix = zmpSegment[5][1] || '';
+      
+      // Ajouter une extension française pour le titre de civilité
+      if (titlePrefix) {
+        if (!encounterEntry.resource.extension) {
+          encounterEntry.resource.extension = [];
+        }
+        
+        encounterEntry.resource.extension.push({
+          url: 'http://interopsante.org/fhir/StructureDefinition/fr-encounter-title',
+          valueString: titlePrefix
+        });
+      }
+    }
+  }
+  
+  // Autres segments Z peuvent être ajoutés selon les besoins
+  console.log('[CONVERTER] Traitement des segments Z français terminé');
+}
+
 module.exports = {
   convertHL7ToFHIR
 };

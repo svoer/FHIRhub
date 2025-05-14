@@ -1,15 +1,17 @@
 /**
  * Module de parsing HL7 optimisé pour le projet FHIRHub
  * Cette implémentation utilise une approche plus directe pour extraire
- * les données de messages HL7 v2.5
+ * les données de messages HL7 v2.5, avec un support amélioré pour les
+ * messages HL7 français et les segments Z
  *
- * @version 1.1.1
- * @updated 2025-04-29
+ * @version 1.1.2
+ * @updated 2025-05-14
  * @module hl7Parser
  */
 
 /**
  * Parse un message HL7 et extrait tous les segments et champs
+ * Amélioration du support des segments Z et spécificités françaises
  * @param {string} hl7Message - Message HL7 au format texte
  * @returns {Object} Structure contenant tous les segments et leurs champs
  */
@@ -18,9 +20,16 @@ function parseHL7Message(hl7Message) {
     throw new Error('Message HL7 vide ou non défini');
   }
   
-  // Normaliser les délimiteurs de segment (\n ou \r)
-  const normalizedMessage = hl7Message.replace(/\n/g, '\r');
-  const segments = normalizedMessage.split('\r').filter(Boolean);
+  // Nettoyage et normalisation du message
+  // - Gestion des retours à la ligne multiples (Windows, Unix, Mac)
+  // - Suppression des caractères non imprimables
+  const cleanedMessage = hl7Message
+    .replace(/\r\n|\n\r/g, '\r')  // Normaliser CR+LF ou LF+CR en CR
+    .replace(/\n/g, '\r')         // Normaliser LF en CR
+    .replace(/\r+/g, '\r')        // Supprimer les CR multiples consécutifs
+    .replace(/[^\x20-\x7E\r]/g, ''); // Conserver uniquement ASCII imprimable et CR
+  
+  const segments = cleanedMessage.split('\r').filter(segment => segment.trim().length > 0);
   
   if (segments.length === 0) {
     throw new Error('Aucun segment trouvé dans le message HL7');
@@ -41,12 +50,23 @@ function parseHL7Message(hl7Message) {
   const escapeCharacter = mshComponents[1].charAt(2) || '\\';
   const subcomponentSeparator = mshComponents[1].charAt(3) || '&';
   
+  // Ajouter une vérification du codage (MSH-18)
+  const charsetField = mshComponents[17]; // MSH-18 (index 0-based + 17)
+  const characterEncoding = charsetField ? charsetField.split(componentSeparator)[0] : '8859/1';
+  console.log(`[HL7-PARSER] Encodage détecté: ${characterEncoding || '(par défaut)'}`);
+  
   const segmentData = {};
   
   // Parcourir tous les segments
   segments.forEach(segment => {
     const fields = segment.split(fieldSeparator);
     const segmentName = fields[0];
+    
+    // Vérifier si c'est un segment Z (spécifique français)
+    const isZSegment = segmentName.startsWith('Z');
+    if (isZSegment) {
+      console.log(`[HL7-PARSER] Segment Z français détecté: ${segmentName}`);
+    }
     
     if (!segmentData[segmentName]) {
       segmentData[segmentName] = [];
@@ -59,17 +79,51 @@ function parseHL7Message(hl7Message) {
         return fields[1]; // Préserver les délimiteurs
       }
       
-      // Traiter les répétitions
-      if (field.includes(repetitionSeparator)) {
-        return field.split(repetitionSeparator).map(rep => 
-          parseComponent(rep, componentSeparator, subcomponentSeparator));
+      // Vérifier les champs vides pour éviter les erreurs
+      if (!field || field.trim() === '') {
+        return '';
       }
       
-      return parseComponent(field, componentSeparator, subcomponentSeparator);
+      try {
+        // Traiter les répétitions
+        if (field.includes(repetitionSeparator)) {
+          return field.split(repetitionSeparator).map(rep => {
+            try {
+              return parseComponent(rep, componentSeparator, subcomponentSeparator);
+            } catch (error) {
+              console.warn(`[HL7-PARSER] Erreur dans le segment ${segmentName}, champ ${index}: ${error.message}`);
+              return rep; // Conserver la valeur brute en cas d'erreur
+            }
+          });
+        }
+        
+        return parseComponent(field, componentSeparator, subcomponentSeparator);
+      } catch (error) {
+        console.warn(`[HL7-PARSER] Erreur dans le segment ${segmentName}, champ ${index}: ${error.message}`);
+        return field; // Conserver la valeur brute en cas d'erreur
+      }
     });
+    
+    // Ajout de détection spécifique pour les formats français
+    if ((segmentName === 'EVN' || segmentName === 'PV1' || segmentName === 'ZBE') && 
+        segmentFields.some(field => typeof field === 'string' && /^\d{12,14}$/.test(field))) {
+      console.log(`[HL7-PARSER] Format de date français détecté dans ${segmentName}`);
+    }
     
     segmentData[segmentName].push(segmentFields);
   });
+  
+  // Vérification pour les messages français
+  if (segmentData['MSH'] && segmentData['MSH'][0][11] && 
+      Array.isArray(segmentData['MSH'][0][11]) && 
+      segmentData['MSH'][0][11][1] === 'FRA') {
+    console.log('[HL7-PARSER] Message HL7 français confirmé (MSH-12)');
+    
+    // Vérification des segments Z typiques français
+    const expectedZSegments = ['ZBE', 'ZFP', 'ZFV', 'ZMO', 'ZFD', 'ZMP', 'ZMD'];
+    const foundZSegments = Object.keys(segmentData).filter(seg => seg.startsWith('Z'));
+    console.log(`[HL7-PARSER] Segments Z français trouvés: ${foundZSegments.join(', ') || 'aucun'}`);
+  }
   
   return {
     delimiters: {
@@ -79,27 +133,57 @@ function parseHL7Message(hl7Message) {
       escapeCharacter,
       subcomponentSeparator
     },
-    segments: segmentData
+    segments: segmentData,
+    isFrencHL7: segmentData['MSH'] && segmentData['MSH'][0][11] && 
+                Array.isArray(segmentData['MSH'][0][11]) && 
+                segmentData['MSH'][0][11][1] === 'FRA'
   };
 }
 
 /**
- * Parse un composant HL7
+ * Parse un composant HL7 avec gestion améliorée des composants spécifiques français
  * @param {string} component - Composant à analyser
  * @param {string} componentSeparator - Séparateur de composant (^)
  * @param {string} subcomponentSeparator - Séparateur de sous-composant (&)
  * @returns {Array|string} Composant parsé
  */
 function parseComponent(component, componentSeparator, subcomponentSeparator) {
-  if (!component.includes(componentSeparator)) {
-    return component; // Simple valeur
+  // Retourner directement si c'est une valeur simple ou vide
+  if (!component || typeof component !== 'string') {
+    return component;
   }
   
-  return component.split(componentSeparator).map(comp => {
-    if (comp.includes(subcomponentSeparator)) {
-      return comp.split(subcomponentSeparator);
+  if (!component.includes(componentSeparator)) {
+    // Détection de formats de date français
+    if (/^\d{12,14}$/.test(component)) {
+      // Format YYYYMMDDHHmmss - ne pas transformer mais signaler lors du traitement
+      return component;
     }
-    return comp;
+    
+    // Détection d'OIDs français
+    if (/^[12]\.\d+\.\d+(\.\d+)*$/.test(component)) {
+      // Traitement spécial pour les OIDs (urn:oid:...)
+      return component;
+    }
+    
+    return component.trim(); // Simple valeur, élimine les espaces inutiles
+  }
+  
+  // Amélioration: gestion des composants vides entre séparateurs (e.g., "^^^^^")
+  const components = component.split(componentSeparator);
+  return components.map((comp, index) => {
+    // Retourner une chaîne vide si le composant est vide (pas juste des espaces)
+    if (!comp || comp.trim() === '') {
+      return '';
+    }
+    
+    // Traiter les sous-composants
+    if (comp.includes(subcomponentSeparator)) {
+      const subcomponents = comp.split(subcomponentSeparator);
+      // Nettoyer les sous-composants vides
+      return subcomponents.map(sc => sc ? sc.trim() : '');
+    }
+    return comp.trim();
   });
 }
 
