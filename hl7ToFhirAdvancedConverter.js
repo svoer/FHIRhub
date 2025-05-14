@@ -1,12 +1,20 @@
 /**
  * Convertisseur avancé HL7 v2.5 vers FHIR R4
  * Spécialement optimisé pour les messages ADT français
- * Compatible avec les exigences de l'ANS et FR Core
+ * Compatible avec les exigences de l'ANS et les profils FR Core
  * 
  * Intègre les terminologies et systèmes de codification français
- * Conforme au guide d'implémentation FHIR de l'ANS et aux profils FR Core
+ * Conforme au guide d'implémentation FHIR de l'ANS (Agence du Numérique en Santé)
+ * Compatible avec les ressources du profil FR Core pour l'interopérabilité française
  * 
- * @version 1.2.0
+ * Fonctionnalités principales:
+ * - Mapping complet des segments HL7 vers ressources FHIR
+ * - Support des segments Z spécifiques aux messages français
+ * - Intégration des URL canoniques des profils FR Core
+ * - Extensions pour INS, RPPS, ADELI, FINESS et autres identifiants français
+ * - Conformité aux guides MOS / CLI / CDA de l'ANS
+ * 
+ * @version 1.3.0
  * @updated 2025-05-14
  * @module hl7ToFhirAdvancedConverter
  */
@@ -797,7 +805,7 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   }
   
   // Créer la ressource Patient
-  const patientResource = {
+  let patientResource = {
     resourceType: 'Patient',
     id: patientId,
     identifier: optimizedIdentifiers,  // Utilisation des identifiants optimisés

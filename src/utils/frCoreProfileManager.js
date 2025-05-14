@@ -3,8 +3,17 @@
  * Module permettant d'ajouter les URL canoniques et extensions des profils FR Core
  * aux ressources FHIR générées lors de la conversion des messages HL7 français
  * 
+ * Ce module implémente les fonctionnalités suivantes:
+ * - Ajout des URL canoniques des profils FR Core aux ressources FHIR
+ * - Gestion des extensions spécifiques françaises (INS, RPPS, ADELI, etc.)
+ * - Validation des systèmes d'identification selon les standards français
+ * - Support des systèmes de codification de l'ANS (Agence du Numérique en Santé)
+ * 
+ * Conforme au guide d'implémentation FHIR FR Core R4
+ * https://hl7.fr/ig/fhir/core/
+ * 
  * @module frCoreProfileManager
- * @version 1.0.0
+ * @version 1.1.0
  * @updated 2025-05-14
  */
 

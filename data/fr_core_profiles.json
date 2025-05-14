@@ -13,7 +13,10 @@
   "extensions": {
     "PatientINS": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-ins",
     "OrganizationIdentifier": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization-executant",
-    "PractitionerRole": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner-role"
+    "PractitionerRole": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner-role",
+    "RelatedPersonGuardian": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-related-person-guardian-status",
+    "EncounterStatus": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter-hospitalization",
+    "CoverageCategory": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage-type"
   },
   "systemUrls": {
     "FrenchInsuranceNumber": "urn:oid:1.2.250.1.213.1.4.8",
