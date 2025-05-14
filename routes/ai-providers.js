@@ -1511,17 +1511,18 @@ router.get('/status', async (req, res) => {
     
     // Construire la requête en fonction des colonnes disponibles dans la table
     let query;
-    if (columnNames.includes('enabled')) {
-      query = `
-        SELECT * FROM ai_providers 
-        WHERE enabled = 1 
-        ORDER BY id ASC
-        LIMIT 1
-      `;
-    } else if (columnNames.includes('is_active')) {
+    // Basé sur les logs du système, la colonne est is_active
+    if (columnNames.includes('is_active')) {
       query = `
         SELECT * FROM ai_providers 
         WHERE is_active = 1 
+        ORDER BY id ASC
+        LIMIT 1
+      `;
+    } else if (columnNames.includes('enabled')) {
+      query = `
+        SELECT * FROM ai_providers 
+        WHERE enabled = 1 
         ORDER BY id ASC
         LIMIT 1
       `;
@@ -1532,8 +1533,19 @@ router.get('/status', async (req, res) => {
       });
     }
     
-    logger.debug(`Requête pour fournisseur actif: ${query}`);
+    logger.info(`Requête pour fournisseur actif: ${query}`);
     const activeProvider = db.prepare(query).get();
+    
+    // Afficher plus d'informations sur le fournisseur récupéré
+    if (activeProvider) {
+      logger.info(`Fournisseur actif trouvé: ${activeProvider.name || activeProvider.provider_name} Type: ${activeProvider.provider_type}`);
+      logger.info(`Modèle configuré: ${activeProvider.model_name || 'non spécifié'}`);
+      
+      // Afficher toutes les propriétés du fournisseur pour débogage
+      Object.keys(activeProvider).forEach(key => {
+        logger.debug(`  - ${key}: ${activeProvider[key]}`);
+      });
+    }
     
     if (!activeProvider) {
       return res.json({
