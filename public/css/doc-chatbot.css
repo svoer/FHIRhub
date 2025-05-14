@@ -8,16 +8,17 @@
   bottom: 75px; /* Plus haut que le bouton de retour en haut */
   right: 20px;
   width: 280px; /* Plus petit */
-  height: 80px; /* Initialement juste le header visible */
-  background-color: #fff;
+  height: 40px; /* Juste le header visible */
+  background-color: transparent; /* Fond transparent */
   border-radius: 5px;
-  box-shadow: 0 2px 10px rgba(231, 76, 60, 0.4);
+  box-shadow: none; /* Pas d'ombre */
   display: flex;
   flex-direction: column;
   z-index: 9999;
   overflow: hidden;
   pointer-events: auto;
   transition: all 0.3s ease;
+  border: none; /* Pas de bordure */
 }
 
 /* État fermé - juste le header (plus petit) */
@@ -74,9 +75,10 @@
   padding: 10px 15px;
   background: linear-gradient(135deg, #e74c3c 0%, #ff8e53 100%);
   color: white;
-  border-radius: 5px 5px 0 0;
+  border-radius: 5px;
   cursor: pointer;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border-bottom: none;
 }
 
 .doc-chatbot-header h3 {
@@ -106,6 +108,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border-top: none; /* Supprimer la bordure supérieure */
+  margin-top: 0;
+  padding-top: 0;
 }
 
 .doc-chatbot-messages {
@@ -115,6 +120,12 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Masquer la barre de défilement pour Chrome/Safari/Edge */
+.doc-chatbot-messages::-webkit-scrollbar {
+  display: none;
 }
 
 .doc-chatbot-message {
