@@ -53,7 +53,7 @@ async function generateResponse({ prompt, systemPrompt = '', maxTokens = 1000, t
                     temperature,
                     maxTokens,
                     retryCount,
-                    systemMessage: systemPrompt // systemMessage au lieu de systemPrompt
+                    systemMessage: systemPrompt // Le paramètre est systemMessage dans mistralClient
                 });
                 
             case 'ollama':

@@ -113,8 +113,9 @@ async function generateResponse(prompt, {
       logger.info(`Paramètres: modèle=${model}, maxTokens=${maxTokens}, température=${temperature}`);
       
       // Ajouter un timeout explicite en utilisant Promise.race
+      // Pour l'analyse de patient, utilisons 120 secondes au lieu de 60
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout dépassé pour l\'appel à l\'API Mistral')), 60000);
+        setTimeout(() => reject(new Error('Timeout dépassé pour l\'appel à l\'API Mistral')), 120000);
       });
       
       // Garantir que le modèle est correct

@@ -59,7 +59,7 @@ try {
         }
     };
 }
-const { getActiveAIProvider } = aiProviderService;
+// Suppression de la déclaration redondante de getActiveAIProvider
 const { authCombined } = require('../middleware/auth');
 
 // Plus besoin d'importer des fournisseurs d'IA spécifiques
@@ -399,7 +399,7 @@ Quand un utilisateur pose une question technique, tu dois d'abord consulter cett
         
         try {
             // Obtenir le fournisseur actif
-            const aiProvider = await aiProviderService.getActiveAIProvider();
+            const aiProvider = await getProvider();
             if (!aiProvider) {
                 clearTimeout(timeoutHandle);
                 return res.status(500).json({
@@ -665,7 +665,7 @@ router.get('/test-knowledge', async (req, res) => {
 router.get('/test-chatbot-ai-provider', async (req, res) => {
     try {
         // Récupérer le fournisseur d'IA actif
-        const activeProvider = await aiProviderService.getActiveAIProvider();
+        const activeProvider = await getProvider();
         
         if (!activeProvider) {
             return res.status(404).json({
