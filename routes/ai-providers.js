@@ -1552,8 +1552,8 @@ router.get('/status', async (req, res) => {
     } catch (error) {
       logger.error(`Erreur lors de la récupération du modèle actuel: ${error.message}`);
       modelInfo = { 
-        id: activeProvider.model_id || activeProvider.models || 'unknown', 
-        name: activeProvider.model_id || activeProvider.models || 'Non spécifié' 
+        id: activeProvider.model_name || activeProvider.models || activeProvider.model_id || 'unknown', 
+        name: activeProvider.model_name || activeProvider.models || activeProvider.model_id || 'Non spécifié' 
       };
     }
     
