@@ -1,7 +1,7 @@
 # 🔥 FHIRHub 🔥
 
 ## 🏥 Vue d'ensemble
-FHIRHub est une plateforme d'interopérabilité santé propriétaire conçue pour recevoir des messages HL7, les convertir au format FHIR (Fast Healthcare Interoperability Resources), et éventuellement stocker les données FHIR résultantes dans un entrepôt de données HAPI FHIR. La plateforme sert de hub central pour la transformation et la gestion des données de santé interopérables, alliant performance ⚡ et intelligence artificielle 🤖.
+FHIRHub est une plateforme d'interopérabilité santé propriétaire conçue pour recevoir des messages HL7, les convertir au format FHIR (Fast Healthcare Interoperability Resources), et éventuellement stocker les données FHIR résultantes dans un entrepôt de données HAPI FHIR. La plateforme sert de hub central pour la transformation et la gestion des données de santé interopérables, alliant performance ⚡ et analyse intelligente des données médicales.
 
 ## 🏥 Qu'est-ce que HAPI FHIR?
 HAPI FHIR est un serveur FHIR open-source officiel développé et maintenu par la communauté HL7.org. Il fournit une implémentation complète des spécifications FHIR, comprenant le stockage des ressources, la validation, et la prise en charge des requêtes. FHIRHub s'interface directement avec un ou plusieurs serveurs HAPI FHIR.
@@ -51,11 +51,6 @@ Indicateurs en temps réel comprenant:
 - Interface permettant aux professionnels de santé de sélectionner un patient
 - Affichage des données médicales organisées par onglet (consultations, prescriptions, organisations, etc.)
 - Génération d'un résumé IA 🤖 du dossier médical du patient basé sur toutes les données disponibles
-
-### 🤖 Chatbot IA avec RAG
-- Chatbot de support intégré utilisant la Génération Augmentée par Récupération (RAG)
-- Formé sur la documentation propre à la plateforme
-- Assistance contextuelle pour les utilisateurs
 
 ### 🔑 Outils d'administration
 - Gestion des clés API par application
@@ -122,4 +117,4 @@ FHIRHub est un logiciel propriétaire. Tous droits réservés. Non disponible en
 
 ---
 
-Le FHIRHub représente une solution complète pour l'interopérabilité des données de santé, permettant un flux efficace ⚡ des informations entre les systèmes utilisant HL7 et ceux basés sur FHIR, avec des capacités d'analyse IA 🤖 pour améliorer l'utilisation clinique des données.
+Le FHIRHub représente une solution complète pour l'interopérabilité des données de santé, permettant un flux efficace ⚡ des informations entre les systèmes utilisant HL7 et ceux basés sur FHIR, avec des capacités d'analyse avancées pour améliorer l'utilisation clinique des données.
