@@ -1505,11 +1505,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Aucune consultation n'a été chargée, afficher un message générique
             loadingSection.style.display = 'none';
             noResourcesSection.style.display = 'block';
-            noResourcesSection.innerHTML = `
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Aucun praticien n'a été trouvé pour ce patient.
-                </div>
-            `;
+            noResourcesSection.innerHTML = 
+                '<div class="alert alert-info">' +
+                '<i class="fas fa-info-circle"></i> Aucun praticien n\'a été trouvé pour ce patient.' +
+                '</div>';
         }
     }
     
@@ -2275,7 +2274,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                     })
                                     .catch(error => {
                                         console.error("Erreur lors de la récupération des données complètes:", error);
-                                        showStatus(`Erreur: ${error.message}. Utilisation d'une méthode alternative...`, 'warning');
+                                        showStatus('Erreur: ' + error.message + '. Utilisation d\'une méthode alternative...', 'warning');
                                         
                                         // En cas d'échec de $everything, récupérer manuellement
                                         fetchResourcesManually(patientReference.id)
