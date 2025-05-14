@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "lastUpdated": "2024-07-31",
+  "version": "1.1.0",
+  "lastUpdated": "2025-05-14",
   "systems": {
     "SNOMED-CT-FR": "http://snomed.info/sct/1221000146105",
     "CIM-10-FR": "http://terminology.who.int/CodeSystem/icd10-fr",
@@ -9,7 +9,17 @@
     "NOS": "https://mos.esante.gouv.fr/NOS",
     "JDV": "urn:oid:1.2.250.1.213.1.6",
     "TA_ASIP": "urn:oid:1.2.250.1.213.1.1.4.322",
-    "CI-SIS": "https://esante.gouv.fr/ci-sis"
+    "CI-SIS": "https://esante.gouv.fr/ci-sis",
+    "TRE_R20-Pays": "https://mos.esante.gouv.fr/NOS/TRE_R20-Pays/FHIR/TRE-R20-Pays",
+    "TRE_R38-SpecialiteOrdinale": "https://mos.esante.gouv.fr/NOS/TRE_R38-SpecialiteOrdinale/FHIR/TRE-R38-SpecialiteOrdinale",
+    "TRE_R94-ProfessionSocial": "https://mos.esante.gouv.fr/NOS/TRE_R94-ProfessionSocial/FHIR/TRE-R94-ProfessionSocial",
+    "TRE_R213-ModePriseEnCharge": "https://mos.esante.gouv.fr/NOS/TRE_R213-ModePriseEnCharge/FHIR/TRE-R213-ModePriseEnCharge",
+    "TRE_R28-TypeCouverture": "https://mos.esante.gouv.fr/NOS/TRE_R28-TypeCouverture/FHIR/TRE-R28-TypeCouverture",
+    "TRE_G15-ProfessionSante": "https://mos.esante.gouv.fr/NOS/TRE_G15-ProfessionSante/FHIR/TRE-G15-ProfessionSante",
+    "TRE_R305-TypeRencontre": "https://mos.esante.gouv.fr/NOS/TRE_R305-TypeRencontre/FHIR/TRE-R305-TypeRencontre",
+    "TRE_R303-HL7v3AdministrativeGender": "https://mos.esante.gouv.fr/NOS/TRE_R303-HL7v3AdministrativeGender/FHIR/TRE-R303-HL7v3AdministrativeGender",
+    "TRE_R259-RelationFamiliale": "https://mos.esante.gouv.fr/NOS/TRE_R259-RelationFamiliale/FHIR/TRE-R259-RelationFamiliale",
+    "TRE_R81-CiviliteTitre": "https://mos.esante.gouv.fr/NOS/TRE_R81-CiviliteTitre/FHIR/TRE-R81-CiviliteTitre"
   },
   "oids": {
     "INS-NIR": "1.2.250.1.213.1.1.1",
@@ -199,23 +209,41 @@
       }
     },
     "ZBE": {
-      "description": "Segment mouvement",
+      "description": "Segment mouvement français",
       "fields": {
         "1": {
-          "description": "Date/heure du mouvement"
+          "description": "Identifiant du mouvement",
+          "valueMapping": {}
         },
         "2": {
+          "description": "Date/heure du mouvement",
+          "format": "YYYYMMDDHHMMSS"
+        },
+        "3": {
+          "description": "Informations complémentaires"
+        },
+        "4": {
           "description": "Type de mouvement",
           "valueMapping": {
             "A": "Admission",
             "D": "Sortie",
-            "T": "Transfert"
+            "T": "Transfert",
+            "INSERT": "Entrée"
           }
+        },
+        "5": {
+          "description": "Indicateur de modification"
+        },
+        "6": {
+          "description": "Réservé"
+        },
+        "7": {
+          "description": "Unité fonctionnelle/Service"
         }
       }
     },
     "ZFP": {
-      "description": "Segment praticien supplémentaire",
+      "description": "Segment praticien supplémentaire français",
       "fields": {
         "1": {
           "description": "Identifiant praticien"
@@ -228,6 +256,154 @@
         },
         "4": {
           "description": "Type praticien"
+        }
+      }
+    },
+    "ZFV": {
+      "description": "Segment visite français",
+      "fields": {
+        "1": {
+          "description": "Date début visite",
+          "format": "YYYYMMDDHHMMSS"
+        },
+        "2": {
+          "description": "Date fin visite",
+          "format": "YYYYMMDDHHMMSS"
+        }
+      }
+    },
+    "ZFM": {
+      "description": "Segment médical français",
+      "fields": {
+        "1": {
+          "description": "Mode facturation",
+          "valueMapping": {
+            "0": "Standard",
+            "1": "CCAM",
+            "2": "T2A",
+            "8": "GHS"
+          }
+        },
+        "2": {
+          "description": "Mode entrée",
+          "valueMapping": {
+            "6": "Mutation",
+            "7": "Transfert",
+            "8": "Domicile"
+          }
+        },
+        "3": {
+          "description": "Mode sortie",
+          "valueMapping": {
+            "6": "Mutation",
+            "7": "Transfert",
+            "8": "Domicile"
+          }
+        }
+      }
+    },
+    "ZFD": {
+      "description": "Segment diagnostic français",
+      "fields": {
+        "1": {
+          "description": "Type diagnostic"
+        },
+        "2": {
+          "description": "Code diagnostic"
+        },
+        "3": {
+          "description": "Date diagnostic"
+        },
+        "4": {
+          "description": "Nature diagnostic"
+        },
+        "5": {
+          "description": "Confirmé oui/non"
+        },
+        "6": {
+          "description": "Spécialité médicale",
+          "valueMapping": {
+            "SM": "Médecine générale",
+            "SP": "Psychiatrie",
+            "SC": "Cardiologie",
+            "SN": "Neurologie"
+          }
+        }
+      }
+    },
+    "ZMP": {
+      "description": "Segment mode de prise en charge",
+      "fields": {
+        "1": {
+          "description": "Code mode"
+        },
+        "2": {
+          "description": "Description"
+        },
+        "3": {
+          "description": "Date début"
+        },
+        "4": {
+          "description": "Date fin"
+        },
+        "5": {
+          "description": "Praticien responsable"
+        },
+        "6": {
+          "description": "Type prise en charge",
+          "valueMapping": {
+            "P": "Programmé",
+            "U": "Urgence"
+          }
+        }
+      }
+    },
+    "ZMD": {
+      "description": "Segment médical détail",
+      "fields": {
+        "1": {
+          "description": "Mode calcul"
+        },
+        "2": {
+          "description": "Type passage"
+        },
+        "3": {
+          "description": "Date placement"
+        },
+        "8": {
+          "description": "Passage aux urgences",
+          "valueMapping": {
+            "Y": "Oui",
+            "N": "Non"
+          }
+        },
+        "9": {
+          "description": "Intervention anesthésie",
+          "valueMapping": {
+            "Y": "Oui",
+            "N": "Non"
+          }
+        }
+      }
+    },
+    "ZMO": {
+      "description": "Segment modulation tarifaire",
+      "fields": {
+        "9": {
+          "description": "Exonération"
+        },
+        "10": {
+          "description": "Statut facturation"
+        },
+        "12": {
+          "description": "Prise en charge intégrale",
+          "valueMapping": {
+            "Y": "Oui",
+            "N": "Non"
+          }
+        },
+        "13": {
+          "description": "Motif exonération"
         }
       }
     }

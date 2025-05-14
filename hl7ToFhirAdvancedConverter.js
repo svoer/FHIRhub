@@ -4361,7 +4361,104 @@ function processFrenchZSegments(segments, bundle) {
     }
   }
   
-  // Autres segments Z peuvent être ajoutés selon les besoins
+  // Segment ZFD - Données supplémentaires françaises
+  if (segments.ZFD && segments.ZFD.length > 0) {
+    const zfdSegment = segments.ZFD[0];
+    
+    // Identifier l'encounter à mettre à jour
+    let encounterEntry = null;
+    for (const entry of bundle.entry) {
+      if (entry.resource.resourceType === 'Encounter') {
+        encounterEntry = entry;
+        break;
+      }
+    }
+    
+    if (encounterEntry && zfdSegment.length > 5) {
+      const specialty = zfdSegment[5];
+      
+      if (specialty) {
+        // Ajouter la spécialité médicale comme type d'encounter
+        if (!encounterEntry.resource.type) {
+          encounterEntry.resource.type = [];
+        }
+        
+        encounterEntry.resource.type.push({
+          coding: [{
+            system: "https://mos.esante.gouv.fr/NOS/TRE_R38-SpecialiteOrdinale/FHIR/TRE-R38-SpecialiteOrdinale",
+            code: specialty,
+            display: specialty === "SM" ? "Médecine générale" : specialty
+          }]
+        });
+      }
+    }
+  }
+  
+  // Segment ZMD - Mode de sortie et informations complémentaires
+  if (segments.ZMD && segments.ZMD.length > 0) {
+    const zmdSegment = segments.ZMD[0];
+    
+    // Identifier l'encounter à mettre à jour
+    let encounterEntry = null;
+    for (const entry of bundle.entry) {
+      if (entry.resource.resourceType === 'Encounter') {
+        encounterEntry = entry;
+        break;
+      }
+    }
+    
+    if (encounterEntry && zmdSegment.length > 8) {
+      // ZMD-8 et ZMD-9 : indicateurs d'anesthésie ou de consultation urgente
+      const hasEmergency = zmdSegment[8] === 'Y';
+      const hasAnesthesia = zmdSegment[9] === 'Y';
+      
+      if (hasEmergency || hasAnesthesia) {
+        if (!encounterEntry.resource.extension) {
+          encounterEntry.resource.extension = [];
+        }
+        
+        if (hasEmergency) {
+          encounterEntry.resource.extension.push({
+            url: "http://interopsante.org/fhir/StructureDefinition/fr-encounter-emergency",
+            valueBoolean: true
+          });
+        }
+        
+        if (hasAnesthesia) {
+          encounterEntry.resource.extension.push({
+            url: "http://interopsante.org/fhir/StructureDefinition/fr-encounter-anesthesia",
+            valueBoolean: true
+          });
+        }
+      }
+    }
+  }
+  
+  // Segment ZMO - Données de modulation tarifaire
+  if (segments.ZMO && segments.ZMO.length > 0) {
+    const zmoSegment = segments.ZMO[0];
+    
+    // Parcourir les ressources Coverage si elles existent
+    for (const entry of bundle.entry) {
+      if (entry.resource.resourceType === 'Coverage') {
+        // ZMO-12 : Y/N pour "pris en charge 100%"
+        if (zmoSegment.length > 12 && zmoSegment[12] === 'Y') {
+          // Ajouter une extension pour indiquer la prise en charge à 100%
+          if (!entry.resource.extension) {
+            entry.resource.extension = [];
+          }
+          
+          entry.resource.extension.push({
+            url: "http://interopsante.org/fhir/StructureDefinition/fr-coverage-full-coverage",
+            valueBoolean: true
+          });
+        }
+        
+        break; // Traiter uniquement la première ressource Coverage
+      }
+    }
+  }
+  
   console.log('[CONVERTER] Traitement des segments Z français terminé');
 }
 
