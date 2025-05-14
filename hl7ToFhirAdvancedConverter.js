@@ -1,13 +1,13 @@
 /**
  * Convertisseur avancé HL7 v2.5 vers FHIR R4
  * Spécialement optimisé pour les messages ADT français
- * Compatible avec les exigences de l'ANS
+ * Compatible avec les exigences de l'ANS et FR Core
  * 
  * Intègre les terminologies et systèmes de codification français
- * Conforme au guide d'implémentation FHIR de l'ANS
+ * Conforme au guide d'implémentation FHIR de l'ANS et aux profils FR Core
  * 
- * @version 1.1.1
- * @updated 2025-04-29
+ * @version 1.2.0
+ * @updated 2025-05-14
  * @module hl7ToFhirAdvancedConverter
  */
 
@@ -26,6 +26,14 @@ const uuid = {
 const frenchTerminology = require('./french_terminology_adapter');
 const hl7Parser = require('./hl7Parser');
 const { extractFrenchNames } = require('./src/utils/frenchNameExtractor');
+const frCoreProfileManager = require('./src/utils/frCoreProfileManager');
+
+// Afficher les informations sur les profils FR Core chargés
+const frCoreInfo = frCoreProfileManager.getFrCoreInfo();
+console.log('[CONVERTER] Statut des profils FR Core:', frCoreInfo.status);
+if (frCoreInfo.status === 'success') {
+  console.log(`[CONVERTER] Profils FR Core version ${frCoreInfo.version} chargés (${frCoreInfo.profileCount} profils, ${frCoreInfo.extensionCount} extensions)`);
+}
 
 /**
  * Convertit un message HL7 en bundle FHIR conforme aux spécifications ANS (France)
@@ -806,6 +814,15 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   if (pd1SegmentFields) {
     addFrenchExtensions(patientResource, pd1SegmentFields);
   }
+  
+  // Ajouter le profil FR Core à la ressource Patient
+  patientResource = frCoreProfileManager.addFrCoreProfile(patientResource);
+  
+  // Ajouter les extensions FR Core spécifiques si un INS est disponible
+  const insData = {
+    insNumber: insIdentifier?.value
+  };
+  patientResource = frCoreProfileManager.addFrCoreExtensions(patientResource, insData);
   
   return {
     fullUrl: `urn:uuid:${patientId}`,
