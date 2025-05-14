@@ -145,6 +145,22 @@ function addFrCoreExtensions(resource, data = {}) {
         }
       }
       break;
+      
+    case 'RelatedPerson':
+      // Extensions spécifiques pour les personnes liées
+      if (data.relationshipType) {
+        // Vérifier si la ressource doit avoir des extensions spécifiques
+        // basées sur le type de relation (parent, tuteur, etc.)
+        if (data.relationshipType === 'GUARD' && frCoreProfiles?.extensions?.RelatedPersonGuardian) {
+          const guardianExtension = {
+            url: frCoreProfiles.extensions.RelatedPersonGuardian,
+            valueBoolean: true
+          };
+          resource.extension.push(guardianExtension);
+          console.log('[FR-CORE] Extension tuteur légal ajoutée à RelatedPerson');
+        }
+      }
+      break;
   }
 
   return resource;

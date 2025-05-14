@@ -3777,6 +3777,20 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
     }
   }
   
+  // Ajouter le profil FR Core à la ressource RelatedPerson
+  relatedPersonResource = frCoreProfileManager.addFrCoreProfile(relatedPersonResource);
+  
+  // Ajouter des extensions spécifiques au contexte français
+  if (relatedPersonResource.relationship && relatedPersonResource.relationship[0]?.coding) {
+    const relationshipData = {
+      relationshipType: relatedPersonResource.relationship[0].coding[0]?.code
+    };
+    relatedPersonResource = frCoreProfileManager.addFrCoreExtensions(relatedPersonResource, relationshipData);
+  }
+  
+  console.log('[CONVERTER] Ressource RelatedPerson créée avec profil FR Core:', 
+    relatedPersonResource.meta?.profile ? relatedPersonResource.meta.profile[0] : 'Aucun profil');
+  
   return {
     fullUrl: `urn:uuid:${relatedPersonId}`,
     resource: relatedPersonResource,
