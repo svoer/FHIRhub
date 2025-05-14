@@ -2,10 +2,10 @@
  * Styles pour le chatbot contextuel de la documentation
  */
 
-/* Widget du chatbot */
+/* Widget du chatbot - repositionné pour éviter la superposition avec le bouton back-to-top */
 .doc-chatbot-widget {
   position: fixed;
-  bottom: 20px;
+  bottom: 90px; /* Plus haut que le bouton de retour en haut */
   right: 20px;
   width: 350px;
   height: 450px;
@@ -20,16 +20,50 @@
   transition: all 0.3s ease;
 }
 
-/* État fermé */
+/* État fermé - complètement caché */
 .doc-chatbot-widget:not(.open) {
   height: 60px; /* Juste assez pour le header */
   overflow: hidden;
+  transform: translateY(calc(100% - 60px));
 }
 
 /* État ouvert */
 .doc-chatbot-widget.open {
   height: 450px;
+  transform: translateY(0);
   box-shadow: 0 10px 30px rgba(231, 76, 60, 0.8); /* Ombre plus prononcée quand ouvert */
+}
+
+/* Bouton flottant pour ouvrir le chatbot */
+.doc-chatbot-launcher {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #e74c3c, #ff5722);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 9998;
+  transition: transform 0.2s;
+}
+
+.doc-chatbot-launcher:hover {
+  transform: scale(1.1);
+}
+
+.doc-chatbot-launcher:active {
+  transform: scale(0.95);
+}
+
+/* Masquer le lanceur quand le chatbot est ouvert */
+.doc-chatbot-launcher.hidden {
+  display: none;
 }
 
 .doc-chatbot-header {
