@@ -54,7 +54,7 @@ if (frCoreInfo.status === 'success') {
 function convertHL7ToFHIR(hl7Message) {
   // Variable globale pour stocker toutes les entrées du bundle, y compris les ressources additionnelles
   // comme les organismes d'assurance
-  const bundleEntries = [];
+  let bundleEntries = [];
   try {
     console.log('[CONVERTER] Démarrage de la conversion HL7 vers FHIR');
     
@@ -2768,7 +2768,7 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
   
   // Tableau pour stocker les ressources supplémentaires liées à l'Encounter
   // qui seront ajoutées au bundle final
-  const bundleEntries = [];
+  let bundleEntries = [];
   
   // Vérifier s'il y a des informations de localisation (PV1-3) pour créer une ressource Location
   let locationReference = null;
@@ -3189,7 +3189,7 @@ function createOrganizationResource(mshSegment, fieldIndex) {
   const organizationId = `organization-${orgId}`;
   
   // Créer la ressource Organization
-  const organizationResource = {
+  let organizationResource = {
     resourceType: 'Organization',
     id: organizationId,
     identifier: [{
