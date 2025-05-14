@@ -526,6 +526,126 @@ router.get('/:serverId/patients/:patientId/observations', authCombined, async (r
  *       500:
  *         description: Erreur serveur
  */
+
+/**
+ * @swagger
+ * /api/patient-viewer/{serverId}/patients/{patientId}/related-persons:
+ *   get:
+ *     summary: Personnes liées au patient
+ *     description: Récupère la liste des personnes liées au patient (famille, contacts, etc.)
+ *     tags:
+ *       - Visualisation Patient
+ *     parameters:
+ *       - in: path
+ *         name: serverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du serveur FHIR
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du patient
+ *     responses:
+ *       200:
+ *         description: Liste des personnes liées
+ *       404:
+ *         description: Serveur ou patient non trouvé
+ *       500:
+ *         description: Erreur serveur
+ */
+
+/**
+ * @swagger
+ * /api/patient-viewer/{serverId}/patients/{patientId}/practitioners:
+ *   get:
+ *     summary: Praticiens liés au patient
+ *     description: Récupère la liste des praticiens associés au dossier du patient
+ *     tags:
+ *       - Visualisation Patient
+ *     parameters:
+ *       - in: path
+ *         name: serverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du serveur FHIR
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du patient
+ *     responses:
+ *       200:
+ *         description: Liste des praticiens
+ *       404:
+ *         description: Serveur ou patient non trouvé
+ *       500:
+ *         description: Erreur serveur
+ */
+
+/**
+ * @swagger
+ * /api/patient-viewer/{serverId}/patients/{patientId}/organizations:
+ *   get:
+ *     summary: Organisations liées au patient
+ *     description: Récupère la liste des organisations liées au dossier du patient
+ *     tags:
+ *       - Visualisation Patient
+ *     parameters:
+ *       - in: path
+ *         name: serverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du serveur FHIR
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du patient
+ *     responses:
+ *       200:
+ *         description: Liste des organisations
+ *       404:
+ *         description: Serveur ou patient non trouvé
+ *       500:
+ *         description: Erreur serveur
+ */
+
+/**
+ * @swagger
+ * /api/patient-viewer/{serverId}/patients/{patientId}/coverage:
+ *   get:
+ *     summary: Couvertures d'assurance du patient
+ *     description: Récupère la liste des couvertures d'assurance du patient
+ *     tags:
+ *       - Visualisation Patient
+ *     parameters:
+ *       - in: path
+ *         name: serverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du serveur FHIR
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID du patient
+ *     responses:
+ *       200:
+ *         description: Liste des couvertures
+ *       404:
+ *         description: Serveur ou patient non trouvé
+ *       500:
+ *         description: Erreur serveur
+ */
 router.get('/:serverId/patients/:patientId/medications', authCombined, async (req, res) => {
   try {
     const { serverId, patientId } = req.params;

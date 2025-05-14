@@ -59,7 +59,8 @@ Indicateurs en temps réel comprenant:
 
 ### 📖 Gestion de la terminologie FHIR
 - Mise à jour et gestion des terminologies FHIR directement depuis la plateforme
-- Support des terminologies françaises spécifiques
+- Support complet des terminologies françaises ANS (Agence du Numérique en Santé)
+- Implémentation complète des profils FR Core (HL7 France)
 - Adaptation des systèmes de codage internationaux
 
 ### 🤖 Configuration IA
