@@ -3872,7 +3872,7 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
   const coverageId = `coverage-${uuid.v4()}`;
   
   // Créer la ressource Coverage
-  const coverageResource = {
+  let coverageResource = {
     resourceType: 'Coverage',
     id: coverageId,
     status: 'active',

@@ -1,0 +1,530 @@
+{
+  "resourceType": "Bundle",
+  "id": "bundle-1747265138982",
+  "type": "transaction",
+  "timestamp": "2025-05-14T23:25:38.982Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:patient-05560",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "patient-05560",
+        "identifier": [
+          {
+            "value": "05560",
+            "system": "urn:oid:1.2.250.1.71.4.2.7",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "PI",
+                  "display": "Identifiant patient interne"
+                }
+              ]
+            }
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "SOLO Yan",
+            "given": [
+              "PEDRO"
+            ]
+          },
+          {
+            "use": "maiden",
+            "family": "SOLO Yan",
+            "given": [
+              "PEDRO"
+            ]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1975-04-19",
+        "telecom": [
+          {
+            "value": "0460000200",
+            "use": "home",
+            "system": "phone"
+          }
+        ],
+        "address": [
+          {
+            "use": "home",
+            "type": "physical",
+            "line": [
+              "483 RUE DES CARCASSES"
+            ],
+            "city": "CORRELIA",
+            "postalCode": "34570",
+            "country": "FRA"
+          },
+          {
+            "use": "home",
+            "type": "both",
+            "country": "FRA"
+          }
+        ],
+        "maritalStatus": null,
+        "contact": [],
+        "meta": {
+          "profile": [
+            "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient"
+          ]
+        },
+        "extension": []
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:location-4449a27d",
+      "resource": {
+        "resourceType": "Location",
+        "id": "location-4449a27d",
+        "status": "active",
+        "name": "340024553",
+        "meta": {
+          "profile": [
+            "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-location"
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Location"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:57b2a973-582b-4b0b-9e16-58959976a0d7",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "57b2a973-582b-4b0b-9e16-58959976a0d7",
+        "status": "in-progress",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "subject": {
+          "reference": "urn:uuid:patient-05560"
+        },
+        "extension": [
+          {
+            "url": "https://interop.esante.gouv.fr/ig/fhir/core/StructureDefinition/fr-mode-prise-en-charge",
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://mos.esante.gouv.fr/NOS/TRE_R213-ModePriseEnCharge/FHIR/TRE-R213-ModePriseEnCharge",
+                  "code": "CONSULT",
+                  "display": "Consultation externe"
+                }
+              ]
+            }
+          },
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/encounter-expectedExitDate",
+            "valueDateTime": "2024-09-20T18:00:00"
+          },
+          {
+            "url": "https://interop.esante.gouv.fr/ig/fhir/core/StructureDefinition/healthevent-type",
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://mos.esante.gouv.fr/NOS/TRE_R305-TypeRencontre/FHIR/TRE-R305-TypeRencontre",
+                  "code": "INSERT",
+                  "display": "Entrée"
+                }
+              ]
+            }
+          },
+          {
+            "url": "https://interop.esante.gouv.fr/ig/fhir/core/StructureDefinition/healthevent-identifier",
+            "valueIdentifier": {
+              "system": "urn:oid:1.2.250.1.71.4.2.1",
+              "value": "3517108"
+            }
+          },
+          {
+            "url": "http://interopsante.org/fhir/StructureDefinition/fr-encounter-title",
+            "valueString": "M."
+          }
+        ],
+        "period": {
+          "start": "2024-09-18T00:00:00+00:00"
+        },
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.250.1.71.4.2.7",
+            "value": "347014175",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN",
+                  "display": "Numéro de visite"
+                }
+              ]
+            }
+          },
+          {
+            "system": "urn:oid:1.2.250.1.213.1.1.4.6",
+            "value": "3517108",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "VN",
+                  "display": "Visit Number"
+                }
+              ]
+            }
+          }
+        ],
+        "location": [
+          {
+            "location": {
+              "reference": "urn:uuid:location-4449a27d",
+              "display": "340024553"
+            }
+          }
+        ],
+        "meta": {
+          "profile": [
+            "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter"
+          ]
+        },
+        "hospitalization": {
+          "expectedDischargeDate": "2024-09-20T18:00:00",
+          "preAdmissionIdentifier": {
+            "system": "urn:oid:1.2.250.1.71.4.2.7",
+            "value": "3517108"
+          },
+          "origin": {
+            "display": "ACE ST JEAN"
+          }
+        },
+        "serviceProvider": {
+          "reference": "urn:uuid:organization-1e2006aa-ce80-481d-9fa6-f98eb02ce9a2"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "https://mos.esante.gouv.fr/NOS/TRE_R38-SpecialiteOrdinale/FHIR/TRE-R38-SpecialiteOrdinale",
+                "code": "SM",
+                "display": "Médecine générale"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:organization-org-athenea",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "organization-org-athenea",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.250.1.71.4.2.2",
+            "value": "org-athenea"
+          }
+        ],
+        "name": "ATHENEA",
+        "active": true,
+        "meta": {
+          "profile": [
+            "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization"
+          ]
+        },
+        "extension": [
+          {
+            "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization-executant",
+            "extension": [
+              {
+                "url": "identifiant",
+                "valueIdentifier": {
+                  "system": "urn:oid:1.2.250.1.71.4.2.2",
+                  "value": "org-athenea"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:organization-org-202407311016",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "organization-org-202407311016",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.250.1.71.4.2.2",
+            "value": "org-202407311016"
+          }
+        ],
+        "name": "Établissement destinataire",
+        "active": true,
+        "meta": {
+          "profile": [
+            "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization"
+          ]
+        },
+        "extension": [
+          {
+            "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization-executant",
+            "extension": [
+              {
+                "url": "identifiant",
+                "valueIdentifier": {
+                  "system": "urn:oid:1.2.250.1.71.4.2.2",
+                  "value": "org-202407311016"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:practitioner-9a34a17f-fdc3-4dc6-8c27-468b12aaad59",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "practitioner-9a34a17f-fdc3-4dc6-8c27-468b12aaad59",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.250.1.71.4.2.1",
+            "value": "BUCCI"
+          }
+        ],
+        "name": [
+          {
+            "family": "BUCCI",
+            "given": [
+              "Lionel"
+            ]
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://apifhir.annuaire.sante.fr/ws-sync/exposed/structuredefinition/practitioner-nationality",
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://mos.esante.gouv.fr/NOS/TRE_R20-Pays/FHIR/TRE-R20-Pays",
+                  "code": "FRA",
+                  "display": "France"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Practitioner"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:practitioner-df7c8656-53e1-4dc1-a9f9-05e3a50b4e53",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "practitioner-df7c8656-53e1-4dc1-a9f9-05e3a50b4e53",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.250.1.71.4.2.1",
+            "value": "341009338"
+          },
+          {
+            "system": "urn:oid:1.2.250.1.71.4.2.1",
+            "value": "CALRISSIAN"
+          },
+          {
+            "system": "urn:oid:1.2.250.1.71.4.2.1",
+            "value": "10003128750"
+          }
+        ],
+        "name": [
+          {
+            "family": "CALRISSIAN",
+            "given": [
+              "Lando"
+            ]
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://apifhir.annuaire.sante.fr/ws-sync/exposed/structuredefinition/practitioner-nationality",
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://mos.esante.gouv.fr/NOS/TRE_R20-Pays/FHIR/TRE-R20-Pays",
+                  "code": "FRA",
+                  "display": "France"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Practitioner"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:coverage-b0d7fc93-2afe-4b18-a688-7c880a5547fc",
+      "resource": {
+        "resourceType": "Coverage",
+        "id": "coverage-b0d7fc93-2afe-4b18-a688-7c880a5547fc",
+        "status": "active",
+        "beneficiary": {
+          "reference": "urn:uuid:patient-05560"
+        },
+        "payor": [
+          {
+            "reference": "urn:uuid:organization-insurer-CPAM 34 217",
+            "display": "Organisme CPAM 34 217"
+          }
+        ],
+        "type": {
+          "coding": [
+            {
+              "system": "https://mos.esante.gouv.fr/NOS/TRE_R28-TypeCouverture/FHIR/TRE-R28-TypeCouverture",
+              "code": "AMO",
+              "display": "Assurance Maladie Obligatoire"
+            }
+          ]
+        },
+        "period": {
+          "end": "2050-12-31"
+        },
+        "extension": [
+          {
+            "url": "https://apifhir.annuaire.sante.fr/ws-sync/exposed/structuredefinition/Coverage-InsuredID",
+            "valueIdentifier": {
+              "system": "urn:oid:1.2.250.1.213.1.4.8",
+              "value": "154049903408390"
+            }
+          },
+          {
+            "url": "http://interopsante.org/fhir/StructureDefinition/fr-coverage-full-coverage",
+            "valueBoolean": true
+          }
+        ],
+        "meta": {
+          "profile": [
+            "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage"
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Coverage"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:coverage-98be8987-8496-4999-9e6a-c04a600ac7cc",
+      "resource": {
+        "resourceType": "Coverage",
+        "id": "coverage-98be8987-8496-4999-9e6a-c04a600ac7cc",
+        "status": "active",
+        "beneficiary": {
+          "reference": "urn:uuid:patient-05560"
+        },
+        "type": {
+          "coding": [
+            {
+              "system": "https://mos.esante.gouv.fr/NOS/TRE_R28-TypeCouverture/FHIR/TRE-R28-TypeCouverture",
+              "code": "ATMP",
+              "display": "Accident du Travail - Maladie Professionnelle"
+            }
+          ]
+        },
+        "period": {
+          "end": "2006-09-20"
+        },
+        "meta": {
+          "profile": [
+            "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage"
+          ]
+        },
+        "extension": []
+      },
+      "request": {
+        "method": "POST",
+        "url": "Coverage"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:organization-insurer-CPAM 34 217",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "organization-insurer-CPAM 34 217",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.250.1.71.4.2.2",
+            "value": "CPAM 34 217"
+          }
+        ],
+        "name": "Organisme CPAM 34 217",
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Compagnie d'assurance"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:organization-1e2006aa-ce80-481d-9fa6-f98eb02ce9a2",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "organization-1e2006aa-ce80-481d-9fa6-f98eb02ce9a2",
+        "name": "ACE ST JEAN",
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "dept",
+                "display": "Hospital Department"
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    }
+  ]
+}
