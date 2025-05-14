@@ -1497,11 +1497,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Aucun praticien trouvé dans les consultations
                 loadingSection.style.display = 'none';
                 noResourcesSection.style.display = 'block';
-                noResourcesSection.innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> Aucun praticien n'a été identifié dans les consultations.
-                    </div>
-                `;
+                noResourcesSection.innerHTML = '<div class="alert alert-info">' +
+                    '<i class="fas fa-info-circle"></i> Aucun praticien n\'a été identifié dans les consultations.' +
+                    '</div>';
             }
         } else {
             // Aucune consultation n'a été chargée, afficher un message générique
@@ -1614,23 +1612,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 organizationElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
                 organizationElement.style.borderLeft = '3px solid #fd7e30';
                 
-                organizationElement.innerHTML = `
-                    <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> ${organization.name || 'Organisation sans nom'}
-                    </h4>
-                    <div style="margin-top: 10px; color: #555;">
-                        <p><strong>Identifiant:</strong> ${organization.id}</p>
-                        ${organization.alias && organization.alias.length > 0 ? 
-                          `<p><strong>Alias:</strong> ${organization.alias.join(', ')}</p>` 
-                          : ''}
-                        ${organization.telecom ? 
-                          `<p><strong>Contact:</strong> ${formatTelecom(organization.telecom)}</p>` 
-                          : ''}
-                        ${organization.address ? 
-                          `<p><strong>Adresse:</strong> ${formatAddress(organization.address[0])}</p>` 
-                          : ''}
-                    </div>
-                `;
+                // Création du HTML de manière sécurisée sans template literals
+                let orgHtml = '<h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">' +
+                              '<i class="fas fa-hospital-alt" style="color: #fd7e30;"></i> ' + 
+                              (organization.name || 'Organisation sans nom') +
+                              '</h4>' +
+                              '<div style="margin-top: 10px; color: #555;">' +
+                              '<p><strong>Identifiant:</strong> ' + organization.id + '</p>';
+                
+                // Ajouter conditionnellement les alias
+                if (organization.alias && organization.alias.length > 0) {
+                    orgHtml += '<p><strong>Alias:</strong> ' + organization.alias.join(', ') + '</p>';
+                }
+                
+                // Ajouter conditionnellement les contacts
+                if (organization.telecom) {
+                    orgHtml += '<p><strong>Contact:</strong> ' + formatTelecom(organization.telecom) + '</p>';
+                }
+                
+                // Ajouter conditionnellement l'adresse
+                if (organization.address && organization.address.length > 0) {
+                    orgHtml += '<p><strong>Adresse:</strong> ' + formatAddress(organization.address[0]) + '</p>';
+                }
+                
+                orgHtml += '</div>';
+                
+                organizationElement.innerHTML = orgHtml;
                 
                 organizationsList.appendChild(organizationElement);
             });
@@ -1793,22 +1800,36 @@ document.addEventListener('DOMContentLoaded', function() {
                         coverageElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
                         coverageElement.style.borderLeft = '3px solid #fd7e30';
                         
-                        coverageElement.innerHTML = `
-                            <h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-file-medical" style="color: #fd7e30;"></i> 
-                                ${coverage.type?.coding?.[0]?.display || coverage.type?.text || 'Couverture'}
-                            </h4>
-                            <div style="margin-top: 10px; color: #555;">
-                                <p><strong>Identifiant:</strong> ${coverage.id}</p>
-                                <p><strong>Statut:</strong> ${coverage.status || 'Non spécifié'}</p>
-                                ${coverage.period ? 
-                                  `<p><strong>Période:</strong> ${formatPeriod(coverage.period)}</p>` 
-                                  : ''}
-                                ${coverage.payor ? 
-                                  `<p><strong>Payeur:</strong> ${formatPayor(coverage.payor)}</p>` 
-                                  : ''}
-                            </div>
-                        `;
+                        // Détermination du type de couverture avec gestion de valeurs nulles
+                        let typeName = 'Couverture';
+                        if (coverage.type) {
+                            if (coverage.type.coding && coverage.type.coding.length > 0 && coverage.type.coding[0].display) {
+                                typeName = coverage.type.coding[0].display;
+                            } else if (coverage.type.text) {
+                                typeName = coverage.type.text;
+                            }
+                        }
+                        
+                        // Construction du HTML de manière sécurisée sans template literals
+                        let html = '<h4 style="margin-top: 0; color: #333; font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">' +
+                                   '<i class="fas fa-file-medical" style="color: #fd7e30;"></i> ' + 
+                                   typeName +
+                                   '</h4>' +
+                                   '<div style="margin-top: 10px; color: #555;">' +
+                                   '<p><strong>Identifiant:</strong> ' + coverage.id + '</p>' +
+                                   '<p><strong>Statut:</strong> ' + (coverage.status || 'Non spécifié') + '</p>';
+                        
+                        if (coverage.period) {
+                            html += '<p><strong>Période:</strong> ' + formatPeriod(coverage.period) + '</p>';
+                        }
+                        
+                        if (coverage.payor) {
+                            html += '<p><strong>Payeur:</strong> ' + formatPayor(coverage.payor) + '</p>';
+                        }
+                        
+                        html += '</div>';
+                        
+                        coverageElement.innerHTML = html;
                         
                         coverageList.appendChild(coverageElement);
                     });
