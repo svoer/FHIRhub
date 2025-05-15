@@ -144,7 +144,10 @@ main() {
         
         log "========== Installation terminée avec succès =========="
         log "Pour vérifier l'état des conteneurs, exécutez: $DOCKER_COMPOSE_CMD ps"
-        log "Pour voir les logs, exécutez: $DOCKER_COMPOSE_CMD logs -f"
+        log "Pour voir les logs, exécutez:"
+        log "- FHIRHub: $DOCKER_COMPOSE_CMD logs -f fhirhub"
+        log "- HAPI FHIR: $DOCKER_COMPOSE_CMD logs -f hapi-fhir"
+        log "- Tous les services: $DOCKER_COMPOSE_CMD logs -f"
     else
         log "ERREUR: Les conteneurs n'ont pas démarré correctement."
         log "Vérifiez les logs pour plus de détails: $DOCKER_COMPOSE_CMD logs -f"
