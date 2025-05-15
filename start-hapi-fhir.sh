@@ -173,11 +173,15 @@ echo -e "${BLUE}Base de données: $DATABASE${NC}"
 # Options JVM
 JAVA_OPTS="-Xmx${MEMORY}m -Dserver.port=$PORT -DHAPI_FHIR_SERVER_VERSION=$VERSION -Dhapi.fhir.allow_external_references=true -Dhapi.fhir.expunge_enabled=true -Dhapi.fhir.advanced_lucene_indexing=true $DB_OPTS"
 
-# Démarrer le serveur en arrière-plan
-"$JAVA_PATH" $JAVA_OPTS -jar "$JAR_FILE" --fhir.validation.enabled=false --fhir.validation.request-only=true > "$HAPI_DIR/hapi-fhir-server.log" 2>&1 &
+# Démarrer le serveur en arrière-plan avec nohup pour le maintenir en vie 
+# après la fin du script parent
+nohup "$JAVA_PATH" $JAVA_OPTS -jar "$JAR_FILE" --fhir.validation.enabled=false --fhir.validation.request-only=true > "$HAPI_DIR/hapi-fhir-server.log" 2>&1 &
 
 # Récupérer le PID du processus
 SERVER_PID=$!
+
+# S'assurer que le processus reste en arrière-plan
+disown $SERVER_PID
 
 # Vérifier si le processus a démarré correctement
 if ps -p $SERVER_PID > /dev/null; then

@@ -35,12 +35,6 @@ echo -e "${BLUE}Vérification des dépendances volumineuses...${NC}"
 HAPI_JAR="./hapi-fhir/hapi-fhir-server-starter-5.4.0.jar"
 HAPI_RUNNING=false
 
-# Vérifier si le serveur HAPI FHIR est déjà en cours d'exécution
-if ps aux | grep -v grep | grep -q "hapi-fhir-server-starter-5.4.0.jar"; then
-  echo -e "${GREEN}✓ Serveur HAPI FHIR déjà en cours d'exécution${NC}"
-  HAPI_RUNNING=true
-fi
-
 # Vérifier si le JAR existe, sinon le télécharger
 if [ ! -f "$HAPI_JAR" ]; then
   echo -e "${YELLOW}Le serveur HAPI FHIR n'est pas installé. Téléchargement automatique...${NC}"
@@ -53,32 +47,54 @@ else
   echo -e "${GREEN}✓ Serveur HAPI FHIR déjà installé${NC}"
 fi
 
-# Démarrer le serveur HAPI FHIR s'il n'est pas déjà en cours d'exécution
-if [ "$HAPI_RUNNING" = false ]; then
-  echo -e "${BLUE}Démarrage du serveur HAPI FHIR en arrière-plan...${NC}"
-  bash ./start-hapi-fhir.sh --port 8080 --memory 512 --database h2 &
-  echo -e "${GREEN}✓ Serveur HAPI FHIR démarré en arrière-plan${NC}"
-  echo -e "${GREEN}✓ URL du serveur FHIR: http://localhost:8080/fhir${NC}"
-  
-  # Attendre que le serveur soit disponible (jusqu'à 30 secondes)
-  echo -e "${BLUE}Attente du démarrage du serveur HAPI FHIR...${NC}"
-  MAX_WAIT=30
-  WAIT_COUNT=0
-  while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-    if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/fhir/metadata 2>/dev/null | grep -q "200"; then
-      echo -e "${GREEN}✓ Serveur HAPI FHIR prêt et opérationnel${NC}"
-      break
+# Arrêter toute instance existante du serveur HAPI FHIR
+if ps aux | grep -v grep | grep -q "hapi-fhir-server-starter-5.4.0.jar"; then
+  echo -e "${YELLOW}Une instance du serveur HAPI FHIR est déjà en cours d'exécution. Arrêt...${NC}"
+  HAPI_PID=$(ps aux | grep -v grep | grep "hapi-fhir-server-starter-5.4.0.jar" | awk '{print $2}')
+  if [ ! -z "$HAPI_PID" ]; then
+    kill -15 $HAPI_PID 2>/dev/null
+    # Attendre la fin du processus
+    WAIT_COUNT=0
+    MAX_WAIT=10
+    while ps -p $HAPI_PID > /dev/null 2>&1 && [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+      sleep 1
+      WAIT_COUNT=$((WAIT_COUNT+1))
+    done
+    
+    # Si le processus existe toujours, forcer l'arrêt
+    if ps -p $HAPI_PID > /dev/null 2>&1; then
+      echo -e "${YELLOW}Forcer l'arrêt du serveur HAPI FHIR (PID: $HAPI_PID)...${NC}"
+      kill -9 $HAPI_PID 2>/dev/null
+      sleep 1
     fi
-    sleep 1
-    WAIT_COUNT=$((WAIT_COUNT+1))
-    if [ $((WAIT_COUNT % 5)) -eq 0 ]; then
-      echo -e "${YELLOW}Toujours en attente du serveur HAPI FHIR... ($WAIT_COUNT/$MAX_WAIT)${NC}"
-    fi
-  done
-  
-  if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
-    echo -e "${YELLOW}⚠️ Délai d'attente dépassé, mais le serveur HAPI FHIR pourrait toujours démarrer en arrière-plan${NC}"
   fi
+  echo -e "${GREEN}✓ Instance précédente du serveur HAPI FHIR arrêtée${NC}"
+fi
+
+# Démarrer le serveur HAPI FHIR
+echo -e "${BLUE}Démarrage du serveur HAPI FHIR en arrière-plan...${NC}"
+bash ./start-hapi-fhir.sh --port 8080 --memory 512 --database h2 &
+echo -e "${GREEN}✓ Serveur HAPI FHIR démarré en arrière-plan${NC}"
+echo -e "${GREEN}✓ URL du serveur FHIR: http://localhost:8080/fhir${NC}"
+
+# Attendre que le serveur soit disponible (jusqu'à 30 secondes)
+echo -e "${BLUE}Attente du démarrage du serveur HAPI FHIR...${NC}"
+MAX_WAIT=30
+WAIT_COUNT=0
+while [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+  if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/fhir/metadata 2>/dev/null | grep -q "200"; then
+    echo -e "${GREEN}✓ Serveur HAPI FHIR prêt et opérationnel${NC}"
+    break
+  fi
+  sleep 1
+  WAIT_COUNT=$((WAIT_COUNT+1))
+  if [ $((WAIT_COUNT % 5)) -eq 0 ]; then
+    echo -e "${YELLOW}Toujours en attente du serveur HAPI FHIR... ($WAIT_COUNT/$MAX_WAIT)${NC}"
+  fi
+done
+
+if [ $WAIT_COUNT -ge $MAX_WAIT ]; then
+  echo -e "${YELLOW}⚠️ Délai d'attente dépassé, mais le serveur HAPI FHIR pourrait toujours démarrer en arrière-plan${NC}"
 fi
 
 # Vérification des terminologies françaises
