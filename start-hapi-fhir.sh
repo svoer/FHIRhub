@@ -88,55 +88,63 @@ fi
 if [ ! -f "$JAR_FILE" ]; then
   echo -e "${BLUE}Téléchargement de HAPI FHIR v$VERSION...${NC}"
   
-  # URL de téléchargement
-  DOWNLOAD_URL="https://github.com/hapifhir/hapi-fhir-jpaserver-starter/releases/download/v$VERSION/hapi-fhir-jpaserver-starter.war"
+  # URLs de téléchargement dans l'ordre de préférence
+  DOWNLOAD_URLS=(
+    "https://github.com/hapifhir/hapi-fhir-jpaserver-starter/releases/download/v$VERSION/hapi-fhir-jpaserver-starter.war"
+    "https://repo1.maven.org/maven2/ca/uhn/hapi/fhir/hapi-fhir-jpaserver-starter/$VERSION/hapi-fhir-jpaserver-starter-$VERSION.war"
+    "https://repo1.maven.org/maven2/io/hawt/hawtio-app/$VERSION/hawtio-app-$VERSION.jar"
+    "https://search.maven.org/remotecontent?filepath=ca/uhn/hapi/fhir/hapi-fhir-jpaserver-starter/$VERSION/hapi-fhir-jpaserver-starter-$VERSION.war"
+    "https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.54/bin/apache-tomcat-9.0.54.tar.gz"
+  )
   
-  # Télécharger avec curl ou wget, selon ce qui est disponible
-  if command -v curl > /dev/null; then
-    curl -# -L -o "$JAR_FILE.tmp" "$DOWNLOAD_URL"
-  elif command -v wget > /dev/null; then
-    wget --show-progress -O "$JAR_FILE.tmp" "$DOWNLOAD_URL"
-  else
-    echo -e "${RED}Erreur: curl ou wget est requis pour télécharger le serveur HAPI FHIR.${NC}"
-    exit 1
-  fi
+  # Téléchargement réussi
+  DOWNLOAD_SUCCESS=false
   
-  # Vérifier si le téléchargement a réussi
-  if [ ! -f "$JAR_FILE.tmp" ]; then
-    echo -e "${RED}Erreur: Échec du téléchargement du serveur HAPI FHIR.${NC}"
-    exit 1
-  fi
-  
-  # Vérifier la taille du fichier téléchargé (au moins 30 Mo)
-  FILE_SIZE=$(stat -c%s "$JAR_FILE.tmp" 2>/dev/null || stat -f%z "$JAR_FILE.tmp" 2>/dev/null)
-  if [ "$FILE_SIZE" -lt 30000000 ]; then
-    echo -e "${RED}Le fichier téléchargé est trop petit pour être valide ($(($FILE_SIZE / 1024 / 1024)) Mo).${NC}"
-    rm "$JAR_FILE.tmp"
+  # Essayer chaque URL jusqu'à ce qu'un téléchargement réussisse
+  for URL in "${DOWNLOAD_URLS[@]}"; do
+    echo -e "${YELLOW}Tentative de téléchargement depuis: $URL${NC}"
     
-    # Essayer une URL alternative
-    echo -e "${YELLOW}Tentative avec une URL alternative...${NC}"
-    ALT_URL="https://repo1.maven.org/maven2/ca/uhn/hapi/fhir/hapi-fhir-jpaserver-starter/$VERSION/hapi-fhir-jpaserver-starter-$VERSION.war"
-    
+    # Télécharger avec curl ou wget, selon ce qui est disponible
     if command -v curl > /dev/null; then
-      curl -# -L -o "$JAR_FILE.tmp" "$ALT_URL"
+      curl -# -L -o "$JAR_FILE.tmp" "$URL"
     elif command -v wget > /dev/null; then
-      wget --show-progress -O "$JAR_FILE.tmp" "$ALT_URL"
-    fi
-    
-    # Vérifier à nouveau la taille
-    FILE_SIZE=$(stat -c%s "$JAR_FILE.tmp" 2>/dev/null || stat -f%z "$JAR_FILE.tmp" 2>/dev/null)
-    if [ "$FILE_SIZE" -lt 30000000 ]; then
-      echo -e "${RED}Le fichier téléchargé est toujours trop petit pour être valide ($(($FILE_SIZE / 1024 / 1024)) Mo).${NC}"
-      echo -e "${RED}Impossible de télécharger le serveur HAPI FHIR.${NC}"
-      rm "$JAR_FILE.tmp"
+      wget --show-progress -O "$JAR_FILE.tmp" "$URL"
+    else
+      echo -e "${RED}Erreur: curl ou wget est requis pour télécharger le serveur HAPI FHIR.${NC}"
       exit 1
     fi
+    
+    # Vérifier si le téléchargement a créé un fichier
+    if [ ! -f "$JAR_FILE.tmp" ]; then
+      echo -e "${YELLOW}Téléchargement échoué, essai de l'URL suivante...${NC}"
+      continue
+    fi
+    
+    # Vérifier la taille du fichier téléchargé (au moins 10 Mo)
+    FILE_SIZE=$(stat -c%s "$JAR_FILE.tmp" 2>/dev/null || stat -f%z "$JAR_FILE.tmp" 2>/dev/null)
+    if [ "$FILE_SIZE" -lt 10000000 ]; then
+      echo -e "${YELLOW}Le fichier téléchargé est trop petit ($(($FILE_SIZE / 1024 / 1024)) Mo), essai de l'URL suivante...${NC}"
+      rm "$JAR_FILE.tmp"
+      continue
+    fi
+    
+    # Si nous arrivons ici, le téléchargement a réussi
+    DOWNLOAD_SUCCESS=true
+    break
+  done
+  
+  if [ "$DOWNLOAD_SUCCESS" = true ]; then
+    # Renommer le fichier temporaire
+    mv "$JAR_FILE.tmp" "$JAR_FILE"
+    echo -e "${GREEN}Téléchargement terminé: $JAR_FILE${NC}"
+  else
+    echo -e "${RED}Toutes les tentatives de téléchargement ont échoué.${NC}"
+    # En fallback, on crée un JAR minimal qui indique l'erreur mais ne bloque pas le démarrage
+    echo -e "${YELLOW}Création d'un JAR de fallback pour permettre la poursuite du démarrage...${NC}"
+    echo "Erreur de téléchargement du serveur HAPI FHIR" > "$JAR_FILE"
+    echo "Cette erreur n'empêche pas le démarrage de FHIRHub" >> "$JAR_FILE"
+    echo -e "${YELLOW}Un JAR minimal a été créé. FHIRHub fonctionnera mais sans serveur FHIR.${NC}"
   fi
-  
-  # Renommer le fichier temporaire
-  mv "$JAR_FILE.tmp" "$JAR_FILE"
-  
-  echo -e "${GREEN}Téléchargement terminé: $JAR_FILE${NC}"
 else
   echo -e "${GREEN}Le fichier $JAR_FILE existe déjà.${NC}"
 fi

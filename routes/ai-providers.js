@@ -15,8 +15,24 @@ const logger = require('../utils/logger');
 const auth = require('../middleware/auth');
 
 // Chemin de la base de données
-const dbPath = path.join(__dirname, '../data/db/fhirhub.db');
-const db = new sqlite3(dbPath, { fileMustExist: true });
+const dbPathOld = path.join(__dirname, '../data/db/fhirhub.db');
+const dbPathNew = path.join(__dirname, '../storage/db/fhirhub.db');
+let dbPath = '';
+
+// Vérifier quel chemin existe
+if (require('fs').existsSync(dbPathNew)) {
+  dbPath = dbPathNew;
+  logger.info(`Utilisation du chemin de base de données: ${dbPath} (nouvelle structure)`);
+} else if (require('fs').existsSync(dbPathOld)) {
+  dbPath = dbPathOld;
+  logger.info(`Utilisation du chemin de base de données: ${dbPath} (ancienne structure)`);
+} else {
+  dbPath = dbPathNew;
+  logger.warn(`Aucune base de données existante trouvée, création de: ${dbPath}`);
+}
+
+// Ouvrir la base de données sans l'option fileMustExist pour permettre sa création automatique
+const db = new sqlite3(dbPath, { fileMustExist: false });
 
 // Middleware pour vérifier que la table ai_providers existe
 function ensureTableExists(req, res, next) {
