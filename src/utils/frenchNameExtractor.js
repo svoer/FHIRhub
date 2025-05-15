@@ -176,8 +176,8 @@ function extractFrenchNameComponents(nameString) {
 function determineNameUse(useCode) {
   const nameUseMap = {
     'L': 'official', // Légal
-    'D': 'maiden',   // Nom de jeune fille (spécificité française)
-    'M': 'maiden',   // Nom de jeune fille
+    'D': 'official', // Nom de jeune fille (spécificité française) - conformité FR Core
+    'M': 'official', // Nom de jeune fille - conformité FR Core
     'N': 'nickname', // Surnom
     'S': 'old',      // Nom marital (spécificité française)
     'C': 'usual',    // Nom d'usage (spécificité française)

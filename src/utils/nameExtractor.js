@@ -51,7 +51,7 @@ function extractFrenchNames(hl7Message) {
         // Créer l'objet de nom au format FHIR
         const nameObject = {
           family: familyName,
-          use: nameType === 'D' ? 'maiden' : 'official'
+          use: 'official' // Toujours 'official' pour les noms, conformité FR Core
         };
         
         // Traitement spécial pour les prénoms composés français
