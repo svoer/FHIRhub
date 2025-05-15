@@ -804,13 +804,32 @@ for DB_DIR in "./storage/db" "./data/db"; do
   touch "$DB_DIR/.gitkeep"
 done
 
-# Vérification finale pour le démarrage de HAPI FHIR
-if ! ps aux | grep -v grep | grep -q "hapi-fhir-server-starter-5.4.0.jar"; then
-  echo -e "${YELLOW}Le serveur HAPI FHIR ne semble pas être en cours d'exécution. Redémarrage...${NC}"
-  bash ./start-hapi-fhir.sh --port 8080 --memory 512 --database h2 &
+# Lancement du serveur HAPI FHIR - Toujours le démarrer comme composant intégré de l'architecture
+echo -e "${YELLOW}Démarrage du serveur HAPI FHIR...${NC}"
+# Arrêter le serveur HAPI FHIR existant si présent
+HAPI_PID=$(ps aux | grep -v grep | grep "hapi-fhir-server-starter-5.4.0.jar" | awk '{print $2}')
+if [ -n "$HAPI_PID" ]; then
+  echo -e "${YELLOW}Serveur HAPI FHIR déjà en cours d'exécution (PID: $HAPI_PID). Redémarrage...${NC}"
+  kill -9 $HAPI_PID 2>/dev/null
   sleep 2
-  echo -e "${GREEN}✓ Redémarrage du serveur HAPI FHIR effectué${NC}"
 fi
+
+# Démarrer le serveur HAPI FHIR en arrière-plan
+bash ./start-hapi-fhir.sh --port 8080 --memory 512 --database h2 &
+
+# Attendre que le serveur soit accessible
+echo -e "${YELLOW}Attente du démarrage du serveur HAPI FHIR...${NC}"
+for i in {1..30}; do
+  if curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/fhir/metadata 2>/dev/null | grep -q "200\|401"; then
+    echo -e "${GREEN}✓ Le serveur HAPI FHIR est prêt et accessible${NC}"
+    break
+  fi
+  echo -n "."
+  sleep 1
+  if [ $i -eq 30 ]; then
+    echo -e "${YELLOW}⚠️ Le serveur HAPI FHIR démarre en arrière-plan, il sera peut-être disponible ultérieurement${NC}"
+  fi
+done
 
 # Message de démarrage final
 echo -e "${CYAN}=====================================================================${NC}"
