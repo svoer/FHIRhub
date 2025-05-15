@@ -17,12 +17,12 @@ WORKDIR /app
 # Installation des dépendances système nécessaires
 # curl : pour tests et téléchargements
 # bash : nécessaire pour les scripts shell
-# sqlite3 : pour la base de données locale
+# sqlite : pour la base de données locale (nom correct du package dans Alpine)
 # unzip : pour extraire les terminologies
 RUN apk add --no-cache \
     curl \
     bash \
-    sqlite3 \
+    sqlite \
     unzip
 
 # Copie des fichiers de dépendances avant le reste du code
