@@ -1,0 +1,18 @@
+[Unit]
+Description=HAPI FHIR Server
+After=network.target
+
+[Service]
+Type=simple
+User=fhirhub
+WorkingDirectory=/opt/fhirhub
+ExecStart=/opt/fhirhub/start-hapi-fhir.sh --port 8080 --memory 512 --database h2
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=hapifhir
+Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk
+
+[Install]
+WantedBy=multi-user.target
