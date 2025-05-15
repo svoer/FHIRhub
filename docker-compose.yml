@@ -7,7 +7,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: fhirhub:latest
+    # Pas d'image externe, on construit toujours localement
     container_name: fhirhub
     restart: unless-stopped
     ports:
