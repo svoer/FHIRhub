@@ -171,7 +171,12 @@ echo -e "${BLUE}Démarrage du serveur HAPI FHIR sur le port $PORT avec $MEMORY M
 echo -e "${BLUE}Base de données: $DATABASE${NC}"
 
 # Options JVM
-JAVA_OPTS="-Xmx${MEMORY}m -Dserver.port=$PORT -DHAPI_FHIR_SERVER_VERSION=$VERSION -Dhapi.fhir.allow_external_references=true -Dhapi.fhir.expunge_enabled=true -Dhapi.fhir.advanced_lucene_indexing=true $DB_OPTS"
+# Spécifier un chemin accessible pour la base de données
+DB_PATH="$HAPI_DIR/database"
+mkdir -p "$DB_PATH"
+chmod 777 "$DB_PATH"
+
+JAVA_OPTS="-Xmx${MEMORY}m -Dserver.port=$PORT -DHAPI_FHIR_SERVER_VERSION=$VERSION -Dhapi.fhir.allow_external_references=true -Dhapi.fhir.expunge_enabled=true -Dhapi.fhir.advanced_lucene_indexing=true -Dspring.datasource.url=jdbc:h2:file:$DB_PATH/hapi_fhir_h2 $DB_OPTS"
 
 # Démarrer le serveur en arrière-plan avec nohup pour le maintenir en vie 
 # après la fin du script parent
