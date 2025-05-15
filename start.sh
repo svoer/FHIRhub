@@ -790,6 +790,32 @@ echo -e "${GREEN}   ✓ Application FHIRHub prête à démarrer sur: http://loca
 echo -e "${CYAN}=====================================================================${NC}"
 echo -e "${BLUE}Démarrage de l'application principale...${NC}"
 
-# Démarrage avec le Node.js approprié et PORT forcé à 5001
-export PORT=5001
+# Démarrage avec le Node.js approprié et PORT forcé à 5001 ou 5000 pour compatibilité
+if [ -n "$PORT" ]; then
+  echo -e "${GREEN}✓ Utilisation du port configuré: $PORT${NC}"
+else
+  export PORT=5001
+  echo -e "${GREEN}✓ Port par défaut défini à: $PORT${NC}"
+fi
+
+# Vérifier les bases de données SQLite et créer les répertoires si nécessaires
+for DB_DIR in "./storage/db" "./data/db"; do
+  mkdir -p "$DB_DIR"
+  touch "$DB_DIR/.gitkeep"
+done
+
+# Vérification finale pour le démarrage de HAPI FHIR
+if ! ps aux | grep -v grep | grep -q "hapi-fhir-server-starter-5.4.0.jar"; then
+  echo -e "${YELLOW}Le serveur HAPI FHIR ne semble pas être en cours d'exécution. Redémarrage...${NC}"
+  bash ./start-hapi-fhir.sh --port 8080 --memory 512 --database h2 &
+  sleep 2
+  echo -e "${GREEN}✓ Redémarrage du serveur HAPI FHIR effectué${NC}"
+fi
+
+# Message de démarrage final
+echo -e "${CYAN}=====================================================================${NC}"
+echo -e "${BLUE}   Démarrage de FHIRHub - Système prêt à fonctionner${NC}"
+echo -e "${CYAN}=====================================================================${NC}"
+
+# Démarrage de l'application Node.js
 $NODE_CMD app.js

@@ -17,7 +17,7 @@ NODE_URL="https://nodejs.org/download/release/v${NODE_VERSION}/${NODE_ARCHIVE}"
 NODE_LOCAL_PATH="./vendor/nodejs"
 
 # Créer le répertoire vendor s'il n'existe pas
-mkdir -p ./vendor
+mkdir -p ./vendor ./storage/db ./data/db
 
 # Vérification de l'environnement
 echo "[1/7] Vérification de l'environnement..."
