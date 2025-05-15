@@ -24,9 +24,19 @@ check_docker() {
         exit 1
     fi
 
-    if ! command -v docker compose &> /dev/null; then
+    # Vérifier si 'docker compose' (nouvelle syntaxe) ou 'docker-compose' (ancienne syntaxe) est disponible
+    if ! command -v docker compose &> /dev/null && ! command -v docker-compose &> /dev/null; then
         log "ERREUR: Docker Compose n'est pas installé. Veuillez installer Docker Compose avant de continuer."
         exit 1
+    fi
+    
+    # Déterminer quelle commande utiliser pour Docker Compose
+    if command -v docker compose &> /dev/null; then
+        DOCKER_COMPOSE_CMD="docker compose"
+        log "Utilisation de la nouvelle syntaxe 'docker compose'"
+    else
+        DOCKER_COMPOSE_CMD="docker-compose"
+        log "Utilisation de l'ancienne syntaxe 'docker-compose'"
     fi
 
     log "Docker et Docker Compose sont installés."
@@ -106,10 +116,10 @@ main() {
     
     # Construire et démarrer les conteneurs
     log "Construction et démarrage des conteneurs Docker..."
-    docker compose -f "$SCRIPT_DIR/docker-compose.yml" up -d
+    $DOCKER_COMPOSE_CMD -f "$SCRIPT_DIR/docker-compose.yml" up -d
     
     # Vérifier si les conteneurs sont en cours d'exécution
-    if [ "$(docker compose -f "$SCRIPT_DIR/docker-compose.yml" ps --status running | wc -l)" -gt 1 ]; then
+    if [ "$($DOCKER_COMPOSE_CMD -f "$SCRIPT_DIR/docker-compose.yml" ps --status running | wc -l)" -gt 1 ]; then
         log "Les conteneurs sont en cours d'exécution."
         log "FHIRHub est accessible à l'adresse: http://localhost:5000"
         log "HAPI FHIR est accessible à l'adresse: http://localhost:8080/fhir"
@@ -133,11 +143,11 @@ main() {
         fi
         
         log "========== Installation terminée avec succès =========="
-        log "Pour vérifier l'état des conteneurs, exécutez: docker compose ps"
-        log "Pour voir les logs, exécutez: docker compose logs -f"
+        log "Pour vérifier l'état des conteneurs, exécutez: $DOCKER_COMPOSE_CMD ps"
+        log "Pour voir les logs, exécutez: $DOCKER_COMPOSE_CMD logs -f"
     else
         log "ERREUR: Les conteneurs n'ont pas démarré correctement."
-        log "Vérifiez les logs pour plus de détails: docker compose logs -f"
+        log "Vérifiez les logs pour plus de détails: $DOCKER_COMPOSE_CMD logs -f"
         exit 1
     fi
 }
