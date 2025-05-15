@@ -15,19 +15,37 @@ const logger = require('../utils/logger');
 const auth = require('../middleware/auth');
 
 // Chemin de la base de données
-const dbPathOld = path.join(__dirname, '../data/db/fhirhub.db');
-const dbPathNew = path.join(__dirname, '../storage/db/fhirhub.db');
+const dbPathOptions = [
+  path.join(__dirname, '../storage/db/fhirhub.db'),
+  path.join(__dirname, '../data/db/fhirhub.db'),
+  '/tmp/fhirhub.db'
+];
 let dbPath = '';
 
-// Vérifier quel chemin existe
-if (require('fs').existsSync(dbPathNew)) {
-  dbPath = dbPathNew;
-  logger.info(`Utilisation du chemin de base de données: ${dbPath} (nouvelle structure)`);
-} else if (require('fs').existsSync(dbPathOld)) {
-  dbPath = dbPathOld;
-  logger.info(`Utilisation du chemin de base de données: ${dbPath} (ancienne structure)`);
-} else {
-  dbPath = dbPathNew;
+// Vérifier quels chemins existent et utiliser le premier disponible
+const fs = require('fs');
+let dbFound = false;
+
+for (const potentialPath of dbPathOptions) {
+  if (fs.existsSync(potentialPath)) {
+    dbPath = potentialPath;
+    logger.info(`Utilisation du chemin de base de données existant: ${dbPath}`);
+    dbFound = true;
+    break;
+  }
+}
+
+// Si aucune base n'est trouvée, on utilise le premier chemin et on crée les répertoires
+if (!dbFound) {
+  dbPath = dbPathOptions[0]; // Utiliser le chemin par défaut (storage/db)
+  const dbDir = path.dirname(dbPath);
+  
+  // Créer tous les répertoires nécessaires
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+    logger.info(`Création du répertoire pour la base de données: ${dbDir}`);
+  }
+  
   logger.warn(`Aucune base de données existante trouvée, création de: ${dbPath}`);
 }
 

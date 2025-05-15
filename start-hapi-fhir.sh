@@ -187,6 +187,41 @@ if ps -p $SERVER_PID > /dev/null; then
   
   # Enregistrer le PID dans un fichier
   echo $SERVER_PID > "$HAPI_DIR/hapi-fhir-server.pid"
+  
+  # Vérifier que le serveur répond correctement (avec timeout de 30 secondes)
+  echo -e "${YELLOW}Vérification de la disponibilité du serveur HAPI FHIR...${NC}"
+  MAX_ATTEMPTS=30
+  ATTEMPT=0
+  SERVER_READY=false
+  
+  while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+    ATTEMPT=$((ATTEMPT+1))
+    
+    # Utiliser curl ou wget pour vérifier la disponibilité
+    if command -v curl > /dev/null; then
+      if curl -s -o /dev/null -w "%{http_code}" http://localhost:$PORT/fhir/metadata | grep -q "200\|401"; then
+        SERVER_READY=true
+        break
+      fi
+    elif command -v wget > /dev/null; then
+      if wget -q --spider http://localhost:$PORT/fhir/metadata; then
+        SERVER_READY=true
+        break
+      fi
+    fi
+    
+    echo -n "."
+    sleep 1
+  done
+  
+  echo ""
+  if [ "$SERVER_READY" = true ]; then
+    echo -e "${GREEN}✅ Serveur HAPI FHIR opérationnel et accessible${NC}"
+  else
+    echo -e "${YELLOW}⚠️ Le serveur HAPI FHIR a démarré mais ne répond pas encore complètement aux requêtes.${NC}"
+    echo -e "${YELLOW}   Le processus a démarré mais la disponibilité n'a pas pu être confirmée.${NC}"
+    echo -e "${YELLOW}   L'application FHIRHub pourra néanmoins s'y connecter ultérieurement.${NC}"
+  fi
 else
   echo -e "${RED}Erreur: Le serveur HAPI FHIR n'a pas pu démarrer.${NC}"
   echo -e "${YELLOW}Vérifiez les logs dans $HAPI_DIR/hapi-fhir-server.log${NC}"
