@@ -63,13 +63,6 @@ services:
     volumes:
       # Volume pour la persistance des données H2 (base de données par défaut de HAPI FHIR)
       - ./data/hapi-fhir:/data/hapi
-    # Création des répertoires nécessaires avec les bonnes permissions avant de démarrer le conteneur
-    entrypoint: >
-      /bin/sh -c "
-        mkdir -p /data/hapi/database && 
-        chmod -R 777 /data/hapi && 
-        java -jar /app/app.war
-      "
     environment:
       # Configuration FHIR
       - hapi.fhir.default_encoding=json           # Format par défaut des réponses
@@ -82,11 +75,12 @@ services:
       - hapi.fhir.advanced_lucene_indexing=true   # Indexation Lucene avancée pour améliorer la performance
       
       # Configuration de la base de données
-      - spring.datasource.url=jdbc:h2:file:/data/hapi/database/h2  # Chemin de la base de données H2 (modifié pour file:)
+      - spring.datasource.url=jdbc:h2:file:/data/hapi/database/h2;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE  # Chemin de la base de données H2 avec options
       - spring.datasource.username=sa
       - spring.datasource.password=
       - spring.datasource.driverClassName=org.h2.Driver
       - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+      - spring.jpa.hibernate.ddl-auto=update  # Créer automatiquement les tables si nécessaire
       
       # Configuration de la JVM et des performances
       - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxRAMPercentage=75.0
