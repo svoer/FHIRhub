@@ -73,14 +73,26 @@ services:
       - hapi.fhir.validation.enabled=false        # Désactiver la validation stricte pour améliorer la performance
       - hapi.fhir.expunge_enabled=true            # Activer les opérations d'expunge
       - hapi.fhir.advanced_lucene_indexing=true   # Indexation Lucene avancée pour améliorer la performance
+      - hapi.fhir.subscription.resthook_enabled=false  # Désactiver les webhooks pour simplifier
+      - hapi.fhir.subscription.websocket_enabled=false # Désactiver les websockets pour simplifier
+      - hapi.fhir.subscription.email_enabled=false     # Désactiver les emails pour simplifier
       
       # Configuration de la base de données
       - spring.datasource.url=jdbc:h2:file:/data/hapi/database/h2;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE  # Chemin de la base de données H2 avec options
       - spring.datasource.username=sa
-      - spring.datasource.password=
+      - spring.datasource.password=sa
       - spring.datasource.driverClassName=org.h2.Driver
       - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
       - spring.jpa.hibernate.ddl-auto=update  # Créer automatiquement les tables si nécessaire
+      - spring.jpa.properties.hibernate.format_sql=false # Désactiver l'affichage des requêtes SQL
+      - spring.jpa.properties.hibernate.show_sql=false   # Désactiver l'affichage des requêtes SQL
+      
+      # Configuration de journalisation
+      - logging.level.root=WARN
+      - logging.level.ca.uhn.fhir=WARN
+      
+      # Configuration Spring
+      - spring.main.allow-bean-definition-overriding=true
       
       # Configuration de la JVM et des performances
       - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxRAMPercentage=75.0
