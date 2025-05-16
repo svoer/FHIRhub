@@ -171,7 +171,7 @@ echo -e "${BLUE}Démarrage du serveur HAPI FHIR sur le port $PORT avec $MEMORY M
 echo -e "${BLUE}Base de données: $DATABASE${NC}"
 
 # Options JVM
-# Utiliser le fichier de configuration application.yaml
+# Préparer le chemin pour la base de données
 DB_PATH="./data/hapi/database"
 mkdir -p "$DB_PATH"
 chmod 777 "$DB_PATH"
@@ -190,9 +190,9 @@ if [ ! -w "$DB_PATH" ]; then
   fi
 fi
 
-# Utiliser le fichier de configuration avec priorité sur les paramètres en ligne de commande
-CONFIG_FILE="$HAPI_DIR/application.yaml"
-JAVA_OPTS="-Xmx${MEMORY}m -Dspring.profiles.active=default -Dspring.config.location=file:$CONFIG_FILE -DHAPI_FHIR_SERVER_VERSION=$VERSION $DB_OPTS"
+# Utiliser des paramètres en ligne de commande au lieu d'un fichier de configuration YAML
+H2_DB_URL="jdbc:h2:file:$DB_PATH/hapi_fhir_h2;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1"
+JAVA_OPTS="-Xmx${MEMORY}m -Dserver.port=$PORT -DHAPI_FHIR_SERVER_VERSION=$VERSION -Dhapi.fhir.allow_external_references=true -Dhapi.fhir.expunge_enabled=true -Dspring.datasource.url=$H2_DB_URL -Dspring.datasource.username=sa -Dspring.datasource.password=sa -Dspring.datasource.driverClassName=org.h2.Driver -Dspring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect $DB_OPTS"
 
 # Démarrer le serveur en arrière-plan avec nohup pour le maintenir en vie 
 # après la fin du script parent
