@@ -39,7 +39,7 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd ./hapi-fhir && java -Xmx512m -jar hapi-fhir-server-starter-5.4.0.jar --spring.datasource.url=jdbc:h2:file:./database/hapi_fhir_h2 --spring.datasource.username=sa --spring.datasource.password=sa --spring.datasource.driverClassName=org.h2.Driver --server.port=8080 --hapi.fhir.allow_external_references=true --hapi.fhir.expunge_enabled=true --fhir.validation.enabled=false"
+args = "bash ./run-hapi-fhir-replit.sh"
 waitForPort = 8080
 
 [[workflows.workflow]]
