@@ -53,12 +53,14 @@ create_directories() {
     mkdir -p "$FHIRHUB_DATA_DIR/logs"
     mkdir -p "$FHIRHUB_DATA_DIR/temp"
 
-    # Création des répertoires pour HAPI FHIR
-    mkdir -p "$HAPI_FHIR_DATA_DIR"
+    # Création des répertoires pour HAPI FHIR avec leur structure complète
+    mkdir -p "$HAPI_FHIR_DATA_DIR/database"
     
     # Définir les permissions appropriées
     chmod -R 755 "$DATA_DIR"
     chmod -R 777 "$FHIRHUB_DATA_DIR/storage" "$FHIRHUB_DATA_DIR/logs" "$FHIRHUB_DATA_DIR/temp"
+    # S'assurer que le répertoire de base de données HAPI FHIR est accessible en écriture
+    chmod -R 777 "$HAPI_FHIR_DATA_DIR"
     
     log "Répertoires créés avec succès."
 }
