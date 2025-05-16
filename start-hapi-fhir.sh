@@ -171,12 +171,28 @@ echo -e "${BLUE}Démarrage du serveur HAPI FHIR sur le port $PORT avec $MEMORY M
 echo -e "${BLUE}Base de données: $DATABASE${NC}"
 
 # Options JVM
-# Spécifier un chemin accessible pour la base de données
-DB_PATH="$HAPI_DIR/database"
+# Utiliser le fichier de configuration application.yaml
+DB_PATH="./data/hapi/database"
 mkdir -p "$DB_PATH"
 chmod 777 "$DB_PATH"
 
-JAVA_OPTS="-Xmx${MEMORY}m -Dserver.port=$PORT -DHAPI_FHIR_SERVER_VERSION=$VERSION -Dhapi.fhir.allow_external_references=true -Dhapi.fhir.expunge_enabled=true -Dhapi.fhir.advanced_lucene_indexing=true -Dspring.datasource.url=jdbc:h2:file:$DB_PATH/hapi_fhir_h2 $DB_OPTS"
+# Vérifier que le répertoire est bien accessible
+if [ ! -w "$DB_PATH" ]; then
+  echo -e "${RED}Erreur: Le répertoire $DB_PATH n'est pas accessible en écriture.${NC}"
+  echo -e "${YELLOW}Tentative de correction des permissions...${NC}"
+  mkdir -p "$DB_PATH"
+  chmod -R 777 "$DB_PATH" || true
+  if [ ! -w "$DB_PATH" ]; then
+    echo -e "${RED}Impossible de corriger les permissions sur $DB_PATH. Utilisation d'un chemin alternatif.${NC}"
+    DB_PATH="$HAPI_DIR/database"
+    mkdir -p "$DB_PATH"
+    chmod 777 "$DB_PATH"
+  fi
+fi
+
+# Utiliser le fichier de configuration avec priorité sur les paramètres en ligne de commande
+CONFIG_FILE="$HAPI_DIR/application.yaml"
+JAVA_OPTS="-Xmx${MEMORY}m -Dspring.profiles.active=default -Dspring.config.location=file:$CONFIG_FILE -DHAPI_FHIR_SERVER_VERSION=$VERSION $DB_OPTS"
 
 # Démarrer le serveur en arrière-plan avec nohup pour le maintenir en vie 
 # après la fin du script parent

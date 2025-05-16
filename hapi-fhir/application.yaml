@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:${user.dir}/data/hapi/database/hapi_fhir_h2;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: sa
+    driverClassName: org.h2.Driver
+    hikari:
+      maximum-pool-size: 10
+  jpa:
+    properties:
+      hibernate.dialect: org.hibernate.dialect.H2Dialect
+      hibernate.search.enabled: false
+  cache:
+    type: NONE
+
+hapi:
+  fhir:
+    server_address: http://localhost:8080/fhir
+    allow_external_references: true
+    expunge_enabled: true
+    advanced_lucene_indexing: true
+
+server:
+  port: 8080
