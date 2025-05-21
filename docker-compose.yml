@@ -63,19 +63,34 @@ services:
     volumes:
       # Volume pour la persistance des données H2 (base de données par défaut de HAPI FHIR)
       - ./data/hapi-fhir:/data/hapi
+      # Configuration explicitée
+      - ./data/hapi-fhir/config:/data/hapi/config
     environment:
+      # Configuration explicite du fichier properties à utiliser
+      - SPRING_CONFIG_LOCATION=file:///data/hapi/config/application.properties
+      
+      # Configuration de base
+      - SERVER_PORT=8080
+      - SERVER_SERVLET_CONTEXT_PATH=/
+      - SPRING_MAIN_WEB_APPLICATION_TYPE=servlet
+      
       # Configuration FHIR
       - hapi.fhir.default_encoding=json           # Format par défaut des réponses
       - hapi.fhir.fhir_version=R4                 # Version FHIR utilisée (R4 = 4.0.1)
       - hapi.fhir.allow_external_references=true  # Autorise les références externes
       - hapi.fhir.allow_multiple_delete=true      # Autorise les suppressions multiples
       - hapi.fhir.server_address=http://localhost:8080/fhir  # URL serveur pour les liens de pagination
+      
+      # Désactiver des fonctionnalités pour améliorer la performance et éviter les erreurs
       - hapi.fhir.validation.enabled=false        # Désactiver la validation stricte pour améliorer la performance
       - hapi.fhir.expunge_enabled=true            # Activer les opérations d'expunge
-      - hapi.fhir.advanced_lucene_indexing=true   # Indexation Lucene avancée pour améliorer la performance
+      - hapi.fhir.advanced_lucene_indexing=false  # Désactiver l'indexation Lucene pour simplifier
       - hapi.fhir.subscription.resthook_enabled=false  # Désactiver les webhooks pour simplifier
       - hapi.fhir.subscription.websocket_enabled=false # Désactiver les websockets pour simplifier
       - hapi.fhir.subscription.email_enabled=false     # Désactiver les emails pour simplifier
+      - hapi.fhir.narratives_enabled=false        # Désactiver les narratives pour simplifier
+      - hapi.fhir.binary_storage_enabled=false    # Désactiver le stockage binaire pour simplifier
+      - hapi.fhir.bulk_export_enabled=false       # Désactiver l'export en masse pour simplifier
       
       # Configuration de la base de données
       - spring.datasource.url=jdbc:h2:file:/data/hapi/database/h2;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE  # Chemin de la base de données H2 avec options
@@ -90,9 +105,13 @@ services:
       # Configuration de journalisation
       - logging.level.root=WARN
       - logging.level.ca.uhn.fhir=WARN
+      - logging.level.org.springframework=WARN
+      - logging.level.org.hibernate=WARN
       
       # Configuration Spring
       - spring.main.allow-bean-definition-overriding=true
+      - spring.main.allow-circular-references=true
+      - spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
       
       # Configuration de la JVM et des performances
       - JAVA_OPTS=-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxRAMPercentage=75.0
