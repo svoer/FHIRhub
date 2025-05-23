@@ -1639,6 +1639,52 @@ app.use('/api/fhir-search', fhirSearchRoutes);  // Recherche intelligente
 app.use('/api/fhir-ai', fhirAiRoutes);  // Intégration d'IA avec FHIR (multi-fournisseurs)
 app.use('/api/fhir-push-bundle', require('./routes/fhir-push-bundle'));  // Envoi direct de bundles FHIR vers le serveur
 app.use('/api/fhir-proxy', require('./routes/fhir-proxy'));  // Proxy pour contourner les restrictions CORS des serveurs FHIR
+
+// Route spéciale pour le chatbot patient (direct, sans redirection vers FAQ)
+app.post('/api/ai/patient-chat', async (req, res) => {
+  try {
+    const { messages, max_tokens = 500 } = req.body;
+    
+    if (!messages || messages.length < 2) {
+      return res.status(400).json({
+        success: false,
+        error: 'Messages manquants'
+      });
+    }
+
+    // Récupérer le service IA unifié
+    const { getAiService } = require('./utils/aiServiceUnified');
+    const aiService = await getAiService();
+    
+    if (!aiService) {
+      return res.status(500).json({
+        success: false,
+        error: 'Aucun fournisseur d\'IA configuré'
+      });
+    }
+
+    console.log('[PATIENT-CHAT] Question:', messages[messages.length - 1]?.content);
+
+    // Appeler directement le service IA
+    const response = await aiService.generateResponse(messages, {
+      max_tokens,
+      temperature: 0.3
+    });
+
+    res.json({
+      success: true,
+      content: response
+    });
+
+  } catch (error) {
+    console.error('[PATIENT-CHAT] Erreur:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Route pour la page d'accueil de la documentation API (sans animation/clignotement)
 app.get('/api-documentation', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/api-docs-landing.html'));

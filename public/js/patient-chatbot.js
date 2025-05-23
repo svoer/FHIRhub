@@ -214,7 +214,7 @@ class PatientChatbot {
             organizations: window.loadedPatientResources?.organizations || []
         };
 
-        const response = await fetch('/api/ai/chat', {
+        const response = await fetch('/api/ai/patient-chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
