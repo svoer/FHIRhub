@@ -1549,6 +1549,10 @@ const aiFhirAnalyzeRoutes = require('./routes/ai-fhir-analyze'); // Analyse FHIR
 const aiKnowledgeApiRoutes = require('./routes/ai-knowledge-api');
 app.use('/api/ai-knowledge', aiKnowledgeApiRoutes);
 
+// Route pour le chatbot de documentation
+const documentationChatbotRoutes = require('./routes/documentation-chatbot');
+app.use('/api/documentation-chatbot', documentationChatbotRoutes);
+
 // Enregistrement des routes
 app.use('/api/applications', applicationsRoutes);
 app.use('/applications', applicationViewsRoutes);  // Nouveau router pour les vues des applications
