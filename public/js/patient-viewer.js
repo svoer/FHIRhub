@@ -442,20 +442,25 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Générer la chronologie à partir des données du bundle
                         generateTimelineFromBundle(bundle);
                         
-                        // Activer le chatbot patient avec les données chargées
+                        // 🚀 ACTIVER LE CHATBOT PATIENT IMMÉDIATEMENT
+                        console.log('🤖 Activation du chatbot patient avec les données complètes');
                         if (window.patientChatbot) {
                             const patientResourcesForChatbot = {
                                 patient: patientData,
-                                conditions: conditionsData,
-                                observations: observationsData,
-                                medications: medicationsData,
-                                encounters: encountersData,
-                                practitioners: practitionersData,
-                                organizations: organizationsData,
+                                conditions: conditionsData || [],
+                                observations: observationsData || [],
+                                medications: medicationsData || [],
+                                encounters: encountersData || [],
+                                practitioners: practitionersData || [],
+                                organizations: organizationsData || [],
                                 bundle: bundleData
                             };
                             window.loadedPatientResources = patientResourcesForChatbot;
                             window.patientChatbot.setPatientData(patientData);
+                            window.patientChatbot.enableChatbot();
+                            console.log('✅ Chatbot patient ACTIVÉ avec succès !');
+                        } else {
+                            console.error('❌ Chatbot patient non trouvé !');
                         }
                     } else {
                         showStatus('Le bundle est vide ou mal formaté, utilisation de la méthode traditionnelle', 'warning');
@@ -500,6 +505,26 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 
                                                 setTimeout(() => {
                                                     loadPatientBundle(patientId, server);
+                                                    
+                                                    // 🚀 ACTIVER LE CHATBOT AUSSI DANS LA MÉTHODE TRADITIONNELLE
+                                                    setTimeout(() => {
+                                                        console.log('🤖 Activation du chatbot (méthode traditionnelle)');
+                                                        if (window.patientChatbot) {
+                                                            const patientResourcesForChatbot = {
+                                                                patient: patientData,
+                                                                conditions: conditionsData || [],
+                                                                observations: observationsData || [],
+                                                                medications: medicationsData || [],
+                                                                encounters: encountersData || [],
+                                                                practitioners: practitionersData || [],
+                                                                organizations: organizationsData || []
+                                                            };
+                                                            window.loadedPatientResources = patientResourcesForChatbot;
+                                                            window.patientChatbot.setPatientData(patientData);
+                                                            window.patientChatbot.enableChatbot();
+                                                            console.log('✅ Chatbot activé (méthode traditionnelle) !');
+                                                        }
+                                                    }, 1000);
                                                 }, 500);
                                             }, 500);
                                         }, 500);
