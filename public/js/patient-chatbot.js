@@ -219,7 +219,8 @@ class PatientChatbot {
             body: JSON.stringify({
                 patientId: patientId,
                 serverUrl: serverUrl,
-                question: question
+                question: question,
+                chatbot: true
             })
         });
 

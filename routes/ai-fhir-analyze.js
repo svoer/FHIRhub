@@ -130,12 +130,15 @@ router.post('/analyze-patient', async (req, res) => {
             clearTimeout(timeoutHandle);
         });
         
-        const { patientId, serverUrl, patientData, question } = req.body;
+        const { patientId, serverUrl, patientData, question, chatbot } = req.body;
         console.log('[AI-Analyze] Requête avec patientId:', patientId, 'serverUrl:', serverUrl);
+        console.log('[AI-Analyze] Paramètres reçus - question:', question, 'chatbot:', chatbot);
         
         // Si c'est une question spécifique du chatbot
-        if (question) {
-            console.log('[AI-Analyze] Question du chatbot:', question);
+        if (question && chatbot) {
+            console.log('[AI-Analyze] Mode CHATBOT - Question:', question);
+        } else {
+            console.log('[AI-Analyze] Mode ANALYSE COMPLÈTE');
         }
         
         if (!patientId || !serverUrl) {
@@ -213,8 +216,8 @@ router.post('/analyze-patient', async (req, res) => {
             // Construire le prompt adapté selon si c'est une question ou une analyse complète
             let prompt;
             
-            if (question) {
-                // Prompt simple pour répondre à une question spécifique
+            if (question && chatbot) {
+                // Prompt simple pour répondre à une question spécifique du chatbot
                 prompt = `Réponds précisément à cette question : "${question}"
 
 Voici les données du patient :
