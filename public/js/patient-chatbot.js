@@ -69,9 +69,16 @@ class PatientChatbot {
         this.chatInput.disabled = false;
         this.sendButton.disabled = false;
         
-        this.chatInput.placeholder = "Posez une question sur ce patient...";
-        this.statusElement.textContent = "Chatbot activé - Posez vos questions sur ce patient";
+        this.chatInput.placeholder = "Ex: Quelles sont les dernières observations de ce patient ?";
+        this.statusElement.innerHTML = "✅ <strong>Assistant IA activé</strong> - Posez vos questions sur ce patient";
         this.statusElement.style.color = "#28a745";
+        
+        // Focus sur l'input pour une meilleure UX
+        setTimeout(() => {
+            if (this.chatInput) {
+                this.chatInput.focus();
+            }
+        }, 500);
         
         // Ajouter un message de bienvenue personnalisé
         this.addWelcomeMessage();
@@ -82,7 +89,7 @@ class PatientChatbot {
         this.chatInput.disabled = true;
         this.sendButton.disabled = true;
         this.chatInput.placeholder = "Veuillez charger un patient...";
-        this.statusElement.textContent = "Veuillez charger un patient pour commencer la conversation";
+        this.statusElement.textContent = "💡 Chargez un patient pour activer l'assistant IA";
         this.statusElement.style.color = "#666";
     }
 
