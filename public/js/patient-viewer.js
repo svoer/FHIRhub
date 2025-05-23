@@ -52,8 +52,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Activer le contenu correspondant
             const tabId = this.getAttribute('data-tab');
             const activeTab = document.getElementById(tabId);
-            activeTab.classList.add('active');
-            activeTab.style.display = 'block';
+            if (activeTab) {
+                activeTab.classList.add('active');
+                activeTab.style.display = 'block';
+            }
             
             // Si c'est l'onglet JSON, mettre à jour le contenu
             if (tabId === 'json') {
