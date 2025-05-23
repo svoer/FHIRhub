@@ -1653,7 +1653,7 @@ app.post('/api/ai/patient-chat', async (req, res) => {
     }
 
     // Récupérer le service IA unifié
-    const { getAiService } = require('./utils/aiServiceUnified');
+    const { getAiService } = require('./utils/ai-service-unified');
     const aiService = await getAiService();
     
     if (!aiService) {
