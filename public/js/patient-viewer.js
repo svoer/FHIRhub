@@ -310,6 +310,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
+        // Désactiver le chatbot patient
+        if (window.patientChatbot) {
+            window.patientChatbot.clearPatient();
+        }
+        
+        // Nettoyer les ressources globales du chatbot
+        window.loadedPatientResources = null;
+        
         console.log('IDENTITOVIGILANCE: Toutes les données du patient ont été effacées');
     }
     
