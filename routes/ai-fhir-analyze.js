@@ -130,8 +130,13 @@ router.post('/analyze-patient', async (req, res) => {
             clearTimeout(timeoutHandle);
         });
         
-        const { patientId, serverUrl, patientData } = req.body;
+        const { patientId, serverUrl, patientData, question } = req.body;
         console.log('[AI-Analyze] Requête avec patientId:', patientId, 'serverUrl:', serverUrl);
+        
+        // Si c'est une question spécifique du chatbot
+        if (question) {
+            console.log('[AI-Analyze] Question du chatbot:', question);
+        }
         
         if (!patientId || !serverUrl) {
             return res.status(400).json({

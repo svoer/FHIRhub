@@ -203,35 +203,23 @@ class PatientChatbot {
     }
 
     async queryAI(question, patientContext) {
-        const prompt = `Tu es un assistant médical IA spécialisé dans l'analyse des données patients FHIR. 
+        // Utiliser le même endpoint que l'analyse intelligente pour avoir accès aux vraies données
+        const patientId = this.patientData?.id;
+        const serverUrl = document.getElementById('serverSelect')?.value || 'https://hapi.fhir.org/baseR4';
         
-Voici les données du patient actuel :
-${patientContext}
+        if (!patientId) {
+            throw new Error('ID du patient non trouvé');
+        }
 
-Question du professionnel de santé : ${question}
-
-Instructions :
-- Réponds uniquement en te basant sur les données fournies
-- Si l'information n'est pas disponible, dis-le clairement
-- Utilise un langage médical approprié mais accessible
-- Sois précis et factuel
-- Ne donne pas de conseils médicaux ou de diagnostic
-- Concentre-toi sur l'analyse des données présentes
-
-Réponse :`;
-
-        const response = await fetch('/api/ai/chat', {
+        const response = await fetch('/api/ai/analyze-patient', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                messages: [
-                    {
-                        role: "user",
-                        content: prompt
-                    }
-                ]
+                patientId: patientId,
+                serverUrl: serverUrl,
+                question: question
             })
         });
 
@@ -240,7 +228,7 @@ Réponse :`;
         }
 
         const data = await response.json();
-        return data.response || 'Aucune réponse disponible.';
+        return data.analysis || data.content || data.response || data.message || 'Aucune réponse disponible.';
     }
 
     addMessage(sender, message, type = 'normal') {
