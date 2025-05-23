@@ -203,24 +203,43 @@ class PatientChatbot {
     }
 
     async queryAI(question, patientContext) {
-        // Utiliser le même endpoint que l'analyse intelligente pour avoir accès aux vraies données
-        const patientId = this.patientData?.id;
-        const serverUrl = document.getElementById('serverSelect')?.value || 'https://hapi.fhir.org/baseR4';
-        
-        if (!patientId) {
-            throw new Error('ID du patient non trouvé');
-        }
+        // Utiliser les données déjà chargées dans l'interface utilisateur
+        const patientData = {
+            patient: this.patientData,
+            conditions: window.loadedPatientResources?.conditions || [],
+            observations: window.loadedPatientResources?.observations || [],
+            medications: window.loadedPatientResources?.medications || [],
+            encounters: window.loadedPatientResources?.encounters || [],
+            practitioners: window.loadedPatientResources?.practitioners || [],
+            organizations: window.loadedPatientResources?.organizations || []
+        };
 
-        const response = await fetch('/api/ai/analyze-patient', {
+        const response = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                patientId: patientId,
-                serverUrl: serverUrl,
-                question: question,
-                chatbot: true
+                messages: [
+                    {
+                        role: "system",
+                        content: `Tu es un assistant médical. Réponds précisément et de façon concise à la question posée.
+                        
+Données du patient disponibles :
+- Patient: ${JSON.stringify(patientData.patient, null, 2)}
+- Conditions (${patientData.conditions.length}): ${JSON.stringify(patientData.conditions, null, 2)}
+- Observations (${patientData.observations.length}): ${JSON.stringify(patientData.observations, null, 2)}
+- Médicaments (${patientData.medications.length}): ${JSON.stringify(patientData.medications, null, 2)}
+- Consultations (${patientData.encounters.length}): ${JSON.stringify(patientData.encounters, null, 2)}
+
+Instructions: Réponds SEULEMENT à la question posée. Sois concis et direct.`
+                    },
+                    {
+                        role: "user",
+                        content: question
+                    }
+                ],
+                max_tokens: 500
             })
         });
 
@@ -229,7 +248,7 @@ class PatientChatbot {
         }
 
         const data = await response.json();
-        return data.analysis || data.content || data.response || data.message || 'Aucune réponse disponible.';
+        return data.content || data.response || data.message || 'Aucune réponse disponible.';
     }
 
     addMessage(sender, message, type = 'normal') {
