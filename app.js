@@ -1653,20 +1653,15 @@ app.post('/api/ai/patient-chat', async (req, res) => {
     }
 
     // Récupérer le service IA unifié
-    const { getAiService } = require('./utils/ai-service-unified');
-    const aiService = await getAiService();
+    const { generateText } = require('./utils/aiService');
     
-    if (!aiService) {
-      return res.status(500).json({
-        success: false,
-        error: 'Aucun fournisseur d\'IA configuré'
-      });
-    }
+    // Construire les messages pour l'IA
+    const messagesText = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
 
     console.log('[PATIENT-CHAT] Question:', messages[messages.length - 1]?.content);
 
     // Appeler directement le service IA
-    const response = await aiService.generateResponse(messages, {
+    const response = await generateText(messagesText, {
       max_tokens,
       temperature: 0.3
     });
