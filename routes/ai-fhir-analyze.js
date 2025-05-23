@@ -210,8 +210,39 @@ router.post('/analyze-patient', async (req, res) => {
                 console.log(`  - Consultations: ${encounters.length} éléments`);
             }
             
-            // Construire le prompt pour l'IA avec toutes les données disponibles
-            const prompt = `Tu es un assistant médical qui analyse des données FHIR de patient.
+            // Construire le prompt adapté selon si c'est une question ou une analyse complète
+            let prompt;
+            
+            if (question) {
+                // Prompt simple pour répondre à une question spécifique
+                prompt = `Réponds précisément à cette question : "${question}"
+
+Voici les données du patient :
+
+INFORMATIONS PATIENT:
+${JSON.stringify(patientInfo, null, 2)}
+
+CONDITIONS MÉDICALES (${conditions.length}):
+${JSON.stringify(conditions, null, 2)}
+
+OBSERVATIONS (${observations.length}):
+${JSON.stringify(observations, null, 2)}
+
+MÉDICAMENTS (${medications.length}):
+${JSON.stringify(medications, null, 2)}
+
+CONSULTATIONS (${encounters.length}):
+${JSON.stringify(encounters, null, 2)}
+
+Instructions :
+- Réponds SEULEMENT à la question posée
+- Sois concis et direct
+- Base-toi uniquement sur les données fournies
+- Si l'info n'est pas disponible, dis-le simplement`;
+                
+            } else {
+                // Prompt pour l'analyse complète (rapport médical)
+                prompt = `Tu es un assistant médical qui analyse des données FHIR de patient.
                 
 En tant qu'expert médical, analyse ces données de patient et génère un rapport médical complet comprenant:
 1. Un résumé des informations démographiques
@@ -242,6 +273,7 @@ ${JSON.stringify(encounters, null, 2)}
 Réponds avec un rapport HTML bien structuré pour faciliter la lecture. Utilise les éléments HTML comme <div>, <h3>, <ul>, <li>, <p> avec des styles CSS en ligne pour créer un rapport visuellement organisé. Utilise des tableaux pour regrouper les données quand c'est pertinent.
 
 Le rapport doit obligatoirement intégrer et analyser toutes les sections de données disponibles (pas seulement les données de base du patient).`;
+            }
             
             // Utiliser notre service d'IA unifié
             console.log("[AI-Analyze] Génération de l'analyse avec le service d'IA unifié");
