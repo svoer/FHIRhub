@@ -291,12 +291,12 @@ Réponse :`;
         if (isProcessing) {
             this.sendButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             this.sendButton.disabled = true;
-            this.statusElement.textContent = "Analyse en cours...";
+            this.statusElement.innerHTML = "🤖 Analyse en cours...";
             this.statusElement.style.color = "#fd7e30";
         } else {
             this.sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
             this.sendButton.disabled = !this.isEnabled;
-            this.statusElement.textContent = this.isEnabled ? "Chatbot activé - Posez vos questions sur ce patient" : "Veuillez charger un patient pour commencer la conversation";
+            this.statusElement.innerHTML = this.isEnabled ? "✅ <strong>Assistant activé</strong> - Posez vos questions !" : "🤖 Chargez un patient pour démarrer la conversation";
             this.statusElement.style.color = this.isEnabled ? "#28a745" : "#666";
         }
     }

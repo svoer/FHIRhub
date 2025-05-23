@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="/css/fhir-browser.css">
     <link rel="stylesheet" href="/css/support-chatbot.css">
     <link rel="stylesheet" href="/css/ai-indicator.css">
+    <link rel="stylesheet" href="/css/patient-chatbot.css">
     
     <!-- Scripts -->
     <script src="/js/support-chatbot.js" defer></script>
@@ -357,30 +358,28 @@
                     <pre id="jsonContent" style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></pre>
                 </div>
                 
-                <!-- Nouvel onglet chatbot -->
-                <div class="tab-content" id="chatbot" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
+                <!-- Onglet chatbot patient -->
+                <div class="tab-content" id="chatbot" style="background: white; border-radius: 8px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
                     <div class="patient-chatbot-container">
-                        <div class="chatbot-header" style="border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 20px;">
-                            <h3 style="margin: 0; color: #e83e28; display: flex; align-items: center; gap: 10px;">
+                        <div class="chatbot-header">
+                            <h3>
                                 <i class="fas fa-robot"></i>
-                                Assistant IA Patient
+                                Assistant IA Patient FHIRHub
                             </h3>
-                            <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">
-                                Posez des questions sur les données médicales de ce patient
-                            </p>
+                            <p>Posez des questions intelligentes sur les données médicales de ce patient</p>
                         </div>
                         
-                        <div class="chatbot-messages" id="chatbotMessages" style="height: 350px; overflow-y: auto; padding: 15px; background: #f8f9fa; border-radius: 12px; margin-bottom: 20px; border: 2px solid #e9ecef; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
-                            <div class="welcome-message" style="background: linear-gradient(135deg, #e83e28, #fd7e30); color: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(232, 62, 40, 0.2);">
+                        <div class="chatbot-messages" id="chatbotMessages">
+                            <div class="welcome-message">
                                 <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
                                     <i class="fas fa-robot" style="font-size: 1.3rem; background: rgba(255,255,255,0.2); padding: 8px; border-radius: 50%;"></i>
-                                    <strong style="font-size: 1.1rem;">Assistant IA Patient FHIRHub</strong>
+                                    <strong style="font-size: 1.1rem;">Assistant IA Médical</strong>
                                 </div>
-                                <p style="margin: 0 0 12px 0; line-height: 1.5; font-size: 0.95rem;">
+                                <p style="margin: 0 0 12px 0; line-height: 1.5; font-size: 1rem;">
                                     🏥 Je suis votre assistant IA spécialisé dans l'analyse des dossiers patients FHIR. 
                                     Chargez un patient et posez-moi vos questions !
                                 </p>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.9rem;">
                                     <div>• Antécédents médicaux</div>
                                     <div>• Médicaments prescrits</div>
                                     <div>• Résultats d'examens</div>
@@ -391,19 +390,18 @@
                             </div>
                         </div>
                         
-                        <div class="chatbot-input-container" style="display: flex; gap: 12px; align-items: flex-end; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 2px solid #f0f0f0;">
+                        <div class="chatbot-input-container">
                             <input type="text" 
                                    id="chatbotInput" 
-                                   placeholder="Ex: Quelles sont les dernières observations de ce patient ?" 
-                                   style="flex: 1; padding: 15px 20px; border: 2px solid #e9ecef; border-radius: 25px; font-size: 15px; outline: none; transition: all 0.3s ease; background: #fafafa;">
-                            <button id="chatbotSendBtn" 
-                                    style="background: linear-gradient(135deg, #e83e28, #fd7e30); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(232, 62, 40, 0.3); font-size: 16px;">
+                                   placeholder="Tapez votre question sur ce patient..."
+                                   disabled>
+                            <button id="chatbotSendBtn" disabled>
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
                         
-                        <div class="chatbot-status" style="margin-top: 15px; text-align: center; color: #666; font-size: 0.9rem; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                            <span id="chatbotStatus">💡 Chargez un patient pour activer l'assistant IA</span>
+                        <div class="chatbot-status">
+                            <span id="chatbotStatus">🤖 Chargez un patient pour démarrer la conversation</span>
                         </div>
                     </div>
                 </div>
