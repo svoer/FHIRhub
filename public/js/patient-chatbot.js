@@ -220,14 +220,18 @@ Instructions :
 
 Réponse :`;
 
-        const response = await fetch('/api/ai-providers/chat', {
+        const response = await fetch('/api/ai/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                message: prompt,
-                context: 'patient_analysis'
+                messages: [
+                    {
+                        role: "user",
+                        content: prompt
+                    }
+                ]
             })
         });
 
