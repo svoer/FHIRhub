@@ -431,6 +431,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Générer la chronologie à partir des données du bundle
                         generateTimelineFromBundle(bundle);
+                        
+                        // Activer le chatbot patient avec les données chargées
+                        if (window.patientChatbot) {
+                            const patientResourcesForChatbot = {
+                                patient: patientData,
+                                conditions: conditionsData,
+                                observations: observationsData,
+                                medications: medicationsData,
+                                encounters: encountersData,
+                                practitioners: practitionersData,
+                                organizations: organizationsData,
+                                bundle: bundleData
+                            };
+                            window.loadedPatientResources = patientResourcesForChatbot;
+                            window.patientChatbot.setPatientData(patientData);
+                        }
                     } else {
                         showStatus('Le bundle est vide ou mal formaté, utilisation de la méthode traditionnelle', 'warning');
                         loadResourcesTraditionnally();

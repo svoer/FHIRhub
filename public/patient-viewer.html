@@ -22,6 +22,7 @@
     <script src="/js/sidebar-menu.js" defer></script>
     <script src="/js/patient-utils.js" defer></script>
     <script src="/js/patient-viewer-loaders.js" defer></script>
+    <script src="/js/patient-chatbot.js" defer></script>
     <script src="/js/patient-viewer.js" defer></script>
 </head>
 <body>
@@ -351,6 +352,58 @@
                 <div class="tab-content" id="json" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
                     <h3 style="margin-top: 0; color: #fd7e30;">Données JSON brutes</h3>
                     <pre id="jsonContent" style="background-color: #f5f5f5; padding: 15px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></pre>
+                </div>
+                
+                <!-- Nouvel onglet chatbot -->
+                <div class="tab-content" id="chatbot" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: none;">
+                    <div class="patient-chatbot-container">
+                        <div class="chatbot-header" style="border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 20px;">
+                            <h3 style="margin: 0; color: #e83e28; display: flex; align-items: center; gap: 10px;">
+                                <i class="fas fa-robot"></i>
+                                Assistant IA Patient
+                            </h3>
+                            <p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">
+                                Posez des questions sur les données médicales de ce patient
+                            </p>
+                        </div>
+                        
+                        <div class="chatbot-messages" id="chatbotMessages" style="height: 400px; overflow-y: auto; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px; border: 1px solid #e9ecef;">
+                            <div class="welcome-message" style="background: linear-gradient(135deg, #e83e28, #fd7e30); color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <i class="fas fa-robot" style="font-size: 1.2rem;"></i>
+                                    <strong>Assistant IA Patient</strong>
+                                </div>
+                                <p style="margin: 0; line-height: 1.4;">
+                                    Bonjour ! Je suis votre assistant IA spécialisé dans l'analyse des données patients FHIR. 
+                                    Une fois qu'un patient est chargé, vous pouvez me poser des questions sur :
+                                </p>
+                                <ul style="margin: 10px 0 0 20px; line-height: 1.4;">
+                                    <li>Les antécédents médicaux</li>
+                                    <li>Les médicaments prescrits</li>
+                                    <li>Les résultats d'examens</li>
+                                    <li>Les consultations</li>
+                                    <li>L'analyse des tendances</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="chatbot-input-container" style="display: flex; gap: 10px;">
+                            <input type="text" 
+                                   id="chatbotInput" 
+                                   placeholder="Posez une question sur ce patient..." 
+                                   style="flex: 1; padding: 12px 15px; border: 2px solid #e9ecef; border-radius: 25px; font-size: 14px; outline: none; transition: border-color 0.3s ease;"
+                                   disabled>
+                            <button id="chatbotSendBtn" 
+                                    style="background: linear-gradient(135deg, #e83e28, #fd7e30); color: white; border: none; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; transition: transform 0.2s ease; display: flex; align-items: center; justify-content: center;"
+                                    disabled>
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="chatbot-status" style="margin-top: 10px; text-align: center; color: #666; font-size: 0.9rem;">
+                            <span id="chatbotStatus">Veuillez charger un patient pour commencer la conversation</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
