@@ -469,6 +469,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
                 .catch(error => {
                     console.error("Erreur avec $everything:", error);
+                    // Clear any existing error state
+                    showStatus('Basculement vers le chargement progressif des ressources...', 'info');
                     loadResourcesTraditionnally();
                 });
                 

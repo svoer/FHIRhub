@@ -92,8 +92,13 @@
             }
           }
           
+          // Clone elements before moving to avoid DOM manipulation issues
           for (const element of elementsToMove) {
-            newMainContent.appendChild(element);
+            try {
+              newMainContent.appendChild(element);
+            } catch (e) {
+              console.warn('Failed to move element:', element, e);
+            }
           }
           
           // Insérer le nouveau main-content après le sidebar-container

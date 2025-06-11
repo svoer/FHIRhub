@@ -133,11 +133,13 @@ run_hapi_fhir() {
   
   # Lancement en arrière-plan avec redirection des logs
   cd "$HAPI_DIR" || exit 1
+  mkdir -p "$LOGS_DIR"
   java $JAVA_OPTS -Dspring.config.location=file:./config/application.properties -jar hapi-fhir-jpaserver-starter.war > "$LOGS_DIR/startup.log" 2>&1 &
   
   # Récupération du PID
   HAPI_PID=$!
   echo "HAPI FHIR démarré avec PID: $HAPI_PID"
+  mkdir -p "$HAPI_DIR"
   echo "$HAPI_PID" > "$HAPI_DIR/hapi.pid"
   
   # Vérification du démarrage
