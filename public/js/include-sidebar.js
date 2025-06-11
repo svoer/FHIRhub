@@ -92,10 +92,12 @@
             }
           }
           
-          // Clone elements before moving to avoid DOM manipulation issues
+          // Move elements safely by checking if they're valid DOM nodes
           for (const element of elementsToMove) {
             try {
-              newMainContent.appendChild(element);
+              if (element && element.nodeType === Node.ELEMENT_NODE && element.parentNode) {
+                newMainContent.appendChild(element);
+              }
             } catch (e) {
               console.warn('Failed to move element:', element, e);
             }

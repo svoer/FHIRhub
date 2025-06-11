@@ -129,12 +129,12 @@ run_hapi_fhir() {
   echo "Le serveur sera accessible à l'adresse: http://localhost:8080/fhir"
   
   # Définition des options JVM pour optimiser la performance (réduit pour Replit)
-  JAVA_OPTS="-Xmx256m -Xms128m -XX:+UseSerialGC -XX:MaxRAMPercentage=50.0"
+  JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -Dspring.jpa.hibernate.ddl-auto=update -Dspring.jpa.show-sql=false"
   
   # Lancement en arrière-plan avec redirection des logs
   cd "$HAPI_DIR" || exit 1
   mkdir -p "$LOGS_DIR"
-  java $JAVA_OPTS -Dspring.config.location=file:./config/application.properties -jar hapi-fhir-jpaserver-starter.war > "$LOGS_DIR/startup.log" 2>&1 &
+  java $JAVA_OPTS -Dspring.config.location=file:./config/application.properties -jar hapi-fhir-server-starter-5.4.0.jar > "$LOGS_DIR/startup.log" 2>&1 &
   
   # Récupération du PID
   HAPI_PID=$!
