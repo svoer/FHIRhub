@@ -128,8 +128,8 @@ run_hapi_fhir() {
   echo "Démarrage du serveur HAPI FHIR..."
   echo "Le serveur sera accessible à l'adresse: http://localhost:8080/fhir"
   
-  # Définition des options JVM pour optimiser la performance
-  JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseG1GC -XX:+UseStringDeduplication -XX:MaxRAMPercentage=75.0"
+  # Définition des options JVM pour optimiser la performance (réduit pour Replit)
+  JAVA_OPTS="-Xmx256m -Xms128m -XX:+UseSerialGC -XX:MaxRAMPercentage=50.0"
   
   # Lancement en arrière-plan avec redirection des logs
   cd "$HAPI_DIR" || exit 1
