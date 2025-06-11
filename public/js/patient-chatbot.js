@@ -206,12 +206,12 @@ class PatientChatbot {
         // Utiliser les données déjà chargées dans l'interface utilisateur
         const patientData = {
             patient: this.patientData,
-            conditions: window.loadedPatientResources?.conditions || [],
-            observations: window.loadedPatientResources?.observations || [],
-            medications: window.loadedPatientResources?.medications || [],
-            encounters: window.loadedPatientResources?.encounters || [],
-            practitioners: window.loadedPatientResources?.practitioners || [],
-            organizations: window.loadedPatientResources?.organizations || []
+            conditions: window.conditionsData || [],
+            observations: window.observationsData || [],
+            medications: window.medicationsData || [],
+            encounters: window.encountersData || [],
+            practitioners: window.practitionersData || [],
+            organizations: window.organizationsData || []
         };
 
         const response = await fetch('/api/ai/patient-chat', {
