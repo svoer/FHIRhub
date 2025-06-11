@@ -15,21 +15,33 @@ router.post('/patient-chat', async (req, res) => {
             });
         }
 
-        // Créer un prompt simple et direct pour réponses courtes
-        const prompt = `Tu es un assistant médical. Réponds UNIQUEMENT à la question posée de manière concise et directe.
+        // Créer un prompt simple avec les données formatées
+        const prompt = `Réponds précisément à cette question : "${question}"
 
-Question: ${question}
+Voici les données du patient :
 
-Données du patient:
-- Nom: ${patientData?.patient?.name?.[0]?.given?.[0]} ${patientData?.patient?.name?.[0]?.family}
-- Conditions: ${patientData?.conditions?.map(c => c.code?.text || c.code?.coding?.[0]?.display).filter(Boolean).join(', ') || 'Aucune'}
-- Praticiens: ${patientData?.practitioners?.map(p => `${p.name?.[0]?.given?.[0]} ${p.name?.[0]?.family}`).filter(Boolean).join(', ') || 'Aucun'}
-- Observations récentes: ${patientData?.observations?.slice(0,3).map(o => o.code?.text || o.code?.coding?.[0]?.display).filter(Boolean).join(', ') || 'Aucune'}
+INFORMATIONS PATIENT:
+${JSON.stringify(patientData?.patient || {}, null, 2)}
 
-IMPORTANT: Réponds par une phrase courte et directe uniquement, pas de rapport complet.`;
+CONDITIONS MÉDICALES (${patientData?.conditions?.length || 0}):
+${JSON.stringify(patientData?.conditions || [], null, 2)}
 
-        // Utiliser le service IA qui fonctionne
-        const response = await aiService.generateResponse(prompt, {
+PRATICIENS (${patientData?.practitioners?.length || 0}):
+${JSON.stringify(patientData?.practitioners || [], null, 2)}
+
+OBSERVATIONS (${patientData?.observations?.length || 0}):
+${JSON.stringify(patientData?.observations || [], null, 2)}
+
+Instructions :
+- Réponds SEULEMENT à la question posée
+- Sois concis et direct  
+- Base-toi uniquement sur les données fournies
+- Si l'info n'est pas disponible, dis-le simplement`;
+
+        // Utiliser le service IA avec le même format que l'analyse intelligente
+        const response = await aiService.generateResponse({
+            prompt: prompt,
+            systemPrompt: 'Tu es un assistant médical spécialisé dans l\'analyse de données FHIR.',
             maxTokens: 150,
             temperature: 0.3
         });

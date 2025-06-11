@@ -1640,49 +1640,8 @@ app.use('/api/fhir-ai', fhirAiRoutes);  // Intégration d'IA avec FHIR (multi-fo
 app.use('/api/fhir-push-bundle', require('./routes/fhir-push-bundle'));  // Envoi direct de bundles FHIR vers le serveur
 app.use('/api/fhir-proxy', require('./routes/fhir-proxy'));  // Proxy pour contourner les restrictions CORS des serveurs FHIR
 
-// Route spéciale pour le chatbot patient (direct, sans redirection vers FAQ)
-app.post('/api/ai/patient-chat', async (req, res) => {
-  try {
-    const { messages, max_tokens = 500 } = req.body;
-    
-    if (!messages || messages.length < 2) {
-      return res.status(400).json({
-        success: false,
-        error: 'Messages manquants'
-      });
-    }
-
-    // Récupérer le service IA unifié
-    const { generateResponse } = require('./utils/aiService');
-    
-    // Construire le prompt depuis les messages
-    const systemMessage = messages.find(m => m.role === 'system');
-    const userMessages = messages.filter(m => m.role === 'user');
-    const prompt = userMessages.map(m => m.content).join('\n\n');
-
-    console.log('[PATIENT-CHAT] Question:', messages[messages.length - 1]?.content);
-
-    // Appeler le service IA avec les bons paramètres
-    const response = await generateResponse({
-      prompt: prompt,
-      systemPrompt: systemMessage ? systemMessage.content : '',
-      maxTokens: max_tokens,
-      temperature: 0.3
-    });
-
-    res.json({
-      success: true,
-      content: response
-    });
-
-  } catch (error) {
-    console.error('[PATIENT-CHAT] Erreur:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
+// Route du chatbot patient via le module dédié
+app.use('/api/ai', require('./routes/patient-chat'));
 
 // Route pour la page d'accueil de la documentation API (sans animation/clignotement)
 app.get('/api-documentation', (req, res) => {
