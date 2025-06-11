@@ -19,8 +19,8 @@ fi
 # Créer les répertoires nécessaires
 mkdir -p data/hapi-fhir/{database,logs}
 
-# Configuration JVM optimisée pour Replit
-export JAVA_OPTS="-Xmx384m -Xms192m -XX:+UseSerialGC -Dserver.port=8080"
+# Configuration JVM optimisée pour Java 21 et Replit
+export JAVA_OPTS="-Xmx512m -Xms256m -XX:+UseG1GC -Dserver.port=8080 --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED"
 
 # Démarrer HAPI FHIR
 echo "Démarrage du serveur HAPI FHIR..."
