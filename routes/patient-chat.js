@@ -1,44 +1,38 @@
 const express = require('express');
 const router = express.Router();
-const { getAiService } = require('../utils/aiServiceUnified');
+const aiService = require('../utils/aiService');
 
 router.post('/patient-chat', async (req, res) => {
     try {
-        console.log('[PATIENT-CHAT] Nouvelle requête de chatbot patient');
-        console.log('[PATIENT-CHAT] Paramètres reçus:', {
-            hasMessages: !!req.body.messages,
-            messageCount: req.body.messages?.length || 0,
-            maxTokens: req.body.max_tokens
-        });
+        console.log('[PATIENT-CHAT] Question:', req.body.question);
+        
+        const { question, patientData } = req.body;
 
-        const { messages, max_tokens = 500 } = req.body;
-
-        if (!messages || messages.length < 2) {
+        if (!question) {
             return res.status(400).json({
                 success: false,
-                error: 'Messages manquants'
+                error: 'Question manquante'
             });
         }
 
-        // Récupérer le service IA unifié
-        const aiService = await getAiService();
-        if (!aiService) {
-            return res.status(500).json({
-                success: false,
-                error: 'Aucun fournisseur d\'IA configuré'
-            });
-        }
+        // Créer un prompt simple et direct pour réponses courtes
+        const prompt = `Tu es un assistant médical. Réponds UNIQUEMENT à la question posée de manière concise et directe.
 
-        console.log('[PATIENT-CHAT] Utilisation du service IA:', aiService.getProviderType());
-        console.log('[PATIENT-CHAT] Question posée:', messages[messages.length - 1]?.content);
+Question: ${question}
 
-        // Appeler directement le service IA sans passer par le système de connaissances
-        const response = await aiService.generateResponse(messages, {
-            max_tokens,
+Données du patient:
+- Nom: ${patientData?.patient?.name?.[0]?.given?.[0]} ${patientData?.patient?.name?.[0]?.family}
+- Conditions: ${patientData?.conditions?.map(c => c.code?.text || c.code?.coding?.[0]?.display).filter(Boolean).join(', ') || 'Aucune'}
+- Praticiens: ${patientData?.practitioners?.map(p => `${p.name?.[0]?.given?.[0]} ${p.name?.[0]?.family}`).filter(Boolean).join(', ') || 'Aucun'}
+- Observations récentes: ${patientData?.observations?.slice(0,3).map(o => o.code?.text || o.code?.coding?.[0]?.display).filter(Boolean).join(', ') || 'Aucune'}
+
+IMPORTANT: Réponds par une phrase courte et directe uniquement, pas de rapport complet.`;
+
+        // Utiliser le service IA qui fonctionne
+        const response = await aiService.generateResponse(prompt, {
+            maxTokens: 150,
             temperature: 0.3
         });
-
-        console.log('[PATIENT-CHAT] Réponse générée avec succès');
 
         res.json({
             success: true,
@@ -49,7 +43,7 @@ router.post('/patient-chat', async (req, res) => {
         console.error('[PATIENT-CHAT] Erreur:', error.message);
         res.status(500).json({
             success: false,
-            error: error.message
+            error: 'Désolé, je rencontre un problème technique. Veuillez réessayer.'
         });
     }
 });
