@@ -1653,16 +1653,20 @@ app.post('/api/ai/patient-chat', async (req, res) => {
     }
 
     // Récupérer le service IA unifié
-    const { generateText } = require('./utils/aiService');
+    const { generateResponse } = require('./utils/aiService');
     
-    // Construire les messages pour l'IA
-    const messagesText = messages.map(m => `${m.role}: ${m.content}`).join('\n\n');
+    // Construire le prompt depuis les messages
+    const systemMessage = messages.find(m => m.role === 'system');
+    const userMessages = messages.filter(m => m.role === 'user');
+    const prompt = userMessages.map(m => m.content).join('\n\n');
 
     console.log('[PATIENT-CHAT] Question:', messages[messages.length - 1]?.content);
 
-    // Appeler directement le service IA
-    const response = await generateText(messagesText, {
-      max_tokens,
+    // Appeler le service IA avec les bons paramètres
+    const response = await generateResponse({
+      prompt: prompt,
+      systemPrompt: systemMessage ? systemMessage.content : '',
+      maxTokens: max_tokens,
       temperature: 0.3
     });
 
