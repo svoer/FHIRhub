@@ -231,13 +231,13 @@ function ansComplianceValidation(req, res, next) {
 function intrusionDetection(req, res, next) {
   const suspiciousPatterns = [
     // Injection SQL
-    /('|(\\')|(;)|(\\)|(\-\-)|(\s*(union|select|insert|delete|update|drop|create|alter|exec|execute)\s*)/i,
+    /('|(\\')|(;)|(\\\\)|(--)|(\s*(union|select|insert|delete|update|drop|create|alter|exec|execute)\s*)/i,
     // XSS
     /<script[^>]*>.*?<\/script>/gi,
     // Path traversal
     /\.\.(\/|\\)/,
     // Command injection
-    /[;&|`$()]/
+    /[;&|`$]/
   ];
   
   const userInput = JSON.stringify(req.body) + req.url + (req.get('user-agent') || '');
