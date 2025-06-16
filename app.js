@@ -9,8 +9,7 @@
 // Définir la version de l'application globalement
 global.APP_VERSION = '1.5.0';
 
-// Exécuter le script de vérification du serveur FHIR
-require('./check-fhir-server');
+// Script de vérification du serveur FHIR retiré lors du nettoyage
 
 const express = require('express');
 const cors = require('cors');
