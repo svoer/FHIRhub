@@ -1,0 +1,95 @@
+version: '3.8'
+
+# Configuration utilisant des bind mounts plutôt que des volumes Docker nommés
+# pour faciliter l'accès aux données et éviter les problèmes de permissions
+
+services:
+  # Application principale FHIRHub
+  fhirhub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fhirhub
+    restart: unless-stopped
+    ports:
+      - "${PORT_FHIRHUB:-5000}:5000"  # Port principal FHIRHub
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DB_PATH=/app/storage/db/fhirhub.db
+      - DB_PERSISTENT=true
+      - SESSION_SECRET=${SESSION_SECRET:-fhirhub_production_secure_session_key}
+      - METRICS_ENABLED=false
+      - LOG_LEVEL=info
+      - DOCKER_ENV=true
+      # Connexion au serveur HAPI FHIR séparé via le nom du service Docker
+      - HAPI_FHIR_SERVER=http://hapifhir:8080/fhir
+      - BYPASS_AUTH=false
+    volumes:
+      # Utilisation de binds mounts vers les dossiers locaux
+      - ./data/fhirhub/db:/app/storage/db:rw
+      - ./data/fhirhub/storage:/app/storage/data:rw
+      - ./data/fhirhub/logs:/app/storage/logs:rw
+      - ./data/fhirhub/terminology:/app/french_terminology:rw
+      # Dossiers mappés pour faciliter l'import/export de données
+      - ./import:/app/import:ro
+      - ./export:/app/export:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - fhirhub-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+    depends_on:
+      - hapifhir
+
+  # Serveur HAPI FHIR séparé
+  hapifhir:
+    image: hapiproject/hapi:latest
+    container_name: fhirhub-hapi
+    restart: unless-stopped
+    ports:
+      - "${PORT_HAPIFHIR:-8080}:8080"
+    environment:
+      - hapi.fhir.default_encoding=JSON
+      - hapi.fhir.allow_external_references=true
+      - hapi.fhir.allow_multiple_delete=true
+      - hapi.fhir.allow_placeholder_references=true
+      - hapi.fhir.narrative_enabled=false
+      - hapi.fhir.advanced_lucene_indexing=false
+      # Configuration de la base de données H2 (intégrée)
+      - spring.datasource.url=jdbc:h2:/data/hapi
+      - spring.datasource.username=sa
+      - spring.datasource.password=
+      - spring.datasource.driverClassName=org.h2.Driver
+      - spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect
+      - spring.jpa.hibernate.ddl-auto=update
+      - logging.level.ca.uhn.fhir.jpa.search=ERROR
+      - JAVA_OPTS=-Xmx1024m -Dfile.encoding=UTF-8
+    volumes:
+      - ./data/hapifhir:/data:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/fhir/metadata"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - fhirhub-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+
+# Définition des réseaux
+networks:
+  fhirhub-network:
+    driver: bridge

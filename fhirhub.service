@@ -1,0 +1,20 @@
+[Unit]
+Description=FHIRHub Service
+After=network.target hapi-fhir.service
+
+[Service]
+Type=simple
+User=fhirhub
+WorkingDirectory=/opt/fhirhub
+ExecStart=/usr/bin/node /opt/fhirhub/app.js
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=fhirhub
+Environment=PATH=/usr/bin:/usr/local/bin:/opt/fhirhub/node/bin
+Environment=NODE_ENV=production
+Environment=PORT=5001
+
+[Install]
+WantedBy=multi-user.target

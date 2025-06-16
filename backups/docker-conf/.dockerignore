@@ -1,0 +1,19 @@
+# Ignore les fichiers et dossiers inutiles pour le build Docker
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.git
+.github
+.vscode
+*.md
+.gitignore
+.env
+.env.*
+.DS_Store
+Thumbs.db
+
+# Ignorer les répertoires de données (ils seront montés via volumes)
+data/*
+logs/*
+backups/*

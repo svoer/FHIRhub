@@ -1,23 +1,37 @@
 {
-  "defaultServer": "hapi-public",
   "servers": [
     {
-      "id": "hapi-public",
-      "name": "Serveur HAPI FHIR Public",
-      "url": "https://hapi.fhir.org/baseR4",
-      "version": "R4",
-      "auth": "none",
-      "isDefault": true,
-      "status": "active"
-    },
-    {
-      "id": "local",
+      "id": "local-hapi",
       "name": "Serveur HAPI FHIR Local",
       "url": "http://localhost:8080/fhir",
+      "type": "local",
       "version": "R4",
       "auth": "none",
       "isDefault": false,
-      "status": "inactive"
+      "isLocalDefault": true,
+      "isActive": true
+    },
+    {
+      "id": "public-hapi",
+      "name": "Serveur HAPI FHIR Public",
+      "url": "https://hapi.fhir.org/baseR4",
+      "type": "public",
+      "version": "R4",
+      "auth": "none",
+      "isDefault": true,
+      "isLocalDefault": false,
+      "isActive": true
+    },
+    {
+      "id": "7a1a0af6-6c45-461d-a4a2-d79b5acbbd9a",
+      "name": "Mon espace santé",
+      "url": "https://www.monespacesante.fr/",
+      "type": "local",
+      "version": "R4",
+      "auth": "none",
+      "isDefault": false,
+      "isLocalDefault": false,
+      "isActive": true
     }
   ]
 }
