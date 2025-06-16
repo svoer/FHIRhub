@@ -1,121 +1,432 @@
-# 🔥 FHIRHub 🔥
+# FHIRHub - Plateforme de Conversion HL7 vers FHIR
 
-## 🏥 Vue d'ensemble
-FHIRHub est une plateforme d'interopérabilité santé propriétaire conçue pour recevoir des messages HL7, les convertir au format FHIR (Fast Healthcare Interoperability Resources), et éventuellement stocker les données FHIR résultantes dans un entrepôt de données HAPI FHIR. La plateforme sert de hub central pour la transformation et la gestion des données de santé interopérables, alliant performance ⚡ et analyse intelligente des données médicales.
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/fhirhub/fhirhub)
+[![Node.js](https://img.shields.io/badge/node.js-20.x-green.svg)](https://nodejs.org/)
+[![FHIR](https://img.shields.io/badge/FHIR-R4-orange.svg)](https://hl7.org/fhir/R4/)
+[![License](https://img.shields.io/badge/license-Proprietary-red.svg)]()
 
-## 🏥 Qu'est-ce que HAPI FHIR?
-HAPI FHIR est un serveur FHIR open-source officiel développé et maintenu par la communauté HL7.org. Il fournit une implémentation complète des spécifications FHIR, comprenant le stockage des ressources, la validation, et la prise en charge des requêtes. FHIRHub s'interface directement avec un ou plusieurs serveurs HAPI FHIR.
+FHIRHub est une plateforme sophistiquée de conversion HL7 v2.5 vers FHIR R4, spécialement conçue pour l'interopérabilité des données de santé en France. Elle intègre les terminologies françaises (ANS/FR Core) et offre des capacités d'IA avancées pour l'analyse des données patients.
 
-## ✨ Fonctionnalités principales
+## 🚀 Caractéristiques principales
 
-### 👥 Gestion des utilisateurs
-- Contrôle d'accès basé sur les rôles
-- Privilèges différents entre administrateurs et utilisateurs réguliers
+### Conversion et Interopérabilité
+- **Conversion HL7 v2.5 → FHIR R4** : Support complet des messages ADT, ORU, ORM, MDM, SIU
+- **Terminologies françaises** : Intégration native des référentiels ANS et profils FR Core
+- **Cache intelligent** : Optimisation des performances avec mise en cache des conversions
+- **Validation avancée** : Vérification syntaxique et sémantique des messages
 
-### 📊 Tableau de bord
-Indicateurs en temps réel comprenant:
-- Nombre total de conversions
-- Applications enregistrées
-- Clés API actives
-- Temps économisé ⏱️
-- Taux de réussite
-- Ressources générées
-- Métriques avancées
+### Interface et Gestion
+- **Interface web multilingue** : Interface utilisateur en français avec support international
+- **Tableau de bord temps réel** : Métriques, statistiques et monitoring avancé
+- **Gestion des applications** : Support multi-tenant avec isolation des données
+- **API RESTful complète** : Documentation interactive Swagger/OpenAPI
 
-### 🔄 Interface de conversion HL7 vers FHIR
-- Test et prévisualisation des messages HL7
-- Vérification de la conversion correcte au format FHIR
-- Support de multiples versions de messages HL7
-- Performances optimisées ⚡
+### IA et Analyse
+- **Chatbot patient intelligent** : Analyse contextuelle des dossiers FHIR avec Mistral AI
+- **Support multi-fournisseurs IA** : Anthropic Claude, OpenAI GPT, Mistral AI
+- **Analyse sémantique** : Extraction d'insights à partir des données FHIR
 
-### 🔍 Explorateur FHIR
-- Exploration des ressources FHIR stockées
-- Affichage du nombre de ressources par type
-- Vérification de l'état du référentiel de données
+### Déploiement et Infrastructure
+- **Mode hospitalier (offline)** : Déploiement autonome avec HAPI FHIR local
+- **Mode SaaS** : Architecture cloud-native avec Docker
+- **Haute disponibilité** : Support de la persistance et de la montée en charge
 
-### 📤 Téléchargement manuel de bundles FHIR
-- Support pour le téléchargement manuel de bundles FHIR
-- Validation et tests de stockage
-- Possibilité de pousser les bundles vers le serveur HAPI FHIR
+## 📋 Prérequis
 
-### 📚 Documentation Swagger
-- Documentation disponible pour les endpoints HAPI FHIR
-- Exploration interactive des API
+### Système
+- **Node.js** : Version 20.x ou supérieure
+- **Java** : OpenJDK 21 (pour HAPI FHIR)
+- **SQLite** : Base de données intégrée
+- **Docker** : Optionnel pour le déploiement conteneurisé
 
-### ⚙️ Configuration des serveurs
-- Configuration de plusieurs serveurs FHIR (locaux ou externes)
-- Options pour la lecture/écriture des données
-- Gestion des paramètres de connexion et d'authentification
+### Ressources recommandées
+- **RAM** : 2 GB minimum, 4 GB recommandé
+- **Stockage** : 5 GB d'espace libre
+- **Réseau** : Accès Internet pour les terminologies ANS (optionnel en mode offline)
 
-### 👨‍⚕️ Visualiseur de patients
-- Interface permettant aux professionnels de santé de sélectionner un patient
-- Affichage des données médicales organisées par onglet (consultations, prescriptions, organisations, etc.)
-- Génération d'un résumé IA 🤖 du dossier médical du patient basé sur toutes les données disponibles
+## 🛠️ Installation
 
-### 🔑 Outils d'administration
-- Gestion des clés API par application
-- Configuration de sécurité via CORS
-- Interfaces de suivi des performances et d'utilisation
+### Installation rapide (Mode développement)
 
-### 📖 Gestion de la terminologie FHIR
-- Mise à jour et gestion des terminologies FHIR directement depuis la plateforme
-- Support complet des terminologies françaises ANS (Agence du Numérique en Santé)
-- Implémentation complète des profils FR Core (HL7 France)
-- Adaptation des systèmes de codage internationaux
-
-### 🤖 Configuration IA
-- Intégration avec des outils comme OLLAMA pour exécuter des modèles IA localement
-- Fonctionnement sans connectivité externe requise
-- Support pour plusieurs fournisseurs d'IA (Mistral, DeepSeek, etc.)
-- Configuration flexible des modèles et des paramètres
-
-### 🌟 Autres fonctionnalités
-- Prise en charge multilingue (français/anglais)
-- Proxy FHIR pour contourner les limitations CORS
-- Gestion des erreurs avancée et mécanismes de reprise
-- Système de logs détaillé pour le suivi des conversions
-- Interface réactive avec design en dégradé rouge-orange
-
-## 🔧 Architecture technique
-- API REST Node.js pour le backend
-- Interface utilisateur en JavaScript/HTML5
-- Base de données SQLite pour les logs et la configuration
-- Conteneurisation Docker pour un déploiement simplifié ⚡
-- Fonctionnement possible en mode portable, sans dépendances externes
-
-## 🐳 Déploiement avec Docker
-
-FHIRHub et HAPI FHIR peuvent être déployés facilement avec Docker. Le déploiement inclut :
-
-### 📋 Prérequis
-- Docker Engine v20.10.0+
-- Docker Compose v2.0.0+
-- 2 Go de RAM minimum
-- 5 Go d'espace disque
-
-### 🚀 Installation en un clic
 ```bash
-# Rendre le script d'installation exécutable
-chmod +x docker-install.sh
+# Cloner le repository
+git clone https://github.com/fhirhub/fhirhub.git
+cd fhirhub
 
-# Lancer l'installation
-./docker-install.sh
+# Installer les dépendances
+npm install
+
+# Initialiser la structure de données
+./start.sh
 ```
 
-### 📁 Organisation des données
-Les données sont stockées de manière persistante dans le répertoire `./data/` :
-- `./data/fhirhub/` : Configuration, logs, cache et terminologies de FHIRHub
-- `./data/hapi-fhir/` : Base de données H2 de HAPI FHIR
+### Installation Docker (Mode production)
 
-### 🌐 Accès aux applications
-- FHIRHub : http://localhost:5000
-- HAPI FHIR : http://localhost:8080/fhir
+```bash
+# Initialiser l'environnement Docker
+./docker-install.sh
 
-Pour plus de détails sur le déploiement Docker, consultez la [documentation détaillée](./docs/docker-deployment.md).
+# Démarrer les services
+docker-compose up -d
+```
 
-## ⚠️ Licence
-FHIRHub est un logiciel propriétaire. Tous droits réservés. Non disponible en licence open-source.
+### Installation mode hospitalier (Offline)
+
+```bash
+# Installation complète avec HAPI FHIR local
+./install.sh
+
+# Démarrer FHIRHub
+./start.sh
+
+# Démarrer HAPI FHIR (terminal séparé)
+./run-hapi-fhir-simple.sh
+```
+
+## 🚀 Démarrage rapide
+
+### 1. Configuration initiale
+
+```bash
+# Démarrer l'application
+npm start
+
+# Ou utiliser le script complet
+./start.sh
+```
+
+L'application sera accessible à l'adresse : **http://localhost:5000**
+
+### 2. Authentification
+
+**Compte administrateur par défaut :**
+- Nom d'utilisateur : `admin`
+- Mot de passe : `admin123`
+
+**Clé API de développement :** `dev-key`
+
+### 3. Premier test de conversion
+
+```bash
+# Test avec curl
+curl -X POST "http://localhost:5000/api/convert" \
+  -H "X-API-KEY: dev-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hl7Message": "MSH|^~\\&|SENDING_APP|SENDING_FACILITY|RECEIVING_APP|RECEIVING_FACILITY|202501011200||ADT^A01|123456|P|2.5|||NE|NE|FR"
+  }'
+```
+
+## 📖 Documentation
+
+### Architecture du système
+
+```
+FHIRHub/
+├── app.js                 # Point d'entrée principal
+├── src/                   # Code source
+│   ├── converters/        # Moteurs de conversion HL7→FHIR
+│   ├── terminology/       # Gestionnaire terminologies françaises
+│   ├── cache/             # Système de cache intelligent
+│   └── services/          # Services métiers
+├── routes/                # Routes API Express.js
+├── middleware/            # Authentification et validation
+├── public/                # Interface web
+├── data/                  # Données persistantes
+│   ├── db/               # Base SQLite
+│   ├── terminologies/    # Référentiels ANS
+│   └── cache/            # Cache de conversion
+└── hapi-fhir/            # Serveur HAPI FHIR intégré
+```
+
+### APIs principales
+
+#### Conversion
+- `POST /api/convert` - Conversion HL7 → FHIR (JSON)
+- `POST /api/convert/raw` - Conversion texte brut
+- `POST /api/convert/validate` - Validation syntaxique
+- `POST /api/convert/file` - Upload de fichiers HL7
+
+#### Authentification
+- `POST /api/auth/login` - Connexion utilisateur
+- `POST /api/auth/refresh` - Renouvellement token JWT
+- `GET /api/auth/verify` - Vérification token
+
+#### Gestion des données
+- `GET /api/stats` - Statistiques de conversion
+- `GET /api/applications` - Gestion des applications
+- `GET /api/terminologies` - Terminologies disponibles
+
+#### IA et Analyse
+- `POST /api/ai/chat` - Chatbot patient
+- `POST /api/ai/analyze-patient` - Analyse de dossier FHIR
+
+### Authentification et sécurité
+
+FHIRHub implémente un système d'authentification double :
+
+1. **JWT (JSON Web Tokens)** : Pour l'interface web
+2. **Clés API** : Pour l'intégration programmatique
+
+```javascript
+// Exemple d'authentification JWT
+const response = await fetch('/api/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    username: 'admin',
+    password: 'admin123'
+  })
+});
+
+// Exemple d'utilisation de clé API
+const conversion = await fetch('/api/convert', {
+  method: 'POST',
+  headers: {
+    'X-API-KEY': 'dev-key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ hl7Message: '...' })
+});
+```
+
+## 🏥 Déploiement hospitalier (Mode offline)
+
+### Configuration HAPI FHIR local
+
+```bash
+# Démarrer HAPI FHIR
+./run-hapi-fhir-simple.sh
+
+# Vérifier le statut
+curl http://localhost:8080/fhir/metadata
+```
+
+### Configuration des terminologies françaises
+
+```bash
+# Mettre à jour les terminologies ANS
+python3 get_french_terminology.py
+
+# Recharger les mappings
+curl -X POST "http://localhost:5000/api/terminology/refresh" \
+  -H "X-API-KEY: dev-key"
+```
+
+### Service systemd (Production)
+
+```bash
+# Installation du service
+sudo cp fhirhub.service /etc/systemd/system/
+sudo systemctl enable fhirhub
+sudo systemctl start fhirhub
+
+# Vérification du statut
+sudo systemctl status fhirhub
+```
+
+## 🐳 Déploiement Docker
+
+### Configuration Docker Compose
+
+```yaml
+# docker-compose.yml (extrait)
+version: '3.8'
+services:
+  fhirhub:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data/fhirhub:/app/storage
+    environment:
+      - NODE_ENV=production
+      - HAPI_FHIR_URL=http://hapi-fhir:8080/fhir
+
+  hapi-fhir:
+    image: hapiproject/hapi:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data/hapi-fhir:/data/hapi
+```
+
+### Commandes Docker
+
+```bash
+# Construction et démarrage
+docker-compose up -d
+
+# Monitoring
+docker-compose logs -f fhirhub
+docker-compose logs -f hapi-fhir
+
+# Sauvegarde des données
+docker-compose exec fhirhub ./backup-docker-data.sh
+```
+
+## 🔧 Configuration avancée
+
+### Variables d'environnement
+
+```bash
+# Configuration Node.js
+export NODE_ENV=production
+export PORT=5000
+
+# Configuration FHIR
+export HAPI_FHIR_URL=http://localhost:8080/fhir
+export FHIR_REQUEST_TIMEOUT=30000
+
+# Configuration IA
+export MISTRAL_API_KEY=your_mistral_key
+export OPENAI_API_KEY=your_openai_key
+
+# Configuration cache
+export CACHE_MAX_SIZE=1000
+export CACHE_TTL=3600
+```
+
+### Personnalisation des terminologies
+
+```json
+{
+  "version": "1.1.0",
+  "systems": {
+    "COUNTRY": "https://mos.esante.gouv.fr/NOS/TRE_R20-Pays/FHIR/TRE-R20-Pays",
+    "GENDER": "https://mos.esante.gouv.fr/NOS/TRE_R303-HL7v3AdministrativeGender/FHIR/TRE-R303-HL7v3AdministrativeGender",
+    "PROFESSION": "https://mos.esante.gouv.fr/NOS/TRE_G15-ProfessionSante/FHIR/TRE-G15-ProfessionSante"
+  }
+}
+```
+
+## 📊 Monitoring et métriques
+
+### Métriques disponibles
+- **Conversions par seconde** : Débit de traitement
+- **Temps de réponse moyen** : Performance du système
+- **Taux de succès** : Fiabilité des conversions
+- **Utilisation mémoire** : Consommation ressources
+- **Cache hit ratio** : Efficacité du cache
+
+### Endpoints de monitoring
+
+```bash
+# Statistiques système
+curl http://localhost:5000/api/stats
+
+# Santé de l'application
+curl http://localhost:5000/api/system/health
+
+# Métriques Prometheus (optionnel)
+curl http://localhost:5000/metrics
+```
+
+## 🧪 Tests et validation
+
+### Tests d'intégration
+
+```bash
+# Test de conversion basique
+npm test
+
+# Test avec message HL7 complet
+curl -X POST "http://localhost:5000/api/convert/validate" \
+  -H "X-API-KEY: dev-key" \
+  -d "MSH|^~\&|SENDING_APP|..."
+```
+
+### Validation des terminologies
+
+```bash
+# Vérification des mappings ANS
+curl http://localhost:5000/api/terminology/french
+
+# Test de résolution de codes
+curl "http://localhost:5000/api/terminology/resolve?system=GENDER&code=M"
+```
+
+## 🚨 Résolution des problèmes
+
+### Problèmes courants
+
+**1. HAPI FHIR ne démarre pas**
+```bash
+# Vérifier Java
+java -version
+
+# Nettoyer et redémarrer
+pkill -f hapi-fhir
+./run-hapi-fhir-simple.sh
+```
+
+**2. Erreurs de permissions sur la base de données**
+```bash
+# Corriger les permissions
+chmod 666 storage/db/fhirhub.db
+chown $USER:$USER storage/db/fhirhub.db
+```
+
+**3. Terminologies françaises non disponibles**
+```bash
+# Recharger les terminologies
+python3 get_french_terminology.py
+curl -X POST http://localhost:5000/api/terminology/refresh
+```
+
+### Logs et débogage
+
+```bash
+# Logs FHIRHub
+tail -f data/logs/app.log
+
+# Logs HAPI FHIR
+tail -f data/hapi-fhir/logs/hapi-fhir.log
+
+# Mode debug
+DEBUG=fhirhub:* npm start
+```
+
+## 🤝 Contribution
+
+### Structure du projet
+- **Backend** : Node.js/Express avec architecture modulaire
+- **Frontend** : HTML5/CSS3/JavaScript vanilla
+- **Base de données** : SQLite avec Better-SQLite3
+- **Tests** : Jest pour les tests unitaires
+- **Documentation** : JSDoc pour l'API
+
+### Standards de code
+- **Style** : Utilisation d'ESLint avec configuration standard
+- **Commits** : Messages descriptifs en français
+- **Branches** : GitFlow avec branches feature/develop/main
+
+## 📄 Licence et conformité
+
+### Conformité réglementaire
+- **RGPD** : Gestion complète des données personnelles
+- **HDS** : Compatible hébergement de données de santé
+- **ANSSI** : Recommandations de sécurité appliquées
+- **ANS** : Conformité aux référentiels nationaux
+
+### Sécurité
+- **Chiffrement** : TLS 1.3 pour les communications
+- **Authentification** : Tokens JWT avec rotation
+- **Audit** : Logs complets des accès et modifications
+- **Isolation** : Séparation stricte des données par application
+
+## 📞 Support
+
+### Documentation complète
+- **Interface web** : http://localhost:5000/documentation.html
+- **API Reference** : http://localhost:5000/api-reference.html
+- **FAQ** : http://localhost:5000/faq.html
+
+### Contact technique
+- **Issues GitHub** : Pour les bugs et demandes de fonctionnalités
+- **Documentation** : Wiki du projet pour les guides détaillés
+- **Support entreprise** : Contact commercial disponible
 
 ---
 
-Le FHIRHub représente une solution complète pour l'interopérabilité des données de santé, permettant un flux efficace ⚡ des informations entre les systèmes utilisant HL7 et ceux basés sur FHIR, avec des capacités d'analyse avancées pour améliorer l'utilisation clinique des données.
+**FHIRHub** - Développé avec ❤️ pour l'interopérabilité en santé française
