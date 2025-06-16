@@ -1,0 +1,23 @@
+{
+  "defaultServer": "hapi-public",
+  "servers": [
+    {
+      "id": "hapi-public",
+      "name": "Serveur HAPI FHIR Public",
+      "url": "https://hapi.fhir.org/baseR4",
+      "version": "R4",
+      "auth": "none",
+      "isDefault": true,
+      "status": "active"
+    },
+    {
+      "id": "local",
+      "name": "Serveur HAPI FHIR Local",
+      "url": "http://localhost:8080/fhir",
+      "version": "R4",
+      "auth": "none",
+      "isDefault": false,
+      "status": "inactive"
+    }
+  ]
+}
