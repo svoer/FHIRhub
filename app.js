@@ -25,6 +25,10 @@ const conversionLogsExporter = require('./src/conversionLogsExporter');
 const logsExporter = require('./src/logsExporter');
 const lokiAdapter = require('./src/lokiAdapter');
 
+// Modules de sécurité
+const { configureSecurityHeaders, validateCorsOrigin, detectInjectionAttempts } = require('./middleware/securityHeaders');
+const { globalLimiter, conversionLimiter, authLimiter, aiLimiter } = require('./middleware/rateLimiter');
+
 // Importer le convertisseur avec cache intégré 
 const { convertHL7ToFHIR } = require('./src/cacheEnabledConverter');
 
@@ -35,11 +39,45 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 /**
- * Configuration des middlewares
+ * Configuration des middlewares de sécurité (priorité maximale)
  */
-app.use(cors());
-app.use(morgan('dev'));
-app.use(bodyParser.json({ limit: '10mb', type: ['application/json', 'application/fhir+json'] }));
+// Configuration des headers de sécurité
+configureSecurityHeaders(app);
+
+// Rate limiting global
+app.use(globalLimiter);
+
+// Détection des tentatives d'injection
+app.use(detectInjectionAttempts);
+
+/**
+ * Configuration des middlewares standards
+ */
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' ? validateCorsOrigin : true,
+  credentials: true,
+  optionsSuccessStatus: 200
+}));
+
+app.use(morgan('combined', {
+  skip: (req, res) => res.statusCode < 400, // Log seulement les erreurs en production
+  stream: {
+    write: (message) => {
+      console.log(`[ACCESS] ${message.trim()}`);
+    }
+  }
+}));
+
+app.use(bodyParser.json({ 
+  limit: '10mb', 
+  type: ['application/json', 'application/fhir+json'],
+  verify: (req, res, buf, encoding) => {
+    // Validation supplémentaire pour éviter les payloads malveillants
+    if (buf.length > 10 * 1024 * 1024) { // 10MB
+      throw new Error('Payload trop volumineux');
+    }
+  }
+}));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.text({ limit: '10mb', type: 'text/plain' }));
 

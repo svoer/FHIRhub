@@ -20,6 +20,28 @@ const fetch = require('node-fetch');
  * @returns {Promise<string>} - La réponse générée par l'IA
  */
 async function generateResponse({ prompt, systemPrompt = '', maxTokens = 1000, temperature = 0.7, retryCount = 2, providerName = null }) {
+    // Validation et sanitisation des entrées
+    if (!prompt || typeof prompt !== 'string' || prompt.trim().length === 0) {
+        throw new Error('Le prompt est requis et doit être une chaîne non vide');
+    }
+    
+    // Limites de sécurité pour éviter les abus
+    if (prompt.length > 50000) {
+        throw new Error('Le prompt dépasse la limite de 50 000 caractères');
+    }
+    
+    if (maxTokens > 4000) {
+        maxTokens = 4000; // Limite raisonnable
+    }
+    
+    if (temperature < 0 || temperature > 2) {
+        temperature = Math.max(0, Math.min(2, temperature));
+    }
+    
+    if (retryCount > 5) {
+        retryCount = 5; // Limite les tentatives excessives
+    }
+
     try {
         // Récupérer le fournisseur d'IA spécifié ou l'actif
         let aiProvider;
