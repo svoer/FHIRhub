@@ -1,4 +1,92 @@
 /**
+ * @swagger
+ * /api/applications:
+ *   get:
+ *     summary: Lister toutes les applications
+ *     description: Récupère la liste de toutes les applications enregistrées dans le système
+ *     tags: [Administration]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Liste des applications récupérée avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Application'
+ *             examples:
+ *               applications:
+ *                 summary: "Liste d'applications"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     - id: 1
+ *                       name: "Application Production"
+ *                       description: "Application principale pour l'environnement de production"
+ *                       created_at: "2025-06-18T10:30:00Z"
+ *                       updated_at: "2025-06-18T10:30:00Z"
+ *                     - id: 2
+ *                       name: "Application Test"
+ *                       description: "Application de test et développement"
+ *                       created_at: "2025-06-18T11:00:00Z"
+ *                       updated_at: "2025-06-18T11:00:00Z"
+ *   post:
+ *     summary: Créer une nouvelle application
+ *     description: Crée une nouvelle application dans le système
+ *     tags: [Administration]
+ *     security:
+ *       - ApiKeyAuth: []
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name, description]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 3
+ *                 maxLength: 100
+ *                 description: Nom de l'application
+ *               description:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: Description de l'application
+ *           examples:
+ *             newApp:
+ *               summary: "Nouvelle application"
+ *               value:
+ *                 name: "Application Mobile"
+ *                 description: "Application mobile pour la conversion HL7 en déplacement"
+ *     responses:
+ *       201:
+ *         description: Application créée avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/Application'
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *
  * Routes pour la gestion des applications
  */
 const express = require('express');

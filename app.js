@@ -43,10 +43,10 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 /**
- * Configuration prioritaire de Swagger (AVANT les middlewares de sécurité)
+ * Configuration prioritaire de Swagger OpenAPI 3.0 (AVANT les middlewares de sécurité)
  */
-const setupSwagger = require('./swagger');
-setupSwagger.setupSwagger(app);
+const swaggerApiRoutes = require('./routes/swagger-api');
+app.use('/api-docs', swaggerApiRoutes);
 
 // CORS spécifique pour Swagger UI
 app.use('/api-docs', cors({

@@ -25,32 +25,80 @@ const { apiRequestCounter } = require('../src/metrics');
  * @swagger
  * /api/convert/hl7-to-fhir:
  *   post:
- *     summary: Convertir un message HL7 v2.5 en FHIR
- *     description: Convertit un message HL7 v2.5 en ressources FHIR R4 correspondantes
+ *     summary: Conversion HL7 v2.5 vers FHIR R4
+ *     description: |
+ *       Convertit un message HL7 v2.5 en bundle FHIR R4 avec terminologies françaises.
+ *       
+ *       **Fonctionnalités:**
+ *       - Support des segments HL7 : MSH, PID, PV1, OBX, ORC, OBR
+ *       - Terminologies françaises (ANS/MOS) automatiques
+ *       - Validation FHIR R4 complète
+ *       - Génération d'identifiants uniques
+ *       
+ *       **Formats supportés:** ADT^A01, ADT^A02, ADT^A03, ORU^R01, ORM^O01
  *     tags: [Conversion]
  *     security:
  *       - ApiKeyAuth: []
- *       - BearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             required:
- *               - hl7Message
- *             properties:
- *               hl7Message:
- *                 type: string
- *                 description: Le message HL7 v2.5 à convertir
- *               options:
- *                 type: object
- *                 description: Options supplémentaires pour la conversion
- *                 properties:
- *                   includeComments:
- *                     type: boolean
- *                     description: Inclure des commentaires dans le résultat FHIR
- *                   useIdentifiers:
+ *             $ref: '#/components/schemas/HL7Message'
+ *           examples:
+ *             adtA01:
+ *               summary: "Message ADT^A01 - Admission patient"
+ *               value:
+ *                 hl7Message: "MSH|^~\\&|HOPITAL_SRC|SERVICE_SRC|FHIRHUB|DEST|202506181200||ADT^A01|MSG001|P|2.5\rPID|1||123456789^^^HOPITAL^MR||DUPONT^JEAN^MARIE||19800315|M|||123 RUE DE LA PAIX^^PARIS^^75001^FR||(01)42.12.34.56|||FR||||||||||\rPV1|1|I|CARDIO^CH101^LIT1||||DOC123^MARTIN^PAUL^^^Dr|||CARDIO|||||||DOC123^MARTIN^PAUL^^^Dr|INP|VIP|||||||||||||||||||||||202506181200||||||V"
+ *                 options:
+ *                   includeComments: true
+ *                   validateOutput: true
+ *                   frenchTerminology: true
+ *             oruR01:
+ *               summary: "Message ORU^R01 - Résultats de laboratoire"
+ *               value:
+ *                 hl7Message: "MSH|^~\\&|LAB_SRC|LABO|FHIRHUB|DEST|202506181300||ORU^R01|LAB001|P|2.5\rPID|1||987654321^^^LABO^MR||MARTIN^MARIE^CLAIRE||19750520|F\rOBR|1|LAB123|LAB123|88304^ANATOMIE PATHOLOGIQUE^LN|||202506181200|||||||||||DOC456^BERNARD^LUC^^^Dr\rOBX|1|ST|33747-0^HEMOGLOBINE^LN||14.5|g/dL|12.0-15.5||||F"
+ *                 options:
+ *                   frenchTerminology: true
+ *     responses:
+ *       200:
+ *         description: Conversion réussie
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ConversionResponse'
+ *             examples:
+ *               success:
+ *                 summary: "Conversion réussie"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     resourceType: "Bundle"
+ *                     id: "hl7-conversion-001"
+ *                     type: "collection"
+ *                     entry:
+ *                       - resource:
+ *                           resourceType: "Patient"
+ *                           id: "patient-123456789"
+ *                           identifier:
+ *                             - system: "urn:oid:1.2.250.1.213.1.4.10"
+ *                               value: "123456789"
+ *                           name:
+ *                             - family: "DUPONT"
+ *                               given: ["JEAN", "MARIE"]
+ *                           gender: "male"
+ *                           birthDate: "1980-03-15"
+ *                   metadata:
+ *                     conversionTime: 45
+ *                     resourceCount: 3
+ *                     warnings: []
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
  *                     type: boolean
  *                     description: Utiliser les identifiants HL7 dans les ressources FHIR
  *     responses:
