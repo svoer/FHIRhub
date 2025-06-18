@@ -61,7 +61,8 @@ const { apiRequestCounter } = require('../src/metrics');
  *       500:
  *         description: Erreur serveur
  */
-router.post('/hl7-to-fhir', authenticateToken, validateApiKey, async (req, res) => {
+// Route sécurisée - l'authentification est gérée au niveau de l'app
+router.post('/hl7-to-fhir', async (req, res) => {
   apiRequestCounter.inc({ endpoint: 'hl7-to-fhir' });
   try {
     const { hl7Message, options = {} } = req.body;
@@ -186,7 +187,8 @@ router.post('/hl7-to-fhir', authenticateToken, validateApiKey, async (req, res) 
  *       500:
  *         description: Erreur serveur
  */
-router.post('/fhir-to-hl7', authenticateToken, validateApiKey, apiRequestCounter, async (req, res) => {
+// Route sécurisée - l'authentification est gérée au niveau de l'app  
+router.post('/fhir-to-hl7', apiRequestCounter, async (req, res) => {
   try {
     const { fhirResources, options = {} } = req.body;
     

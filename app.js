@@ -1628,7 +1628,7 @@ app.use('/api/terminology', terminologyRoutes);
 // Routes IA supprimées
 // Routes hl7-ai et workflows supprimées
 app.use('/api/admin', adminRoutes);
-app.use('/api/convert', conversionLimiter, convertRoutes);  // Routes pour les conversions avec rate limiting
+app.use('/api/convert', conversionLimiter, require('./middleware/auth').apiKeyAuth, convertRoutes);  // Routes pour les conversions avec auth et rate limiting
 // Nouvelles routes pour le CRM/DPI médical
 app.use('/api/fhir-config', fhirConfigRoutes);  // Configuration des serveurs FHIR
 app.use('/api/patient-viewer', patientViewerRoutes);  // Visualisation des dossiers patients
