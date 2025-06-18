@@ -28,6 +28,7 @@ const lokiAdapter = require('./src/lokiAdapter');
 // Modules de sécurité
 const { configureSecurityHeaders, validateCorsOrigin, detectInjectionAttempts } = require('./middleware/securityHeaders');
 const { globalLimiter, conversionLimiter, authLimiter, aiLimiter } = require('./middleware/rateLimiter');
+const security = require('./middleware/security');
 
 // Importer le convertisseur avec cache intégré 
 const { convertHL7ToFHIR } = require('./src/cacheEnabledConverter');
@@ -38,16 +39,30 @@ const { convertHL7ToFHIR } = require('./src/cacheEnabledConverter');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Configuration pour rate limiting derrière proxy
+app.set('trust proxy', 1);
+
 /**
  * Configuration des middlewares de sécurité (priorité maximale)
  */
-// Configuration des headers de sécurité
-configureSecurityHeaders(app);
+// En-têtes de sécurité avancés (helmet + CSP)
+app.use(security.securityHeaders);
+
+// Protection contre les injections et attaques
+app.use(security.headerValidator);
+app.use(security.pathTraversalProtection);
+app.use(security.bodySizeValidator);
+app.use(security.sqlInjectionDetector);
+app.use(security.xssDetector);
+app.use(security.securityLogger);
 
 // Rate limiting global
 app.use(globalLimiter);
 
-// Détection des tentatives d'injection
+// Configuration des headers de sécurité (legacy)
+configureSecurityHeaders(app);
+
+// Détection des tentatives d'injection (legacy)
 app.use(detectInjectionAttempts);
 
 /**
@@ -1605,7 +1620,7 @@ app.use('/api/applications', applicationsRoutes);
 app.use('/applications', applicationViewsRoutes);  // Nouveau router pour les vues des applications
 app.use('/api/api-keys', apiKeysRoutes);
 app.use('/api/users', usersRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/dev', devApiRoutes);
 app.use('/api/system', systemRoutes);  // Routes pour le health check et les informations système
 app.use('/api/cache', cacheRoutes);
@@ -1613,7 +1628,7 @@ app.use('/api/terminology', terminologyRoutes);
 // Routes IA supprimées
 // Routes hl7-ai et workflows supprimées
 app.use('/api/admin', adminRoutes);
-app.use('/api/convert', convertRoutes);  // Routes pour les conversions sans analyse IA
+app.use('/api/convert', conversionLimiter, convertRoutes);  // Routes pour les conversions avec rate limiting
 // Nouvelles routes pour le CRM/DPI médical
 app.use('/api/fhir-config', fhirConfigRoutes);  // Configuration des serveurs FHIR
 app.use('/api/patient-viewer', patientViewerRoutes);  // Visualisation des dossiers patients
@@ -1687,7 +1702,7 @@ app.get('/api/fhir/test-server', async (req, res) => {
 });
 app.use('/api/patient-viewer', patientViewerRoutes);  // Visualisation des dossiers patients
 app.use('/api/fhir-search', fhirSearchRoutes);  // Recherche intelligente
-app.use('/api/fhir-ai', fhirAiRoutes);  // Intégration d'IA avec FHIR (multi-fournisseurs)
+app.use('/api/fhir-ai', aiLimiter, fhirAiRoutes);  // Intégration d'IA avec FHIR avec rate limiting
 app.use('/api/fhir-push-bundle', require('./routes/fhir-push-bundle'));  // Envoi direct de bundles FHIR vers le serveur
 app.use('/api/fhir-proxy', require('./routes/fhir-proxy'));  // Proxy pour contourner les restrictions CORS des serveurs FHIR
 
