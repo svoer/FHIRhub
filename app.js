@@ -1586,7 +1586,7 @@ const patientViewerRoutes = require('./routes/patient-viewer'); // Visualisation
 const fhirSearchRoutes = require('./routes/fhir-search'); // Recherche intelligente 
 const fhirAiRoutes = require('./routes/fhir-ai'); // Intégration d'IA avec FHIR (multi-fournisseurs)
 const aiProvidersRoutes = require('./routes/ai-providers'); // Gestion des fournisseurs d'IA
-const aiFhirAnalyzeRoutes = require('./routes/ai-fhir-analyze'); // Analyse FHIR avec l'IA active
+const aiFhirAnalyzeRoutes = require('./routes/ai-fhir-analyze-fixed'); // Analyse FHIR avec l'IA active (version optimisée)
 
 // Routes pour la base de connaissances de l'IA
 const aiKnowledgeApiRoutes = require('./routes/ai-knowledge-api');
