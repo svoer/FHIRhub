@@ -43,7 +43,19 @@ const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
 /**
- * Configuration des middlewares de sécurité (priorité maximale)
+ * Configuration prioritaire de Swagger (AVANT les middlewares de sécurité)
+ */
+const setupSwagger = require('./swagger');
+setupSwagger.setupSwagger(app);
+
+// CORS spécifique pour Swagger UI
+app.use('/api-docs', cors({
+  origin: true,
+  credentials: false
+}));
+
+/**
+ * Configuration des middlewares de sécurité (après Swagger)
  */
 // En-têtes de sécurité avancés (helmet + CSP)
 app.use(security.securityHeaders);
@@ -1709,9 +1721,7 @@ app.use('/api/fhir-proxy', require('./routes/fhir-proxy'));  // Proxy pour conto
 // Route du chatbot patient via le module dédié
 app.use('/api/ai', require('./routes/patient-chat'));
 
-// Configuration et initialisation de Swagger
-const setupSwagger = require('./swagger');
-setupSwagger.setupSwagger(app);
+// Swagger déjà configuré plus haut avant les middlewares de sécurité
 
 /**
  * @swagger
