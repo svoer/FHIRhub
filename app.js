@@ -1694,7 +1694,9 @@ app.use('/api/fhir-proxy', require('./routes/fhir-proxy'));  // Proxy pour conto
 // Route du chatbot patient via le module dédié
 app.use('/api/ai', require('./routes/patient-chat'));
 
-// Documentation API principale gérée par Swagger (configuré dans swagger.js)
+// Configuration et initialisation de Swagger
+const setupSwagger = require('./swagger');
+setupSwagger.setupSwagger(app);
 
 /**
  * @swagger
