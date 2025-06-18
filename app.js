@@ -136,9 +136,17 @@ app.get('/fhir-browser-v2', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/fhir-browser.html'));
 });
 
-// Route manquante pour la documentation API
+// Routes de documentation API - Redirection vers Swagger unifié
 app.get('/api-documentation', (req, res) => {
-  res.redirect('/api-reference.html');
+  res.redirect(301, '/api-docs');
+});
+
+app.get('/api-reference', (req, res) => {
+  res.redirect(301, '/api-docs');
+});
+
+app.get('/api-reference.html', (req, res) => {
+  res.redirect(301, '/api-docs');
 });
 
 // Routes pour la documentation markdown des types de messages
@@ -1686,10 +1694,7 @@ app.use('/api/fhir-proxy', require('./routes/fhir-proxy'));  // Proxy pour conto
 // Route du chatbot patient via le module dédié
 app.use('/api/ai', require('./routes/patient-chat'));
 
-// Route pour la page d'accueil de la documentation API (sans animation/clignotement)
-app.get('/api-documentation', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public/api-docs-landing.html'));
-});
+// Documentation API principale gérée par Swagger (configuré dans swagger.js)
 
 /**
  * @swagger

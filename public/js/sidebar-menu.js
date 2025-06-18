@@ -17,7 +17,7 @@ const navigationItems = [
   { title: 'Workflows', url: '/workflows.html', category: 'Configuration', keywords: ['processus', 'automatisation', 'flux'] },
   { title: 'Paramètres IA', url: '/ai-settings.html', category: 'Configuration', keywords: ['intelligence artificielle', 'mistral', 'chatbot'] },
   { title: 'Documentation', url: '/documentation.html', category: 'Ressources', keywords: ['aide', 'docs', 'guide'] },
-  { title: 'API Reference', url: '/api-docs/', category: 'Ressources', keywords: ['api', 'développeurs', 'integration'] },
+  { title: 'API Documentation', url: '/api-docs', category: 'Ressources', keywords: ['api', 'développeurs', 'integration', 'swagger'] },
 ];
 
 // Fonction pour basculer l'état du menu latéral
