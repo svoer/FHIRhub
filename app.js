@@ -1727,10 +1727,16 @@ app.use('/api/ai', require('./routes/patient-chat'));
  * @swagger
  * /api/system/version:
  *   get:
- *     summary: Obtenir la version du système
- *     description: Retourne la version actuelle du système FHIRHub
- *     tags:
- *       - Système
+ *     summary: Version du système FHIRHub
+ *     description: |
+ *       Retourne les informations de version du système FHIRHub.
+ *       
+ *       **Informations incluses:**
+ *       - Version de l'application
+ *       - Date de compilation
+ *       - Environnement d'exécution
+ *       - Statut du système
+ *     tags: [Système]
  *     responses:
  *       200:
  *         description: Version du système récupérée avec succès
@@ -1738,6 +1744,7 @@ app.use('/api/ai', require('./routes/patient-chat'));
  *           application/json:
  *             schema:
  *               type: object
+ *               required: [success, data]
  *               properties:
  *                 success:
  *                   type: boolean
@@ -1748,10 +1755,32 @@ app.use('/api/ai', require('./routes/patient-chat'));
  *                     version:
  *                       type: string
  *                       description: Version actuelle du système
+ *                       example: "1.5.0"
  *                     build_date:
  *                       type: string
  *                       format: date-time
  *                       description: Date de compilation
+ *                       example: "2025-06-18T12:00:00.000Z"
+ *                     environment:
+ *                       type: string
+ *                       description: Environnement d'exécution
+ *                       example: "development"
+ *                     uptime:
+ *                       type: number
+ *                       description: Temps de fonctionnement en secondes
+ *                       example: 3600
+ *             examples:
+ *               systemVersion:
+ *                 summary: "Version système complète"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     version: "1.5.0"
+ *                     build_date: "2025-06-18T12:00:00.000Z"
+ *                     environment: "development"
+ *                     uptime: 3600
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
  */
 app.get('/api/system/version', (req, res) => {
   try {

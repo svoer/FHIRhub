@@ -99,16 +99,6 @@ const { apiRequestCounter } = require('../src/metrics');
  *       500:
  *         $ref: '#/components/responses/InternalError'
  */
- *                     type: boolean
- *                     description: Utiliser les identifiants HL7 dans les ressources FHIR
- *     responses:
- *       200:
- *         description: Conversion réussie
- *       400:
- *         description: Paramètres invalides
- *       500:
- *         description: Erreur serveur
- */
 // Route sécurisée - l'authentification est gérée au niveau de l'app
 router.post('/hl7-to-fhir', async (req, res) => {
   apiRequestCounter.inc({ endpoint: 'hl7-to-fhir' });

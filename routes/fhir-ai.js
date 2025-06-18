@@ -3,6 +3,142 @@
  * Ce module gère les requêtes en langage naturel et leur conversion en requêtes FHIR
  * Utilise le fournisseur d'IA configuré comme actif (Mistral, Ollama, DeepSeek, etc.)
  */
+/**
+ * @swagger
+ * /api/fhir-ai/patient-summary:
+ *   post:
+ *     summary: Résumé intelligent IA d'un patient FHIR
+ *     description: |
+ *       Génère un résumé médical intelligent d'un patient à partir de ses ressources FHIR.
+ *       
+ *       **Fonctionnalités IA:**
+ *       - Analyse contextuelle des données médicales
+ *       - Synthèse des antécédents et traitements
+ *       - Identification des risques et alertes
+ *       - Recommandations cliniques
+ *       - Support multilingue (français prioritaire)
+ *       
+ *       **Modèles supportés:** Mistral AI, OpenAI GPT, Claude, Ollama local
+ *     tags: [Intelligence Artificielle]
+ *     security:
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [patientData]
+ *             properties:
+ *               patientData:
+ *                 type: object
+ *                 description: Ressources FHIR du patient (Bundle ou ressources individuelles)
+ *               options:
+ *                 type: object
+ *                 properties:
+ *                   language:
+ *                     type: string
+ *                     enum: [fr, en]
+ *                     default: fr
+ *                     description: Langue du résumé généré
+ *                   detailLevel:
+ *                     type: string
+ *                     enum: [summary, detailed, comprehensive]
+ *                     default: detailed
+ *                     description: Niveau de détail du résumé
+ *                   includeRecommendations:
+ *                     type: boolean
+ *                     default: true
+ *                     description: Inclure les recommandations cliniques
+ *           examples:
+ *             patientBundle:
+ *               summary: "Bundle patient complet"
+ *               value:
+ *                 patientData:
+ *                   resourceType: "Bundle"
+ *                   entry:
+ *                     - resource:
+ *                         resourceType: "Patient"
+ *                         id: "patient-001"
+ *                         name: [{"family": "DUPONT", "given": ["Jean"]}]
+ *                         gender: "male"
+ *                         birthDate: "1980-03-15"
+ *                     - resource:
+ *                         resourceType: "Condition"
+ *                         subject: {"reference": "Patient/patient-001"}
+ *                         code:
+ *                           coding: [{"system": "http://snomed.info/sct", "code": "73211009", "display": "Diabète"}]
+ *                 options:
+ *                   language: "fr"
+ *                   detailLevel: "detailed"
+ *                   includeRecommendations: true
+ *     responses:
+ *       200:
+ *         description: Résumé IA généré avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required: [success, data]
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     summary:
+ *                       type: string
+ *                       description: Résumé médical intelligent
+ *                     keyFindings:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Points clés identifiés
+ *                     recommendations:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Recommandations cliniques
+ *                     riskFactors:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Facteurs de risque identifiés
+ *                     aiProvider:
+ *                       type: string
+ *                       description: Modèle IA utilisé
+ *                     processingTime:
+ *                       type: number
+ *                       description: Temps de traitement en ms
+ *             examples:
+ *               aiSummary:
+ *                 summary: "Résumé IA patient diabétique"
+ *                 value:
+ *                   success: true
+ *                   data:
+ *                     summary: "Patient de 44 ans, diabétique type 2 diagnostiqué. Bon contrôle glycémique sous traitement. Suivi régulier recommandé."
+ *                     keyFindings:
+ *                       - "Diabète type 2 stable"
+ *                       - "Pas de complications identifiées"
+ *                       - "Observance thérapeutique bonne"
+ *                     recommendations:
+ *                       - "Maintenir le traitement actuel"
+ *                       - "Contrôle HbA1c trimestriel"
+ *                       - "Surveillance ophtalmologique annuelle"
+ *                     riskFactors:
+ *                       - "Antécédents familiaux de diabète"
+ *                       - "Surpoids (IMC > 25)"
+ *                     aiProvider: "Mistral AI"
+ *                     processingTime: 1240
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
+
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
