@@ -40,8 +40,8 @@ Utilisez une clé API valide dans l'en-tête \`x-api-key\` pour tous les endpoin
         email: 'support@fhirhub.fr'
       },
       license: {
-        name: 'MIT',
-        url: 'https://opensource.org/licenses/MIT'
+        name: 'Propriétaire',
+        url: '#'
       }
     },
     servers: [
@@ -304,44 +304,56 @@ const swaggerSpec = swaggerJSDoc(swaggerOptions);
 // Configuration UI personnalisée FHIRHub
 const swaggerUiOptions = {
   customCss: `
-    .swagger-ui .topbar { display: none; }
+    .swagger-ui .topbar { display: none !important; }
     .swagger-ui .info .title { 
-      color: #d73027; 
-      font-size: 2.5em; 
-      font-weight: bold;
+      display: none !important; /* Masqué car géré par notre header */
     }
     .swagger-ui .info .description { 
       font-size: 1.1em; 
       line-height: 1.6;
+      margin-top: 0 !important;
     }
     .swagger-ui .scheme-container {
-      background: linear-gradient(135deg, #d73027 0%, #fc8d59 100%);
+      background: linear-gradient(135deg, #e74c3c 0%, #f39c12 100%);
       border-radius: 8px;
       padding: 15px;
       margin-bottom: 20px;
     }
     .swagger-ui .auth-wrapper .authorize {
-      background: #d73027;
-      border-color: #d73027;
+      background: linear-gradient(135deg, #e74c3c, #f39c12) !important;
+      border: none !important;
+      color: white !important;
     }
     .swagger-ui .btn.authorize {
-      background: #d73027;
-      border-color: #d73027;
+      background: linear-gradient(135deg, #e74c3c, #f39c12) !important;
+      border: none !important;
+      color: white !important;
     }
     .swagger-ui .btn.execute {
-      background: #fc8d59;
-      border-color: #fc8d59;
+      background: #f39c12 !important;
+      border-color: #f39c12 !important;
+      color: white !important;
     }
     .swagger-ui .opblock.opblock-post {
-      border-color: #d73027;
-      background: rgba(215, 48, 39, 0.1);
+      border-color: #e74c3c !important;
+      background: rgba(231, 76, 60, 0.05) !important;
     }
     .swagger-ui .opblock.opblock-get {
-      border-color: #4575b4;
-      background: rgba(69, 117, 180, 0.1);
+      border-color: #2196F3 !important;
+      background: rgba(33, 150, 243, 0.05) !important;
+    }
+    .swagger-ui .opblock-tag {
+      font-size: 1.1rem !important;
+      font-weight: 600 !important;
+      color: #e74c3c !important;
+      border-bottom: 2px solid #e74c3c !important;
+      padding-bottom: 8px !important;
+    }
+    .swagger-ui .info .license {
+      display: none !important; /* Masquer la licence car gérée dans le footer personnalisé */
     }
   `,
-  customSiteTitle: 'FHIRHub API Documentation',
+  customSiteTitle: 'Documentation API - FHIRHub',
   customfavIcon: '/favicon.ico',
   swaggerOptions: {
     persistAuthorization: true,
@@ -351,7 +363,16 @@ const swaggerUiOptions = {
     showCommonExtensions: true,
     docExpansion: 'list',
     defaultModelsExpandDepth: 2,
-    tryItOutEnabled: true
+    tryItOutEnabled: true,
+    supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+    requestInterceptor: (request) => {
+      // Ajouter automatiquement la clé API si stockée
+      const apiKey = localStorage.getItem('fhirhub_api_key');
+      if (apiKey && !request.headers['x-api-key']) {
+        request.headers['x-api-key'] = apiKey;
+      }
+      return request;
+    }
   }
 };
 

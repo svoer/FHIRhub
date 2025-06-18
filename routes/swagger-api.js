@@ -15,6 +15,13 @@ router.use('/', swaggerUi.serve);
 router.get('/', swaggerUi.setup(swaggerSpec, swaggerUiOptions));
 
 /**
+ * Route pour la version intégrée FHIRHub
+ */
+router.get('/integrated', (req, res) => {
+  res.sendFile('swagger-integrated.html', { root: './public' });
+});
+
+/**
  * Export JSON de la spécification OpenAPI
  */
 router.get('/json', (req, res) => {

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation API - FHIRHub</title>
+    
+    <!-- Styles FHIRHub existants -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/sidebar-menu.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    
+    <!-- Swagger UI CSS -->
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@4.19.1/swagger-ui.css" />
+    
+    <!-- Custom Swagger Integration CSS -->
+    <style>
+        /* Variables FHIRHub */
+        :root {
+            --fhirhub-primary: #e74c3c;
+            --fhirhub-secondary: #f39c12;
+            --fhirhub-gradient: linear-gradient(135deg, #e74c3c, #f39c12);
+            --sidebar-width: 260px;
+            --header-height: 60px;
+        }
+
+        /* Layout intégré avec sidebar */
+        body.with-sidebar {
+            padding-top: var(--header-height);
+            margin: 0;
+        }
+
+        .main-content.with-sidebar {
+            margin-left: var(--sidebar-width);
+            padding: 0;
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Header API Documentation intégré */
+        .api-header {
+            background: var(--fhirhub-gradient);
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .api-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+
+        .api-header .meta-info {
+            display: flex;
+            gap: 20px;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .api-header .meta-info span {
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        /* Container Swagger personnalisé */
+        .swagger-container {
+            padding: 0;
+            background: #fff;
+        }
+
+        /* Customisation Swagger UI pour FHIRHub */
+        .swagger-ui {
+            font-family: 'Roboto', 'Segoe UI', sans-serif !important;
+        }
+
+        /* Masquer le header Swagger par défaut */
+        .swagger-ui .topbar {
+            display: none !important;
+        }
+
+        /* Personnaliser les couleurs */
+        .swagger-ui .info .title {
+            display: none; /* Masqué car on a notre propre header */
+        }
+
+        .swagger-ui .info .description {
+            margin-top: 0 !important;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Boutons d'autorisation */
+        .swagger-ui .auth-wrapper .authorize,
+        .swagger-ui .btn.authorize {
+            background: var(--fhirhub-gradient) !important;
+            border: none !important;
+            color: white !important;
+            font-weight: 500;
+        }
+
+        .swagger-ui .auth-wrapper .authorize:hover,
+        .swagger-ui .btn.authorize:hover {
+            opacity: 0.9;
+        }
+
+        /* Boutons Try it out */
+        .swagger-ui .btn.execute {
+            background: var(--fhirhub-secondary) !important;
+            border-color: var(--fhirhub-secondary) !important;
+            color: white !important;
+        }
+
+        /* Operations blocks */
+        .swagger-ui .opblock.opblock-post {
+            border-color: var(--fhirhub-primary) !important;
+            background: rgba(231, 76, 60, 0.05) !important;
+        }
+
+        .swagger-ui .opblock.opblock-post .opblock-summary {
+            border-color: var(--fhirhub-primary) !important;
+        }
+
+        .swagger-ui .opblock.opblock-get {
+            border-color: #2196F3 !important;
+            background: rgba(33, 150, 243, 0.05) !important;
+        }
+
+        .swagger-ui .opblock.opblock-put {
+            border-color: var(--fhirhub-secondary) !important;
+            background: rgba(243, 156, 18, 0.05) !important;
+        }
+
+        .swagger-ui .opblock.opblock-delete {
+            border-color: #f44336 !important;
+            background: rgba(244, 67, 54, 0.05) !important;
+        }
+
+        /* Tags */
+        .swagger-ui .opblock-tag {
+            font-size: 1.1rem !important;
+            font-weight: 600 !important;
+            color: var(--fhirhub-primary) !important;
+            border-bottom: 2px solid var(--fhirhub-primary) !important;
+            padding-bottom: 8px !important;
+            margin-bottom: 15px !important;
+        }
+
+        /* Navigation rapide sticky */
+        .quick-nav {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            border: 1px solid #e1e5e8;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 15px;
+            max-width: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+
+        .quick-nav h4 {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            color: var(--fhirhub-primary);
+            border-bottom: 1px solid #e1e5e8;
+            padding-bottom: 5px;
+        }
+
+        .quick-nav ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .quick-nav li {
+            margin-bottom: 5px;
+        }
+
+        .quick-nav a {
+            color: #666;
+            text-decoration: none;
+            font-size: 0.8rem;
+            display: block;
+            padding: 3px 0;
+            transition: color 0.2s ease;
+        }
+
+        .quick-nav a:hover {
+            color: var(--fhirhub-primary);
+        }
+
+        /* Actions rapides */
+        .api-actions {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            border-bottom: 1px solid #e1e5e8;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .api-actions .btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #666;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .api-actions .btn:hover {
+            background: var(--fhirhub-gradient);
+            color: white;
+            border-color: transparent;
+        }
+
+        .api-actions .btn.primary {
+            background: var(--fhirhub-gradient);
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content.with-sidebar {
+                margin-left: 0;
+            }
+
+            .quick-nav {
+                display: none;
+            }
+
+            .api-header {
+                padding: 15px 20px;
+            }
+
+            .api-actions {
+                padding: 10px 20px;
+            }
+        }
+
+        /* Footer personnalisé */
+        .api-footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-top: 1px solid #e1e5e8;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .api-footer .copyright {
+            margin: 0;
+        }
+
+        .api-footer .links {
+            margin-top: 10px;
+        }
+
+        .api-footer .links a {
+            color: var(--fhirhub-primary);
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .api-footer .links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+
+    <!-- FontAwesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="with-sidebar">
+    <!-- Inclusion du sidebar FHIRHub -->
+    <div id="sidebar-container"></div>
+
+    <!-- Contenu principal -->
+    <main class="main-content with-sidebar">
+        <!-- Header API Documentation intégré -->
+        <div class="api-header">
+            <h1><i class="fas fa-code"></i> Documentation API FHIRHub</h1>
+            <div class="meta-info">
+                <span>v1.5.0</span>
+                <span>OpenAPI 3.0</span>
+                <span id="api-env">Développement</span>
+                <span id="endpoint-count">98 endpoints</span>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="api-actions">
+            <a href="/api-docs/json" class="btn" target="_blank">
+                <i class="fas fa-download"></i> Export JSON
+            </a>
+            <a href="/api-docs/yaml" class="btn" target="_blank">
+                <i class="fas fa-download"></i> Export YAML
+            </a>
+            <a href="/api-docs/postman" class="btn" target="_blank">
+                <i class="fas fa-download"></i> Collection Postman
+            </a>
+            <a href="/api-docs/validate" class="btn" target="_blank">
+                <i class="fas fa-check-circle"></i> Valider Spec
+            </a>
+            <div style="margin-left: auto;">
+                <button id="auth-btn" class="btn primary">
+                    <i class="fas fa-key"></i> Authentification
+                </button>
+            </div>
+        </div>
+
+        <!-- Container Swagger -->
+        <div class="swagger-container">
+            <div id="swagger-ui"></div>
+        </div>
+
+        <!-- Footer personnalisé -->
+        <div class="api-footer">
+            <p class="copyright">© 2025 Équipe FHIRHub - Tous droits réservés</p>
+            <div class="links">
+                <a href="/documentation.html">Documentation</a>
+                <a href="/faq.html">FAQ</a>
+                <a href="/support.html">Support</a>
+            </div>
+        </div>
+    </main>
+
+    <!-- Navigation rapide -->
+    <div class="quick-nav" id="quick-nav">
+        <h4><i class="fas fa-list"></i> Navigation</h4>
+        <ul id="nav-links">
+            <!-- Généré automatiquement par JavaScript -->
+        </ul>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/swagger-ui-dist@4.19.1/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@4.19.1/swagger-ui-standalone-preset.js"></script>
+    <script src="/js/include-sidebar.js"></script>
+    <script src="/js/swagger-integrated.js"></script>
+
+    <script>
+        // Configuration Swagger UI intégrée
+        window.onload = function() {
+            // Charger le sidebar FHIRHub
+            loadSidebar();
+
+            // Initialiser Swagger UI
+            const ui = SwaggerUIBundle({
+                url: '/api-docs/json',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                validatorUrl: null, // Désactiver la validation externe
+                onComplete: function() {
+                    // Générer la navigation rapide
+                    generateQuickNav();
+                    
+                    // Personnaliser l'interface
+                    customizeSwaggerUI();
+                    
+                    // Configurer l'authentification
+                    setupAuthentication();
+                }
+            });
+
+            // Fonctions utilitaires
+            function generateQuickNav() {
+                const navContainer = document.getElementById('nav-links');
+                const tags = document.querySelectorAll('.swagger-ui .opblock-tag');
+                
+                navContainer.innerHTML = '';
+                tags.forEach((tag, index) => {
+                    const tagName = tag.textContent.trim();
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    a.href = `#operations-tag-${tagName.replace(/\s+/g, '_')}`;
+                    a.textContent = tagName;
+                    a.onclick = () => scrollToTag(tag);
+                    li.appendChild(a);
+                    navContainer.appendChild(li);
+                });
+            }
+
+            function scrollToTag(element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            function customizeSwaggerUI() {
+                // Masquer les éléments non désirés
+                const topbar = document.querySelector('.swagger-ui .topbar');
+                if (topbar) topbar.style.display = 'none';
+
+                // Ajouter des classes personnalisées
+                const swaggerContainer = document.querySelector('.swagger-ui');
+                if (swaggerContainer) {
+                    swaggerContainer.classList.add('fhirhub-integrated');
+                }
+            }
+
+            function setupAuthentication() {
+                const authBtn = document.getElementById('auth-btn');
+                authBtn.addEventListener('click', function() {
+                    // Déclencher l'authentification Swagger
+                    const authorizeBtn = document.querySelector('.swagger-ui .auth-wrapper .authorize');
+                    if (authorizeBtn) {
+                        authorizeBtn.click();
+                    } else {
+                        // Fallback : ouvrir une modal simple
+                        showAuthModal();
+                    }
+                });
+            }
+
+            function showAuthModal() {
+                const apiKey = prompt('Entrez votre clé API FHIRHub:');
+                if (apiKey) {
+                    // Stocker la clé pour les requêtes
+                    localStorage.setItem('fhirhub_api_key', apiKey);
+                    
+                    // Mettre à jour le bouton
+                    const authBtn = document.getElementById('auth-btn');
+                    authBtn.innerHTML = '<i class="fas fa-check"></i> Authentifié';
+                    authBtn.style.background = '#4CAF50';
+                    
+                    // Notification
+                    showNotification('Authentification réussie', 'success');
+                }
+            }
+
+            function showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#4CAF50' : '#2196F3'};
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 4px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    z-index: 1000;
+                    font-size: 0.9rem;
+                `;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+            }
+
+            // Charger les métadonnées API
+            loadApiMetadata();
+        };
+
+        function loadApiMetadata() {
+            fetch('/api-docs/validate')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('endpoint-count').textContent = `${data.data.endpoints} endpoints`;
+                    }
+                })
+                .catch(error => console.log('Métadonnées non disponibles'));
+        }
+
+        // Fonction pour charger le sidebar (compatible avec l'existant)
+        function loadSidebar() {
+            fetch('/includes/sidebar.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('sidebar-container').innerHTML = html;
+                    
+                    // Initialiser le comportement du sidebar si nécessaire
+                    if (window.initializeSidebar) {
+                        window.initializeSidebar();
+                    }
+                })
+                .catch(error => {
+                    console.log('Sidebar non disponible, mode standalone');
+                });
+        }
+    </script>
+</body>
+</html>
