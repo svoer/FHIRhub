@@ -258,6 +258,14 @@ class OptimizedAIService {
         // Essayer chaque fournisseur dans l'ordre de préférence
         for (const provider of providers) {
             try {
+                console.log(`[AI-OPT] Tentative avec fournisseur: ${provider.provider_type}`);
+                
+                // Vérifier d'abord si le fournisseur a une clé API valide
+                if (!provider.api_key || provider.api_key.trim() === '') {
+                    console.warn(`[AI-OPT] Fournisseur ${provider.provider_type} sans clé API - ignoré`);
+                    continue;
+                }
+                
                 const response = await this.tryProvider(
                     provider, 
                     fullPrompt, 
@@ -273,6 +281,12 @@ class OptimizedAIService {
             } catch (error) {
                 lastError = error;
                 console.warn(`[AI-OPT] Échec avec ${provider.provider_type}: ${error.message}`);
+                
+                // Si c'est une erreur d'authentification, marquer le fournisseur comme défaillant
+                if (error.message.includes('401') || error.message.includes('unauthorized') || error.message.includes('api_key')) {
+                    console.error(`[AI-OPT] Erreur d'authentification pour ${provider.provider_type} - clé API invalide`);
+                    this.recordProviderFailure(provider.provider_type);
+                }
                 
                 // Continuer avec le fournisseur suivant sauf en cas d'erreur critique
                 if (error.message.includes('timeout') && providers.length === 1) {
