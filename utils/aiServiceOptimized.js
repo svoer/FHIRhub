@@ -76,6 +76,14 @@ class OptimizedAIService {
      */
     async getAvailableProviders() {
         try {
+            // Essayer d'abord le fournisseur actif
+            const activeProvider = await getActiveAIProvider();
+            if (activeProvider) {
+                console.log(`[AI-OPT] Fournisseur actif trouvé: ${activeProvider.provider_type}`);
+                return [activeProvider];
+            }
+            
+            // Fallback vers tous les fournisseurs
             const allProviders = await getAllAIProviders();
             const activeProviders = allProviders.filter(p => p.is_active);
             
@@ -124,15 +132,24 @@ class OptimizedAIService {
             
             switch (providerType) {
                 case 'mistral':
-                    response = await mistralClient.generateText(prompt, {
+                    console.log(`[AI-OPT] Appel Mistral avec modèle: ${provider.model_name}`);
+                    if (!mistralClient) {
+                        throw new Error('Client Mistral non disponible');
+                    }
+                    console.log(`[AI-OPT] Méthodes disponibles:`, Object.keys(mistralClient));
+                    response = await mistralClient.generateResponse(prompt, {
                         model: provider.model_name,
                         maxTokens,
                         temperature,
-                        timeout: 45000 // Timeout réduit à 45s
+                        retryCount: 2
                     });
                     break;
                     
                 case 'ollama':
+                    console.log(`[AI-OPT] Appel Ollama avec modèle: ${provider.model_name}`);
+                    if (!ollamaClient || !ollamaClient.generateText) {
+                        throw new Error('Client Ollama non disponible ou mal configuré');
+                    }
                     response = await ollamaClient.generateText(prompt, {
                         model: provider.model_name,
                         maxTokens,
@@ -226,6 +243,7 @@ class OptimizedAIService {
         } else {
             // Utiliser tous les fournisseurs disponibles
             providers = await this.getAvailableProviders();
+            console.log(`[AI-OPT] Providers récupérés:`, providers.length);
         }
         
         if (providers.length === 0) {
