@@ -8,12 +8,24 @@ sleep 2
 
 # Variables
 HAPI_DIR="./hapi-fhir"
-JAR_FILE="$HAPI_DIR/hapi-fhir-server-starter-5.4.0.jar"
+JAR_FILE="$HAPI_DIR/hapi-fhir-server-starter-6.10.5.jar"
 
-# Vérifier que le JAR existe
+# Vérifier que le JAR existe, sinon télécharger
 if [ ! -f "$JAR_FILE" ]; then
-    echo "ERREUR: Le fichier JAR HAPI FHIR n'existe pas: $JAR_FILE"
-    exit 1
+    echo "JAR HAPI FHIR manquant. Téléchargement en cours..."
+    mkdir -p "$HAPI_DIR"
+    
+    # Télécharger la version compatible Java 21
+    curl -L -o "$JAR_FILE" \
+        "https://github.com/hapifhir/hapi-fhir-jpaserver-starter/releases/download/v6.10.5/hapi-fhir-jpaserver-starter-6.10.5.jar" \
+        --connect-timeout 30 --max-time 120
+    
+    if [ ! -f "$JAR_FILE" ] || [ ! -s "$JAR_FILE" ]; then
+        echo "⚠️ Échec du téléchargement. Utilisation du serveur FHIR public en fallback."
+        echo "FHIRHub continuera de fonctionner avec https://hapi.fhir.org/baseR4"
+        exit 0
+    fi
+    echo "✅ JAR téléchargé avec succès"
 fi
 
 # Créer les répertoires nécessaires
@@ -35,7 +47,7 @@ java $JAVA_OPTS \
     -Dhapi.fhir.fhir_version=R4 \
     -Dhapi.fhir.server_address=http://localhost:8080/fhir \
     -Dlogging.level.root=WARN \
-    -jar hapi-fhir-server-starter-5.4.0.jar > ../data/hapi-fhir/logs/hapi-fhir.log 2>&1 &
+    -jar hapi-fhir-server-starter-6.10.5.jar > ../data/hapi-fhir/logs/hapi-fhir.log 2>&1 &
 
 HAPI_PID=$!
 echo "HAPI FHIR PID: $HAPI_PID"

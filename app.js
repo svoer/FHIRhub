@@ -98,6 +98,11 @@ app.get('/fhir-browser-v2', (req, res) => {
   res.sendFile(path.join(__dirname, 'public/fhir-browser.html'));
 });
 
+// Route manquante pour la documentation API
+app.get('/api-documentation', (req, res) => {
+  res.redirect('/api-reference.html');
+});
+
 // Routes pour la documentation markdown des types de messages
 app.use('/docs', documentationRoutes);
 

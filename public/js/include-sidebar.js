@@ -19,7 +19,7 @@
     
     console.log('Chargement du menu latéral...');
     
-    // Récupérer l'élément où insérer le sidebar
+    // Récupérer l'élément où insérer le sidebar avec validation robuste
     let sidebarContainer = document.getElementById('sidebar-container');
     // Vérifier aussi l'élément avec l'ID "sidebar" qui sert de conteneur dans la nouvelle version
     if (!sidebarContainer) {
@@ -27,12 +27,25 @@
     }
     
     if (!sidebarContainer) {
-      console.error('Container de sidebar non trouvé! Création d\'un conteneur...');
-      // Si le conteneur n'existe pas, on le crée
-      const newContainer = document.createElement('div');
-      newContainer.id = 'sidebar-container';
-      document.body.insertBefore(newContainer, document.body.firstChild);
-      sidebarContainer = newContainer;
+      console.warn('Container de sidebar non trouvé! Création d\'un conteneur...');
+      // Si le conteneur n'existe pas, on le crée avec validation
+      try {
+        const newContainer = document.createElement('div');
+        newContainer.id = 'sidebar-container';
+        newContainer.className = 'sidebar-container';
+        
+        // Validation que body existe avant insertion
+        if (document.body && document.body.nodeType === Node.ELEMENT_NODE) {
+          document.body.insertBefore(newContainer, document.body.firstChild);
+          sidebarContainer = newContainer;
+        } else {
+          console.error('Document body non disponible pour insertion du conteneur');
+          return;
+        }
+      } catch (error) {
+        console.error('Erreur lors de la création du conteneur sidebar:', error);
+        return;
+      }
     }
     
     // Supprimer d'abord tout header existant
