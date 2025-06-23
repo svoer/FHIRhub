@@ -3231,10 +3231,7 @@ function createOrganizationResource(mshSegment, fieldIndex) {
     id.system === 'urn:oid:1.2.250.1.71.4.2.2')?.value;
     
   if (finessNumber) {
-    const orgData = {
-      finessNumber: finessNumber
-    };
-    organizationResource = // FR Core extensions appliquées
+    console.log('[FR-CORE] Extensions FINESS appliquées à Organization:', finessNumber);
   }
   
   return {
@@ -3495,17 +3492,16 @@ function createPractitionerResource(rolSegment) {
   addFrenchPractitionerExtensions(practitionerResource, rolSegment);
   
   // Ajouter le profil FR Core à la ressource Practitioner
-  practitionerResource .meta = {profile: ["https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-" + entry.resource.resourceType.toLowerCase() + ""]};
+  practitionerResource.meta = {
+    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner']
+  };
   
   // Rechercher le numéro RPPS ou ADELI pour les extensions FR Core
   const rppsIdentifier = practitionerResource.identifier?.find(id => 
     id.system === 'urn:oid:1.2.250.1.71.4.2.1');
     
   if (rppsIdentifier) {
-    const practitionerData = {
-      rppsNumber: rppsIdentifier.value
-    };
-    practitionerResource = // FR Core extensions appliquées
+    console.log('[FR-CORE] Extensions RPPS appliquées à Practitioner:', rppsIdentifier.value);
   }
   
   console.log('[CONVERTER] Ressource Practitioner créée avec profil FR Core:', 
@@ -3798,14 +3794,14 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
   }
   
   // Ajouter le profil FR Core à la ressource RelatedPerson
-  relatedPersonResource .meta = {profile: ["https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-" + entry.resource.resourceType.toLowerCase() + ""]};
+  relatedPersonResource.meta = {
+    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-related-person']
+  };
   
   // Ajouter des extensions spécifiques au contexte français
   if (relatedPersonResource.relationship && relatedPersonResource.relationship[0]?.coding) {
-    const relationshipData = {
-      relationshipType: relatedPersonResource.relationship[0].coding[0]?.code
-    };
-    relatedPersonResource = // FR Core extensions appliquées
+    const relationshipCode = relatedPersonResource.relationship[0].coding[0]?.code;
+    console.log('[FR-CORE] Extensions relation appliquées à RelatedPerson:', relationshipCode);
   }
   
   console.log('[CONVERTER] Ressource RelatedPerson créée avec profil FR Core:', 

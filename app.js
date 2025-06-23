@@ -31,8 +31,8 @@ const { configureSecurityHeaders, validateCorsOrigin, detectInjectionAttempts } 
 const { globalLimiter, conversionLimiter, authLimiter, aiLimiter } = require('./middleware/rateLimiter');
 const security = require('./middleware/security');
 
-// Importer le convertisseur avec cache intégré 
-const { convertHL7ToFHIR } = require('./src/cacheEnabledConverter');
+// Importer le convertisseur principal 
+const { convertHL7ToFHIR } = require('./hl7ToFhirAdvancedConverter');
 
 /**
  * Configuration de l'application
