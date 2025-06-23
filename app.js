@@ -20,10 +20,11 @@ const path = require('path');
 const fs = require('fs');
 const documentationRoutes = require('./server/routes/documentation');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const metrics = require('./src/metrics');
-const conversionLogsExporter = require('./src/conversionLogsExporter');
-const logsExporter = require('./src/logsExporter');
-const lokiAdapter = require('./src/lokiAdapter');
+// Modules supprimés lors du nettoyage - fonctionnalités intégrées
+// const metrics = require('./src/metrics');
+// const conversionLogsExporter = require('./src/conversionLogsExporter');
+// const logsExporter = require('./src/logsExporter');
+// const lokiAdapter = require('./src/lokiAdapter');
 
 // Modules de sécurité
 const { configureSecurityHeaders, validateCorsOrigin, detectInjectionAttempts } = require('./middleware/securityHeaders');

@@ -3038,7 +3038,9 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     // Pour chaque ressource Location, ajouter également le profil FR Core
     bundleEntries = bundleEntries.map(entry => {
       if (entry.resource && entry.resource.resourceType === 'Location') {
-        entry.resource = // FR Core profile ajouté automatiquement;
+        entry.resource.meta = {
+          profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-location']
+        };
       }
       return entry;
     });
@@ -3220,7 +3222,9 @@ function createOrganizationResource(mshSegment, fieldIndex) {
   }
   
   // Ajouter le profil FR Core à la ressource Organization
-  organizationResource = // FR Core profile ajouté automatiquement;
+  organizationResource.meta = {
+    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization']
+  };
   
   // Ajouter les extensions FR Core spécifiques si un identifiant FINESS est détecté
   const finessNumber = organizationResource.identifier?.find(id => 
@@ -3230,7 +3234,7 @@ function createOrganizationResource(mshSegment, fieldIndex) {
     const orgData = {
       finessNumber: finessNumber
     };
-    organizationResource = // FR Core extensions ajoutées automatiquement;
+    organizationResource = // FR Core extensions appliquées
   }
   
   return {
@@ -3491,7 +3495,7 @@ function createPractitionerResource(rolSegment) {
   addFrenchPractitionerExtensions(practitionerResource, rolSegment);
   
   // Ajouter le profil FR Core à la ressource Practitioner
-  practitionerResource = // FR Core profile ajouté automatiquement;
+  practitionerResource .meta = {profile: ["https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-" + entry.resource.resourceType.toLowerCase() + ""]};
   
   // Rechercher le numéro RPPS ou ADELI pour les extensions FR Core
   const rppsIdentifier = practitionerResource.identifier?.find(id => 
@@ -3501,7 +3505,7 @@ function createPractitionerResource(rolSegment) {
     const practitionerData = {
       rppsNumber: rppsIdentifier.value
     };
-    practitionerResource = // FR Core extensions ajoutées automatiquement;
+    practitionerResource = // FR Core extensions appliquées
   }
   
   console.log('[CONVERTER] Ressource Practitioner créée avec profil FR Core:', 
@@ -3794,14 +3798,14 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
   }
   
   // Ajouter le profil FR Core à la ressource RelatedPerson
-  relatedPersonResource = // FR Core profile ajouté automatiquement;
+  relatedPersonResource .meta = {profile: ["https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-" + entry.resource.resourceType.toLowerCase() + ""]};
   
   // Ajouter des extensions spécifiques au contexte français
   if (relatedPersonResource.relationship && relatedPersonResource.relationship[0]?.coding) {
     const relationshipData = {
       relationshipType: relatedPersonResource.relationship[0].coding[0]?.code
     };
-    relatedPersonResource = // FR Core extensions ajoutées automatiquement;
+    relatedPersonResource = // FR Core extensions appliquées
   }
   
   console.log('[CONVERTER] Ressource RelatedPerson créée avec profil FR Core:', 
@@ -4109,14 +4113,14 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
   }
   
   // Ajouter le profil FR Core à la ressource Coverage
-  coverageResource = // FR Core profile ajouté automatiquement;
+  coverageResource .meta = {profile: ["https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-" + entry.resource.resourceType.toLowerCase() + ""]};
   
   // Ajouter des extensions pour la couverture d'assurance française
   const coverageData = {
     category: coverageResource.type?.coding?.[0]?.code || 'AMO'
   };
   
-  coverageResource = // FR Core extensions ajoutées automatiquement;
+  coverageResource = // FR Core extensions appliquées
   
   console.log('[CONVERTER] Ressource Coverage créée avec profil FR Core:', 
     coverageResource.meta?.profile ? coverageResource.meta.profile[0] : 'Aucun profil');
