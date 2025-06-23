@@ -210,54 +210,23 @@ function convertHL7ToFHIR(hl7Message, options = {}) {
               const rolePerson = rolSegment[4];
               console.log("[CONVERTER] Analyse du segment ROL-4 pour praticien:", typeof rolePerson);
               
-              // SUPPRESSION COMPLÈTE: utilisation de createPractitionerResource au lieu de cette logique problématique
-              console.log("[CONVERTER] Délégation vers createPractitionerResource pour conformité FR Core");
-            }
-            
-            // SUPPRESSION: logique ROL problématique remplacée par createPractitionerResource
-            
-            // 2. Création de la ressource Practitioner conforme au format français
-            const practitionerId = `practitioner-${uuid.v4()}`;
-            const practitionerResource = {
-              fullUrl: `urn:uuid:${practitionerId}`,
-              resource: {
-                resourceType: 'Practitioner',
-                id: practitionerId,
-                identifier: practitionerIdentifiers,
-                name: [practitionerName],
-                // Extensions françaises recommandées par l'ANS
-                extension: [{
-                  url: "https://apifhir.annuaire.sante.fr/ws-sync/exposed/structuredefinition/practitioner-nationality",
-                  valueCodeableConcept: {
-                    coding: [{
-                      system: "https://mos.esante.gouv.fr/NOS/TRE_R20-Pays/FHIR/TRE-R20-Pays",
-                      code: "FRA",
-                      display: "France"
-                    }]
-                  }
-                }]
-              },
-              request: {
-                method: 'POST',
-                url: 'Practitioner'
-              }
-            };
-            
-            // Ajouter la ressource Practitioner
-            bundle.entry.push(practitionerResource);
-            console.log("[CONVERTER] Ressource Practitioner créée avec succès:", practitionerResource.fullUrl);
-            
-            // Créer aussi une ressource PractitionerRole si un encounter existe
-            if (encounterReference) {
-              const practitionerRoleId = `practitionerrole-${uuid.v4()}`;
-              const practitionerRoleResource = {
-                fullUrl: `urn:uuid:${practitionerRoleId}`,
-                resource: {
-                  resourceType: 'PractitionerRole',
-                  id: practitionerRoleId,
-                  practitioner: {
-                    reference: practitionerResource.fullUrl
-                  },
+              // CORRECTION FR CORE: Utilisation de createPractitionerResource uniquement
+              const practitionerEntry = createPractitionerResource(rolSegment);
+              if (practitionerEntry) {
+                bundle.entry.push(practitionerEntry);
+                console.log("[FR-CORE] Practitioner créé via createPractitionerResource conforme");
+                
+                // Créer aussi une ressource PractitionerRole si un encounter existe
+                if (encounterReference) {
+                  const practitionerRoleId = `practitionerrole-${uuid.v4()}`;
+                  const practitionerRoleResource = {
+                    fullUrl: `urn:uuid:${practitionerRoleId}`,
+                    resource: {
+                      resourceType: 'PractitionerRole',
+                      id: practitionerRoleId,
+                      practitioner: {
+                        reference: practitionerEntry.fullUrl
+                      },
                   active: true,
                   code: [{
                     coding: [{
@@ -289,12 +258,15 @@ function convertHL7ToFHIR(hl7Message, options = {}) {
               
               bundle.entry.push(practitionerRoleResource);
               console.log("[CONVERTER] Ressource PractitionerRole créée avec succès");
-            } else {
-              console.log("[CONVERTER] Pas de création de PractitionerRole (pas d'Encounter)");
+                } else {
+                  console.log("[CONVERTER] Pas de création de PractitionerRole (pas d'Encounter)");
+                }
+              } else {
+                console.log("[CONVERTER] Échec de création de Practitioner via createPractitionerResource");
+              }
+            } catch (error) {
+              console.error("[CONVERTER] Erreur lors du traitement du segment ROL:", error);
             }
-          } catch (error) {
-            console.error("[CONVERTER] Erreur lors du traitement du segment ROL:", error);
-          }
         });
       } else {
         console.log("[CONVERTER] Aucun segment ROL trouvé dans le message");
@@ -3714,10 +3686,13 @@ function createPractitionerResource(rolSegment) {
   
   // SUPPRESSION: addFrenchPractitionerExtensions qui créait des identifiants incorrects
   
-  // CORRECTION FR Core: profil obligatoire ajouté
-  practitionerResource.meta = {
-    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner']
-  };
+  // CORRECTION FR Core: profil obligatoire ajouté - Force absolue
+  if (!practitionerResource.meta) {
+    practitionerResource.meta = {};
+  }
+  practitionerResource.meta.profile = ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner'];
+  
+  console.log('[FR-CORE] FORCE: Profil Practitioner ajouté:', practitionerResource.meta.profile[0]);
   
   // Rechercher le numéro RPPS ou ADELI pour les extensions FR Core
   const rppsIdentifier = practitionerResource.identifier?.find(id => 
@@ -3730,13 +3705,11 @@ function createPractitionerResource(rolSegment) {
   console.log('[CONVERTER] Ressource Practitioner créée avec profil FR Core:', 
     practitionerResource.meta?.profile ? practitionerResource.meta.profile[0] : 'Aucun profil');
   
-  // CORRECTION CRITIQUE: S'assurer que le profil est bien présent
-  if (!practitionerResource.meta) {
-    practitionerResource.meta = {
-      profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner']
-    };
-    console.log('[FR-CORE] Profil Practitioner ajouté manuellement pour conformité');
-  }
+  // CORRECTION CRITIQUE: S'assurer que le profil est bien présent - Force finale
+  practitionerResource.meta = {
+    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner']
+  };
+  console.log('[FR-CORE] Profil Practitioner FORCÉ pour conformité 100%');
   
   return {
     fullUrl: `urn:uuid:${practitionerId}`,
