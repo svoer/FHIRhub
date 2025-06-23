@@ -4127,9 +4127,6 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
   }
   
   // Ajouter le profil FR Core à la ressource Coverage
-  coverageResource .meta = {profile: ["https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-" + entry.resource.resourceType.toLowerCase() + ""]};
-  
-  // Ajouter le profil FR Core à la ressource Coverage
   coverageResource.meta = {
     profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage']
   };
