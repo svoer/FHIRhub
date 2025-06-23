@@ -3125,7 +3125,7 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     
     encounterResource.identifier = [{
       use: 'usual', // FR Core exige use pour les identifiants
-      system: 'urn:oid:1.2.250.1.71.4.2.7', // OID français conforme à l'ANS pour identifiants internes
+      system: 'urn:oid:1.2.250.1.71.4.2.7', // FR Core: OID conforme pour identifiants VN
       value: visitNumberStr,
       type: {
         coding: [{
@@ -3210,14 +3210,22 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     }
   };
   
-  // CORRECTION FR CORE: Champs d'hospitalisation obligatoires pour class.code = "IMP"
+  // FR Core: Champs d'hospitalisation avec CodeableConcept (TRE_R213) pour class.code = "IMP"
   if (encounterClass.code === 'IMP') {
     encounterResource.hospitalization = {
       origin: {
-        reference: 'Location/origin-unknown'
+        coding: [{
+          system: 'https://mos.esante.gouv.fr/NOS/TRE_R213-LieuDePriseEnCharge/FHIR/TRE-R213-LieuDePriseEnCharge',
+          code: '01',
+          display: 'Etablissement de santé'
+        }]
       },
       destination: {
-        reference: 'Location/destination-home'
+        coding: [{
+          system: 'https://mos.esante.gouv.fr/NOS/TRE_R213-LieuDePriseEnCharge/FHIR/TRE-R213-LieuDePriseEnCharge',
+          code: '02',
+          display: 'Domicile'
+        }]
       }
     };
     
@@ -4249,23 +4257,25 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
     }
   }
   
-  // Extension française: traiter l'INS dans beneficiary.identifier au lieu d'une extension non-FR Core
+  // FR Core: InsuredID doit être placé en tant que Coverage.identifier (slice memberid 0..1)
   if (insuredId) {
-    // Ajouter l'INS comme identifiant beneficiary selon FR Core
-    coverageResource.beneficiary = coverageResource.beneficiary || {};
-    coverageResource.beneficiary.identifier = {
+    if (!coverageResource.identifier) {
+      coverageResource.identifier = [];
+    }
+    
+    coverageResource.identifier.push({
       use: 'official',
       value: insuredId,
       system: 'urn:oid:1.2.250.1.213.1.4.8',
       type: {
         coding: [{
           system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-          code: 'NH',
-          display: 'Numéro de sécurité sociale'
+          code: 'memberid',
+          display: 'Numéro de membre'
         }]
       }
-    };
-    console.log('[FR-CORE] INS ajouté comme identifiant beneficiary:', insuredId);
+    });
+    console.log('[FR-CORE] INS ajouté comme identifiant memberid selon slice FR Core:', insuredId);
   }
   
   // CORRECTION FR CORE: Vérification du payor obligatoire
