@@ -968,129 +968,129 @@ function extractIdentifiers(identifierField) {
       try {
         // Traitement spécifique pour les identifiants INS-A/INS-C/INS-NIR
         if (Array.isArray(item)) {
-        // Analyser si cet item pourrait être un INS
-        if (item.length > 4) {
-          const idValue = item[0] || '';
-          const idAuth = item[3] || '';
-          const idType = item[4] || '';
-          
-          // Si c'est un nombre de 15 chiffres, c'est probablement un INS
-          if (/^\d{15}$/.test(idValue) && 
-              (idAuth.includes('ASIP-SANTE') || idAuth.includes('INS') || idType.includes('INS'))) {
-            console.log('[CONVERTER] Identifiant INS détecté dans PID:', idValue, idType, idAuth);
+          // Analyser si cet item pourrait être un INS
+          if (item.length > 4) {
+            const idValue = item[0] || '';
+            const idAuth = item[3] || '';
+            const idType = item[4] || '';
             
-            // Déterminer le type exact d'INS
-            let insType = 'INS';
-            if (idAuth.includes('INS-C') || idType === 'INS-C') {
-              insType = 'INS-C';
-            } else if (idAuth.includes('INS-A') || idType === 'INS-A') {
-              insType = 'INS-A';
-            } else if (idAuth.includes('INS-NIR') || idType === 'INS-NIR') {
-              insType = 'INS-NIR';
-            }
-            
-            // Stocker l'identifiant INS pour un traitement ultérieur
-            insIdentifiers.push({
-              value: idValue,
-              type: insType,
-              auth: idAuth
-            });
-          }
-        }
-      }
-      
-      if (typeof item === 'string') {
-        const ids = extractIdentifiers(item);
-        // Filtrer les identifiants pour éviter les duplications
-        ids.forEach(id => {
-          const idKey = `${id.system}|${id.value}`;
-          if (!processedIds.has(idKey)) {
-            identifiers.push(id);
-            processedIds.add(idKey);
-            
-            // Mettre à jour les flags
-            if (id.type?.coding?.[0]?.code === 'NI') hasINS = true;
-            if (id.type?.coding?.[0]?.code === 'PI') hasIPP = true;
-          }
-        });
-      } else if (Array.isArray(item)) {
-        // Traiter directement cet élément comme un identifiant complet
-        const idValue = item[0] || '';
-        const idType = item[4] || '';
-        // Extraction sécurisée de assigningAuth avec validation de type
-        let assigningAuth = '';
-        let assigningOID = '';
-        
-        if (item[3]) {
-          if (Array.isArray(item[3])) {
-            assigningAuth = item[3][0] || '';
-            assigningOID = item[3][1] || '';
-          } else if (typeof item[3] === 'string') {
-            assigningAuth = item[3];
-          } else if (typeof item[3] === 'object') {
-            assigningAuth = item[3].namespaceId || item[3].name || '';
-            assigningOID = item[3].universalId || '';
-          }
-        }
-        
-        // Essayer d'extraire l'OID de différentes structures possibles si pas encore trouvé
-        if (!assigningOID && item[9]) {
-          if (Array.isArray(item[9])) {
-            assigningOID = item[9][1] || '';
-          } else if (typeof item[9] === 'object') {
-            assigningOID = item[9].universalId || '';
-          }
-        }
-        
-        console.log('[CONVERTER] Analysant identifiant tableau:', idValue, idType, assigningAuth, assigningOID);
-        console.log('[CONVERTER] Types détectés - assigningAuth:', typeof assigningAuth, 'assigningOID:', typeof assigningOID);
-        
-        if (idValue) {
-          // Détection INS - Plusieurs critères possibles avec validation de type
-          const isINS = assigningAuth === 'ASIP-SANTE' || 
-                      idType === 'INS' || 
-                      idType === 'INS-C' || 
-                      idType === 'INS-NIR' || 
-                      idType === 'INS-A' ||
-                      assigningOID === '1.2.250.1.213.1.4.8' || 
-                      assigningOID === '1.2.250.1.213.1.4.2' ||
-                      (assigningAuth && typeof assigningAuth === 'string' && (
-                        assigningAuth.includes('ASIP-SANTE') ||
-                        assigningAuth.includes('INSEE')
-                      ));
-                      
-          // Détection IPP - Identifiant Patient interne
-          const isIPP = assigningAuth === 'MCK' || 
-                       idType === 'PI' || 
-                       idType === 'MR' || 
-                       (!isINS && idValue); // Par défaut si pas INS
-                      
-          if (isINS) {
-            console.log('[CONVERTER] INS détecté dans tableau:', idValue);
-            hasINS = true;
-            
-            const insIdentifier = {
-              use: 'official',
-              value: idValue,
-              system: 'urn:oid:1.2.250.1.213.1.4.8', // OID standard ANS
-              type: {
-                coding: [{
-                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                  code: 'INS-C', // Code corrigé pour FR Core
-                  display: 'Identifiant National de Santé Calculé'
-                }]
+            // Si c'est un nombre de 15 chiffres, c'est probablement un INS
+            if (/^\d{15}$/.test(idValue) && 
+                (idAuth.includes('ASIP-SANTE') || idAuth.includes('INS') || idType.includes('INS'))) {
+              console.log('[CONVERTER] Identifiant INS détecté dans PID:', idValue, idType, idAuth);
+              
+              // Déterminer le type exact d'INS
+              let insType = 'INS';
+              if (idAuth.includes('INS-C') || idType === 'INS-C') {
+                insType = 'INS-C';
+              } else if (idAuth.includes('INS-A') || idType === 'INS-A') {
+                insType = 'INS-A';
+              } else if (idAuth.includes('INS-NIR') || idType === 'INS-NIR') {
+                insType = 'INS-NIR';
               }
-            };
-            
-            const idKey = `${insIdentifier.system}|${insIdentifier.value}`;
-            if (!processedIds.has(idKey)) {
-              identifiers.push(insIdentifier);
-              processedIds.add(idKey);
-              console.log('[FR-CORE] Identifiant INS ajouté au tableau final:', insIdentifier.value);
+              
+              // Stocker l'identifiant INS pour un traitement ultérieur
+              insIdentifiers.push({
+                value: idValue,
+                type: insType,
+                auth: idAuth
+              });
             }
-          } else if (isIPP) {
-            console.log('[CONVERTER] IPP détecté dans tableau:', idValue);
-            hasIPP = true;
+          }
+        }
+        
+        if (typeof item === 'string') {
+          const ids = extractIdentifiers(item);
+          // Filtrer les identifiants pour éviter les duplications
+          ids.forEach(id => {
+            const idKey = `${id.system}|${id.value}`;
+            if (!processedIds.has(idKey)) {
+              identifiers.push(id);
+              processedIds.add(idKey);
+              
+              // Mettre à jour les flags
+              if (id.type?.coding?.[0]?.code === 'NI') hasINS = true;
+              if (id.type?.coding?.[0]?.code === 'PI') hasIPP = true;
+            }
+          });
+        } else if (Array.isArray(item)) {
+          // Traiter directement cet élément comme un identifiant complet
+          const idValue = item[0] || '';
+          const idType = item[4] || '';
+          // Extraction sécurisée de assigningAuth avec validation de type
+          let assigningAuth = '';
+          let assigningOID = '';
+          
+          if (item[3]) {
+            if (Array.isArray(item[3])) {
+              assigningAuth = item[3][0] || '';
+              assigningOID = item[3][1] || '';
+            } else if (typeof item[3] === 'string') {
+              assigningAuth = item[3];
+            } else if (typeof item[3] === 'object') {
+              assigningAuth = item[3].namespaceId || item[3].name || '';
+              assigningOID = item[3].universalId || '';
+            }
+          }
+          
+          // Essayer d'extraire l'OID de différentes structures possibles si pas encore trouvé
+          if (!assigningOID && item[9]) {
+            if (Array.isArray(item[9])) {
+              assigningOID = item[9][1] || '';
+            } else if (typeof item[9] === 'object') {
+              assigningOID = item[9].universalId || '';
+            }
+          }
+          
+          console.log('[CONVERTER] Analysant identifiant tableau:', idValue, idType, assigningAuth, assigningOID);
+          console.log('[CONVERTER] Types détectés - assigningAuth:', typeof assigningAuth, 'assigningOID:', typeof assigningOID);
+          
+          if (idValue) {
+            // Détection INS - Plusieurs critères possibles avec validation de type
+            const isINS = assigningAuth === 'ASIP-SANTE' || 
+                        idType === 'INS' || 
+                        idType === 'INS-C' || 
+                        idType === 'INS-NIR' || 
+                        idType === 'INS-A' ||
+                        assigningOID === '1.2.250.1.213.1.4.8' || 
+                        assigningOID === '1.2.250.1.213.1.4.2' ||
+                        (assigningAuth && typeof assigningAuth === 'string' && (
+                          assigningAuth.includes('ASIP-SANTE') ||
+                          assigningAuth.includes('INSEE')
+                        ));
+                        
+            // Détection IPP - Identifiant Patient interne
+            const isIPP = assigningAuth === 'MCK' || 
+                         idType === 'PI' || 
+                         idType === 'MR' || 
+                         (!isINS && idValue); // Par défaut si pas INS
+                        
+            if (isINS) {
+              console.log('[CONVERTER] INS détecté dans tableau:', idValue);
+              hasINS = true;
+              
+              const insIdentifier = {
+                use: 'official',
+                value: idValue,
+                system: 'urn:oid:1.2.250.1.213.1.4.8', // OID standard ANS
+                type: {
+                  coding: [{
+                    system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                    code: 'INS-C', // Code corrigé pour FR Core
+                    display: 'Identifiant National de Santé Calculé'
+                  }]
+                }
+              };
+              
+              const idKey = `${insIdentifier.system}|${insIdentifier.value}`;
+              if (!processedIds.has(idKey)) {
+                identifiers.push(insIdentifier);
+                processedIds.add(idKey);
+                console.log('[FR-CORE] Identifiant INS ajouté au tableau final:', insIdentifier.value);
+              }
+            } else if (isIPP) {
+              console.log('[CONVERTER] IPP détecté dans tableau:', idValue);
+              hasIPP = true;
             
             const ippIdentifier = {
               use: 'usual',
