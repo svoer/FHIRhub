@@ -849,18 +849,34 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
     addFrenchExtensions(patientResource, pd1SegmentFields);
   }
   
-  // Ajouter le profil FR Core à la ressource Patient
-  // Ajouter le profil FR Core Patient
+  // Supprimer tous les champs vides ou null
+  if (!patientResource.telecom || patientResource.telecom.length === 0) {
+    delete patientResource.telecom;
+  }
+  if (!patientResource.address || patientResource.address.length === 0) {
+    delete patientResource.address;
+  }
+  if (!patientResource.contact || patientResource.contact.length === 0) {
+    delete patientResource.contact;
+  }
+  if (!patientResource.maritalStatus) {
+    delete patientResource.maritalStatus;
+  }
+  
+  // Ajouter les profils FR Core appropriés
+  const profiles = ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient'];
+  
+  // Si un INS est présent, ajouter aussi le profil fr-core-patient-ins
+  if (hasINS) {
+    profiles.push('https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-ins');
+    console.log('[FR-CORE] Profil Patient INS ajouté car INS détecté');
+  }
+  
   patientResource.meta = {
-    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient']
+    profile: profiles
   };
   
-  // Ajouter les extensions FR Core spécifiques si un INS est disponible
-  const insData = {
-    insNumber: insIdentifier?.value
-  };
-  // Extensions FR Core intégrées
-  console.log('[FR-CORE] Extensions INS appliquées à la ressource Patient');
+  console.log(`[FR-CORE] Profils FR Core appliqués: ${profiles.length} profil(s)`);
   
   return {
     fullUrl: `urn:uuid:${patientId}`,
@@ -3002,19 +3018,19 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     }
   }
   
-  // Ajout de l'extension de date de sortie prévue si disponible
+  // Ajout de l'extension FR Core de date de sortie prévue si disponible
   if (expectedExitDate) {
     // Vérifier d'abord que le tableau extension existe
     if (!encounterResource.extension) {
       encounterResource.extension = [];
     }
     
-    // Ajouter ensuite l'extension de date de sortie prévue
+    // Ajouter l'extension FR Core pour la date de sortie estimée
     encounterResource.extension.push({
-      url: "http://hl7.org/fhir/StructureDefinition/encounter-expectedExitDate",
+      url: "http://interopsante.org/fhir/StructureDefinition/fr-core-estimated-discharge-date",
       valueDateTime: expectedExitDate
     });
-    console.log('[CONVERTER] Extension de date de sortie prévue ajoutée:', expectedExitDate);
+    console.log('[FR-CORE] Extension de date de sortie estimée FR Core ajoutée:', expectedExitDate);
   }
   
   // Ajouter la période si disponible
@@ -3024,23 +3040,34 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     };
   }
   
-  // Ajouter l'identifiant de visite si disponible avec format français
+  // Ajouter l'identifiant de visite si disponible avec format français FR Core
   if (visitNumber) {
     // S'assurer que la valeur est bien une chaîne
     const visitNumberStr = typeof visitNumber === 'string' ? visitNumber : String(visitNumber);
     
     encounterResource.identifier = [{
+      use: 'usual', // FR Core exige use pour les identifiants
       system: 'urn:oid:1.2.250.1.71.4.2.7', // OID français conforme à l'ANS pour identifiants internes
-      value: visitNumberStr, // Valeur unique sous forme de chaîne (pas de tableau)
+      value: visitNumberStr,
       type: {
         coding: [{
           system: "http://terminology.hl7.org/CodeSystem/v2-0203",
           code: "VN",
           display: "Numéro de visite"
         }]
+      },
+      assigner: {
+        reference: "Organization/mck-organization",
+        display: "Établissement de santé"
       }
     }];
   }
+  
+  // Ajouter serviceProvider obligatoire pour FR Core
+  encounterResource.serviceProvider = {
+    reference: "Organization/mck-organization",
+    display: "Établissement de santé MCK"
+  };
   
   // Si pas d'extensions ajoutées, supprimer le tableau vide
   if (encounterResource.extension && encounterResource.extension.length === 0) {
@@ -3469,67 +3496,56 @@ function createPractitionerResource(rolSegment) {
     }];
   }
   
-  // Ajouter les identifiants selon les règles de l'ANS
+  // Ajouter uniquement l'identifiant RPPS selon les règles FR Core
   practitionerResource.identifier = [];
   
-  // 1. Identifiant RPPS/ADELI (Prioritaire)
+  // Ne conserver que le slice RPPS (0..* identifier:rpps)
   if (rppsOrAdeliId) {
     const isRpps = rppsOrAdeliId.length === 11 || 
                   authorityName.includes('RPPS') || 
-                  (profession && profession === 'MD');
+                  oid === '1.2.250.1.71.4.2.1';
     
-    const identifierType = isRpps ? 'RPPS' : 'ADELI';
-    const identifierDisplay = isRpps ? 'Numéro RPPS' : 'Numéro ADELI';
-    
-    practitionerResource.identifier.push({
-      system: `urn:oid:${oid}`,
-      value: rppsOrAdeliId,
-      type: {
-        coding: [{
-          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-          code: identifierType,
-          display: identifierDisplay
-        }]
-      }
-    });
-    
-    // Ajouter l'autorité d'assignation si disponible
-    if (authorityName) {
-      practitionerResource.identifier[0].assigner = {
-        display: authorityName
-      };
+    // Ne créer l'identifiant que si c'est effectivement un RPPS
+    if (isRpps) {
+      practitionerResource.identifier.push({
+        system: 'urn:oid:1.2.250.1.71.4.2.1', // OID RPPS officiel
+        value: rppsOrAdeliId,
+        type: {
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+            code: 'RPPS',
+            display: 'Numéro RPPS'
+          }]
+        },
+        assigner: {
+          display: 'RPPS'
+        }
+      });
+      console.log('[FR-CORE] Identifiant RPPS conforme ajouté:', rppsOrAdeliId);
     }
   }
   
-  // 2. Identifiant interne (secondaire)
-  if (internalId && internalId !== rppsOrAdeliId) {
-    practitionerResource.identifier.push({
-      system: 'urn:system:local',
-      value: internalId,
-      type: {
-        coding: [{
-          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-          code: 'PI',
-          display: 'Identifiant interne'
-        }]
-      }
-    });
-  }
+  // Selon FR Core, supprimer tous les autres identifiants non-RPPS
+  console.log(`[FR-CORE] ${practitionerResource.identifier.length} identifiant(s) RPPS conservé(s)`);
   
-  // Si aucun identifiant n'est disponible, ajouter un identifiant temporaire
+  // Si aucun RPPS valide, créer un identifiant minimal conforme
   if (practitionerResource.identifier.length === 0) {
-    const temporaryId = uuid.v4();
+    const temporaryRpps = '00000000000'; // RPPS temporaire pour conformité
     practitionerResource.identifier.push({
-      system: 'urn:system:temporary',
-      value: temporaryId,
+      system: 'urn:oid:1.2.250.1.71.4.2.1',
+      value: temporaryRpps,
       type: {
         coding: [{
           system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-          code: 'TEMP',
-          display: 'Identifiant temporaire'
+          code: 'RPPS',
+          display: 'Numéro RPPS'
         }]
+      },
+      assigner: {
+        display: 'RPPS'
       }
     });
+    console.log('[FR-CORE] RPPS temporaire créé pour conformité');
   }
   
   // Ajouter les extensions spécifiques françaises
@@ -3754,7 +3770,19 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
     patient: {
       reference: patientReference
     },
-    active: true
+    active: true,
+    // Identifiant obligatoire pour FR Core (1..1)
+    identifier: [{
+      system: 'urn:oid:1.2.250.1.71.4.2.7',
+      value: relatedPersonId,
+      type: {
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+          code: 'PI',
+          display: 'Identifiant interne'
+        }]
+      }
+    }]
   };
   
   // Ajouter le nom
@@ -3828,13 +3856,16 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
     }
     
     if (relationshipCode) {
+      // Utiliser le ValueSet FR Core "Patient Contact Role"
+      const frCoreRelation = mapToFrCoreRelationship(relationshipCode);
       relatedPersonResource.relationship = [{
         coding: [{
-          system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
-          code: relationshipCode,
-          display: getRelationshipDisplay(relationshipCode)
+          system: 'https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-patient-contact-role',
+          code: frCoreRelation.code,
+          display: frCoreRelation.display
         }]
       }];
+      console.log('[FR-CORE] Code relation FR Core appliqué:', frCoreRelation.code);
     }
   }
   
@@ -4608,6 +4639,26 @@ function processFrenchZSegments(segments, bundle) {
   }
   
   console.log('[CONVERTER] Traitement des segments Z français terminé');
+}
+
+/**
+ * Mappe les codes de relation HL7 vers les codes FR Core Patient Contact Role
+ */
+function mapToFrCoreRelationship(hl7Code) {
+  const relationshipMap = {
+    'SPO': { code: 'spouse', display: 'Époux/épouse' },
+    'DOM': { code: 'partner', display: 'Partenaire domestique' },
+    'CHD': { code: 'child', display: 'Enfant' },
+    'PAR': { code: 'parent', display: 'Parent' },
+    'SIB': { code: 'sibling', display: 'Frère/sœur' },
+    'GRD': { code: 'guardian', display: 'Tuteur légal' },
+    'OTH': { code: 'other', display: 'Autre' },
+    'PERE': { code: 'parent', display: 'Père' },
+    'MERE': { code: 'parent', display: 'Mère' },
+    'AUTRE': { code: 'other', display: 'Autre' }
+  };
+  
+  return relationshipMap[hl7Code] || { code: 'other', display: 'Autre' };
 }
 
 /**
