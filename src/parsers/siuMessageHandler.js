@@ -83,6 +83,9 @@ function process(parsedMessage, context) {
     addResourceToBundle(context.bundle, resource);
   });
 
+  // Ajouter les focus au MessageHeader
+  updateMessageHeaderFocus(context.bundle, resources);
+
   console.log(`[SIU_HANDLER] ${resources.length} ressources FHIR générées pour SIU^${context.eventType}`);
   return context.bundle;
 }
@@ -147,7 +150,7 @@ function extractSIUSegments(parsedMessage) {
 function createPatientFromPID(pidSegment, context) {
   const patientId = `patient-${uuid.v4()}`;
   
-  const patient = {
+  let patient = {
     resourceType: 'Patient',
     id: patientId,
     meta: {
@@ -160,6 +163,9 @@ function createPatientFromPID(pidSegment, context) {
     telecom: extractTelecom(pidSegment),
     address: extractAddress(pidSegment)
   };
+
+  // Nettoyer les champs vides
+  patient = cleanEmptyFields(patient);
 
   console.log(`[SIU_HANDLER] Patient créé: ${patientId}`);
   return patient;
@@ -176,6 +182,20 @@ function createPatientFromPID(pidSegment, context) {
 function createAppointmentFromSCH(schSegment, eventMapping, context, segments) {
   const appointmentId = `appointment-${uuid.v4()}`;
   
+  // Extraire dates depuis SCH ou AIS selon disponibilité
+  let startTime = extractDateTime(schSegment.fields[11]); // SCH-11: Appointment Timing Quantity
+  let endTime = extractDateTime(schSegment.fields[12]);   // SCH-12: Placed Order Date/Time
+  
+  // Si pas de dates dans SCH, chercher dans AIS
+  if (!startTime && segments.AIS && segments.AIS.length > 0) {
+    startTime = extractDateTime(segments.AIS[0].fields[11]); // AIS-11: Start Date/Time
+    const duration = parseInt(segments.AIS[0].fields[12]) || 60; // AIS-12: Duration en minutes
+    if (startTime) {
+      const startDate = new Date(startTime);
+      endTime = new Date(startDate.getTime() + duration * 60000).toISOString();
+    }
+  }
+  
   const appointment = {
     resourceType: 'Appointment',
     id: appointmentId,
@@ -184,6 +204,14 @@ function createAppointmentFromSCH(schSegment, eventMapping, context, segments) {
     },
     identifier: [
       {
+        use: 'usual',
+        type: {
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+            code: 'PLAC',
+            display: 'Placer Identifier'
+          }]
+        },
         system: 'https://hl7.fr/ig/fhir/core/NamingSystem/fr-core-appointment-identifier',
         value: schSegment.fields[1] || appointmentId // SCH-1: Placer Appointment ID
       }
@@ -213,10 +241,10 @@ function createAppointmentFromSCH(schSegment, eventMapping, context, segments) {
     },
     reasonCode: extractReasonCode(segments.DG1),
     description: schSegment.fields[2] || eventMapping.description, // SCH-2: Filler Appointment ID
-    start: extractDateTime(schSegment.fields[11]), // SCH-11: Appointment Timing Quantity
-    end: extractDateTime(schSegment.fields[12]),   // SCH-12: Placed Order Date/Time
-    minutesDuration: extractDuration(schSegment.fields[9]), // SCH-9: Appointment Duration
-    slot: extractSlotReferences(segments.AIS),
+    start: startTime,
+    end: endTime,
+    minutesDuration: extractDuration(schSegment.fields[9]) || (startTime && endTime ? 
+      Math.round((new Date(endTime) - new Date(startTime)) / 60000) : null),
     participant: []
   };
 
@@ -322,7 +350,7 @@ function createScheduleFromAIS(aisSegment, context) {
 function createLocationFromAIL(ailSegment, context) {
   const locationId = `location-${uuid.v4()}`;
   
-  const location = {
+  let location = {
     resourceType: 'Location',
     id: locationId,
     meta: {
@@ -330,21 +358,29 @@ function createLocationFromAIL(ailSegment, context) {
     },
     identifier: [
       {
+        use: 'official',
+        type: {
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+            code: 'LOC',
+            display: 'Location Identifier'
+          }]
+        },
         system: 'https://hl7.fr/ig/fhir/core/NamingSystem/fr-core-location-identifier',
         value: ailSegment.fields[3] || locationId // AIL-3: Location Resource ID
       }
     ],
     status: 'active',
-    name: ailSegment.fields[5] || 'Location inconnue', // AIL-5: Location Description
-    alias: [ailSegment.fields[4] || 'Alias location'], // AIL-4: Location Group
+    name: ailSegment.fields[5] || ailSegment.fields[4] || 'Location inconnue', // AIL-5: Location Description ou AIL-4: Location Group
+    alias: ailSegment.fields[4] && ailSegment.fields[5] ? [ailSegment.fields[4]] : undefined, // AIL-4: Location Group si différent du nom
     description: ailSegment.fields[2] || 'Location générée depuis SIU AIL', // AIL-2: Segment Action Code
     type: [
       {
         coding: [
           {
-            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
-            code: 'HOSP',
-            display: 'Hospital'
+            system: 'https://mos.esante.gouv.fr/NOS/TRE_R02-SecteurActivite/FHIR/TRE-R02-SecteurActivite',
+            code: 'consultation',
+            display: 'Consultation'
           }
         ]
       }
@@ -359,6 +395,9 @@ function createLocationFromAIL(ailSegment, context) {
       ]
     }
   };
+
+  // Nettoyer les champs vides
+  location = cleanEmptyFields(location);
 
   console.log(`[SIU_HANDLER] Location créée: ${locationId}`);
   return location;
@@ -419,19 +458,54 @@ function createPractitionerFromAIP(aipSegment, context) {
 function extractPatientIdentifiers(pidSegment) {
   const identifiers = [];
   
-  if (pidSegment.fields[2]) { // PID-2: Patient ID (External ID)
+  // PID-3: Patient Identifier List - identifiant principal
+  if (pidSegment.fields[3]) {
+    let patientId = pidSegment.fields[3];
+    let system = 'https://hl7.fr/ig/fhir/core/NamingSystem/fr-core-patient-identifier';
+    let use = 'usual';
+    let type = 'PI'; // Patient Internal Identifier
+    
+    // Si c'est un tableau avec des composants HL7
+    if (Array.isArray(patientId)) {
+      patientId = patientId[0]; // Premier composant = ID
+      // Vérifier si c'est un NIR/NSS (Numéro de Sécurité Sociale)
+      if (patientId && /^\d{13,15}$/.test(patientId)) {
+        system = 'urn:oid:1.2.250.1.213.1.4.8'; // OID NIR
+        use = 'official';
+        type = 'NH'; // National Health Plan Identifier
+      }
+    }
+    
     identifiers.push({
-      use: 'usual',
-      system: 'https://hl7.fr/ig/fhir/core/NamingSystem/fr-core-patient-identifier',
-      value: pidSegment.fields[2]
+      use,
+      type: {
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+          code: type,
+          display: type === 'PI' ? 'Patient Internal Identifier' : 'National Health Plan Identifier'
+        }]
+      },
+      system,
+      value: patientId,
+      assigner: type === 'PI' ? {
+        reference: 'Organization/hopital-emetteur'
+      } : undefined
     });
   }
   
-  if (pidSegment.fields[3]) { // PID-3: Patient Identifier List
+  // PID-2: Patient ID (External ID) si différent
+  if (pidSegment.fields[2] && pidSegment.fields[2] !== pidSegment.fields[3]) {
     identifiers.push({
-      use: 'official',
-      system: 'https://hl7.fr/ig/fhir/core/NamingSystem/fr-core-patient-ins',
-      value: pidSegment.fields[3]
+      use: 'secondary',
+      type: {
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+          code: 'MR',
+          display: 'Medical Record Number'
+        }]
+      },
+      system: 'https://hl7.fr/ig/fhir/core/NamingSystem/fr-core-patient-identifier',
+      value: pidSegment.fields[2]
     });
   }
   
@@ -443,19 +517,38 @@ function extractPatientNames(pidSegment) {
   
   if (pidSegment.fields[5]) { // PID-5: Patient Name
     const nameField = pidSegment.fields[5];
+    let family, given, prefix, suffix;
+    
     if (Array.isArray(nameField)) {
-      names.push({
-        use: 'official',
-        family: nameField[0],
-        given: nameField[1] ? nameField[1].split(' ') : []
-      });
-    } else {
+      family = nameField[0];
+      given = nameField[1];
+      prefix = nameField[5]; // Titre (Dr, Mme, etc.)
+      suffix = nameField[4]; // Suffixe
+    } else if (typeof nameField === 'string') {
       const parts = nameField.split('^');
-      names.push({
+      family = parts[0];
+      given = parts[1];
+      prefix = parts[5];
+      suffix = parts[4];
+    }
+    
+    if (family || given) {
+      const name = {
         use: 'official',
-        family: parts[0],
-        given: parts[1] ? parts[1].split(' ') : []
+        family: family || undefined,
+        given: given ? (typeof given === 'string' ? given.split(' ') : [given]) : undefined,
+        prefix: prefix ? [prefix] : undefined,
+        suffix: suffix ? [suffix] : undefined
+      };
+      
+      // Nettoyer les champs vides
+      Object.keys(name).forEach(key => {
+        if (!name[key] || (Array.isArray(name[key]) && name[key].length === 0)) {
+          delete name[key];
+        }
       });
+      
+      names.push(name);
     }
   }
   
@@ -493,20 +586,49 @@ function extractBirthDate(birthDateField) {
 function extractTelecom(pidSegment) {
   const telecom = [];
   
-  if (pidSegment.fields[13]) { // PID-13: Phone Number - Home
-    telecom.push({
-      system: 'phone',
-      value: pidSegment.fields[13],
-      use: 'home'
-    });
+  // PID-13: Phone Number - Home
+  if (pidSegment.fields[13]) {
+    let phoneHome = pidSegment.fields[13];
+    if (Array.isArray(phoneHome)) {
+      phoneHome = phoneHome[0]; // Premier numéro
+    }
+    if (phoneHome) {
+      telecom.push({
+        system: 'phone',
+        value: phoneHome,
+        use: 'home'
+      });
+    }
   }
   
-  if (pidSegment.fields[14]) { // PID-14: Phone Number - Business
-    telecom.push({
-      system: 'phone',
-      value: pidSegment.fields[14],
-      use: 'work'
-    });
+  // PID-14: Phone Number - Business  
+  if (pidSegment.fields[14]) {
+    let phoneBusiness = pidSegment.fields[14];
+    if (Array.isArray(phoneBusiness)) {
+      phoneBusiness = phoneBusiness[0];
+    }
+    if (phoneBusiness) {
+      telecom.push({
+        system: 'phone',
+        value: phoneBusiness,
+        use: 'work'
+      });
+    }
+  }
+  
+  // Chercher email dans autres champs si présent
+  for (let i = 13; i <= 20; i++) {
+    if (pidSegment.fields[i] && typeof pidSegment.fields[i] === 'string') {
+      const field = pidSegment.fields[i];
+      // Détecter email pattern
+      if (field.includes('@') && field.includes('.')) {
+        telecom.push({
+          system: 'email',
+          value: field,
+          use: 'home'
+        });
+      }
+    }
   }
   
   return telecom;
@@ -517,11 +639,41 @@ function extractAddress(pidSegment) {
   
   if (pidSegment.fields[11]) { // PID-11: Patient Address
     const addressField = pidSegment.fields[11];
-    addresses.push({
-      use: 'home',
-      type: 'both',
-      line: [addressField.toString()]
-    });
+    let line = [];
+    let city, postalCode, country;
+    
+    if (Array.isArray(addressField)) {
+      // Format HL7 structuré: [rue, autre, ville, état/région, code postal, pays, type]
+      if (addressField[0]) line.push(addressField[0]); // Rue
+      if (addressField[1]) line.push(addressField[1]); // Complément
+      city = addressField[2]; // Ville
+      postalCode = addressField[4]; // Code postal
+      country = addressField[5]; // Pays
+    } else if (typeof addressField === 'string') {
+      line = [addressField];
+    }
+    
+    if (line.length > 0 || city || postalCode) {
+      const address = {
+        use: 'home',
+        type: 'both',
+        line: line.length > 0 ? line : undefined,
+        city: city || undefined,
+        postalCode: postalCode || undefined,
+        country: country || undefined
+      };
+      
+      // Nettoyer les champs vides
+      Object.keys(address).forEach(key => {
+        if (!address[key] || (Array.isArray(address[key]) && address[key].length === 0)) {
+          delete address[key];
+        }
+      });
+      
+      if (Object.keys(address).length > 2) { // Plus que use et type
+        addresses.push(address);
+      }
+    }
   }
   
   return addresses;
@@ -627,7 +779,59 @@ function addResourceToBundle(bundle, resource) {
   });
 }
 
+/**
+ * Met à jour les focus du MessageHeader avec les ressources principales
+ * @param {Object} bundle - Bundle FHIR
+ * @param {Array} resources - Ressources créées
+ */
+function updateMessageHeaderFocus(bundle, resources) {
+  const messageHeader = bundle.entry.find(entry => 
+    entry.resource.resourceType === 'MessageHeader'
+  );
+  
+  if (messageHeader) {
+    // Ajouter Patient et Appointment comme focus principaux
+    resources.forEach(resource => {
+      if (resource.resourceType === 'Patient' || resource.resourceType === 'Appointment') {
+        messageHeader.resource.focus.push({
+          reference: `urn:uuid:${resource.id}`
+        });
+      }
+    });
+  }
+}
+
+/**
+ * Supprime les champs vides des ressources (nettoyage conforme FRCore)
+ * @param {Object} resource - Ressource FHIR à nettoyer
+ * @returns {Object} Ressource nettoyée
+ */
+function cleanEmptyFields(resource) {
+  function removeEmpty(obj) {
+    if (Array.isArray(obj)) {
+      return obj.filter(item => item !== null && item !== undefined && item !== "")
+                .map(removeEmpty)
+                .filter(item => Array.isArray(item) ? item.length > 0 : true);
+    } else if (obj !== null && typeof obj === 'object') {
+      const cleaned = {};
+      Object.keys(obj).forEach(key => {
+        const value = removeEmpty(obj[key]);
+        if (value !== null && value !== undefined && value !== "" && 
+            !(Array.isArray(value) && value.length === 0) &&
+            !(typeof value === 'object' && Object.keys(value).length === 0)) {
+          cleaned[key] = value;
+        }
+      });
+      return Object.keys(cleaned).length > 0 ? cleaned : null;
+    }
+    return obj;
+  }
+  
+  return removeEmpty(resource);
+}
+
 module.exports = {
   process,
-  SIU_EVENT_MAPPING
+  SIU_EVENT_MAPPING,
+  cleanEmptyFields
 };

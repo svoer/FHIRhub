@@ -129,16 +129,20 @@ function routeMessage(parsedMessage, options = {}) {
 }
 
 /**
- * Crée un bundle FHIR de base avec les métadonnées du message
+ * Crée un bundle FHIR de base avec les métadonnées du message et MessageHeader
  * @param {Object} typeInfo - Informations sur le type de message
  * @param {Object} mshSegment - Segment MSH
  * @returns {Object} Bundle FHIR initialisé
  */
 function createFhirBundle(typeInfo, mshSegment) {
   const bundleId = uuid.v4();
-  const timestamp = new Date().toISOString();
+  const messageHeaderId = uuid.v4();
+  
+  // Extraire timestamp depuis MSH-7 (Date/Time of Message)
+  const mshTimestamp = extractTimestampFromMSH(mshSegment.fields[6]);
+  const timestamp = mshTimestamp || new Date().toISOString();
 
-  return {
+  const bundle = {
     resourceType: 'Bundle',
     id: bundleId,
     meta: {
@@ -151,19 +155,78 @@ function createFhirBundle(typeInfo, mshSegment) {
     },
     type: 'message',
     timestamp,
-    entry: [],
-    // Métadonnées HL7 originales
-    extension: [
-      {
-        url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-hl7-message-type',
-        valueString: `${typeInfo.messageType}^${typeInfo.eventType}`
-      },
-      {
-        url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-hl7-control-id',
-        valueString: mshSegment.fields[9] || 'unknown'
-      }
-    ]
+    entry: []
   };
+
+  // Créer MessageHeader obligatoire pour Bundle de type 'message'
+  const messageHeader = createMessageHeader(mshSegment, typeInfo, messageHeaderId, timestamp);
+  bundle.entry.push({
+    fullUrl: `urn:uuid:${messageHeaderId}`,
+    resource: messageHeader
+  });
+
+  return bundle;
+}
+
+/**
+ * Crée une ressource MessageHeader conforme FRCore depuis MSH
+ * @param {Object} mshSegment - Segment MSH
+ * @param {Object} typeInfo - Informations sur le type de message
+ * @param {string} messageHeaderId - ID de la ressource
+ * @param {string} timestamp - Timestamp du message
+ * @returns {Object} Ressource MessageHeader FHIR
+ */
+function createMessageHeader(mshSegment, typeInfo, messageHeaderId, timestamp) {
+  return {
+    resourceType: 'MessageHeader',
+    id: messageHeaderId,
+    meta: {
+      profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-message-header']
+    },
+    eventCoding: {
+      system: 'http://terminology.hl7.org/CodeSystem/v2-0003',
+      code: `${typeInfo.messageType}_${typeInfo.eventType}`,
+      display: `${typeInfo.messageType}^${typeInfo.eventType}`
+    },
+    source: {
+      name: mshSegment.fields[2] || 'Système émetteur', // MSH-3: Sending Application
+      endpoint: `urn:system:${mshSegment.fields[3] || 'unknown'}` // MSH-4: Sending Facility
+    },
+    destination: [{
+      name: mshSegment.fields[4] || 'Système récepteur', // MSH-5: Receiving Application
+      endpoint: `urn:system:${mshSegment.fields[5] || 'unknown'}` // MSH-6: Receiving Facility
+    }],
+    timestamp,
+    // Référence vers focus principal (Patient, Appointment, etc.) sera ajoutée par les handlers
+    focus: []
+  };
+}
+
+/**
+ * Extrait et formate un timestamp depuis un champ MSH-7
+ * @param {string} mshTimestamp - Timestamp HL7 (format YYYYMMDDHHMMSS)
+ * @returns {string|null} Timestamp ISO 8601 ou null
+ */
+function extractTimestampFromMSH(mshTimestamp) {
+  if (!mshTimestamp) return null;
+  
+  const dateStr = mshTimestamp.toString();
+  if (dateStr.length >= 14) {
+    const year = dateStr.substring(0, 4);
+    const month = dateStr.substring(4, 6);
+    const day = dateStr.substring(6, 8);
+    const hour = dateStr.substring(8, 10);
+    const minute = dateStr.substring(10, 12);
+    const second = dateStr.substring(12, 14);
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}Z`;
+  } else if (dateStr.length >= 8) {
+    const year = dateStr.substring(0, 4);
+    const month = dateStr.substring(4, 6);
+    const day = dateStr.substring(6, 8);
+    return `${year}-${month}-${day}T00:00:00Z`;
+  }
+  
+  return null;
 }
 
 /**

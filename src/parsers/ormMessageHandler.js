@@ -95,6 +95,9 @@ function process(parsedMessage, context) {
     addResourceToBundle(context.bundle, resource);
   });
 
+  // Ajouter les focus au MessageHeader
+  updateMessageHeaderFocus(context.bundle, resources);
+
   console.log(`[ORM_HANDLER] ${resources.length} ressources FHIR générées pour ORM^${context.eventType}`);
   return context.bundle;
 }
@@ -722,6 +725,28 @@ function addResourceToBundle(bundle, resource) {
     fullUrl: `urn:uuid:${resource.id}`,
     resource: resource
   });
+}
+
+/**
+ * Met à jour les focus du MessageHeader avec les ressources principales
+ * @param {Object} bundle - Bundle FHIR
+ * @param {Array} resources - Ressources créées
+ */
+function updateMessageHeaderFocus(bundle, resources) {
+  const messageHeader = bundle.entry.find(entry => 
+    entry.resource.resourceType === 'MessageHeader'
+  );
+  
+  if (messageHeader) {
+    // Ajouter Patient et ServiceRequest comme focus principaux pour ORM
+    resources.forEach(resource => {
+      if (resource.resourceType === 'Patient' || resource.resourceType === 'ServiceRequest') {
+        messageHeader.resource.focus.push({
+          reference: `urn:uuid:${resource.id}`
+        });
+      }
+    });
+  }
 }
 
 module.exports = {
