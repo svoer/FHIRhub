@@ -198,75 +198,53 @@ function convertHL7ToFHIR(hl7Message, options = {}) {
           try {
             console.log("[CONVERTER] Segment ROL complet:", JSON.stringify(rolSegment));
             
-            // 1. Traitement pour les systèmes d'identifiants français
-            let practitionerIdentifiers = [];
-            let practitionerName = {};
-            
-            // Récupérer le code du praticien (ROL-3)
-            const roleCode = rolSegment[3] || 'UNKN';
-            
-            // Récupérer les informations d'identification du praticien (ROL-4)
-            if (rolSegment[4]) {
-              const rolePerson = rolSegment[4];
-              console.log("[CONVERTER] Analyse du segment ROL-4 pour praticien:", typeof rolePerson);
+            // CORRECTION FR CORE: Utilisation de createPractitionerResource uniquement
+            const practitionerEntry = createPractitionerResource(rolSegment);
+            if (practitionerEntry) {
+              bundle.entry.push(practitionerEntry);
+              console.log("[FR-CORE] Practitioner créé via createPractitionerResource conforme");
               
-              // CORRECTION FR CORE: Utilisation de createPractitionerResource uniquement
-              const practitionerEntry = createPractitionerResource(rolSegment);
-              if (practitionerEntry) {
-                bundle.entry.push(practitionerEntry);
-                console.log("[FR-CORE] Practitioner créé via createPractitionerResource conforme");
-                
-                // Créer aussi une ressource PractitionerRole si un encounter existe
-                if (encounterReference) {
-                  const practitionerRoleId = `practitionerrole-${uuid.v4()}`;
-                  const practitionerRoleResource = {
-                    fullUrl: `urn:uuid:${practitionerRoleId}`,
-                    resource: {
-                      resourceType: 'PractitionerRole',
-                      id: practitionerRoleId,
-                      practitioner: {
-                        reference: practitionerEntry.fullUrl
-                      },
-                  active: true,
-                  code: [{
-                    coding: [{
-                      system: 'https://mos.esante.gouv.fr/NOS/TRE_R94-ProfessionSocial/FHIR/TRE-R94-ProfessionSocial',
-                      code: roleCode,
-                      display: getRoleTypeDisplay(roleCode)
-                    }]
-                  }],
-                  encounter: {
-                    reference: encounterReference
-                  },
-                  // Extensions spécifiques au format français
-                  extension: [{
-                    url: "https://interop.esante.gouv.fr/ig/fhir/core/StructureDefinition/practitionerRole-profession",
-                    valueCodeableConcept: {
+              // Créer aussi une ressource PractitionerRole si un encounter existe
+              if (encounterReference) {
+                const roleCode = rolSegment[3] || 'UNKN';
+                const practitionerRoleId = `practitionerrole-${uuid.v4()}`;
+                const practitionerRoleResource = {
+                  fullUrl: `urn:uuid:${practitionerRoleId}`,
+                  resource: {
+                    resourceType: 'PractitionerRole',
+                    id: practitionerRoleId,
+                    practitioner: {
+                      reference: practitionerEntry.fullUrl
+                    },
+                    active: true,
+                    code: [{
                       coding: [{
-                        system: "https://mos.esante.gouv.fr/NOS/TRE_G15-ProfessionSante/FHIR/TRE-G15-ProfessionSante",
+                        system: 'https://mos.esante.gouv.fr/NOS/TRE_R94-ProfessionSocial/FHIR/TRE-R94-ProfessionSocial',
                         code: roleCode,
                         display: getRoleTypeDisplay(roleCode)
                       }]
+                    }],
+                    encounter: {
+                      reference: encounterReference
                     }
-                  }]
-                },
-                request: {
-                  method: 'POST',
-                  url: 'PractitionerRole'
-                }
-              };
-              
-              bundle.entry.push(practitionerRoleResource);
-              console.log("[CONVERTER] Ressource PractitionerRole créée avec succès");
-                } else {
-                  console.log("[CONVERTER] Pas de création de PractitionerRole (pas d'Encounter)");
-                }
+                  },
+                  request: {
+                    method: 'POST',
+                    url: 'PractitionerRole'
+                  }
+                };
+                
+                bundle.entry.push(practitionerRoleResource);
+                console.log("[CONVERTER] Ressource PractitionerRole créée avec succès");
               } else {
-                console.log("[CONVERTER] Échec de création de Practitioner via createPractitionerResource");
+                console.log("[CONVERTER] Pas de création de PractitionerRole (pas d'Encounter)");
               }
-            } catch (error) {
-              console.error("[CONVERTER] Erreur lors du traitement du segment ROL:", error);
+            } else {
+              console.log("[CONVERTER] Échec de création de Practitioner via createPractitionerResource");
             }
+          } catch (error) {
+            console.error("[CONVERTER] Erreur lors du traitement du segment ROL:", error);
+          }
         });
       } else {
         console.log("[CONVERTER] Aucun segment ROL trouvé dans le message");
