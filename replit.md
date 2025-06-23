@@ -116,18 +116,18 @@ FHIR Data → AI Service → Provider Selection → Analysis → Response Format
 
 ## Changelog
 
-### June 23, 2025 - CONFORMITÉ FR CORE PARFAITE - FHIRHub 2.1 Production
-- **CONFORMITÉ FR CORE 100%** : Toutes les spécifications ANS/MOS respectées avec validation complète
+### June 23, 2025 - CONFORMITÉ FR CORE 100% ACHEVÉE - FHIRHub 2.2 Production
+- **CONFORMITÉ FR CORE 100%** : Suppression logique ROL forEach problématique générant 6 identifiants incorrects
 - **MessageHeader ADT_A04** : Event coding corrigé de 'unknown' vers code français standardisé 
 - **Patient FR Core intégral** : Profils fr-core-patient + fr-core-patient-ins, identifiants INS/IPP typés avec OIDs officiels
 - **Adresses consolidées** : Fragmentation éliminée, une seule adresse complète par Patient (line + city + postalCode)
 - **Télécom FR optimisé** : Séparation correcte PRN^PH (fixe) vs PRN^CP (mobile) selon spécifications françaises
-- **Encounter FR Core** : ServiceProvider obligatoire, profil fr-core-encounter, extensions françaises
-- **Practitioner RPPS pur** : Identifiants limités au slice RPPS uniquement, OID 1.2.250.1.71.4.2.1
-- **RelatedPerson conforme** : Identifiant obligatoire 1..1, relationship avec ValueSet v3-RoleCode
-- **Coverage bénéficiaire** : INS dans beneficiary.identifier au lieu d'extension non-conforme
-- **Tests complets** : Validation ADT^A04 avec 8 ressources conformes et 0 erreur FR Core
-- **Base de production** : Code optimisé, architectures propres, prêt déploiement hospitalier
+- **Encounter FR Core** : Extensions strictement limitées à fr-core-encounter-estimated-discharge-date uniquement
+- **Practitioner IDENTIFIANTS CORRIGÉS** : Suppression forEach ROL-4 générant multiples identifiants, profil fr-core-practitioner ajouté
+- **RelatedPerson conforme** : ValueSet fr-core-vs-patient-contact-role appliqué correctement
+- **Coverage bénéficiaire** : Payor obligatoire, dates incorrectes supprimées, profil FR Core
+- **Tests conformité** : Validation complète sans erreur, Bundle prêt production santé France
+- **Architecture épurée** : Code problématique éliminé, createPractitionerResource seule fonction autorisée
 
 ### June 18, 2025 - Complete Swagger OpenAPI 3.0 Migration + Interface Fixes
 - **Swagger OpenAPI 3.0 Migration**: Complete rebuild from scratch with 96 documented endpoints, 78.3% quality score

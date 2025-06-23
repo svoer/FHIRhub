@@ -214,20 +214,7 @@ function convertHL7ToFHIR(hl7Message, options = {}) {
               console.log("[CONVERTER] Délégation vers createPractitionerResource pour conformité FR Core");
             }
             
-            // Si aucun identifiant n'a pu être extrait, créer un identifiant par défaut
-            if (practitionerIdentifiers.length === 0) {
-              practitionerIdentifiers.push({
-                system: "urn:oid:1.2.250.1.71.4.2.1",
-                value: `unknown-${Date.now()}`
-              });
-            }
-            
-            // Si aucun nom n'a pu être extrait, utiliser un nom par défaut
-            if (!practitionerName.family) {
-              practitionerName = {
-                family: "Praticien non spécifié"
-              };
-            }
+            // SUPPRESSION: logique ROL problématique remplacée par createPractitionerResource
             
             // 2. Création de la ressource Practitioner conforme au format français
             const practitionerId = `practitioner-${uuid.v4()}`;
