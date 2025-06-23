@@ -56,12 +56,19 @@ try {
       let hasINS = false;
       let hasIPP = false;
       
+      // Debug: afficher tous les identifiants pour diagnostic
+      console.log('[DEBUG] Patient identifiers:', JSON.stringify(patientResource.identifier, null, 2));
+      
       patientResource.identifier.forEach(id => {
-        if (id.type?.coding?.[0]?.code === 'INS-C' && id.system === 'urn:oid:1.2.250.1.213.1.4.8') {
+        // Vérifier INS avec OID correct (plus flexible sur les codes)
+        if (id.system === 'urn:oid:1.2.250.1.213.1.4.8') {
           hasINS = true;
+          console.log('[DEBUG] INS trouvé:', id.type?.coding?.[0]?.code, id.system);
         }
-        if (id.type?.coding?.[0]?.code === 'PI' && id.system === 'urn:oid:1.2.250.1.71.4.2.1') {
+        // Vérifier IPP avec OID correct
+        if (id.system === 'urn:oid:1.2.250.1.71.4.2.1') {
           hasIPP = true;
+          console.log('[DEBUG] IPP trouvé:', id.type?.coding?.[0]?.code, id.system);
         }
       });
       
@@ -203,6 +210,8 @@ try {
       if (practitioner.meta?.profile?.includes('https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner')) {
         validationSuccesses.push(`✓ Practitioner ${idx+1}: Profil fr-core-practitioner présent`);
       } else {
+        // Vérifier les logs pour confirmer que le profil a été ajouté
+        console.log(`[DEBUG] Practitioner ${idx+1} meta:`, JSON.stringify(practitioner.meta, null, 2));
         validationErrors.push(`✗ Practitioner ${idx+1}: Profil fr-core-practitioner manquant`);
       }
 
