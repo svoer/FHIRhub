@@ -630,18 +630,10 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
     }
   });
   
-  // Construire la liste finale selon les priorités FR Core
-  const optimizedIdentifiers = [];
+  // CORRECTION CRITIQUE FR Core: Utiliser directement les identifiants extraits
+  const optimizedIdentifiers = identifiers;
   
-  // 1. D'abord l'IPP - slice PI avec use usual
-  if (ippIdentifier) {
-    optimizedIdentifiers.push(ippIdentifier);
-  }
-  
-  // 2. Ensuite l'INS/NSS - slice NSS avec use official et code NH
-  if (insIdentifier) {
-    optimizedIdentifiers.push(insIdentifier);
-  }
+  console.log('[FR-CORE] Identifiants finaux pour Patient:', optimizedIdentifiers.length, 'identifiants');
   
   // Extraire les télécom avec notre fonction standard
   let telecomData = extractTelecoms(pidSegmentFields[13], pidSegmentFields[14]);
@@ -974,10 +966,11 @@ function extractIdentifiers(identifierField) {
       } 
       // Cas 2: IPP - identifiant interne conforme aux recommandations ANS
       else if (officialType === 'IPP') {
-        // Identifiants standard (non français)
+        // CORRECTION FR Core: OID correct pour IPP
         identifiers.push({
+          use: 'usual',
           value: idValue,
-          system: 'urn:oid:1.2.250.1.71.4.2.7', // OID standard pour identifiants internes
+          system: 'urn:oid:1.2.250.1.71.4.2.1', // CORRECTION: OID correct pour IPP FR Core
           type: {
             coding: [{
               system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
@@ -986,9 +979,10 @@ function extractIdentifiers(identifierField) {
             }]
           },
           assigner: assigningAuthority ? { 
-            display: assigningAuthority.split('&')[0] 
-          } : undefined
+            reference: `Organization/org-${assigningAuthority.split('&')[0].toLowerCase()}`
+          } : { reference: 'Organization/org-mck' }
         });
+        console.log('[FR-CORE] Identifiant PI (IPP) détecté et corrigé pour FR Core');
       }
       // Cas 3: Autres types d'identifiants
       else {
@@ -1124,6 +1118,7 @@ function extractIdentifiers(identifierField) {
             if (!processedIds.has(idKey)) {
               identifiers.push(insIdentifier);
               processedIds.add(idKey);
+              console.log('[FR-CORE] Identifiant INS ajouté au tableau final:', insIdentifier.value);
             }
           } else if (idType === 'PIP') {
             // Gestion spécifique des identifiants Patient Internal Identifier (payer)
