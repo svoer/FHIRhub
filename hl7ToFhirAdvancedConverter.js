@@ -3666,11 +3666,9 @@ function createPractitionerResource(rolSegment) {
     console.log('[FR-CORE] RPPS temporaire FR Core créé pour conformité');
   }
   
-  // Ajouter les extensions spécifiques françaises
-  // Extensions pour RPPS, ADELI, spécialités, etc.
-  addFrenchPractitionerExtensions(practitionerResource, rolSegment);
+  // SUPPRESSION: addFrenchPractitionerExtensions qui créait des identifiants incorrects
   
-  // Ajouter le profil FR Core à la ressource Practitioner
+  // CORRECTION FR Core: profil obligatoire ajouté
   practitionerResource.meta = {
     profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner']
   };
@@ -3696,66 +3694,7 @@ function createPractitionerResource(rolSegment) {
   };
 }
 
-/**
- * Ajoute les extensions françaises au praticien
- * @param {Object} practitionerResource - Ressource Practitioner FHIR
- * @param {Array} rolSegment - Segment ROL parsé
- */
-function addFrenchPractitionerExtensions(practitionerResource, rolSegment) {
-  // Ajouter les extensions spécifiques aux praticiens français
-  practitionerResource.extension = practitionerResource.extension || [];
-  
-  // Extension pour la spécialité médicale
-  if (rolSegment.length > 3 && rolSegment[3]) {
-    const roleCode = rolSegment[3];
-    const roleInfo = frenchTerminology.getProfessionInfo(roleCode);
-    
-    // Extension pour la profession selon la nomenclature ANS
-    practitionerResource.extension.push({
-      url: frenchTerminology.FRENCH_EXTENSIONS.PRACTITIONER_PROFESSION,
-      valueCodeableConcept: {
-        coding: [{
-          system: frenchTerminology.FRENCH_SYSTEMS.PROFESSION,
-          code: roleInfo.code,
-          display: roleInfo.display
-        }]
-      }
-    });
-  }
-  
-  // Extension pour la nationalité (par défaut française)
-  practitionerResource.extension.push({
-    url: frenchTerminology.FRENCH_EXTENSIONS.NATIONALITY,
-    valueCodeableConcept: {
-      coding: [{
-        system: frenchTerminology.FRENCH_SYSTEMS.PAYS,
-        code: "FRA",
-        display: "France"
-      }]
-    }
-  });
-  
-  // Identifier l'ID (RPPS ou ADELI) dans les identifiants et l'ajouter comme extension
-  const rppsId = practitionerResource.identifier.find(id => 
-    id.system && (id.system.includes('1.2.250.1.71.4.2.1') || id.system.includes('1.2.250.1.213.1.1.1')));
-  
-  if (rppsId) {
-    // Créer l'extension avec la qualification selon ANS
-    practitionerResource.qualification = [{
-      identifier: [{
-        system: rppsId.system,
-        value: rppsId.value
-      }],
-      code: {
-        coding: [{
-          system: frenchTerminology.FRENCH_SYSTEMS.PROFESSION,
-          code: rolSegment.length > 3 ? rolSegment[3] : "ODRP",
-          display: rolSegment.length > 3 ? getRoleTypeDisplay(rolSegment[3]) : "Médecin"
-        }]
-      }
-    }];
-  }
-}
+// SUPPRESSION COMPLÈTE: fonction addFrenchPractitionerExtensions qui créait des identifiants incorrects
 
 /**
  * Récupère le libellé pour un type de rôle
