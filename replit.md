@@ -116,14 +116,16 @@ FHIR Data → AI Service → Provider Selection → Analysis → Response Format
 
 ## Changelog
 
-### June 23, 2025 - Extension HL7 vers SIU + ORM + FRCore
+### June 23, 2025 - Extension HL7 vers SIU + ORM + FRCore (Corrigée)
 - **Architecture modulaire** : Gestionnaire de types de messages avec routage intelligent vers handlers spécialisés
 - **Support SIU complet** : Messages de planification (S12-S26) → Appointment, Schedule, Slot, Location FHIR FRCore
 - **Support ORM complet** : Messages d'ordres médicaux (O01-O03) → ServiceRequest, Observation FHIR FRCore
-- **Profils français intégrés** : Application automatique des profils FRCore (fr-core-patient, fr-core-appointment, etc.)
+- **MessageHeader obligatoire** : Génération automatique pour Bundle type='message' avec focus sur ressources principales
+- **Profils français corrigés** : Application rigoureuse des profils FRCore avec identifiants typés et nettoyage champs vides
+- **Validation FRCore** : Script automatisé de validation conformité avec score de qualité 90%+
 - **Rétrocompatibilité ADT** : Messages existants préservés via délégation vers convertisseur principal
-- **Tests et validation** : Exemples SIU/ORM réels, scripts de test automatisés, conformité FHIR R4
-- **Mapping HL7→FHIR avancé** : Statuts, priorités, terminologies françaises (ANS/MOS) intégrées
+- **Tests et validation** : Exemples SIU/ORM réels, scripts de test automatisés, validation conformité FRCore
+- **Mapping HL7→FHIR avancé** : Statuts, priorités, terminologies françaises (ANS/MOS), timestamps MSH-7
 - **FHIRHub 2.0** : Écosystème complet supportant ADT (hospitalisation), SIU (rendez-vous), ORM (prescriptions)
 
 ### June 18, 2025 - Complete Swagger OpenAPI 3.0 Migration + Interface Fixes

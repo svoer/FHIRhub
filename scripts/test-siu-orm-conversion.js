@@ -39,7 +39,7 @@ async function testSIUConversion() {
         
         // Effectuer la conversion
         const startTime = Date.now();
-        const result = converter.convert(siuMessage);
+        const result = converter.convertHL7ToFHIR(siuMessage);
         const conversionTime = Date.now() - startTime;
         
         if (result && result.resourceType === 'Bundle') {
@@ -108,7 +108,7 @@ async function testORMConversion() {
         
         // Effectuer la conversion
         const startTime = Date.now();
-        const result = converter.convert(ormMessage);
+        const result = converter.convertHL7ToFHIR(ormMessage);
         const conversionTime = Date.now() - startTime;
         
         if (result && result.resourceType === 'Bundle') {
