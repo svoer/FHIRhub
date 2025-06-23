@@ -75,9 +75,9 @@ function convertHL7ToFHIR(hl7Message, options = {}) {
     console.log(`[CONVERTER] Message HL7 parsé avec succès: ${Object.keys(segments).length} types de segments`);
     
     // Détecter le type de message pour le routage modulaire
-    const messageTypeHandler = require('./src/parsers/hl7MessageTypeHandler');
-    
     try {
+      const messageTypeHandler = require('./src/parsers/hl7MessageTypeHandler');
+      
       // Tenter le routage modulaire pour les nouveaux types (SIU, ORM)
       const mshSegment = segments.MSH[0] || segments.MSH;
       const typeInfo = messageTypeHandler.detectMessageType(mshSegment);
