@@ -127,6 +127,7 @@ FHIR Data → AI Service → Provider Selection → Analysis → Response Format
 - **Base maintenable** : Code de production uniquement, documentation essentielle conservée, prêt pour développement structuré
 - **Corrections post-nettoyage** : Intégration directe des fonctions d'extraction noms, profils FR Core et métriques
 - **FHIRHub 2.0 Clean** : Écosystème complet ADT+SIU+ORM sur base propre, optimisée et entièrement fonctionnelle
+- **CONFORMITÉ FR CORE COMPLÈTE** : Identifiants INS/IPP typés, MessageHeader ADT_A04, noms et adresses consolidés
 - **SUCCÈS COMPLET** : Nettoyage terminé, architecture simplifiée, 70+ fichiers obsolètes supprimés, application 100% opérationnelle et prête pour développement structuré
 
 ### June 18, 2025 - Complete Swagger OpenAPI 3.0 Migration + Interface Fixes

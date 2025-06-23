@@ -2567,12 +2567,8 @@ function extractAddresses(addressFields) {
   // Si c'est un tableau, vérifier d'abord si c'est un tableau simple de composants d'adresse
   if (Array.isArray(addressFields)) {
     // Cas spécial: si c'est un tableau simple comme ["123 RUE DE LA PAIX","","PARIS","","75001","FR","H"]
-    console.log('[CONVERTER] Test détection tableau simple - length:', addressFields.length);
-    console.log('[CONVERTER] Test détection tableau simple - every string?', addressFields.every(item => typeof item === 'string' || item === '' || item === null));
-    console.log('[CONVERTER] Test détection tableau simple - items:', addressFields.map((item, i) => `${i}: ${typeof item} = ${JSON.stringify(item)}`));
-    
     if (addressFields.length >= 3 && addressFields.every(item => typeof item === 'string' || item === '' || item === null)) {
-      console.log('[CONVERTER] MATCH! Détection format tableau simple d\'adresse:', addressFields);
+      console.log('[CONVERTER] Détection format tableau simple d\'adresse:', addressFields);
       
       // Traiter comme une seule adresse complète
       const street1 = addressFields[0] || '';
