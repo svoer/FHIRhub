@@ -1157,23 +1157,8 @@ function extractIdentifiers(identifierField) {
                   code: 'NH', // Code fixé à NH pour NSS selon FR Core
                   display: 'Numéro de sécurité sociale'
                 }]
-              },
-              assigner: { 
-                display: 'INSEE'
               }
             };
-            
-            // Extension pour le statut INS
-            insIdentifier.extension = [{
-              url: 'https://apifhir.annuaire.sante.fr/ws-sync/exposed/structuredefinition/INSi-Status',
-              valueCodeableConcept: {
-                coding: [{
-                  system: 'https://mos.esante.gouv.fr/NOS/TRE_R338-ModaliteAccueil/FHIR/TRE-R338-ModaliteAccueil',
-                  code: 'VALI',
-                  display: 'Identité vérifiée'
-                }]
-              }
-            }];
             
             const idKey = `${insIdentifier.system}|${insIdentifier.value}`;
             if (!processedIds.has(idKey)) {
@@ -1247,7 +1232,7 @@ function extractIdentifiers(identifierField) {
               }
               
               ippIdentifier.assigner = {
-                display: cleanAuth || 'Établissement local'
+                reference: 'Organization/org-mck' // Référence vers l'organisation émettrice
               };
             }
             
@@ -4696,10 +4681,12 @@ function createMessageHeaderResource(mshSegment) {
   if (messageType && messageType.length > 0) {
     const typeParts = messageType.split('^');
     if (typeParts.length >= 2) {
+      // Mapper vers les événements FHIR officiels
+      const eventCode = `${typeParts[0]}_${typeParts[1]}`; // ADT_A04, ADT_A01, etc.
       eventCoding = {
-        system: 'http://terminology.hl7.org/CodeSystem/v2-0003',
-        code: typeParts[1], // A04, A01, etc.
-        display: `${typeParts[0]} ${typeParts[1]}`
+        system: 'http://hl7.org/fhir/message-events',
+        code: eventCode,
+        display: `${typeParts[0]} ${typeParts[1]} Event`
       };
     }
   }
@@ -4730,11 +4717,11 @@ function createMessageHeaderResource(mshSegment) {
     source: {
       name: sendingFacility,
       software: sendingApplication,
-      endpoint: `urn:oid:${sendingApplication}`
+      endpoint: `https://fhir.hospital.fr/fhir/${sendingApplication}`
     },
     destination: [{
       name: receivingFacility,
-      endpoint: `urn:oid:${receivingApplication}`
+      endpoint: `https://fhir.hospital.fr/fhir/${receivingApplication}`
     }],
     timestamp: formattedTimestamp
   };
