@@ -929,7 +929,7 @@ function extractIdentifiers(identifierField) {
             }]
           },
           assigner: assigningAuthority ? { 
-            reference: `Organization/org-${assigningAuthority.split('&')[0].toLowerCase()}`
+            reference: `Organization/org-${typeof assigningAuthority === 'string' ? assigningAuthority.split('&')[0].toLowerCase() : 'local'}`
           } : { reference: 'Organization/org-mck' }
         });
         console.log('[FR-CORE] Identifiant PI (IPP) détecté et corrigé pour FR Core');
@@ -1016,11 +1016,24 @@ function extractIdentifiers(identifierField) {
         // Traiter directement cet élément comme un identifiant complet
         const idValue = item[0] || '';
         const idType = item[4] || '';
-        const assigningAuth = item[3] || '';
+        // Extraction sécurisée de assigningAuth avec validation de type
+        let assigningAuth = '';
         let assigningOID = '';
         
-        // Essayer d'extraire l'OID de différentes structures possibles
-        if (item[9]) {
+        if (item[3]) {
+          if (Array.isArray(item[3])) {
+            assigningAuth = item[3][0] || '';
+            assigningOID = item[3][1] || '';
+          } else if (typeof item[3] === 'string') {
+            assigningAuth = item[3];
+          } else if (typeof item[3] === 'object') {
+            assigningAuth = item[3].namespaceId || item[3].name || '';
+            assigningOID = item[3].universalId || '';
+          }
+        }
+        
+        // Essayer d'extraire l'OID de différentes structures possibles si pas encore trouvé
+        if (!assigningOID && item[9]) {
           if (Array.isArray(item[9])) {
             assigningOID = item[9][1] || '';
           } else if (typeof item[9] === 'object') {
@@ -1029,9 +1042,10 @@ function extractIdentifiers(identifierField) {
         }
         
         console.log('[CONVERTER] Analysant identifiant tableau:', idValue, idType, assigningAuth, assigningOID);
+        console.log('[CONVERTER] Types détectés - assigningAuth:', typeof assigningAuth, 'assigningOID:', typeof assigningOID);
         
         if (idValue) {
-          // Détection INS - Plusieurs critères possibles
+          // Détection INS - Plusieurs critères possibles avec validation de type
           const isINS = assigningAuth === 'ASIP-SANTE' || 
                       idType === 'INS' || 
                       idType === 'INS-C' || 
@@ -1039,7 +1053,7 @@ function extractIdentifiers(identifierField) {
                       idType === 'INS-A' ||
                       assigningOID === '1.2.250.1.213.1.4.8' || 
                       assigningOID === '1.2.250.1.213.1.4.2' ||
-                      (assigningAuth && (
+                      (assigningAuth && typeof assigningAuth === 'string' && (
                         assigningAuth.includes('ASIP-SANTE') ||
                         assigningAuth.includes('INSEE')
                       ));
@@ -1089,7 +1103,7 @@ function extractIdentifiers(identifierField) {
                 }]
               },
               assigner: {
-                reference: `Organization/org-${assigningAuth ? assigningAuth.toLowerCase() : 'local'}`
+                reference: `Organization/org-${assigningAuth ? (typeof assigningAuth === 'string' ? assigningAuth.toLowerCase() : (Array.isArray(assigningAuth) ? assigningAuth[0] || 'local' : 'local')) : 'local'}`
               }
             };
             

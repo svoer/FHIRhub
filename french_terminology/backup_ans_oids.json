@@ -1,0 +1,96 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "description": "Référentiel des OIDs ANS (France) - Régénéré après nettoyage",
+    "source": "ANS France",
+    "created": "2025-05-08T17:35:00Z",
+    "lastUpdated": "2025-05-08T17:35:00Z",
+    "updatedBy": "system"
+  },
+  "identifier_systems": {
+    "1.2.250.1.213.1.1.1": {
+      "name": "Identifiant National de Santé (INS-NIR)",
+      "description": "Numéro d'inscription au répertoire national d'identification des personnes physiques (RNIPP)",
+      "oid": "1.2.250.1.213.1.1.1",
+      "uri": "urn:oid:1.2.250.1.213.1.1.1",
+      "fhirEquivalent": "http://ameli.fr/identifiant/INS-NIR"
+    },
+    "1.2.250.1.213.1.1.5": {
+      "name": "Identifiant National de Santé (INS-NIA)",
+      "description": "Numéro identifiant d'attente (utilisé avant attribution définitive du NIR)",
+      "oid": "1.2.250.1.213.1.1.5",
+      "uri": "urn:oid:1.2.250.1.213.1.1.5",
+      "fhirEquivalent": "http://ameli.fr/identifiant/INS-NIA"
+    },
+    "1.2.250.1.71.1.2.1": {
+      "name": "Identification Nationale PP (RPPS)",
+      "description": "Répertoire Partagé des Professionnels de Santé",
+      "oid": "1.2.250.1.71.1.2.1",
+      "uri": "urn:oid:1.2.250.1.71.1.2.1",
+      "fhirEquivalent": "http://rpps.fr/identifiant/RPPS"
+    },
+    "1.2.250.1.71.4.2.1": {
+      "name": "Identification Nationale des Structures (FINESS)",
+      "description": "Fichier National des Établissements Sanitaires et Sociaux",
+      "oid": "1.2.250.1.71.4.2.1",
+      "uri": "urn:oid:1.2.250.1.71.4.2.1",
+      "fhirEquivalent": "http://finess.fr/structure"
+    },
+    "1.2.250.1.71.1.2.7": {
+      "name": "Code Spécialité RPPS",
+      "description": "Code de spécialité médicale ou pharmaceutique dans le RPPS",
+      "oid": "1.2.250.1.71.1.2.7",
+      "uri": "urn:oid:1.2.250.1.71.1.2.7",
+      "fhirEquivalent": "http://terminology.rpps.fr/speciality"
+    },
+    "1.2.250.1.213.1.1.4.2": {
+      "name": "Code Assurance Maladie",
+      "description": "Code caisse et code régime de l'Assurance Maladie",
+      "oid": "1.2.250.1.213.1.1.4.2",
+      "uri": "urn:oid:1.2.250.1.213.1.1.4.2",
+      "fhirEquivalent": "http://ameli.fr/regimes"
+    },
+    "1.2.250.1.213.1.6.1.107": {
+      "name": "JDV_J107-EnsembleSectionCDA-CISIS",
+      "description": "Jeu de valeurs pour les codes de section CDA",
+      "oid": "1.2.250.1.213.1.6.1.107",
+      "uri": "urn:oid:1.2.250.1.213.1.6.1.107",
+      "fhirEquivalent": "http://ans.fr/valueset/cda-sections"
+    },
+    "1.2.250.1.213.1.1.4.6": {
+      "name": "Identifiant Technique de Structure",
+      "description": "Identifiant technique local de la structure pour certains flux de santé",
+      "oid": "1.2.250.1.213.1.1.4.6",
+      "uri": "urn:oid:1.2.250.1.213.1.1.4.6",
+      "fhirEquivalent": "http://ans.fr/identifiant/structure-technique"
+    },
+    "1.2.250.1.71.1.2.5": {
+      "name": "Identification Nationale PF (ADELI)",
+      "description": "Répertoire ADELI (en voie de remplacement par RPPS)",
+      "oid": "1.2.250.1.71.1.2.5",
+      "uri": "urn:oid:1.2.250.1.71.1.2.5",
+      "fhirEquivalent": "http://adeli.fr/identifiant/ADELI"
+    },
+    "1.2.250.1.71.4.2.2": {
+      "name": "Identification SIRET",
+      "description": "Identifiant SIRET pour les entreprises et organismes",
+      "oid": "1.2.250.1.71.4.2.2",
+      "uri": "urn:oid:1.2.250.1.71.4.2.2",
+      "fhirEquivalent": "http://insee.fr/identifiant/SIRET"
+    },
+    "1.2.250.1.213.1.6.1.39": {
+      "name": "JDV_J39-StatutVisibiliteDocument-CISIS",
+      "description": "Jeu de valeurs pour le statut de visibilité des documents",
+      "oid": "1.2.250.1.213.1.6.1.39",
+      "uri": "urn:oid:1.2.250.1.213.1.6.1.39",
+      "fhirEquivalent": "http://ans.fr/valueset/document-visibility"
+    },
+    "1.2.250.1.213.1.6.1.19": {
+      "name": "JDV_J19-SubjectRole-CISIS",
+      "description": "Jeu de valeurs pour les codes de rôle des sujets",
+      "oid": "1.2.250.1.213.1.6.1.19",
+      "uri": "urn:oid:1.2.250.1.213.1.6.1.19",
+      "fhirEquivalent": "http://ans.fr/valueset/subject-role"
+    }
+  }
+}
