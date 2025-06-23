@@ -2158,14 +2158,16 @@ function extractTelecoms(homePhoneFields, workPhoneFields) {
               system: 'phone'
             };
             
-            // Type d'utilisation (component 2)
-            if (parts[1]) {
-              parsedTelecom.use = mapContactUseToFHIR(parts[1]);
+            // Type d'utilisation (component 2) et type d'équipement (component 3)
+            let useCode = parts[1] || '';
+            let equipType = parts[2] || '';
+            
+            if (useCode) {
+              parsedTelecom.use = mapContactUseToFHIR(useCode, equipType);
             }
             
-            // Type d'équipement (component 3)
-            if (parts[2]) {
-              parsedTelecom.system = mapEquipmentTypeToFHIR(parts[2]);
+            if (equipType) {
+              parsedTelecom.system = mapEquipmentTypeToFHIR(equipType);
             }
           }
           // Si c'est un tableau (format du parser détaillé)
@@ -2179,14 +2181,16 @@ function extractTelecoms(homePhoneFields, workPhoneFields) {
               system: 'phone'
             };
             
-            // Type d'utilisation (component 2)
-            if (field.length > 1 && field[1]) {
-              parsedTelecom.use = mapContactUseToFHIR(field[1]);
+            // Type d'utilisation (component 2) et type d'équipement (component 3)
+            let useCode = field[1] || '';
+            let equipType = field[2] || '';
+            
+            if (useCode) {
+              parsedTelecom.use = mapContactUseToFHIR(useCode, equipType);
             }
             
-            // Type d'équipement (component 3)
-            if (field.length > 2 && field[2]) {
-              parsedTelecom.system = mapEquipmentTypeToFHIR(field[2]);
+            if (equipType) {
+              parsedTelecom.system = mapEquipmentTypeToFHIR(equipType);
             }
           }
           
@@ -3898,14 +3902,18 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
     active: true,
     // Identifiant obligatoire pour FR Core (1..1)
     identifier: [{
+      use: 'usual',
       system: 'urn:oid:1.2.250.1.71.4.2.7',
       value: relatedPersonId,
       type: {
         coding: [{
           system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
           code: 'PI',
-          display: 'Identifiant interne'
+          display: 'Identifiant patient interne'
         }]
+      },
+      assigner: {
+        reference: 'Organization/org-emetteur'
       }
     }]
   };
@@ -3985,7 +3993,7 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
       const frCoreRelation = mapToFrCoreRelationship(relationshipCode);
       relatedPersonResource.relationship = [{
         coding: [{
-          system: 'https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-patient-contact-role',
+          system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
           code: frCoreRelation.code,
           display: frCoreRelation.display
         }]
@@ -4298,15 +4306,23 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
     }
   }
   
+  // Extension française: traiter l'INS dans beneficiary.identifier au lieu d'une extension non-FR Core
   if (insuredId) {
-    coverageResource.extension = coverageResource.extension || [];
-    coverageResource.extension.push({
-      url: 'https://apifhir.annuaire.sante.fr/ws-sync/exposed/structuredefinition/Coverage-InsuredID',
-      valueIdentifier: {
-        system: 'urn:oid:1.2.250.1.213.1.4.8',
-        value: insuredId
+    // Ajouter l'INS comme identifiant beneficiary selon FR Core
+    coverageResource.beneficiary = coverageResource.beneficiary || {};
+    coverageResource.beneficiary.identifier = {
+      use: 'official',
+      value: insuredId,
+      system: 'urn:oid:1.2.250.1.213.1.4.8',
+      type: {
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+          code: 'NH',
+          display: 'Numéro de sécurité sociale'
+        }]
       }
-    });
+    };
+    console.log('[FR-CORE] INS ajouté comme identifiant beneficiary:', insuredId);
   }
   
   // Ajouter le profil FR Core à la ressource Coverage
