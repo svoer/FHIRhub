@@ -735,6 +735,86 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
     addFrenchExtensions(patientResource, pd1SegmentFields);
   }
   
+  // CORRECTIONS FR CORE CRITIQUES - Post-traitement
+  // 1. Corriger les noms pour éviter doublons et mauvais placement des suffixes
+  if (patientResource.name) {
+    patientResource.name = patientResource.name.map(name => {
+      // Supprimer doublons dans given
+      if (name.given && name.given.length > 1) {
+        name.given = [...new Set(name.given)];
+      }
+      
+      // Déplacer suffixes mal placés de given vers suffix
+      if (name.given) {
+        const suffixes = ['Jr', 'Sr', 'II', 'III', 'IV', 'V', 'L', 'M', 'Dr', 'Pr'];
+        const newGiven = [];
+        const newSuffix = name.suffix || [];
+        
+        name.given.forEach(givenName => {
+          if (suffixes.includes(givenName)) {
+            newSuffix.push(givenName);
+          } else {
+            newGiven.push(givenName);
+          }
+        });
+        
+        name.given = newGiven;
+        if (newSuffix.length > 0) {
+          name.suffix = newSuffix;
+        }
+      }
+      
+      return name;
+    });
+  }
+  
+  // 2. Corriger les télécom pour system="email" obligatoire (jamais "other")
+  if (patientResource.telecom) {
+    patientResource.telecom = patientResource.telecom.map(telecom => {
+      if (telecom.value && telecom.value.includes('@')) {
+        telecom.system = 'email'; // CORRECTION FR CORE: obligatoire pour emails
+      }
+      return telecom;
+    });
+  }
+  
+  // 3. Filtrer les adresses invalides FR Core
+  if (patientResource.address) {
+    patientResource.address = patientResource.address.filter(address => {
+      // Supprimer adresses avec use="temp" et country="UNK" uniquement
+      if (address.use === 'temp' && address.country === 'UNK' && !address.line && !address.city) {
+        return false;
+      }
+      
+      // Supprimer adresses home/both sans line
+      if ((address.use === 'home' || address.type === 'both') && (!address.line || address.line.length === 0)) {
+        return false;
+      }
+      
+      return true;
+    });
+  }
+  
+  // 4. Ajouter extension INS canonique FR Core si INS présent
+  if (hasINS) {
+    const insExtension = {
+      url: 'http://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-identity-reliability',
+      valueCodeableConcept: {
+        coding: [{
+          system: 'http://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-identity-reliability',
+          code: 'VIDE',
+          display: 'Identité validée'
+        }]
+      }
+    };
+    
+    if (!patientResource.extension) {
+      patientResource.extension = [];
+    }
+    
+    patientResource.extension.push(insExtension);
+  }
+  
   // Supprimer tous les champs vides ou null
   if (!patientResource.telecom || patientResource.telecom.length === 0) {
     delete patientResource.telecom;
@@ -2830,13 +2910,34 @@ function createLocationResource(locationData) {
     name: name
   };
   
-  // Ajouter l'identifiant si disponible
-  if (identifier) {
-    locationResource.identifier = [{
-      system: 'urn:oid:1.2.250.1.71.4.2.2',
-      value: identifier
-    }];
-  }
+  // CORRECTION FR CORE: Identifiant obligatoire
+  locationResource.identifier = [{
+    use: 'official',
+    system: 'http://finess.sante.gouv.fr',
+    value: identifier || name || 'UNKNOWN_FINESS'
+  }];
+  
+  // CORRECTION FR CORE: Type obligatoire selon VS FR Core
+  locationResource.type = [{
+    coding: [{
+      system: 'http://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-location-type',
+      code: 'HOSP',
+      display: 'Hôpital'
+    }]
+  }];
+  
+  // CORRECTION FR CORE: Extension fr-core-use-period obligatoire
+  locationResource.extension = [{
+    url: 'http://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-use-period',
+    valuePeriod: {
+      start: new Date().toISOString().split('T')[0]
+    }
+  }];
+  
+  // Profil FR Core obligatoire
+  locationResource.meta = {
+    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-location']
+  };
   
   return {
     fullUrl: `urn:uuid:${locationId}`,
@@ -3121,7 +3222,25 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     }
   };
   
-  // Ajouter le profil FR Core à la ressource Encounter
+  // CORRECTION FR CORE: Champs d'hospitalisation obligatoires pour class.code = "IMP"
+  if (encounterClass.code === 'IMP') {
+    encounterResource.hospitalization = {
+      origin: {
+        reference: 'Location/origin-unknown'
+      },
+      destination: {
+        reference: 'Location/destination-home'
+      }
+    };
+    
+    // preAdmissionIdentifier si présent dans HL7
+    if (visitNumber) {
+      encounterResource.hospitalization.preAdmissionIdentifier = {
+        value: visitNumber
+      };
+    }
+  }
+  
   // Ajouter le profil FR Core Encounter
   encounterResource.meta = {
     profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter']
@@ -3929,7 +4048,7 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
     }
   };
   
-  // Ajouter le payeur (organisme d'assurance) si disponible
+  // CORRECTION FR CORE: Payor obligatoire pour Coverage
   // IN1-4 (Nom de la compagnie d'assurance)
   const insurerField = in1Segment.length > 4 ? in1Segment[4] : null;
   
