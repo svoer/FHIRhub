@@ -1206,6 +1206,7 @@ function extractIdentifiers(identifierField) {
             hasIPP = true;
             
             const ippIdentifier = {
+              use: 'usual',
               value: idValue,
               system: 'urn:oid:1.2.250.1.71.4.2.7', // OID standard pour IPP
               type: {
@@ -1284,6 +1285,7 @@ function extractIdentifiers(identifierField) {
     
     const generatedId = `tmp-${Date.now()}`;
     identifiers.push({
+      use: 'usual',
       value: generatedId,
       system: 'urn:oid:1.2.250.1.71.4.2.7',
       type: {
@@ -1292,6 +1294,9 @@ function extractIdentifiers(identifierField) {
           code: 'PI',
           display: 'Identifiant patient interne'
         }]
+      },
+      assigner: {
+        reference: 'Organization/org-generated'
       }
     });
     hasIPP = true;
@@ -1420,10 +1425,19 @@ function extractNames(nameFields) {
     // Créer une clé unique basée sur les propriétés pertinentes de l'objet name
     const nameKey = `${nameObj.use || ''}|${nameObj.family || ''}|${(nameObj.given || []).join(',')}`;
     
-    // Ignorer la lettre "L" isolée (problème spécifique aux données de test)
+    // Gérer les suffixes comme "L" - les déplacer vers name.suffix au lieu de les ignorer
     if (nameObj.family === "L" && (!nameObj.given || nameObj.given.length === 0)) {
-      console.log('[CONVERTER] Ignoré nom avec uniquement la lettre L');
-      return;
+      // Chercher un nom existant pour y ajouter ce suffixe
+      const existingName = result.find(item => item.use === nameObj.use && item.family);
+      if (existingName) {
+        if (!existingName.suffix) existingName.suffix = [];
+        existingName.suffix.push("L");
+        console.log('[CONVERTER] Suffixe "L" ajouté à un nom existant');
+        return;
+      } else {
+        console.log('[CONVERTER] Suffixe "L" ignoré car aucun nom principal trouvé');
+        return;
+      }
     }
     
     // Stratégie de regroupement :
@@ -2526,9 +2540,18 @@ function mapEquipmentTypeToFHIR(equipType) {
  * @param {string} useCode - Code d'utilisation HL7
  * @returns {string} Utilisation FHIR
  */
-function mapContactUseToFHIR(useCode) {
+function mapContactUseToFHIR(useCode, equipType = '') {
+  // Gestion spécifique pour PRN avec type d'équipement selon FR Core
+  if (useCode === 'PRN') {
+    if (equipType === 'CP') {
+      return 'mobile';  // PRN^CP = téléphone mobile
+    } else if (equipType === 'PH') {
+      return 'home';    // PRN^PH = téléphone fixe domicile
+    }
+    return 'home';      // PRN par défaut
+  }
+  
   const useMap = {
-    'PRN': 'home',    // Primary
     'ORN': 'work',    // Other
     'WPN': 'work',    // Work
     'VHN': 'home',    // Vacation Home
@@ -4802,7 +4825,7 @@ function createMessageHeaderResource(mshSegment) {
       const eventCode = typeParts[1]; // A04, A01, etc.
       
       eventCoding = {
-        system: 'http://terminology.hl7.org/CodeSystem/v2-0003',
+        system: 'http://hl7.org/fhir/message-events',
         code: `${eventType}_${eventCode}`,
         display: `${eventType} ${eventCode} Event`
       };
