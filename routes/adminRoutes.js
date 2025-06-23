@@ -11,7 +11,6 @@ const fs = require('fs');
 const authMiddleware = require('../middleware/authMiddleware');
 // Service DB supprimé lors du nettoyage - utilisation directe
 const Database = require('better-sqlite3');
-const path = require('path');
 const db = new Database(path.join(__dirname, '../storage/db/fhirhub.db'));
 const logger = require('../src/utils/logger');
 
@@ -59,14 +58,14 @@ router.post('/reset-environment', (req, res) => {
   setTimeout(async () => {
     try {
       // Réinitialiser complètement la table des logs de conversion
-      db.prepare(run('DELETE FROM conversion_logs');
+      db.prepare('DELETE FROM conversion_logs').run()();
       
       // Réinitialiser aussi les compteurs dans d'autres tables
-      db.prepare(run('UPDATE api_usage_limits SET current_daily_usage = 0, current_monthly_usage = 0');
+      db.prepare('UPDATE api_usage_limits SET current_daily_usage = 0, current_monthly_usage = 0');
       
       // Réinitialiser les compteurs de conversion dans la table des workflows si elle existe
       try {
-        db.prepare(run('UPDATE workflows SET conversions_count = 0 WHERE conversions_count IS NOT NULL');
+        db.prepare('UPDATE workflows SET conversions_count = 0 WHERE conversions_count IS NOT NULL');
       } catch (e) {
         // Ignorer si la colonne n'existe pas
         logger.debug(`[ADMIN] Note: La colonne conversions_count n'existe pas dans la table workflows: ${e.message}`);
@@ -125,7 +124,7 @@ router.post('/reset-environment', (req, res) => {
       });
       
       // Journaliser la réinitialisation dans les logs système
-      db.prepare(run(
+      db.prepare(
         'INSERT INTO system_logs (event_type, message, severity) VALUES (?, ?, ?)',
         ['RESET_STATS', 'Réinitialisation complète des statistiques et compteurs effectuée', 'INFO']
       );
