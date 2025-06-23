@@ -1528,7 +1528,33 @@ function extractNames(nameFields) {
   }
   // Si nous avons un tableau (format pour les nouveaux parsers HL7)
   else if (Array.isArray(nameFields)) {
-    console.log('[CONVERTER] Traitement des noms (tableau):', JSON.stringify(nameFields).substring(0, 200));
+    console.log('[CONVERTER] Traitement des noms (tableau):', JSON.stringify(nameFields));
+    console.log('[CONVERTER] Type check - every string?', nameFields.every(item => typeof item === 'string'));
+    console.log('[CONVERTER] Length check:', nameFields.length);
+    
+    // Cas spécial: si nameFields est directement un tableau de strings simples ["MARTIN", "JEAN", "PIERRE"]
+    if (nameFields.length >= 1 && nameFields.every(item => typeof item === 'string')) {
+      console.log('[CONVERTER] MATCH! Détection format tableau simple de noms:', nameFields);
+      const familyName = nameFields[0];
+      const givenNames = nameFields.slice(1).filter(name => name && name.trim() !== '');
+      
+      const nameObj = {
+        use: 'official',
+        family: familyName,
+        given: givenNames
+      };
+      
+      console.log('[CONVERTER] Nom créé depuis tableau simple:', JSON.stringify(nameObj));
+      addNameWithDeduplication(nameObj);
+      console.log('[CONVERTER] Total après ajout tableau simple:', result.length);
+      console.log('[CONVERTER] Result array:', JSON.stringify(result));
+      return result; // Sortir immédiatement après traitement
+    } else {
+      console.log('[CONVERTER] PAS de match pour format tableau simple');
+      nameFields.forEach((item, index) => {
+        console.log(`[CONVERTER] Item ${index}: type=${typeof item}, value=${JSON.stringify(item)}`);
+      });
+    }
     
     // Parcourir chaque élément du tableau
     nameFields.forEach(field => {
