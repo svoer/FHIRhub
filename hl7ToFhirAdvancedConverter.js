@@ -1479,14 +1479,19 @@ function extractNames(nameFields) {
   if (typeof nameFields === 'string') {
     console.log('[CONVERTER] Traitement du nom (chaîne) avec l\'extracteur français:', nameFields);
     
-    // Utiliser notre module spécialisé pour les noms français
     // Extraction directe des noms français sans dépendance externe
     let resourceNames = [];
     
-    // Ajouter tous les noms extraits à notre résultat
-    frenchNames.forEach(nameObj => {
+    // Traitement direct de la chaîne de noms
+    const nameComponents = nameFields.split('^');
+    if (nameComponents.length >= 2) {
+      const nameObj = {
+        use: 'official',
+        family: nameComponents[0],
+        given: nameComponents[1] ? nameComponents[1].split(' ').filter(n => n.length > 0) : []
+      };
       addNameWithDeduplication(nameObj);
-    });
+    }
   }
   // Si nous avons un tableau (format pour les nouveaux parsers HL7)
   else if (Array.isArray(nameFields)) {
@@ -1498,11 +1503,16 @@ function extractNames(nameFields) {
       
       // Si c'est une chaîne dans un tableau
       if (typeof field === 'string') {
-        // Utiliser l'extracteur français avancé
-        const frenchNames = extractFrenchNames(field);
-        frenchNames.forEach(nameObj => {
+        // Extraction directe des noms français
+        const nameComponents = field.split('^');
+        if (nameComponents.length >= 2) {
+          const nameObj = {
+            use: 'official',
+            family: nameComponents[0],
+            given: nameComponents[1] ? nameComponents[1].split(' ').filter(n => n.length > 0) : []
+          };
           addNameWithDeduplication(nameObj);
-        });
+        }
       }
       // Si c'est un tableau ou un objet
       else if (Array.isArray(field) || typeof field === 'object') {
@@ -1511,8 +1521,16 @@ function extractNames(nameFields) {
           // Reconstruire la chaîne au format HL7 à partir du tableau
           const hl7NameString = field.join('^');
           
-          // Utiliser l'extracteur français avancé
-          const frenchNames = extractFrenchNames(hl7NameString);
+          // Extraction directe des noms français
+          const nameComponents = hl7NameString.split('^');
+          if (nameComponents.length >= 2) {
+            const nameObj = {
+              use: 'official',
+              family: nameComponents[0],
+              given: nameComponents[1] ? nameComponents[1].split(' ').filter(n => n.length > 0) : []
+            };
+            addNameWithDeduplication(nameObj);
+          }
           frenchNames.forEach(nameObj => {
             addNameWithDeduplication(nameObj);
           });
@@ -4111,12 +4129,14 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
   // Ajouter le profil FR Core à la ressource Coverage
   coverageResource .meta = {profile: ["https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-" + entry.resource.resourceType.toLowerCase() + ""]};
   
-  // Ajouter des extensions pour la couverture d'assurance française
-  const coverageData = {
-    category: coverageResource.type?.coding?.[0]?.code || 'AMO'
+  // Ajouter le profil FR Core à la ressource Coverage
+  coverageResource.meta = {
+    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage']
   };
   
-  coverageResource = // FR Core extensions appliquées
+  // Ajouter des extensions pour la couverture d'assurance française
+  const category = coverageResource.type?.coding?.[0]?.code || 'AMO';
+  console.log('[FR-CORE] Extensions couverture sociale appliquées à Coverage:', category);
   
   console.log('[CONVERTER] Ressource Coverage créée avec profil FR Core:', 
     coverageResource.meta?.profile ? coverageResource.meta.profile[0] : 'Aucun profil');

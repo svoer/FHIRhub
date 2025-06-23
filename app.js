@@ -110,10 +110,11 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
 app.use(bodyParser.text({ limit: '10mb', type: 'text/plain' }));
 
 // Middleware pour les métriques Prometheus
-app.use(metrics.apiRequestCounter);
+// Metrics supprimés lors du nettoyage
+// app.use(// metrics.apiRequestCounter);
 
 // Synchroniser les compteurs avec la base de données au démarrage
-metrics.syncCountersWithDatabase();
+// metrics.syncCountersWithDatabase();
 
 // Middleware pour parser les trames MLLP
 app.use((req, res, next) => {
@@ -549,8 +550,8 @@ async function processHL7Conversion(hl7Message, req, res) {
     const fromCache = result._meta && result._meta.fromCache;
     
     // Mise à jour des métriques
-    metrics.incrementConversionCount();
-    metrics.recordConversionDuration(conversionTime);
+    // metrics.incrementConversionCount();
+    // metrics.recordConversionDuration(conversionTime);
     
     // Si l'option d'envoi au serveur FHIR est activée, tenter d'envoyer les ressources
     let fhirStorageResult = null;
@@ -1120,9 +1121,9 @@ app.post('/api/reset-stats', async (req, res) => {
     if (global.metricsCache) global.metricsCache = {};
     
     // Si les métriques existent, les réinitialiser aussi
-    if (typeof metrics !== 'undefined' && metrics && typeof metrics.resetCounters === 'function') {
+    if (typeof metrics !== 'undefined' && metrics && typeof // metrics.resetCounters === 'function') {
       try {
-        metrics.resetCounters();
+        // metrics.resetCounters();
         console.log('[RESET] Compteurs de métriques réinitialisés');
       } catch (metricsErr) {
         console.error('[RESET] Erreur lors de la réinitialisation des compteurs de métriques:', metricsErr);
@@ -1813,19 +1814,19 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   
   // Démarrer le serveur de métriques pour Prometheus si activé
   const METRICS_PORT = process.env.METRICS_PORT || 9091;
-  if (metrics.startMetricsServer(METRICS_PORT)) {
+  if (// metrics.startMetricsServer(METRICS_PORT)) {
     console.log(`[METRICS] Serveur de métriques démarré sur le port ${METRICS_PORT}`);
     
     // Activer les endpoints de logs de conversion pour Grafana
-    metrics.addConversionLogsEndpoints(conversionLogsExporter.conversionLogsApp);
+    // metrics.addConversionLogsEndpoints(conversionLogsExporter.conversionLogsApp);
     console.log(`[METRICS] Endpoints de logs de conversion activés pour Grafana`);
     
     // Ajouter le nouvel exportateur de logs pour Grafana
-    metrics.metricsApp.use(logsExporter);
+    // metrics.metricsApp.use(logsExporter);
     console.log(`[METRICS] Nouvel exportateur de logs activé pour Grafana`);
     
     // Ajouter l'adaptateur Loki pour une meilleure intégration avec Grafana
-    metrics.metricsApp.use(lokiAdapter);
+    // metrics.metricsApp.use(lokiAdapter);
     console.log(`[METRICS] Adaptateur Loki activé pour une meilleure visualisation des logs dans Grafana`);
   }
   
@@ -1833,13 +1834,13 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   let activeConnections = 0;
   server.on('connection', () => {
     activeConnections++;
-    metrics.updateActiveConnections(activeConnections);
+    // metrics.updateActiveConnections(activeConnections);
   });
   
   server.on('close', () => {
     activeConnections--;
     if (activeConnections < 0) activeConnections = 0;
-    metrics.updateActiveConnections(activeConnections);
+    // metrics.updateActiveConnections(activeConnections);
   });
 });
 
