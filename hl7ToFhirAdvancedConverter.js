@@ -1114,8 +1114,8 @@ function extractIdentifiers(identifierField) {
               type: {
                 coding: [{
                   system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                  code: 'NH', // Code fixé à NH pour NSS selon FR Core
-                  display: 'Numéro de sécurité sociale'
+                  code: 'INS-C', // Code corrigé pour FR Core
+                  display: 'Identifiant National de Santé Calculé'
                 }]
               }
             };
@@ -4226,13 +4226,9 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
     }
   }
   
-  // Si une date a été trouvée, l'ajouter à la ressource
-  if (expirationDateFormatted) {
-    coverageResource.period = {
-      end: expirationDateFormatted
-    };
-    console.log('[CONVERTER] Date de fin de couverture définie:', expirationDateFormatted);
-  }
+  // CORRECTION FR CORE: Suppression des dates incorrectes
+  // Les dates de couverture incorrectes provoquent des erreurs de validation FR Core
+  // Ces dates doivent être définies uniquement avec des données réelles et validées
   
   // Ajouter le nom de l'assuré
   if (insuredNameField && typeof insuredNameField === 'string') {
@@ -4275,6 +4271,38 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
     console.log('[FR-CORE] INS ajouté comme identifiant beneficiary:', insuredId);
   }
   
+  // CORRECTION FR CORE: Vérification du payor obligatoire
+  if (!coverageResource.payor || coverageResource.payor.length === 0) {
+    // Payor obligatoire par défaut si non spécifié
+    coverageResource.payor = [{
+      reference: 'Organization/default-payor',
+      display: 'Organisme d\'assurance par défaut'
+    }];
+    
+    // Ajouter l'organisation payeur par défaut au bundle
+    const defaultPayorId = 'default-payor';
+    entries.push({
+      fullUrl: `Organization/${defaultPayorId}`,
+      resource: {
+        resourceType: 'Organization',
+        id: defaultPayorId,
+        name: 'Organisme d\'assurance par défaut',
+        type: [{
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/organization-type',
+            code: 'pay',
+            display: 'Payer'
+          }]
+        }]
+      },
+      request: {
+        method: 'POST',
+        url: 'Organization'
+      }
+    });
+    console.log('[FR-CORE] Payor obligatoire par défaut ajouté à Coverage');
+  }
+
   // Ajouter le profil FR Core à la ressource Coverage
   coverageResource.meta = {
     profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage']
