@@ -3,8 +3,10 @@
  */
 const express = require('express');
 const router = express.Router();
-const db = require('../src/services/dbService');
-const conversionLogService = require('../src/services/conversionLogService');
+// Services supprimés lors du nettoyage - utilisation directe
+const Database = require('better-sqlite3');
+const path = require('path');
+const db = new Database(path.join(__dirname, '../storage/db/fhirhub.db'));
 const authCombined = require('../middleware/authCombined');
 
 // Toutes les routes nécessitent une authentification

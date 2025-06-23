@@ -5,7 +5,10 @@
  * @module middleware/authMiddleware
  */
 
-const dbService = require('../src/services/dbService');
+// Service DB supprimé lors du nettoyage - utilisation directe de SQLite
+const Database = require('better-sqlite3');
+const path = require('path');
+const db = new Database(path.join(__dirname, '../storage/db/fhirhub.db'));
 
 /**
  * Middleware qui vérifie si l'utilisateur est authentifié ou si une clé API valide est fournie
@@ -18,7 +21,7 @@ async function authenticatedOrApiKey(req, res, next) {
   if (apiKey) {
     try {
       // Vérifier si la clé API est valide
-      const keyData = await dbService.query(`
+      const keyData = db.prepare(query(`
           SELECT ak.*, a.name as app_name
           FROM api_keys ak
           JOIN applications a ON ak.application_id = a.id

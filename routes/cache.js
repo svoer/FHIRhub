@@ -8,7 +8,8 @@ const router = express.Router();
 const jwtAuth = require('../middleware/jwtAuth');
 const apiKeyAuth = require('../middleware/apiKeyAuth');
 const authCombined = require('../middleware/authCombined');
-const cacheManager = require('../src/cache');
+// Cache manager supprimé lors du nettoyage - cache intégré
+// const cacheManager = require('../src/cache');
 
 /**
  * @swagger
@@ -100,7 +101,7 @@ const cacheManager = require('../src/cache');
  */
 router.get('/stats', authCombined, (req, res) => {
   try {
-    const stats = cacheManager.getStats();
+    const stats = // cacheManager.getStats();
     res.json({
       success: true,
       data: stats
@@ -171,13 +172,13 @@ router.post('/clear', jwtAuth, (req, res) => {
     
     switch (type) {
       case 'memory':
-        cacheManager.clearMemoryCache();
+        // cacheManager.clearMemoryCache();
         break;
       case 'disk':
-        cacheManager.clearDiskCache();
+        // cacheManager.clearDiskCache();
         break;
       case 'all':
-        cacheManager.clearAllCache();
+        // cacheManager.clearAllCache();
         break;
       default:
         return res.status(400).json({
