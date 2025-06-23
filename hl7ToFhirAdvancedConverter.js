@@ -79,8 +79,14 @@ function convertHL7ToFHIR(hl7Message, options = {}) {
     const bundleId = `bundle-${Date.now()}`;
     
     // Déterminer le type de Bundle selon le type de message
-    const messageType = segments.MSH[0][8]; // MSH-9 Message Type
-    const bundleType = messageType ? 'message' : 'transaction';
+    let messageType = segments.MSH[0][8]; // MSH-9 Message Type
+    if (Array.isArray(messageType)) {
+      messageType = messageType[0];
+    }
+    if (typeof messageType !== 'string') {
+      messageType = String(messageType || '');
+    }
+    const bundleType = messageType && messageType.length > 0 ? 'message' : 'transaction';
     
     // Extraire et formater le timestamp du MSH-7
     const mshTimestamp = segments.MSH[0][6]; // MSH-7 Date/Time of Message
@@ -4674,12 +4680,20 @@ function createMessageHeaderResource(mshSegment) {
   const receivingApplication = mshSegment[4] || 'Unknown'; // MSH-5
   const receivingFacility = mshSegment[5] || 'Unknown'; // MSH-6
   const timestamp = mshSegment[6] || ''; // MSH-7
-  const messageType = mshSegment[8] || ''; // MSH-9
+  let messageType = mshSegment[8] || ''; // MSH-9
   const messageControlId = mshSegment[9] || ''; // MSH-10
+  
+  // S'assurer que messageType est une chaîne
+  if (Array.isArray(messageType)) {
+    messageType = messageType[0] || '';
+  }
+  if (typeof messageType !== 'string') {
+    messageType = String(messageType || '');
+  }
   
   // Parser le type de message (ex: ADT^A04^ADT_A01)
   let eventCoding = { code: 'unknown', display: 'Unknown Event' };
-  if (messageType) {
+  if (messageType && messageType.length > 0) {
     const typeParts = messageType.split('^');
     if (typeParts.length >= 2) {
       eventCoding = {
