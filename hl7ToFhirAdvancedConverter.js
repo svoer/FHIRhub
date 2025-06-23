@@ -433,30 +433,7 @@ function convertHL7ToFHIR(hl7Message, options = {}) {
             encounterEntry.resource.extension = [];
           }
           
-          // Extension pour le type de mouvement (entrée, sortie, mutation)
-          if (zbeData.movementType) {
-            encounterEntry.resource.extension.push({
-              url: 'https://interop.esante.gouv.fr/ig/fhir/core/StructureDefinition/healthevent-type',
-              valueCodeableConcept: {
-                coding: [{
-                  system: 'https://mos.esante.gouv.fr/NOS/TRE_R305-TypeRencontre/FHIR/TRE-R305-TypeRencontre',
-                  code: zbeData.movementType,
-                  display: getMovementTypeDisplay(zbeData.movementType)
-                }]
-              }
-            });
-          }
-          
-          // Extension pour l'identifiant du mouvement
-          if (zbeData.movementId) {
-            encounterEntry.resource.extension.push({
-              url: 'https://interop.esante.gouv.fr/ig/fhir/core/StructureDefinition/healthevent-identifier',
-              valueIdentifier: {
-                system: 'urn:oid:1.2.250.1.71.4.2.1',
-                value: Array.isArray(zbeData.movementId) ? zbeData.movementId[0] : zbeData.movementId // Assurer une valeur unique (string) et non un tableau
-              }
-            });
-          }
+          // SUPPRESSION: extensions healthevent-type et healthevent-identifier non autorisées par FR Core
           
           // Extension pour l'unité fonctionnelle
           if (zbeData.functionalUnit) {
@@ -4001,11 +3978,11 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
     }
     
     if (relationshipCode) {
-      // Utiliser le ValueSet FR Core "Patient Contact Role"
+      // CORRECTION FR Core: ValueSet fr-core-vs-patient-contact-role
       const frCoreRelation = mapToFrCoreRelationship(relationshipCode);
       relatedPersonResource.relationship = [{
         coding: [{
-          system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+          system: 'https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-patient-contact-role',
           code: frCoreRelation.code,
           display: frCoreRelation.display
         }]
