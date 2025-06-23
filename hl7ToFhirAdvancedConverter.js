@@ -631,7 +631,7 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   });
   
   // CORRECTION CRITIQUE FR Core: Utiliser directement les identifiants extraits
-  const optimizedIdentifiers = identifiers;
+  const optimizedIdentifiers = patientIdentifiers;
   
   console.log('[FR-CORE] Identifiants finaux pour Patient:', optimizedIdentifiers.length, 'identifiants');
   
@@ -1082,7 +1082,7 @@ function extractIdentifiers(identifierField) {
         
         if (idValue) {
           // Détection INS - Plusieurs critères possibles
-          const isINS = assigningAuth === 'INSEE' || 
+          const isINS = assigningAuth === 'ASIP-SANTE' || 
                       idType === 'INS' || 
                       idType === 'INS-C' || 
                       idType === 'INS-NIR' || 
@@ -1090,12 +1090,15 @@ function extractIdentifiers(identifierField) {
                       assigningOID === '1.2.250.1.213.1.4.8' || 
                       assigningOID === '1.2.250.1.213.1.4.2' ||
                       (assigningAuth && (
-                        assigningAuth.includes('ASIP-SANTE-INS') ||
-                        assigningAuth.includes('ASIP-SANTE-INS-NIR') ||
-                        assigningAuth.includes('ASIP-SANTE-INS-A') ||
-                        assigningAuth.includes('ASIP-SANTE-INS-C') ||
-                        assigningAuth.includes('INSEE-NIR')
+                        assigningAuth.includes('ASIP-SANTE') ||
+                        assigningAuth.includes('INSEE')
                       ));
+                      
+          // Détection IPP - Identifiant Patient interne
+          const isIPP = assigningAuth === 'MCK' || 
+                       idType === 'PI' || 
+                       idType === 'MR' || 
+                       (!isINS && idValue); // Par défaut si pas INS
                       
           if (isINS) {
             console.log('[CONVERTER] INS détecté dans tableau:', idValue);
@@ -1119,6 +1122,32 @@ function extractIdentifiers(identifierField) {
               identifiers.push(insIdentifier);
               processedIds.add(idKey);
               console.log('[FR-CORE] Identifiant INS ajouté au tableau final:', insIdentifier.value);
+            }
+          } else if (isIPP) {
+            console.log('[CONVERTER] IPP détecté dans tableau:', idValue);
+            hasIPP = true;
+            
+            const ippIdentifier = {
+              use: 'usual',
+              value: idValue,
+              system: 'urn:oid:1.2.250.1.71.4.2.1', // OID correct pour IPP FR Core
+              type: {
+                coding: [{
+                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                  code: 'PI',
+                  display: 'Identifiant patient interne'
+                }]
+              },
+              assigner: {
+                reference: `Organization/org-${assigningAuth ? assigningAuth.toLowerCase() : 'local'}`
+              }
+            };
+            
+            const idKey = `${ippIdentifier.system}|${ippIdentifier.value}`;
+            if (!processedIds.has(idKey)) {
+              identifiers.push(ippIdentifier);
+              processedIds.add(idKey);
+              console.log('[FR-CORE] Identifiant IPP ajouté au tableau final:', ippIdentifier.value);
             }
           } else if (idType === 'PIP') {
             // Gestion spécifique des identifiants Patient Internal Identifier (payer)
@@ -3700,6 +3729,14 @@ function createPractitionerResource(rolSegment) {
   
   console.log('[CONVERTER] Ressource Practitioner créée avec profil FR Core:', 
     practitionerResource.meta?.profile ? practitionerResource.meta.profile[0] : 'Aucun profil');
+  
+  // CORRECTION CRITIQUE: S'assurer que le profil est bien présent
+  if (!practitionerResource.meta) {
+    practitionerResource.meta = {
+      profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner']
+    };
+    console.log('[FR-CORE] Profil Practitioner ajouté manuellement pour conformité');
+  }
   
   return {
     fullUrl: `urn:uuid:${practitionerId}`,
