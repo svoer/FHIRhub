@@ -1253,28 +1253,16 @@ function extractIdentifiers(identifierField) {
       insIdentifiers.forEach(ins => {
         // Créer un identifiant FHIR pour chaque INS détecté
         const insId = {
+          use: 'official',
           value: ins.value,
           system: 'urn:oid:1.2.250.1.213.1.4.8', // OID standard ANS pour INS
           type: {
             coding: [{
               system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-              code: 'NI',
-              display: 'Numéro d\'identification au répertoire national d\'identification des personnes physiques'
+              code: 'NH', // Code fixé à NH pour NSS selon FR Core
+              display: 'Numéro de sécurité sociale'
             }]
-          },
-          assigner: { 
-            display: 'INSEE'
-          },
-          extension: [{
-            url: 'https://apifhir.annuaire.sante.fr/ws-sync/exposed/structuredefinition/INSi-Status',
-            valueCodeableConcept: {
-              coding: [{
-                system: 'https://mos.esante.gouv.fr/NOS/TRE_R338-ModaliteAccueil/FHIR/TRE-R338-ModaliteAccueil',
-                code: 'VALI',
-                display: 'Identité vérifiée'
-              }]
-            }
-          }]
+          }
         };
         
         // Vérifier si cet identifiant existe déjà
@@ -1516,15 +1504,26 @@ function extractNames(nameFields) {
     // Extraction directe des noms français sans dépendance externe
     let resourceNames = [];
     
-    // Traitement direct de la chaîne de noms
+    // Traitement direct de la chaîne de noms selon FR Core
     const nameComponents = nameFields.split('^');
     if (nameComponents.length >= 2) {
-      const nameObj = {
+      // Nom officiel (obligatoire)
+      const officialName = {
         use: 'official',
-        family: nameComponents[0],
+        family: nameComponents[0] || '',
         given: nameComponents[1] ? nameComponents[1].split(' ').filter(n => n.length > 0) : []
       };
-      addNameWithDeduplication(nameObj);
+      addNameWithDeduplication(officialName);
+      
+      // Nom d'usage (usual) si différent
+      if (nameComponents.length > 2 && nameComponents[2]) {
+        const usualName = {
+          use: 'usual',
+          family: nameComponents[2] || nameComponents[0],
+          given: nameComponents[1] ? nameComponents[1].split(' ').filter(n => n.length > 0) : []
+        };
+        addNameWithDeduplication(usualName);
+      }
     }
   }
   // Si nous avons un tableau (format pour les nouveaux parsers HL7)
