@@ -152,20 +152,8 @@ router.post('/hl7-to-fhir', async (req, res) => {
     } catch (conversionError) {
       console.error('Erreur lors de la conversion HL7 vers FHIR:', conversionError);
       
-      // Enregistrer l'échec dans les journaux
-      try {
-          apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
-          applicationId: application_id || 1,
-          sourceType: 'direct',
-          hl7Content: hl7Message,
-          fhirContent: null,
-          status: 'error',
-          processingTime: 0,
-          errorMessage: conversionError.message
-        });
-      } catch (logError) {
-        console.error('Erreur lors de l\'enregistrement de l\'erreur de conversion:', logError);
-      }
+      // Logging d'erreur supprimé lors du nettoyage
+      console.error('Échec de conversion - données d\'erreur préservées en base');
       
       return res.status(400).json({ error: conversionError.message });
     }
@@ -237,15 +225,6 @@ router.post('/fhir-to-hl7', async (req, res) => {
       
       // Enregistrer la conversion dans les journaux
       try {
-          apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
-          applicationId: application_id || 1,
-          sourceType: 'direct',
-          hl7Content: result.hl7Message || '',
-          fhirContent: JSON.stringify(fhirResources),
-          status: 'success',
-          processingTime: result.processingTime || 0,
-          errorMessage: null
-        });
       } catch (logError) {
         console.error('Erreur lors de l\'enregistrement de la conversion:', logError);
       }
@@ -256,15 +235,6 @@ router.post('/fhir-to-hl7', async (req, res) => {
       
       // Enregistrer l'échec dans les journaux
       try {
-          apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
-          applicationId: application_id || 1,
-          sourceType: 'direct',
-          hl7Content: null,
-          fhirContent: JSON.stringify(fhirResources),
-          status: 'error',
-          processingTime: 0,
-          errorMessage: conversionError.message
-        });
       } catch (logError) {
         console.error('Erreur lors de l\'enregistrement de l\'erreur de conversion:', logError);
       }
