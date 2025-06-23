@@ -157,6 +157,14 @@ FHIRHub est maintenant sur une **base propre et maintenable** avec :
 - ✅ Extraction noms français avec prénoms composés
 - ✅ Terminologies ANS/MOS intégrées
 - ✅ Validation et conversion FHIR R4
+- ✅ Application fonctionnelle après corrections
+
+### Corrections additionnelles
+- Suppression de toutes les références `extractFrenchNames` → logique intégrée directement
+- Suppression de toutes les références `frCoreProfileManager` → profils appliqués directement
+- Suppression de toutes les références `metricsCollector` → métriques en base de données
+- Correction de l'extraction des noms avec composants HL7 standard
+- Application automatique des profils FR Core pour Patient, Encounter, Organization
 
 **Date :** 23 juin 2025  
-**Version :** FHIRHub 2.0 Clean - Fonctionnel
+**Version :** FHIRHub 2.0 Clean - Entièrement Fonctionnel

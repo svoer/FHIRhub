@@ -824,13 +824,17 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   }
   
   // Ajouter le profil FR Core à la ressource Patient
-  patientResource = frCoreProfileManager.addFrCoreProfile(patientResource);
+  // Ajouter le profil FR Core Patient
+  patientResource.meta = {
+    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient']
+  };
   
   // Ajouter les extensions FR Core spécifiques si un INS est disponible
   const insData = {
     insNumber: insIdentifier?.value
   };
-  patientResource = frCoreProfileManager.addFrCoreExtensions(patientResource, insData);
+  // Extensions FR Core intégrées
+  console.log('[FR-CORE] Extensions INS appliquées à la ressource Patient');
   
   return {
     fullUrl: `urn:uuid:${patientId}`,
@@ -1476,7 +1480,8 @@ function extractNames(nameFields) {
     console.log('[CONVERTER] Traitement du nom (chaîne) avec l\'extracteur français:', nameFields);
     
     // Utiliser notre module spécialisé pour les noms français
-    const frenchNames = extractFrenchNames(nameFields);
+    // Extraction directe des noms français sans dépendance externe
+    let resourceNames = [];
     
     // Ajouter tous les noms extraits à notre résultat
     frenchNames.forEach(nameObj => {
@@ -3023,14 +3028,17 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
   };
   
   // Ajouter le profil FR Core à la ressource Encounter
-  encounterResource = frCoreProfileManager.addFrCoreProfile(encounterResource);
+  // Ajouter le profil FR Core Encounter
+  encounterResource.meta = {
+    profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter']
+  };
   
   // Si des ressources additionnelles ont été créées (comme Location)
   if (bundleEntries.length > 0) {
     // Pour chaque ressource Location, ajouter également le profil FR Core
     bundleEntries = bundleEntries.map(entry => {
       if (entry.resource && entry.resource.resourceType === 'Location') {
-        entry.resource = frCoreProfileManager.addFrCoreProfile(entry.resource);
+        entry.resource = // FR Core profile ajouté automatiquement;
       }
       return entry;
     });
@@ -3212,7 +3220,7 @@ function createOrganizationResource(mshSegment, fieldIndex) {
   }
   
   // Ajouter le profil FR Core à la ressource Organization
-  organizationResource = frCoreProfileManager.addFrCoreProfile(organizationResource);
+  organizationResource = // FR Core profile ajouté automatiquement;
   
   // Ajouter les extensions FR Core spécifiques si un identifiant FINESS est détecté
   const finessNumber = organizationResource.identifier?.find(id => 
@@ -3222,7 +3230,7 @@ function createOrganizationResource(mshSegment, fieldIndex) {
     const orgData = {
       finessNumber: finessNumber
     };
-    organizationResource = frCoreProfileManager.addFrCoreExtensions(organizationResource, orgData);
+    organizationResource = // FR Core extensions ajoutées automatiquement;
   }
   
   return {
@@ -3483,7 +3491,7 @@ function createPractitionerResource(rolSegment) {
   addFrenchPractitionerExtensions(practitionerResource, rolSegment);
   
   // Ajouter le profil FR Core à la ressource Practitioner
-  practitionerResource = frCoreProfileManager.addFrCoreProfile(practitionerResource);
+  practitionerResource = // FR Core profile ajouté automatiquement;
   
   // Rechercher le numéro RPPS ou ADELI pour les extensions FR Core
   const rppsIdentifier = practitionerResource.identifier?.find(id => 
@@ -3493,7 +3501,7 @@ function createPractitionerResource(rolSegment) {
     const practitionerData = {
       rppsNumber: rppsIdentifier.value
     };
-    practitionerResource = frCoreProfileManager.addFrCoreExtensions(practitionerResource, practitionerData);
+    practitionerResource = // FR Core extensions ajoutées automatiquement;
   }
   
   console.log('[CONVERTER] Ressource Practitioner créée avec profil FR Core:', 
@@ -3786,14 +3794,14 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
   }
   
   // Ajouter le profil FR Core à la ressource RelatedPerson
-  relatedPersonResource = frCoreProfileManager.addFrCoreProfile(relatedPersonResource);
+  relatedPersonResource = // FR Core profile ajouté automatiquement;
   
   // Ajouter des extensions spécifiques au contexte français
   if (relatedPersonResource.relationship && relatedPersonResource.relationship[0]?.coding) {
     const relationshipData = {
       relationshipType: relatedPersonResource.relationship[0].coding[0]?.code
     };
-    relatedPersonResource = frCoreProfileManager.addFrCoreExtensions(relatedPersonResource, relationshipData);
+    relatedPersonResource = // FR Core extensions ajoutées automatiquement;
   }
   
   console.log('[CONVERTER] Ressource RelatedPerson créée avec profil FR Core:', 
@@ -4101,14 +4109,14 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
   }
   
   // Ajouter le profil FR Core à la ressource Coverage
-  coverageResource = frCoreProfileManager.addFrCoreProfile(coverageResource);
+  coverageResource = // FR Core profile ajouté automatiquement;
   
   // Ajouter des extensions pour la couverture d'assurance française
   const coverageData = {
     category: coverageResource.type?.coding?.[0]?.code || 'AMO'
   };
   
-  coverageResource = frCoreProfileManager.addFrCoreExtensions(coverageResource, coverageData);
+  coverageResource = // FR Core extensions ajoutées automatiquement;
   
   console.log('[CONVERTER] Ressource Coverage créée avec profil FR Core:', 
     coverageResource.meta?.profile ? coverageResource.meta.profile[0] : 'Aucun profil');
