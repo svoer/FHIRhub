@@ -1536,33 +1536,51 @@ function extractNames(nameFields) {
       
       // Si c'est une chaîne dans un tableau
       if (typeof field === 'string') {
-        // Extraction directe des noms français
+        // Extraction directe des noms français selon FR Core
         const nameComponents = field.split('^');
         if (nameComponents.length >= 2) {
-          const nameObj = {
+          // Nom officiel (obligatoire)
+          const officialName = {
             use: 'official',
-            family: nameComponents[0],
+            family: nameComponents[0] || '',
             given: nameComponents[1] ? nameComponents[1].split(' ').filter(n => n.length > 0) : []
           };
-          addNameWithDeduplication(nameObj);
+          addNameWithDeduplication(officialName);
+          
+          // Nom d'usage (usual) si différent
+          if (nameComponents.length > 2 && nameComponents[2]) {
+            const usualName = {
+              use: 'usual',
+              family: nameComponents[2] || nameComponents[0],
+              given: nameComponents[1] ? nameComponents[1].split(' ').filter(n => n.length > 0) : []
+            };
+            addNameWithDeduplication(usualName);
+          }
         }
       }
       // Si c'est un tableau ou un objet
       else if (Array.isArray(field) || typeof field === 'object') {
         // Cas 1: C'est un tableau direct (structure [family, given, middle, ...])
         if (Array.isArray(field)) {
-          // Reconstruire la chaîne au format HL7 à partir du tableau
-          const hl7NameString = field.join('^');
-          
-          // Extraction directe des noms français
-          const nameComponents = hl7NameString.split('^');
-          if (nameComponents.length >= 2) {
-            const nameObj = {
+          // Traitement direct du tableau selon FR Core
+          if (field.length >= 2) {
+            // Nom officiel (obligatoire)
+            const officialName = {
               use: 'official',
-              family: nameComponents[0],
-              given: nameComponents[1] ? nameComponents[1].split(' ').filter(n => n.length > 0) : []
+              family: field[0] || '',
+              given: field[1] ? [field[1]].concat(field[2] ? [field[2]] : []).filter(n => n.length > 0) : []
             };
-            addNameWithDeduplication(nameObj);
+            addNameWithDeduplication(officialName);
+            
+            // Nom d'usage (usual) si composant supplémentaire
+            if (field.length > 3 && field[3]) {
+              const usualName = {
+                use: 'usual',
+                family: field[3] || field[0],
+                given: field[1] ? [field[1]].concat(field[2] ? [field[2]] : []).filter(n => n.length > 0) : []
+              };
+              addNameWithDeduplication(usualName);
+            }
           }
           frenchNames.forEach(nameObj => {
             addNameWithDeduplication(nameObj);
@@ -4675,18 +4693,24 @@ function createMessageHeaderResource(mshSegment) {
     messageType = String(messageType || '');
   }
   
+  // Debug pour identifier le problème
+  console.log('[CONVERTER] MessageType reçu:', JSON.stringify(messageType));
+  console.log('[CONVERTER] MSH segment complet:', JSON.stringify(mshSegment));
+  
   // Parser le type de message (ex: ADT^A04^ADT_A01)
   let eventCoding = { code: 'unknown', display: 'Unknown Event' };
   if (messageType && messageType.length > 0) {
     const typeParts = messageType.split('^');
+    console.log('[CONVERTER] Type parts:', typeParts);
     if (typeParts.length >= 2) {
-      // Mapper vers les événements FHIR officiels
-      const eventCode = `${typeParts[0]}_${typeParts[1]}`; // ADT_A04, ADT_A01, etc.
+      // Utiliser directement le code d'événement (A04, A01, etc.)
+      const eventCode = typeParts[1]; // A04, A01, etc.
       eventCoding = {
-        system: 'http://hl7.org/fhir/message-events',
+        system: 'http://terminology.hl7.org/CodeSystem/v2-0003',
         code: eventCode,
         display: `${typeParts[0]} ${typeParts[1]} Event`
       };
+      console.log('[CONVERTER] Event code détecté:', eventCode);
     }
   }
   
