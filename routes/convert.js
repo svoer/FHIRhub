@@ -9,10 +9,11 @@ const router = express.Router();
 const authenticateToken = require('../middleware/jwtAuth');
 const validateApiKey = require('../middleware/apiKeyAuth');
 // Utiliser le convertisseur avec cache au lieu du service direct pour de meilleures performances
-const { convertHL7ToFHIR } = require('../src/cacheEnabledConverter');
+// Convertisseur avec cache supprimé lors du nettoyage - utilisation directe
+const { convertHL7ToFHIR } = require('../hl7ToFhirAdvancedConverter');
 // Le service statsService n'existe pas, utilisons le service de journalisation des conversions à la place
-const conversionLogService = require('../src/services/conversionLogService');
-const { apiRequestCounter } = require('../src/metrics');
+// Service de log supprimé lors du nettoyage
+// Métriques supprimées lors du nettoyage
 
 /**
  * @swagger
@@ -142,7 +143,7 @@ router.post('/hl7-to-fhir', async (req, res) => {
       
       // Enregistrer la conversion dans les journaux
       try {
-        await conversionLogService.logConversion({
+        await // conversionLogService.logConversion({
           apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
           applicationId: application_id || 1,
           sourceType: 'direct',
@@ -162,7 +163,7 @@ router.post('/hl7-to-fhir', async (req, res) => {
       
       // Enregistrer l'échec dans les journaux
       try {
-        await conversionLogService.logConversion({
+        await // conversionLogService.logConversion({
           apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
           applicationId: application_id || 1,
           sourceType: 'direct',
@@ -226,7 +227,7 @@ router.post('/hl7-to-fhir', async (req, res) => {
  *         description: Erreur serveur
  */
 // Route sécurisée - l'authentification est gérée au niveau de l'app  
-router.post('/fhir-to-hl7', apiRequestCounter, async (req, res) => {
+router.post('/fhir-to-hl7', async (req, res) => {
   try {
     const { fhirResources, options = {} } = req.body;
     
@@ -246,7 +247,7 @@ router.post('/fhir-to-hl7', apiRequestCounter, async (req, res) => {
       
       // Enregistrer la conversion dans les journaux
       try {
-        await conversionLogService.logConversion({
+        await // conversionLogService.logConversion({
           apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
           applicationId: application_id || 1,
           sourceType: 'direct',
@@ -266,7 +267,7 @@ router.post('/fhir-to-hl7', apiRequestCounter, async (req, res) => {
       
       // Enregistrer l'échec dans les journaux
       try {
-        await conversionLogService.logConversion({
+        await // conversionLogService.logConversion({
           apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
           applicationId: application_id || 1,
           sourceType: 'direct',
