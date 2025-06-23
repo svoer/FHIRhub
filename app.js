@@ -114,7 +114,7 @@ app.use(bodyParser.text({ limit: '10mb', type: 'text/plain' }));
 // app.use(// metrics.apiRequestCounter);
 
 // Synchroniser les compteurs avec la base de données au démarrage
-// metrics.syncCountersWithDatabase();
+// // metrics.syncCountersWithDatabase();
 
 // Middleware pour parser les trames MLLP
 app.use((req, res, next) => {
@@ -550,8 +550,8 @@ async function processHL7Conversion(hl7Message, req, res) {
     const fromCache = result._meta && result._meta.fromCache;
     
     // Mise à jour des métriques
-    // metrics.incrementConversionCount();
-    // metrics.recordConversionDuration(conversionTime);
+    // // metrics.incrementConversionCount();
+    // // metrics.recordConversionDuration(conversionTime);
     
     // Si l'option d'envoi au serveur FHIR est activée, tenter d'envoyer les ressources
     let fhirStorageResult = null;
@@ -1121,14 +1121,14 @@ app.post('/api/reset-stats', async (req, res) => {
     if (global.metricsCache) global.metricsCache = {};
     
     // Si les métriques existent, les réinitialiser aussi
-    if (typeof metrics !== 'undefined' && metrics && typeof // metrics.resetCounters === 'function') {
-      try {
-        // metrics.resetCounters();
+    // if (typeof metrics !== 'undefined' && metrics && typeof metrics.resetCounters === 'function') {
+    //   try {
+    //     metrics.resetCounters();
         console.log('[RESET] Compteurs de métriques réinitialisés');
-      } catch (metricsErr) {
-        console.error('[RESET] Erreur lors de la réinitialisation des compteurs de métriques:', metricsErr);
-      }
-    }
+    //   } catch (metricsErr) {
+    //     console.error('[RESET] Erreur lors de la réinitialisation des compteurs de métriques:', metricsErr);
+    //   }
+    // }
     
     console.log('[RESET] Réinitialisation terminée avec succès');
     
