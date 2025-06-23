@@ -143,16 +143,7 @@ router.post('/hl7-to-fhir', async (req, res) => {
       
       // Enregistrer la conversion dans les journaux
       try {
-        await // conversionLogService.logConversion({
-          apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
-          applicationId: application_id || 1,
-          sourceType: 'direct',
-          hl7Content: hl7Message,
-          fhirContent: JSON.stringify(result),
-          status: 'success',
-          processingTime: result.processingTime || 0,
-          errorMessage: null
-        });
+        // Logging supprimé lors du nettoyage
       } catch (logError) {
         console.error('Erreur lors de l\'enregistrement de la conversion:', logError);
       }
@@ -163,7 +154,6 @@ router.post('/hl7-to-fhir', async (req, res) => {
       
       // Enregistrer l'échec dans les journaux
       try {
-        await // conversionLogService.logConversion({
           apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
           applicationId: application_id || 1,
           sourceType: 'direct',
@@ -247,7 +237,6 @@ router.post('/fhir-to-hl7', async (req, res) => {
       
       // Enregistrer la conversion dans les journaux
       try {
-        await // conversionLogService.logConversion({
           apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
           applicationId: application_id || 1,
           sourceType: 'direct',
@@ -267,7 +256,6 @@ router.post('/fhir-to-hl7', async (req, res) => {
       
       // Enregistrer l'échec dans les journaux
       try {
-        await // conversionLogService.logConversion({
           apiKeyId: req.apiKeyData ? req.apiKeyData.id : null,
           applicationId: application_id || 1,
           sourceType: 'direct',
