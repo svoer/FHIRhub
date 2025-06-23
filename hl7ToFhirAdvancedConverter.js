@@ -1091,105 +1091,106 @@ function extractIdentifiers(identifierField) {
             } else if (isIPP) {
               console.log('[CONVERTER] IPP détecté dans tableau:', idValue);
               hasIPP = true;
-            
-            const ippIdentifier = {
-              use: 'usual',
-              value: idValue,
-              system: 'urn:oid:1.2.250.1.71.4.2.1', // OID correct pour IPP FR Core
-              type: {
-                coding: [{
-                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                  code: 'PI',
-                  display: 'Identifiant patient interne'
-                }]
-              },
-              assigner: {
-                reference: `Organization/org-${assigningAuth && typeof assigningAuth === 'string' ? assigningAuth.toLowerCase() : 'local'}`
+              
+              const ippIdentifier = {
+                use: 'usual',
+                value: idValue,
+                system: 'urn:oid:1.2.250.1.71.4.2.1', // OID correct pour IPP FR Core
+                type: {
+                  coding: [{
+                    system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                    code: 'PI',
+                    display: 'Identifiant patient interne'
+                  }]
+                },
+                assigner: {
+                  reference: `Organization/org-${assigningAuth && typeof assigningAuth === 'string' ? assigningAuth.toLowerCase() : 'local'}`
+                }
+              };
+              
+              const idKey = `${ippIdentifier.system}|${ippIdentifier.value}`;
+              if (!processedIds.has(idKey)) {
+                identifiers.push(ippIdentifier);
+                processedIds.add(idKey);
+                console.log('[FR-CORE] Identifiant IPP ajouté au tableau final:', ippIdentifier.value);
               }
-            };
-            
-            const idKey = `${ippIdentifier.system}|${ippIdentifier.value}`;
-            if (!processedIds.has(idKey)) {
-              identifiers.push(ippIdentifier);
-              processedIds.add(idKey);
-              console.log('[FR-CORE] Identifiant IPP ajouté au tableau final:', ippIdentifier.value);
-            }
-          } else if (idType === 'PIP') {
-            // Gestion spécifique des identifiants Patient Internal Identifier (payer)
-            console.log('[CONVERTER] Identifiant PIP détecté dans tableau:', idValue);
-            
-            const pipIdentifier = {
-              value: idValue,
-              system: 'urn:oid:1.2.250.1.71.4.2.7', // OID standard pour identifiants locaux
-              type: {
-                coding: [{
-                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                  code: 'PIP',
-                  display: 'Patient internal identifier (payer)'
-                }]
-              }
-            };
-            
-            // Ajouter l'assigner si disponible
-            if (assigningAuth) {
-              let cleanAuth = assigningAuth;
-              if (typeof cleanAuth === 'string') {
-                cleanAuth = cleanAuth.split('&')[0].trim();
-              } else if (Array.isArray(cleanAuth)) {
-                cleanAuth = cleanAuth[0] || '';
+            } else if (idType === 'PIP') {
+              // Gestion spécifique des identifiants Patient Internal Identifier (payer)
+              console.log('[CONVERTER] Identifiant PIP détecté dans tableau:', idValue);
+              
+              const pipIdentifier = {
+                value: idValue,
+                system: 'urn:oid:1.2.250.1.71.4.2.7', // OID standard pour identifiants locaux
+                type: {
+                  coding: [{
+                    system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                    code: 'PIP',
+                    display: 'Patient internal identifier (payer)'
+                  }]
+                }
+              };
+              
+              // Ajouter l'assigner si disponible
+              if (assigningAuth) {
+                let cleanAuth = assigningAuth;
+                if (typeof cleanAuth === 'string') {
+                  cleanAuth = cleanAuth.split('&')[0].trim();
+                } else if (Array.isArray(cleanAuth)) {
+                  cleanAuth = cleanAuth[0] || '';
+                }
+                
+                pipIdentifier.assigner = {
+                  display: cleanAuth || 'Organisme payeur'
+                };
               }
               
-              pipIdentifier.assigner = {
-                display: cleanAuth || 'Organisme payeur'
-              };
-            }
-            
-            const idKey = `${pipIdentifier.system}|${pipIdentifier.value}`;
-            if (!processedIds.has(idKey)) {
-              identifiers.push(pipIdentifier);
-              processedIds.add(idKey);
-            }
-          } else {
-            // Considérer comme un IPP par défaut
-            console.log('[CONVERTER] IPP détecté dans tableau:', idValue);
-            hasIPP = true;
-            
-            const ippIdentifier = {
-              use: 'usual',
-              value: idValue,
-              system: 'urn:oid:1.2.250.1.71.4.2.7', // OID standard pour IPP
-              type: {
-                coding: [{
-                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                  code: 'PI',
-                  display: 'Identifiant patient interne'
-                }]
+              const idKey = `${pipIdentifier.system}|${pipIdentifier.value}`;
+              if (!processedIds.has(idKey)) {
+                identifiers.push(pipIdentifier);
+                processedIds.add(idKey);
               }
-            };
-            
-            // Ajouter l'assigner si disponible, avec nettoyage si nécessaire
-            if (assigningAuth) {
-              // Nettoyer les caractères spéciaux comme '&' qui peuvent être présents dans les séparateurs HL7
-              let cleanAuth = assigningAuth;
-              if (typeof cleanAuth === 'string') {
-                // Supprimer tout ce qui suit un & (séparateur HL7 standard)
-                cleanAuth = cleanAuth.split('&')[0];
-                // Nettoyer les séparateurs réseau et chaînes vides
-                cleanAuth = cleanAuth.replace(/\^+/g, ' ').trim();
-              } else if (Array.isArray(cleanAuth)) {
-                // Si c'est un tableau, prendre uniquement le premier élément
-                cleanAuth = cleanAuth[0] || '';
+            } else {
+              // Considérer comme un IPP par défaut
+              console.log('[CONVERTER] IPP détecté dans tableau:', idValue);
+              hasIPP = true;
+              
+              const ippIdentifier = {
+                use: 'usual',
+                value: idValue,
+                system: 'urn:oid:1.2.250.1.71.4.2.7', // OID standard pour IPP
+                type: {
+                  coding: [{
+                    system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                    code: 'PI',
+                    display: 'Identifiant patient interne'
+                  }]
+                }
+              };
+              
+              // Ajouter l'assigner si disponible, avec nettoyage si nécessaire
+              if (assigningAuth) {
+                // Nettoyer les caractères spéciaux comme '&' qui peuvent être présents dans les séparateurs HL7
+                let cleanAuth = assigningAuth;
+                if (typeof cleanAuth === 'string') {
+                  // Supprimer tout ce qui suit un & (séparateur HL7 standard)
+                  cleanAuth = cleanAuth.split('&')[0];
+                  // Nettoyer les séparateurs réseau et chaînes vides
+                  cleanAuth = cleanAuth.replace(/\^+/g, ' ').trim();
+                } else if (Array.isArray(cleanAuth)) {
+                  // Si c'est un tableau, prendre uniquement le premier élément
+                  cleanAuth = cleanAuth[0] || '';
+                }
+                
+                ippIdentifier.assigner = {
+                  reference: 'Organization/org-mck' // Référence vers l'organisation émettrice
+                };
               }
               
-              ippIdentifier.assigner = {
-                reference: 'Organization/org-mck' // Référence vers l'organisation émettrice
-              };
-            }
-            
-            const idKey = `${ippIdentifier.system}|${ippIdentifier.value}`;
-            if (!processedIds.has(idKey)) {
-              identifiers.push(ippIdentifier);
-              processedIds.add(idKey);
+              const idKey = `${ippIdentifier.system}|${ippIdentifier.value}`;
+              if (!processedIds.has(idKey)) {
+                identifiers.push(ippIdentifier);
+                processedIds.add(idKey);
+              }
             }
           }
         }
