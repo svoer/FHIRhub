@@ -4685,33 +4685,40 @@ function createMessageHeaderResource(mshSegment) {
   let messageType = mshSegment[8] || ''; // MSH-9
   const messageControlId = mshSegment[9] || ''; // MSH-10
   
-  // S'assurer que messageType est une chaîne
+  // S'assurer que messageType est correctement traité
   if (Array.isArray(messageType)) {
-    messageType = messageType[0] || '';
+    // Si c'est un tableau comme ["ADT","A04","ADT_A01"], le convertir en chaîne
+    messageType = messageType.join('^');
   }
   if (typeof messageType !== 'string') {
     messageType = String(messageType || '');
   }
   
-  // Debug pour identifier le problème
-  console.log('[CONVERTER] MessageType reçu:', JSON.stringify(messageType));
-  console.log('[CONVERTER] MSH segment complet:', JSON.stringify(mshSegment));
-  
   // Parser le type de message (ex: ADT^A04^ADT_A01)
   let eventCoding = { code: 'unknown', display: 'Unknown Event' };
+  console.log('[CONVERTER] Parsing messageType:', messageType);
+  
   if (messageType && messageType.length > 0) {
     const typeParts = messageType.split('^');
-    console.log('[CONVERTER] Type parts:', typeParts);
+    console.log('[CONVERTER] TypeParts split result:', typeParts);
+    
     if (typeParts.length >= 2) {
       // Utiliser directement le code d'événement (A04, A01, etc.)
+      const eventType = typeParts[0]; // ADT, SIU, ORM
       const eventCode = typeParts[1]; // A04, A01, etc.
+      
       eventCoding = {
         system: 'http://terminology.hl7.org/CodeSystem/v2-0003',
-        code: eventCode,
-        display: `${typeParts[0]} ${typeParts[1]} Event`
+        code: `${eventType}_${eventCode}`,
+        display: `${eventType} ${eventCode} Event`
       };
-      console.log('[CONVERTER] Event code détecté:', eventCode);
+      
+      console.log('[CONVERTER] Event code final:', eventCoding.code);
+    } else {
+      console.log('[CONVERTER] TypeParts length insuffisant:', typeParts.length);
     }
+  } else {
+    console.log('[CONVERTER] MessageType vide ou invalide');
   }
   
   // Formater le timestamp
