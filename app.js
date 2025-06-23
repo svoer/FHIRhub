@@ -401,7 +401,8 @@ app.get('/', (req, res) => {
 // qui est importé en haut du fichier
 
 // Nous devons toujours importer le module fhirHub pour accéder aux terminologies françaises
-const fhirHub = require('./src/index');
+// Module src/index supprimé lors du nettoyage - fonctionnalités intégrées
+// const fhirHub = require('./src/index');
 
 /**
  * @swagger
