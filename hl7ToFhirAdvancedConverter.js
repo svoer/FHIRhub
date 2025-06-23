@@ -961,12 +961,13 @@ function extractIdentifiers(identifierField) {
     // Tableau pour stocker tous les identifiants INS trouvés
     const insIdentifiers = [];
     
-    // Traiter chaque élément comme un identifiant potentiel
+    // Traiter chaque élément comme un identifiant potentiel avec gestion d'erreurs robuste
     identifierField.forEach((item, index) => {
       console.log('[CONVERTER] Traitement élément #' + index + ' du tableau');
       
-      // Traitement spécifique pour les identifiants INS-A/INS-C/INS-NIR
-      if (Array.isArray(item)) {
+      try {
+        // Traitement spécifique pour les identifiants INS-A/INS-C/INS-NIR
+        if (Array.isArray(item)) {
         // Analyser si cet item pourrait être un INS
         if (item.length > 4) {
           const idValue = item[0] || '';
@@ -1103,7 +1104,7 @@ function extractIdentifiers(identifierField) {
                 }]
               },
               assigner: {
-                reference: `Organization/org-${assigningAuth ? (typeof assigningAuth === 'string' ? assigningAuth.toLowerCase() : (Array.isArray(assigningAuth) ? assigningAuth[0] || 'local' : 'local')) : 'local'}`
+                reference: `Organization/org-${assigningAuth && typeof assigningAuth === 'string' ? assigningAuth.toLowerCase() : 'local'}`
               }
             };
             
@@ -1192,6 +1193,10 @@ function extractIdentifiers(identifierField) {
             }
           }
         }
+      } catch (error) {
+        console.error('[CONVERTER] Erreur lors du traitement de l\'identifiant #' + index + ':', error.message);
+        console.error('[CONVERTER] Item problématique:', JSON.stringify(item, null, 2));
+        // Continuer avec l'élément suivant au lieu de faire planter le processus
       }
     });
     
