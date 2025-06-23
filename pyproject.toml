@@ -1,9 +1,0 @@
-[project]
-name = "fhirhub-hl7-parser"
-version = "1.0.0"
-description = "Service d'analyse de messages HL7 pour FHIRHub"
-requires-python = ">=3.11"
-dependencies = [
-    "hl7>=0.4.5",
-    "requests>=2.32.3",
-]
