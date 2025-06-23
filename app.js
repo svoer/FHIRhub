@@ -1814,8 +1814,8 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   
   // Démarrer le serveur de métriques pour Prometheus si activé
   const METRICS_PORT = process.env.METRICS_PORT || 9091;
-  if (// metrics.startMetricsServer(METRICS_PORT)) {
-    console.log(`[METRICS] Serveur de métriques démarré sur le port ${METRICS_PORT}`);
+  // if (metrics.startMetricsServer(METRICS_PORT)) {
+    console.log(`[METRICS] Mode développement - métriques désactivées`);
     
     // Activer les endpoints de logs de conversion pour Grafana
     // metrics.addConversionLogsEndpoints(conversionLogsExporter.conversionLogsApp);
@@ -1828,7 +1828,6 @@ const server = app.listen(PORT, '0.0.0.0', () => {
     // Ajouter l'adaptateur Loki pour une meilleure intégration avec Grafana
     // metrics.metricsApp.use(lokiAdapter);
     console.log(`[METRICS] Adaptateur Loki activé pour une meilleure visualisation des logs dans Grafana`);
-  }
   
   // Initialiser le compteur de connexions actives
   let activeConnections = 0;
