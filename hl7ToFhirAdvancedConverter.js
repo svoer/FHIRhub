@@ -1425,18 +1425,30 @@ function extractNames(nameFields) {
     // Créer une clé unique basée sur les propriétés pertinentes de l'objet name
     const nameKey = `${nameObj.use || ''}|${nameObj.family || ''}|${(nameObj.given || []).join(',')}`;
     
-    // Gérer les suffixes comme "L" - les déplacer vers name.suffix au lieu de les ignorer
-    if (nameObj.family === "L" && (!nameObj.given || nameObj.given.length === 0)) {
-      // Chercher un nom existant pour y ajouter ce suffixe
-      const existingName = result.find(item => item.use === nameObj.use && item.family);
-      if (existingName) {
-        if (!existingName.suffix) existingName.suffix = [];
-        existingName.suffix.push("L");
-        console.log('[CONVERTER] Suffixe "L" ajouté à un nom existant');
-        return;
+    // Gérer les suffixes correctement selon FR Core - les séparer des prénoms
+    if (nameObj.given && nameObj.given.length > 0) {
+      const suffixes = ['Jr', 'Sr', 'II', 'III', 'IV', 'V', 'L', 'Mme', 'M', 'Dr', 'Pr'];
+      const cleanedGiven = [];
+      const extractedSuffixes = [];
+      
+      nameObj.given.forEach(givenPart => {
+        if (suffixes.includes(givenPart)) {
+          extractedSuffixes.push(givenPart);
+        } else if (givenPart && givenPart.trim()) {
+          cleanedGiven.push(givenPart.trim());
+        }
+      });
+      
+      // Mettre à jour les prénoms nettoyés
+      if (cleanedGiven.length > 0) {
+        nameObj.given = cleanedGiven;
       } else {
-        console.log('[CONVERTER] Suffixe "L" ignoré car aucun nom principal trouvé');
-        return;
+        delete nameObj.given;
+      }
+      
+      // Ajouter les suffixes extraits
+      if (extractedSuffixes.length > 0) {
+        nameObj.suffix = (nameObj.suffix || []).concat(extractedSuffixes);
       }
     }
     
@@ -3104,7 +3116,7 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     }
   }
   
-  // Créer la ressource Encounter avec extensions françaises
+  // Créer la ressource Encounter conforme FR Core (extensions strictement limitées)
   let encounterResource = {
     resourceType: 'Encounter',
     id: encounterId,
@@ -3117,46 +3129,14 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     subject: {
       reference: patientReference
     },
-    // Extensions françaises selon les spécifications ANS
+    // SUPPRESSION: extensions healthevent-type, healthevent-identifier, fr-mode-prise-en-charge non autorisées
     extension: []
   };
   
-  // Extension pour le mode de prise en charge (spécification française)
-  if (patientClass) {
-    const frenchClassMapping = {
-      'I': { code: 'HOSPITALT', display: 'Hospitalisation traditionnelle' },
-      'O': { code: 'CONSULT', display: 'Consultation externe' },
-      'E': { code: 'URMG', display: 'Urgences' },
-      'P': { code: 'CONSULT', display: 'Consultation externe' },
-      'R': { code: 'HOSPITALT', display: 'Hospitalisation traditionnelle' },
-      'B': { code: 'CONSULT', display: 'Consultation externe' },
-      'N': { code: 'HOSPITALT', display: 'Hospitalisation traditionnelle' }
-    };
-    
-    if (frenchClassMapping[patientClass]) {
-      encounterResource.extension.push({
-        url: "https://interop.esante.gouv.fr/ig/fhir/core/StructureDefinition/fr-mode-prise-en-charge",
-        valueCodeableConcept: {
-          coding: [{
-            system: frenchTerminology.FRENCH_SYSTEMS.MODE_PRISE_EN_CHARGE,
-            code: frenchClassMapping[patientClass].code,
-            display: frenchClassMapping[patientClass].display
-          }]
-        }
-      });
-    }
-  }
-  
-  // Ajout de l'extension FR Core de date de sortie prévue si disponible
+  // CORRECTION: Seule extension autorisée selon FR Core - date de sortie estimée avec URL canonique
   if (expectedExitDate) {
-    // Vérifier d'abord que le tableau extension existe
-    if (!encounterResource.extension) {
-      encounterResource.extension = [];
-    }
-    
-    // Ajouter l'extension FR Core pour la date de sortie estimée
     encounterResource.extension.push({
-      url: "http://interopsante.org/fhir/StructureDefinition/fr-core-estimated-discharge-date",
+      url: "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter-estimated-discharge-date",
       valueDateTime: expectedExitDate
     });
     console.log('[FR-CORE] Extension de date de sortie estimée FR Core ajoutée:', expectedExitDate);
@@ -3203,19 +3183,52 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     delete encounterResource.extension;
   }
   
-  // Ajouter la référence à la location si elle existe
+  // CORRECTION FR Core: location obligatoire (1..*)
   if (locationResource) {
-    // Ajouter la location.reference à l'encounter
     encounterResource.location = [{
       location: {
         reference: locationResource.fullUrl,
         display: locationResource.resource.name || "Lieu d'hospitalisation"
       }
     }];
-    
-    // Ajouter la location au bundleEntries pour qu'elle soit incluse dans le bundle
     bundleEntries.push(locationResource);
     console.log('[CONVERTER] Ressource Location ajoutée pour l\'établissement:', locationResource.resource.name);
+  } else {
+    // Créer location par défaut si aucune détectée (obligatoire selon FR Core)
+    const defaultLocationId = uuid.v4();
+    const defaultLocationResource = {
+      fullUrl: `urn:uuid:${defaultLocationId}`,
+      resource: {
+        resourceType: 'Location',
+        id: defaultLocationId,
+        status: 'active',
+        name: 'Service non spécifié',
+        mode: 'instance',
+        physicalType: {
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/location-physical-type',
+            code: 'wa',
+            display: 'Ward'
+          }]
+        },
+        meta: {
+          profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-location']
+        }
+      },
+      request: {
+        method: 'POST',
+        url: 'Location'
+      }
+    };
+    
+    encounterResource.location = [{
+      location: {
+        reference: defaultLocationResource.fullUrl,
+        display: "Service non spécifié"
+      }
+    }];
+    bundleEntries.push(defaultLocationResource);
+    console.log('[FR-CORE] Location par défaut créée (obligatoire)');
   }
   
   // Créer l'objet Encounter
@@ -3625,56 +3638,55 @@ function createPractitionerResource(rolSegment) {
     }];
   }
   
-  // Ajouter uniquement l'identifiant RPPS selon les règles FR Core
+  // CORRECTION FR Core: identifiants RPPS uniquement avec use, type.coding et assigner.reference
   practitionerResource.identifier = [];
   
-  // Ne conserver que le slice RPPS (0..* identifier:rpps)
   if (rppsOrAdeliId) {
     const isRpps = rppsOrAdeliId.length === 11 || 
                   authorityName.includes('RPPS') || 
                   oid === '1.2.250.1.71.4.2.1';
     
-    // Ne créer l'identifiant que si c'est effectivement un RPPS
     if (isRpps) {
       practitionerResource.identifier.push({
-        system: 'urn:oid:1.2.250.1.71.4.2.1', // OID RPPS officiel
+        use: 'official', // CORRECTION: use obligatoire
+        system: 'urn:oid:1.2.250.1.71.4.2.1',
         value: rppsOrAdeliId,
         type: {
           coding: [{
-            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+            system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203', // CORRECTION: système FR Core
             code: 'RPPS',
             display: 'Numéro RPPS'
           }]
         },
         assigner: {
+          reference: 'Organization/org-rpps', // CORRECTION: assigner.reference au lieu de display
           display: 'RPPS'
         }
       });
-      console.log('[FR-CORE] Identifiant RPPS conforme ajouté:', rppsOrAdeliId);
+      console.log('[FR-CORE] Identifiant RPPS FR Core conforme ajouté:', rppsOrAdeliId);
     }
   }
   
-  // Selon FR Core, supprimer tous les autres identifiants non-RPPS
-  console.log(`[FR-CORE] ${practitionerResource.identifier.length} identifiant(s) RPPS conservé(s)`);
-  
-  // Si aucun RPPS valide, créer un identifiant minimal conforme
+  // Si aucun RPPS valide, créer un identifiant temporaire conforme FR Core
   if (practitionerResource.identifier.length === 0) {
-    const temporaryRpps = '00000000000'; // RPPS temporaire pour conformité
+    const temporaryRpps = '00000000000';
     practitionerResource.identifier.push({
+      use: 'temp',
       system: 'urn:oid:1.2.250.1.71.4.2.1',
       value: temporaryRpps,
       type: {
         coding: [{
-          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+          system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
           code: 'RPPS',
           display: 'Numéro RPPS'
         }]
       },
       assigner: {
+        reference: 'Organization/org-rpps',
         display: 'RPPS'
       }
     });
-    console.log('[FR-CORE] RPPS temporaire créé pour conformité');
+    console.log('[FR-CORE] RPPS temporaire FR Core créé pour conformité');
   }
   
   // Ajouter les extensions spécifiques françaises
