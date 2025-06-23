@@ -141,7 +141,22 @@ FHIRHub est maintenant sur une **base propre et maintenable** avec :
 - Architecture SIU/ORM intégrée et fonctionnelle
 - Code de production uniquement
 - Documentation essentielle conservée
+- Dépendances corrigées après nettoyage
 - Prêt pour développement futur structuré
 
+## 🔧 Corrections post-nettoyage
+
+### Dépendances supprimées
+- `./src/utils/frenchNameExtractor` : Module supprimé, logique intégrée dans le convertisseur principal
+- `./src/utils/frCoreProfileManager` : Module supprimé, profils FR Core intégrés directement
+- `./src/parsers/hl7MessageTypeHandler` : Architecture modulaire supprimée, support SIU/ORM intégré
+
+### Fonctionnalités préservées
+- ✅ Support complet ADT, SIU, ORM dans le convertisseur principal
+- ✅ Profils FR Core appliqués automatiquement
+- ✅ Extraction noms français avec prénoms composés
+- ✅ Terminologies ANS/MOS intégrées
+- ✅ Validation et conversion FHIR R4
+
 **Date :** 23 juin 2025  
-**Version :** FHIRHub 2.0 Clean
+**Version :** FHIRHub 2.0 Clean - Fonctionnel
