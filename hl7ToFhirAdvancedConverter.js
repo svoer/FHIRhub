@@ -78,14 +78,44 @@ function convertHL7ToFHIR(hl7Message, options = {}) {
     // Créer un identifiant unique pour le Bundle
     const bundleId = `bundle-${Date.now()}`;
     
+    // Déterminer le type de Bundle selon le type de message
+    const messageType = segments.MSH[0][8]; // MSH-9 Message Type
+    const bundleType = messageType ? 'message' : 'transaction';
+    
+    // Extraire et formater le timestamp du MSH-7
+    const mshTimestamp = segments.MSH[0][6]; // MSH-7 Date/Time of Message
+    let bundleTimestamp = new Date().toISOString();
+    
+    if (mshTimestamp) {
+      try {
+        // Format HL7: YYYYMMDDHHMMSS -> ISO8601 avec fuseau français
+        const year = mshTimestamp.substring(0, 4);
+        const month = mshTimestamp.substring(4, 6);
+        const day = mshTimestamp.substring(6, 8);
+        const hour = mshTimestamp.substring(8, 10) || '00';
+        const minute = mshTimestamp.substring(10, 12) || '00';
+        const second = mshTimestamp.substring(12, 14) || '00';
+        
+        bundleTimestamp = `${year}-${month}-${day}T${hour}:${minute}:${second}+02:00`;
+      } catch (error) {
+        console.log('[CONVERTER] Erreur parsing MSH-7, utilisation timestamp actuel');
+      }
+    }
+    
     // Créer le Bundle FHIR
     const bundle = {
       resourceType: 'Bundle',
       id: bundleId,
-      type: 'transaction',
-      timestamp: new Date().toISOString(),
+      type: bundleType,
+      timestamp: bundleTimestamp,
       entry: []
     };
+    
+    // MessageHeader obligatoire pour Bundle de type 'message'
+    if (bundleType === 'message' && segments.MSH) {
+      const messageHeaderResource = createMessageHeaderResource(segments.MSH[0]);
+      bundle.entry.push(messageHeaderResource);
+    }
     
     // Patient (à partir du segment PID)
     if (segments.PID && segments.PID.length > 0) {
@@ -679,57 +709,53 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
     patientId = `patient-${patientIdentifiers[0].value}`;
   }
   
-  // Optimiser la gestion des identifiants selon les spécifications ANS
-  // Nous voulons un seul identifiant PI pour l'IPP, et un identifiant NI pour l'INS-C avec l'OID spécifique
+  // Optimiser la gestion des identifiants selon les spécifications FR Core
+  // Correction pour conformité avec Patient.identifier slice PI et NSS
   
   // Classification des identifiants par type
   let ippIdentifier = null;
   let insIdentifier = null;
-  let otherIdentifiers = [];
+  let hasINS = false;
   
-  // D'abord, parcourir tous les identifiants et les trier par catégorie
+  // Parcourir tous les identifiants et les trier par catégorie FR Core
   patientIdentifiers.forEach(id => {
     const idType = id.type?.coding?.[0]?.code || 'PI';
     
-    // Identifiant INS/INS-C - priorité nationale
-    if (idType === 'NI' && (id.system === 'urn:oid:1.2.250.1.213.1.4.8' || id.system === 'urn:oid:1.2.250.1.213.1.4.2')) {
-      // Si nous n'avons pas encore d'INS OU si nous avons déjà un INS-C mais que celui-ci est un INS (priorité à l'INS)
-      if (!insIdentifier || (insIdentifier.system === 'urn:oid:1.2.250.1.213.1.4.2' && id.system === 'urn:oid:1.2.250.1.213.1.4.8')) {
-        insIdentifier = id;
-      }
+    // Identifiant INS/NSS - priorité nationale (slice NSS)
+    if ((idType === 'NH' || idType === 'NI') && id.system === 'urn:oid:1.2.250.1.213.1.4.8') {
+      // Corriger pour FR Core: code NH et use official
+      id.type.coding[0].code = 'NH';
+      id.use = 'official';
+      insIdentifier = id;
+      hasINS = true;
+      console.log('[FR-CORE] Identifiant NSS (INS) détecté et corrigé pour FR Core');
     }
-    // Identifiant Patient Interne (IPP) - établissement
+    // Identifiant Patient Interne (IPP) - établissement (slice PI)
     else if (idType === 'PI') {
-      // Si nous n'avons pas encore d'IPP OU si l'IPP a un system plus spécifique (pas "unknown")
-      if (!ippIdentifier || (ippIdentifier.system === 'urn:system:unknown' && id.system !== 'urn:system:unknown')) {
-        ippIdentifier = id;
+      // Corriger pour FR Core: ajouter use usual et assigner
+      id.use = 'usual';
+      if (!id.assigner && id.system.includes('urn:oid:')) {
+        id.assigner = {
+          display: 'Établissement de santé'
+        };
       }
-    }
-    // Tous les autres identifiants
-    else {
-      otherIdentifiers.push(id);
+      ippIdentifier = id;
+      console.log('[FR-CORE] Identifiant PI (IPP) détecté et corrigé pour FR Core');
     }
   });
   
-  // Construire la liste finale selon les priorités ANS
+  // Construire la liste finale selon les priorités FR Core
   const optimizedIdentifiers = [];
   
-  // 1. D'abord l'IPP - obligatoire
+  // 1. D'abord l'IPP - slice PI avec use usual
   if (ippIdentifier) {
-    // Si l'IPP n'a pas de système spécifique, utiliser le format ANS
-    if (ippIdentifier.system === 'urn:system:unknown') {
-      ippIdentifier.system = 'urn:oid:1.2.250.1.71.4.2.7'; // OID standard pour les IPP en France
-    }
     optimizedIdentifiers.push(ippIdentifier);
   }
   
-  // 2. Ensuite l'INS/INS-C - prioritaire pour l'identification nationale
+  // 2. Ensuite l'INS/NSS - slice NSS avec use official et code NH
   if (insIdentifier) {
     optimizedIdentifiers.push(insIdentifier);
   }
-  
-  // 3. Tous les autres identifiants (limités à 1-2 maximum)
-  optimizedIdentifiers.push(...otherIdentifiers.slice(0, 2));
   
   // Extraire les télécom avec notre fonction standard
   let telecomData = extractTelecoms(pidSegmentFields[13], pidSegmentFields[14]);
@@ -1100,13 +1126,14 @@ function extractIdentifiers(identifierField) {
             hasINS = true;
             
             const insIdentifier = {
+              use: 'official',
               value: idValue,
               system: 'urn:oid:1.2.250.1.213.1.4.8', // OID standard ANS
               type: {
                 coding: [{
                   system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                  code: 'NI',
-                  display: 'Numéro d\'identification au répertoire national d\'identification des personnes physiques'
+                  code: 'NH', // Code fixé à NH pour NSS selon FR Core
+                  display: 'Numéro de sécurité sociale'
                 }]
               },
               assigner: { 
@@ -4581,6 +4608,83 @@ function processFrenchZSegments(segments, bundle) {
   }
   
   console.log('[CONVERTER] Traitement des segments Z français terminé');
+}
+
+/**
+ * Crée une ressource MessageHeader à partir du segment MSH
+ * Conforme aux spécifications FHIR R4 et FR Core
+ */
+function createMessageHeaderResource(mshSegment) {
+  const messageHeaderId = `messageheader-${Date.now()}`;
+  
+  // Extraire les informations du MSH
+  const sendingApplication = mshSegment[2] || 'Unknown'; // MSH-3
+  const sendingFacility = mshSegment[3] || 'Unknown'; // MSH-4
+  const receivingApplication = mshSegment[4] || 'Unknown'; // MSH-5
+  const receivingFacility = mshSegment[5] || 'Unknown'; // MSH-6
+  const timestamp = mshSegment[6] || ''; // MSH-7
+  const messageType = mshSegment[8] || ''; // MSH-9
+  const messageControlId = mshSegment[9] || ''; // MSH-10
+  
+  // Parser le type de message (ex: ADT^A04^ADT_A01)
+  let eventCoding = { code: 'unknown', display: 'Unknown Event' };
+  if (messageType) {
+    const typeParts = messageType.split('^');
+    if (typeParts.length >= 2) {
+      eventCoding = {
+        system: 'http://terminology.hl7.org/CodeSystem/v2-0003',
+        code: typeParts[1], // A04, A01, etc.
+        display: `${typeParts[0]} ${typeParts[1]}`
+      };
+    }
+  }
+  
+  // Formater le timestamp
+  let formattedTimestamp = new Date().toISOString();
+  if (timestamp) {
+    try {
+      const year = timestamp.substring(0, 4);
+      const month = timestamp.substring(4, 6);
+      const day = timestamp.substring(6, 8);
+      const hour = timestamp.substring(8, 10) || '00';
+      const minute = timestamp.substring(10, 12) || '00';
+      const second = timestamp.substring(12, 14) || '00';
+      formattedTimestamp = `${year}-${month}-${day}T${hour}:${minute}:${second}+02:00`;
+    } catch (error) {
+      console.log('[CONVERTER] Erreur formatting timestamp MessageHeader');
+    }
+  }
+  
+  const messageHeader = {
+    resourceType: 'MessageHeader',
+    id: messageHeaderId,
+    meta: {
+      profile: ['http://hl7.org/fhir/StructureDefinition/MessageHeader']
+    },
+    eventCoding: eventCoding,
+    source: {
+      name: sendingFacility,
+      software: sendingApplication,
+      endpoint: `urn:oid:${sendingApplication}`
+    },
+    destination: [{
+      name: receivingFacility,
+      endpoint: `urn:oid:${receivingApplication}`
+    }],
+    timestamp: formattedTimestamp
+  };
+  
+  // Ajouter le contrôle ID si disponible
+  if (messageControlId) {
+    messageHeader.id = messageControlId;
+  }
+  
+  console.log(`[CONVERTER] MessageHeader créé avec eventCoding: ${eventCoding.code}`);
+  
+  return {
+    fullUrl: `urn:uuid:${messageHeaderId}`,
+    resource: messageHeader
+  };
 }
 
 module.exports = {
