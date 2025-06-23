@@ -1556,6 +1556,32 @@ function extractNames(nameFields) {
       });
     }
     
+    // Si on arrive ici sans avoir traité les noms, on force le traitement
+    if (result.length === 0 && nameFields.length > 0) {
+      console.log('[CONVERTER] FORCE: Tentative de récupération des noms...');
+      
+      // Essayer de traiter comme des chaînes
+      nameFields.forEach((field, index) => {
+        if (typeof field === 'string' && field.length > 0) {
+          console.log(`[CONVERTER] FORCE: Traitement chaîne ${index}: ${field}`);
+          if (index === 0) {
+            // Premier élément = nom de famille
+            const nameObj = {
+              use: 'official',
+              family: field,
+              given: []
+            };
+            addNameWithDeduplication(nameObj);
+          } else {
+            // Autres éléments = prénoms, ajouter au dernier nom
+            if (result.length > 0) {
+              result[result.length - 1].given.push(field);
+            }
+          }
+        }
+      });
+    }
+    
     // Parcourir chaque élément du tableau
     nameFields.forEach(field => {
       if (!field) return;
@@ -2538,8 +2564,54 @@ function extractAddresses(addressFields) {
   
   const addresses = [];
   
-  // Si c'est un tableau, parcourir chaque élément
+  // Si c'est un tableau, vérifier d'abord si c'est un tableau simple de composants d'adresse
   if (Array.isArray(addressFields)) {
+    // Cas spécial: si c'est un tableau simple comme ["123 RUE DE LA PAIX","","PARIS","","75001","FR","H"]
+    console.log('[CONVERTER] Test détection tableau simple - length:', addressFields.length);
+    console.log('[CONVERTER] Test détection tableau simple - every string?', addressFields.every(item => typeof item === 'string' || item === '' || item === null));
+    console.log('[CONVERTER] Test détection tableau simple - items:', addressFields.map((item, i) => `${i}: ${typeof item} = ${JSON.stringify(item)}`));
+    
+    if (addressFields.length >= 3 && addressFields.every(item => typeof item === 'string' || item === '' || item === null)) {
+      console.log('[CONVERTER] MATCH! Détection format tableau simple d\'adresse:', addressFields);
+      
+      // Traiter comme une seule adresse complète
+      const street1 = addressFields[0] || '';
+      const street2 = addressFields[1] || '';
+      const city = addressFields[2] || '';
+      const state = addressFields[3] || '';
+      const postalCode = addressFields[4] || '';
+      const country = addressFields[5] || '';
+      const addrType = addressFields[6] || '';
+      
+      if (street1 || city || postalCode || country) {
+        const address = {
+          use: mapAddressUseToFHIR(addrType),
+          type: mapAddressTypeToFHIR(addrType)
+        };
+        
+        // Lignes d'adresse - combiner toutes les lignes non vides
+        const lines = [];
+        if (street1 && street1.trim()) lines.push(street1.trim());
+        if (street2 && street2.trim()) lines.push(street2.trim());
+        
+        if (lines.length > 0) {
+          address.line = lines;
+        }
+        
+        if (city && city.trim()) address.city = city.trim();
+        if (state && state.trim()) address.state = state.trim();
+        if (postalCode && postalCode.trim()) address.postalCode = postalCode.trim();
+        if (country && country.trim()) address.country = country.trim();
+        
+        console.log('[CONVERTER] Adresse consolidée créée:', JSON.stringify(address));
+        addresses.push(address);
+        
+        // Sortir immédiatement après traitement
+        return addresses;
+      }
+    }
+    
+    // Sinon, traiter comme format complexe avec multiples adresses
     addressFields.forEach(field => {
       if (!field) return;
       
