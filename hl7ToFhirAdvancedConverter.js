@@ -46,17 +46,18 @@ if (frCoreInfo.status === 'success') {
 /**
  * Convertit un message HL7 en bundle FHIR conforme aux spécifications ANS (France)
  * Optimisé pour les identifiants INS/INS-C et terminologies françaises
- * @version 1.1.2
- * @updated 2025-04-29
+ * Architecture modulaire supportant ADT, SIU, ORM
+ * @version 2.0.0
+ * @updated 2025-06-23
  * @param {string} hl7Message - Message HL7 au format texte
  * @returns {Object} Bundle FHIR au format R4 conforme ANS
  */
-function convertHL7ToFHIR(hl7Message) {
+function convertHL7ToFHIR(hl7Message, options = {}) {
   // Variable globale pour stocker toutes les entrées du bundle, y compris les ressources additionnelles
   // comme les organismes d'assurance
   let bundleEntries = [];
   try {
-    console.log('[CONVERTER] Démarrage de la conversion HL7 vers FHIR');
+    console.log('[CONVERTER] Démarrage de la conversion HL7 vers FHIR v2.0 (modulaire)');
     
     // Parser le message HL7 avec notre module de parsing optimisé
     const parsedMessage = hl7Parser.parseHL7Message(hl7Message);
@@ -73,6 +74,28 @@ function convertHL7ToFHIR(hl7Message) {
     
     console.log(`[CONVERTER] Message HL7 parsé avec succès: ${Object.keys(segments).length} types de segments`);
     
+    // Détecter le type de message pour le routage modulaire
+    const messageTypeHandler = require('./src/parsers/hl7MessageTypeHandler');
+    
+    try {
+      // Tenter le routage modulaire pour les nouveaux types (SIU, ORM)
+      const mshSegment = segments.MSH[0] || segments.MSH;
+      const typeInfo = messageTypeHandler.detectMessageType(mshSegment);
+      
+      if (typeInfo.supported && (typeInfo.messageType === 'SIU' || typeInfo.messageType === 'ORM')) {
+        console.log(`[CONVERTER] Routage modulaire vers handler ${typeInfo.messageType}^${typeInfo.eventType}`);
+        return messageTypeHandler.routeMessage(parsedMessage, options);
+      } else if (typeInfo.messageType === 'ADT') {
+        console.log(`[CONVERTER] Message ADT détecté, utilisation du convertisseur existant`);
+        // Continuer avec la logique existante pour ADT
+      } else {
+        console.warn(`[CONVERTER] Type de message non supporté: ${typeInfo.messageType}^${typeInfo.eventType}`);
+      }
+    } catch (routingError) {
+      console.warn(`[CONVERTER] Erreur lors du routage modulaire: ${routingError.message}, fallback vers convertisseur existant`);
+    }
+    
+    // Logique existante pour ADT et compatibilité
     console.log(`[CONVERTER] Message HL7 parsé avec succès: ${Object.keys(segments).length} types de segments`);
     
     // Créer un identifiant unique pour le Bundle
