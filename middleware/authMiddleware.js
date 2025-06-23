@@ -21,17 +21,16 @@ async function authenticatedOrApiKey(req, res, next) {
   if (apiKey) {
     try {
       // Vérifier si la clé API est valide
-      const keyData = db.prepare(query(`
+      const keyData = db.prepare(`
           SELECT ak.*, a.name as app_name
           FROM api_keys ak
           JOIN applications a ON ak.application_id = a.id
-          WHERE ak.key = ? AND ak.is_active = 1`,
-        [apiKey]
-      );
+          WHERE ak.key = ? AND ak.is_active = 1`
+        ).get(apiKey);
       
-      if (keyData && keyData.length > 0) {
+      if (keyData) {
         // Clé API valide, on continue
-        req.apiKey = keyData[0];
+        req.apiKey = keyData;
         return next();
       }
     } catch (error) {

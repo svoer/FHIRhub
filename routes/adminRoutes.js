@@ -9,7 +9,10 @@ const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const authMiddleware = require('../middleware/authMiddleware');
-const dbService = require('../src/services/dbService');
+// Service DB supprimé lors du nettoyage - utilisation directe
+const Database = require('better-sqlite3');
+const path = require('path');
+const db = new Database(path.join(__dirname, '../storage/db/fhirhub.db'));
 const logger = require('../src/utils/logger');
 
 // Middleware pour vérifier que l'utilisateur est administrateur
@@ -56,14 +59,14 @@ router.post('/reset-environment', (req, res) => {
   setTimeout(async () => {
     try {
       // Réinitialiser complètement la table des logs de conversion
-      await dbService.run('DELETE FROM conversion_logs');
+      db.prepare(run('DELETE FROM conversion_logs');
       
       // Réinitialiser aussi les compteurs dans d'autres tables
-      await dbService.run('UPDATE api_usage_limits SET current_daily_usage = 0, current_monthly_usage = 0');
+      db.prepare(run('UPDATE api_usage_limits SET current_daily_usage = 0, current_monthly_usage = 0');
       
       // Réinitialiser les compteurs de conversion dans la table des workflows si elle existe
       try {
-        await dbService.run('UPDATE workflows SET conversions_count = 0 WHERE conversions_count IS NOT NULL');
+        db.prepare(run('UPDATE workflows SET conversions_count = 0 WHERE conversions_count IS NOT NULL');
       } catch (e) {
         // Ignorer si la colonne n'existe pas
         logger.debug(`[ADMIN] Note: La colonne conversions_count n'existe pas dans la table workflows: ${e.message}`);
@@ -122,7 +125,7 @@ router.post('/reset-environment', (req, res) => {
       });
       
       // Journaliser la réinitialisation dans les logs système
-      await dbService.run(
+      db.prepare(run(
         'INSERT INTO system_logs (event_type, message, severity) VALUES (?, ?, ?)',
         ['RESET_STATS', 'Réinitialisation complète des statistiques et compteurs effectuée', 'INFO']
       );
@@ -138,7 +141,7 @@ router.post('/reset-environment', (req, res) => {
 router.get('/system-logs', authMiddleware.authenticated, adminOnly, async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
-    const logs = await dbService.query(
+    const logs = db.prepare(query(
       'SELECT * FROM system_logs ORDER BY created_at DESC LIMIT ?',
       [limit]
     );
