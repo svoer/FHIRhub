@@ -557,14 +557,21 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   patientIdentifiers.forEach(id => {
     const idType = id.type?.coding?.[0]?.code || 'PI';
     
-    // Identifiant INS/NSS - priorité nationale (slice NSS) - FR CORE CORRIGÉ
-    if ((idType === 'NH' || idType === 'NI' || idType === 'INS-C') && id.system === 'urn:oid:1.2.250.1.213.1.4.8') {
-      // FR Core: code NH obligatoire (pas INS-C) et use official
-      id.type.coding[0].code = 'NH';
+    // FR Core: Slice INS-NIR (NIR officiel) - conformité stricte
+    if ((idType === 'NH' || idType === 'NI' || idType === 'INS-C' || idType === 'INS') && id.system === 'urn:oid:1.2.250.1.213.1.4.8') {
+      // FR Core: slice identifier:INS-NIR obligatoire
+      id.type = {
+        coding: [{
+          system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
+          code: 'INS-NIR',
+          display: 'Identifiant National de Santé - National Identifier Registry'
+        }]
+      };
       id.use = 'official';
+      id.system = 'urn:oid:1.2.250.1.213.1.4.8';
       insIdentifier = id;
       hasINS = true;
-      console.log('[FR-CORE] Identifiant NSS (INS) détecté et corrigé pour FR Core: code NH, use official');
+      console.log('[FR-CORE] Slice identifier:INS-NIR conforme appliqué:', id.value);
     }
     // Identifiant Patient Interne (IPP) - établissement (slice PI) - FR CORE CORRIGÉ
     else if (idType === 'PI') {
@@ -738,10 +745,16 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
     });
   }
   
-  // 4. FR Core: Extension fiabilité d'identité obligatoire
+  // 4. FR Core: Extension fiabilité d'identité obligatoire avec valueCodeableConcept
   const reliabilityExtension = {
     url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-identity-reliability',
-    valueCode: hasINS ? 'VALI' : 'VIDE' // VALI si INS présent, VIDE sinon
+    valueCodeableConcept: {
+      coding: [{
+        system: 'https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-identity-reliability',
+        code: hasINS ? 'VALI' : 'VIDE',
+        display: hasINS ? 'Identité validée' : 'Identité vérifiée par présentation de documents'
+      }]
+    }
   };
   
   if (!patientResource.extension) {
@@ -749,7 +762,7 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   }
   
   patientResource.extension.push(reliabilityExtension);
-  console.log('[FR-CORE] Extension fiabilité d\'identité ajoutée:', hasINS ? 'VALI' : 'VIDE');
+  console.log('[FR-CORE] Extension fiabilité valueCodeableConcept ajoutée:', hasINS ? 'VALI' : 'VIDE');
   
   // Supprimer tous les champs vides ou null
   if (!patientResource.telecom || patientResource.telecom.length === 0) {
@@ -1207,9 +1220,9 @@ function extractIdentifiers(identifierField) {
           system: 'urn:oid:1.2.250.1.213.1.4.8', // OID standard ANS pour INS
           type: {
             coding: [{
-              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-              code: 'NH', // Code fixé à NH pour NSS selon FR Core
-              display: 'Numéro de sécurité sociale'
+              system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
+              code: 'INS-NIR', // FR Core: slice INS-NIR conforme
+              display: 'Identifiant National de Santé - National Identifier Registry'
             }]
           }
         };
@@ -4257,25 +4270,28 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
     }
   }
   
-  // FR Core: InsuredID doit être placé en tant que Coverage.identifier (slice memberid 0..1)
+  // FR Core: Extension Coverage-InsuredID obligatoire pour l'INS (pas dans identifier)
   if (insuredId) {
-    if (!coverageResource.identifier) {
-      coverageResource.identifier = [];
+    if (!coverageResource.extension) {
+      coverageResource.extension = [];
     }
     
-    coverageResource.identifier.push({
-      use: 'official',
-      value: insuredId,
-      system: 'urn:oid:1.2.250.1.213.1.4.8',
-      type: {
-        coding: [{
-          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-          code: 'memberid',
-          display: 'Numéro de membre'
-        }]
+    coverageResource.extension.push({
+      url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage-insured-id',
+      valueIdentifier: {
+        use: 'official',
+        value: insuredId,
+        system: 'urn:oid:1.2.250.1.213.1.4.8',
+        type: {
+          coding: [{
+            system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
+            code: 'INS-NIR',
+            display: 'Identifiant National de Santé - National Identifier Registry'
+          }]
+        }
       }
     });
-    console.log('[FR-CORE] INS ajouté comme identifiant memberid selon slice FR Core:', insuredId);
+    console.log('[FR-CORE] Extension Coverage-InsuredID ajoutée avec INS:', insuredId);
   }
   
   // CORRECTION FR CORE: Vérification du payor obligatoire

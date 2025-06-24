@@ -160,11 +160,15 @@ class FRCoreValidator {
     this.validationResults.total++;
     let passed = true;
 
-    // Validation des identifiants
+    // Validation des slices INS FR Core stricts
     if (patient.identifier) {
+      let hasINSNIR = false;
+      let hasINSNIA = false;
+      
       patient.identifier.forEach(id => {
         if (id.type && id.type.coding) {
           const typeCode = id.type.coding[0].code;
+          const typeSystem = id.type.coding[0].system;
           
           // Validation PI (identifiant interne)
           if (typeCode === 'PI') {
@@ -177,18 +181,44 @@ class FRCoreValidator {
             }
           }
           
-          // Validation NIR
-          if (typeCode === 'NH') {
+          // Validation slice INS-NIR (NIR officiel)
+          if (typeCode === 'INS-NIR') {
+            hasINSNIR = true;
+            if (typeSystem !== 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203') {
+              this.addError(`Patient #${index}: Slice INS-NIR doit utiliser CodeSystem fr-core-cs-v2-0203`);
+              passed = false;
+            }
             if (id.use !== 'official') {
-              this.addError(`Patient #${index}: Identifiant NIR doit avoir use "official"`);
+              this.addError(`Patient #${index}: Slice INS-NIR doit avoir use "official"`);
               passed = false;
             }
-            // Vérification du profil INS dans meta
-            if (!patient.meta || !patient.meta.profile || 
-                !patient.meta.profile.includes('https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-ins')) {
-              this.addError(`Patient #${index}: NIR nécessite le profil fr-core-patient-ins dans meta.profile`);
+            if (id.system !== 'urn:oid:1.2.250.1.213.1.4.8') {
+              this.addError(`Patient #${index}: Slice INS-NIR doit utiliser system "urn:oid:1.2.250.1.213.1.4.8"`);
               passed = false;
             }
+          }
+          
+          // Validation slice INS-NIA (temporaire)  
+          if (typeCode === 'INS-NIA') {
+            hasINSNIA = true;
+            if (typeSystem !== 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203') {
+              this.addError(`Patient #${index}: Slice INS-NIA doit utiliser CodeSystem fr-core-cs-v2-0203`);
+              passed = false;
+            }
+            if (id.use !== 'temp') {
+              this.addError(`Patient #${index}: Slice INS-NIA doit avoir use "temp"`);
+              passed = false;
+            }
+            if (id.system !== 'urn:oid:1.2.250.1.213.1.4.2') {
+              this.addError(`Patient #${index}: Slice INS-NIA doit utiliser system "urn:oid:1.2.250.1.213.1.4.2"`);
+              passed = false;
+            }
+          }
+          
+          // Détection ancienne convention NH (non conforme)
+          if (typeCode === 'NH') {
+            this.addError(`Patient #${index}: Code "NH" obsolète, utiliser slice "INS-NIR" avec CodeSystem fr-core-cs-v2-0203`);
+            passed = false;
           }
         }
       });
