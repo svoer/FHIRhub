@@ -222,6 +222,39 @@ class FRCoreValidator {
           }
         }
       });
+      
+      // Validation du profil Patient INS obligatoire si INS présent
+      if (hasINSNIR || hasINSNIA) {
+        if (patient.meta && patient.meta.profile) {
+          const hasPatientProfile = patient.meta.profile.includes('https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient');
+          const hasINSProfile = patient.meta.profile.includes('https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-ins');
+          
+          if (hasPatientProfile && hasINSProfile) {
+            this.addSuccess(`Patient #${index}: Profils fr-core-patient ET fr-core-patient-ins présents`);
+          } else {
+            this.addError(`Patient #${index}: Profils fr-core-patient ET fr-core-patient-ins obligatoires quand INS présent`);
+            passed = false;
+          }
+        }
+      }
+      
+      // Validation extension fiabilité avec valeurs correctes
+      if (patient.extension) {
+        const reliabilityExt = patient.extension.find(ext => 
+          ext.url === 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-identity-reliability'
+        );
+        
+        if (reliabilityExt && reliabilityExt.valueCodeableConcept) {
+          const code = reliabilityExt.valueCodeableConcept.coding[0].code;
+          if (code === 'VALI' || code === 'UNDI') {
+            this.addSuccess(`Patient #${index}: Extension fiabilité avec valeur correcte: ${code}`);
+          } else {
+            this.addError(`Patient #${index}: Extension fiabilité valeur incorrecte "${code}", utiliser "VALI" ou "UNDI"`);
+            passed = false;
+          }
+        }
+      }
+    }
     }
 
     // Validation de l'extension fiabilité d'identité
