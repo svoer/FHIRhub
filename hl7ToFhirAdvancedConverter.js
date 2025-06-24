@@ -4499,14 +4499,16 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
       coverageResource.period.end = endDate;
       console.log('[FR-CORE] Coverage period.end ajouté depuis IN1-16:', endDate);
     }
-  }ystem: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
-            code: 'INS-NIR',
-            display: 'Identifiant National de Santé - National Identifier Registry'
-          }]
-        }
-      }
-    });
-    console.log('[FR-CORE] Extension Coverage-InsuredID ajoutée avec INS:', insuredId);
+  }
+  
+  // Payor obligatoire par défaut pour FR Core
+  if (!coverageResource.payor || coverageResource.payor.length === 0) {
+    coverageResource.payor = [{
+      reference: 'Organization/assurance-maladie',
+      display: 'Assurance Maladie Obligatoire'
+    }];
+    
+    console.log('[FR-CORE] Payor obligatoire par défaut ajouté à Coverage');
   }
   
   // CORRECTION FR CORE: Vérification du payor obligatoire
