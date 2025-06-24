@@ -3228,13 +3228,47 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     extension: []
   };
   
-  // CORRECTION: Seule extension autorisée selon FR Core - date de sortie estimée avec URL canonique
+  // CORRECTION: Extensions FR Core requises selon votre analyse
   if (expectedExitDate) {
     encounterResource.extension.push({
       url: "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter-estimated-discharge-date",
       valueDateTime: expectedExitDate
     });
     console.log('[FR-CORE] Extension de date de sortie estimée FR Core ajoutée:', expectedExitDate);
+  }
+  
+  // Extension fr-mode-prise-en-charge selon PV1-2
+  const pv1PatientClass = pv1Segment[2] || '';
+  let modePriseEnCharge = 'AMB';
+  if (pv1PatientClass === 'I') {
+    modePriseEnCharge = 'IMP';
+  } else if (pv1PatientClass === 'E') {
+    modePriseEnCharge = 'EMER';
+  }
+  
+  encounterResource.extension.push({
+    url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-mode-prise-en-charge',
+    valueCodeableConcept: {
+      coding: [{
+        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+        code: modePriseEnCharge,
+        display: modePriseEnCharge === 'IMP' ? 'Hospitalisation' : modePriseEnCharge === 'EMER' ? 'Urgence' : 'Ambulatoire'
+      }]
+    }
+  });
+  
+  // Extension healthevent-type
+  encounterResource.extension.push({
+    url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter-healthevent-type',
+    valueString: 'INSERT'
+  });
+  
+  // Extension healthevent-identifier
+  if (visitNumber) {
+    encounterResource.extension.push({
+      url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter-healthevent-identifier',
+      valueString: `EH_${visitNumber}_1`
+    });
   }
   
   // Ajouter la période si disponible
@@ -3336,31 +3370,35 @@ function createEncounterResource(pv1Segment, patientReference, pv2Segment = null
     }
   };
   
-  // FR Core: Champs d'hospitalisation avec CodeableConcept (TRE_R213) pour class.code = "IMP"
-  if (encounterClass.code === 'IMP') {
-    encounterResource.hospitalization = {
-      origin: {
-        coding: [{
-          system: 'https://mos.esante.gouv.fr/NOS/TRE_R213-LieuDePriseEnCharge/FHIR/TRE-R213-LieuDePriseEnCharge',
-          code: '01',
-          display: 'Etablissement de santé'
-        }]
-      },
-      destination: {
-        coding: [{
-          system: 'https://mos.esante.gouv.fr/NOS/TRE_R213-LieuDePriseEnCharge/FHIR/TRE-R213-LieuDePriseEnCharge',
-          code: '02',
-          display: 'Domicile'
-        }]
-      }
-    };
-    
-    // preAdmissionIdentifier si présent dans HL7
-    if (visitNumber) {
-      encounterResource.hospitalization.preAdmissionIdentifier = {
-        value: visitNumber
-      };
+  // FR Core: Bloc hospitalization obligatoire selon votre analyse
+  encounterResource.hospitalization = {
+    origin: {
+      coding: [{
+        system: 'https://mos.esante.gouv.fr/NOS/TRE_R213-LieuDePriseEnCharge/FHIR/TRE-R213-LieuDePriseEnCharge',
+        code: '01',
+        display: 'Etablissement de santé'
+      }]
+    },
+    destination: {
+      coding: [{
+        system: 'https://mos.esante.gouv.fr/NOS/TRE_R213-LieuDePriseEnCharge/FHIR/TRE-R213-LieuDePriseEnCharge',
+        code: '02',
+        display: 'Domicile'
+      }]
     }
+  };
+  
+  // preAdmissionIdentifier obligatoire
+  if (visitNumber) {
+    encounterResource.hospitalization.preAdmissionIdentifier = {
+      value: visitNumber,
+      system: 'urn:oid:1.2.250.1.71.4.2.7'
+    };
+  }
+  
+  // expectedDischargeDate si disponible
+  if (expectedExitDate) {
+    encounterResource.hospitalization.expectedDischargeDate = expectedExitDate;
   }
   
   // Ajouter le profil FR Core Encounter
@@ -4030,10 +4068,24 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
     console.log('[FR-CORE] Extraction telecom NK1-5:', JSON.stringify(phoneField));
     
     if (Array.isArray(phoneField) && phoneField.length >= 1 && phoneField[0]) {
+      // Distinguer home vs work selon PRN^PH vs PRN^CP
+      let use = 'home';
+      let system = 'phone';
+      
+      if (phoneField.length >= 3) {
+        if (phoneField[1] === 'PRN' && phoneField[2] === 'PH') {
+          use = 'home'; // Téléphone fixe
+        } else if (phoneField[1] === 'PRN' && phoneField[2] === 'CP') {
+          use = 'mobile'; // Portable
+        } else if (phoneField[1] === 'WPN') {
+          use = 'work'; // Professionnel
+        }
+      }
+      
       telecoms.push({
-        system: 'phone',
+        system: system,
         value: phoneField[0],
-        use: phoneField.length > 1 && phoneField[1] === 'PRN' ? 'home' : 'work'
+        use: use
       });
     } else if (typeof phoneField === 'string' && phoneField.trim()) {
       telecoms.push({
@@ -4065,7 +4117,7 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
   relatedPersonResource.telecom = telecoms;
   console.log('[FR-CORE] RelatedPerson telecom ajouté:', telecoms);
   
-  // FR Core: Address requis (1..*) - extraire depuis NK1-4 (Contact Person's Address)
+  // FR Core: Address requis (1..*) avec corrections selon votre analyse
   const addresses = [];
   
   // NK1-4 (Contact Person's Address) - position 4 dans le segment
@@ -4074,12 +4126,22 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
     console.log('[FR-CORE] Extraction address NK1-4:', JSON.stringify(addressField));
     
     if (Array.isArray(addressField) && addressField.length >= 1) {
+      // Corriger line pour éviter les sous-tableaux
+      let lineArray = [];
+      if (Array.isArray(addressField[0])) {
+        lineArray = [addressField[0][0] || 'UNK'];
+      } else if (addressField[0]) {
+        lineArray = [addressField[0]];
+      } else {
+        lineArray = ['UNK'];
+      }
+      
       addresses.push({
         use: 'home',
         type: 'both',
-        line: addressField[0] ? [addressField[0]] : ['Adresse non spécifiée'],
-        city: addressField.length > 2 ? addressField[2] : 'Ville non spécifiée',
-        postalCode: addressField.length > 4 ? addressField[4] : '00000',
+        line: lineArray,
+        city: addressField.length > 2 && addressField[2] ? addressField[2] : 'UNK',
+        postalCode: addressField.length > 4 && addressField[4] ? addressField[4] : 'UNK',
         country: addressField.length > 5 ? addressField[5] : 'FRA'
       });
     } else if (typeof addressField === 'string' && addressField.trim()) {
@@ -4088,28 +4150,28 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
       addresses.push({
         use: 'home',
         type: 'both',
-        line: [parts[0] || 'Adresse non spécifiée'],
-        city: parts.length > 2 ? parts[2] : 'Ville non spécifiée',
-        postalCode: parts.length > 4 ? parts[4] : '00000',
+        line: [parts[0] || 'UNK'],
+        city: parts.length > 2 && parts[2] ? parts[2] : 'UNK',
+        postalCode: parts.length > 4 && parts[4] ? parts[4] : 'UNK',
         country: parts.length > 5 ? parts[5] : 'FRA'
       });
     }
   }
   
-  // Si aucune adresse extraite, ajouter une par défaut obligatoire FR Core
+  // Si aucune adresse extraite, utiliser UNK selon FHIR
   if (addresses.length === 0) {
     addresses.push({
       use: 'home',
       type: 'both',
-      line: ['Adresse non renseignée'],
-      city: 'Ville non renseignée',
-      postalCode: '00000',
+      line: ['UNK'],
+      city: 'UNK',
+      postalCode: 'UNK',
       country: 'FRA'
     });
   }
   
   relatedPersonResource.address = addresses;
-  console.log('[FR-CORE] RelatedPerson address ajouté:', addresses);
+  console.log('[FR-CORE] RelatedPerson address corrigé:', addresses);
   
   // NK1-3 (Relation) avec mapping correct selon FR Core
   let relationshipCode = 'other';
@@ -4501,14 +4563,39 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
     }
   }
   
-  // Payor obligatoire par défaut pour FR Core
+  // Payor avec Organization obligatoire dans le bundle selon votre analyse
   if (!coverageResource.payor || coverageResource.payor.length === 0) {
+    const payorOrgId = uuid.v4();
     coverageResource.payor = [{
-      reference: 'Organization/assurance-maladie',
+      reference: `Organization/${payorOrgId}`,
       display: 'Assurance Maladie Obligatoire'
     }];
     
-    console.log('[FR-CORE] Payor obligatoire par défaut ajouté à Coverage');
+    // Créer l'Organization payor dans le bundle
+    const payorOrganization = {
+      fullUrl: `urn:uuid:${payorOrgId}`,
+      resource: {
+        resourceType: 'Organization',
+        id: payorOrgId,
+        meta: {
+          profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization']
+        },
+        active: true,
+        name: 'Assurance Maladie Obligatoire',
+        identifier: [{
+          use: 'official',
+          system: 'urn:oid:1.2.250.1.71.4.2.2',
+          value: 'AMO-CPAM'
+        }]
+      },
+      request: {
+        method: 'POST',
+        url: 'Organization'
+      }
+    };
+    
+    bundleEntries.push(payorOrganization);
+    console.log('[FR-CORE] Organization payor créée et ajoutée au bundle');
   }
   
   // CORRECTION FR CORE: Vérification du payor obligatoire
