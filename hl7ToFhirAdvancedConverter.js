@@ -38,6 +38,35 @@ const hl7Parser = require('./hl7Parser');
 console.log('[CONVERTER] Profils FR Core intégrés dans le convertisseur principal');
 
 /**
+ * Extraction du NIR depuis le champ PID-3
+ * @param {*} pidField - Champ PID-3 
+ * @returns {string|null} NIR ou null
+ */
+function extractNIRFromPIDField(pidField) {
+  if (!pidField) return null;
+  
+  // Si c'est un tableau d'identifiants
+  if (Array.isArray(pidField)) {
+    for (const id of pidField) {
+      if (Array.isArray(id) && id.length >= 4) {
+        const value = id[0];
+        const authority = id[3];
+        
+        // Vérifier si c'est un NIR (15 chiffres) avec autorité INS-NIR
+        if (value && /^\d{15}$/.test(value) && 
+            authority && Array.isArray(authority) && 
+            authority[0] && authority[0].includes('INS-NIR')) {
+          console.log('[FR-CORE] NIR détecté dans PID-3:', value);
+          return value;
+        }
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
  * Convertit un message HL7 en bundle FHIR conforme aux spécifications ANS (France)
  * Optimisé pour les identifiants INS/INS-C et terminologies françaises
  * Architecture modulaire supportant ADT, SIU, ORM
@@ -591,9 +620,15 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   // CORRECTION CRITIQUE FR Core: Limiter à un seul PI et ajouter INS-NIR si manquant
   const optimizedIdentifiers = [];
   
-  // Ajouter un seul identifiant PI (slice identifier:PI)
+  // Ajouter un seul identifiant PI (slice identifier:PI) - prendre le premier seulement
   if (ippIdentifier) {
     optimizedIdentifiers.push(ippIdentifier);
+  } else if (patientIdentifiers.length > 0) {
+    // Prendre le premier identifiant PI disponible
+    const firstPI = patientIdentifiers.find(id => id.type?.coding?.[0]?.code === 'PI');
+    if (firstPI) {
+      optimizedIdentifiers.push(firstPI);
+    }
   }
   
   // Ajouter l'identifiant INS-NIR si présent
@@ -603,22 +638,26 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   
   // Si aucun INS détecté mais NIR présent dans PID-3, l'extraire maintenant
   if (!hasINS && pidSegmentFields[3]) {
-    const nirFromPid = extractNIRFromPIDField(pidSegmentFields[3]);
-    if (nirFromPid) {
-      optimizedIdentifiers.push({
-        use: 'official',
-        value: nirFromPid,
-        system: 'urn:oid:1.2.250.1.213.1.4.8',
-        type: {
-          coding: [{
-            system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
-            code: 'INS-NIR',
-            display: 'Identifiant National de Santé - National Identifier Registry'
-          }]
-        }
-      });
-      hasINS = true;
-      console.log('[FR-CORE] INS-NIR manquant extrait du PID-3:', nirFromPid);
+    try {
+      const nirFromPid = extractNIRFromPIDField(pidSegmentFields[3]);
+      if (nirFromPid) {
+        optimizedIdentifiers.push({
+          use: 'official',
+          value: nirFromPid,
+          system: 'urn:oid:1.2.250.1.213.1.4.8',
+          type: {
+            coding: [{
+              system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
+              code: 'INS-NIR',
+              display: 'Identifiant National de Santé - National Identifier Registry'
+            }]
+          }
+        });
+        hasINS = true;
+        console.log('[FR-CORE] INS-NIR manquant extrait du PID-3:', nirFromPid);
+      }
+    } catch (error) {
+      console.log('[FR-CORE] Pas de NIR détecté dans PID-3, continuons sans INS');
     }
   }
   
