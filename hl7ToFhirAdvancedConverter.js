@@ -617,17 +617,22 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
     }
   });
   
-  // CORRECTION CRITIQUE FR Core: Limiter à un seul PI et ajouter INS-NIR si manquant
+  // CORRECTION CRITIQUE FR Core: Limiter à un seul PI avec valeur correcte et ajouter INS-NIR si manquant
   const optimizedIdentifiers = [];
   
-  // Ajouter un seul identifiant PI (slice identifier:PI) - prendre le premier seulement
-  if (ippIdentifier) {
+  // Ajouter un seul identifiant PI (slice identifier:PI) avec valeur correcte du PID-3
+  if (ippIdentifier && ippIdentifier.value && ippIdentifier.value !== 'PI') {
     optimizedIdentifiers.push(ippIdentifier);
   } else if (patientIdentifiers.length > 0) {
-    // Prendre le premier identifiant PI disponible
-    const firstPI = patientIdentifiers.find(id => id.type?.coding?.[0]?.code === 'PI');
-    if (firstPI) {
-      optimizedIdentifiers.push(firstPI);
+    // Prendre le premier identifiant PI avec une vraie valeur
+    const validPI = patientIdentifiers.find(id => 
+      id.type?.coding?.[0]?.code === 'PI' && 
+      id.value && 
+      id.value !== 'PI' && 
+      id.value.trim() !== ''
+    );
+    if (validPI) {
+      optimizedIdentifiers.push(validPI);
     }
   }
   
@@ -636,28 +641,54 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
     optimizedIdentifiers.push(insIdentifier);
   }
   
-  // Si aucun INS détecté mais NIR présent dans PID-3, l'extraire maintenant
-  if (!hasINS && pidSegmentFields[3]) {
-    try {
-      const nirFromPid = extractNIRFromPIDField(pidSegmentFields[3]);
-      if (nirFromPid) {
-        optimizedIdentifiers.push({
-          use: 'official',
-          value: nirFromPid,
-          system: 'urn:oid:1.2.250.1.213.1.4.8',
-          type: {
-            coding: [{
-              system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
-              code: 'INS-NIR',
-              display: 'Identifiant National de Santé - National Identifier Registry'
-            }]
-          }
-        });
-        hasINS = true;
-        console.log('[FR-CORE] INS-NIR manquant extrait du PID-3:', nirFromPid);
+  // Recherche exhaustive NIR dans tous les identifiants et dans le message
+  if (!hasINS) {
+    // Chercher NIR dans PID-3 structuré
+    if (pidSegmentFields[3]) {
+      try {
+        const nirFromPid = extractNIRFromPIDField(pidSegmentFields[3]);
+        if (nirFromPid) {
+          optimizedIdentifiers.push({
+            use: 'official',
+            value: nirFromPid,
+            system: 'urn:oid:1.2.250.1.213.1.4.8',
+            type: {
+              coding: [{
+                system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
+                code: 'INS-NIR',
+                display: 'Identifiant National de Santé - National Identifier Registry'
+              }]
+            }
+          });
+          hasINS = true;
+          console.log('[FR-CORE] INS-NIR extrait du PID-3:', nirFromPid);
+        }
+      } catch (error) {
+        console.log('[FR-CORE] Erreur extraction NIR du PID-3:', error.message);
       }
-    } catch (error) {
-      console.log('[FR-CORE] Pas de NIR détecté dans PID-3, continuons sans INS');
+    }
+    
+    // Chercher NIR pattern dans tout identifiant de 15 chiffres
+    if (!hasINS) {
+      patientIdentifiers.forEach(id => {
+        if (id.value && /^\d{15}$/.test(id.value)) {
+          optimizedIdentifiers.push({
+            use: 'official',
+            value: id.value,
+            system: 'urn:oid:1.2.250.1.213.1.4.8',
+            type: {
+              coding: [{
+                system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
+                code: 'INS-NIR',
+                display: 'Identifiant National de Santé - National Identifier Registry'
+              }]
+            }
+          });
+          hasINS = true;
+          console.log('[FR-CORE] INS-NIR détecté pattern 15 chiffres:', id.value);
+          return;
+        }
+      });
     }
   }
   
@@ -815,14 +846,26 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
     });
   }
   
-  // 4. FR Core: Extension fiabilité d'identité obligatoire avec valueCodeableConcept et valeur correcte
+  // 4. FR Core: Extension fiabilité d'identité selon PID-35 ou présence INS
+  let reliabilityCode = 'UNDI';
+  let reliabilityDisplay = 'Identité non vérifiée ou documents manquants';
+  
+  // Vérifier PID-35 pour la fiabilité d'identité
+  if (pidSegmentFields[35] && pidSegmentFields[35] === 'VALI') {
+    reliabilityCode = 'VALI';
+    reliabilityDisplay = 'Identité vérifiée';
+  } else if (hasINS) {
+    reliabilityCode = 'VALI';
+    reliabilityDisplay = 'Identité vérifiée';
+  }
+  
   const reliabilityExtension = {
     url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-identity-reliability',
     valueCodeableConcept: {
       coding: [{
         system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-identity-reliability',
-        code: hasINS ? 'VALI' : 'UNDI',
-        display: hasINS ? 'Identité vérifiée' : 'Identité non vérifiée ou documents manquants'
+        code: reliabilityCode,
+        display: reliabilityDisplay
       }]
     }
   };
@@ -832,7 +875,7 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   }
   
   patientResource.extension.push(reliabilityExtension);
-  console.log('[FR-CORE] Extension fiabilité valueCodeableConcept ajoutée:', hasINS ? 'VALI' : 'UNDI');
+  console.log('[FR-CORE] Extension fiabilité valueCodeableConcept ajoutée:', reliabilityCode);
   
   // Supprimer tous les champs vides ou null
   if (!patientResource.telecom || patientResource.telecom.length === 0) {
@@ -4340,7 +4383,7 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
     }
   }
   
-  // FR Core: Extension Coverage-InsuredID ET identifier memberid obligatoires
+  // FR Core: Extension Coverage-InsuredID ET identifier memberid obligatoires + period.end
   if (insuredId) {
     // Ajouter identifier memberid slice
     if (!coverageResource.identifier) {
@@ -4359,7 +4402,7 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
       system: 'urn:oid:1.2.250.1.213.1.4.8'
     });
     
-    // Ajouter extension Coverage-InsuredID
+    // Ajouter extension Coverage-InsuredID obligatoire pour NIR
     if (!coverageResource.extension) {
       coverageResource.extension = [];
     }
@@ -4368,11 +4411,25 @@ function createCoverageResource(in1Segment, in2Segment, patientReference, bundle
       url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage-insured-id',
       valueIdentifier: {
         use: 'official',
-        value: insuredId,
         system: 'urn:oid:1.2.250.1.213.1.4.8',
-        type: {
-          coding: [{
-            system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
+        value: insuredId
+      }
+    });
+    
+    console.log('[FR-CORE] Extension Coverage-InsuredID ajoutée avec NIR:', insuredId);
+  }
+  
+  // Ajouter period.end depuis IN1-16 si disponible
+  if (in1Segment.length > 16 && in1Segment[16]) {
+    const endDate = processExpirationDate(in1Segment[16]);
+    if (endDate) {
+      if (!coverageResource.period) {
+        coverageResource.period = {};
+      }
+      coverageResource.period.end = endDate;
+      console.log('[FR-CORE] Coverage period.end ajouté depuis IN1-16:', endDate);
+    }
+  }ystem: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
             code: 'INS-NIR',
             display: 'Identifiant National de Santé - National Identifier Registry'
           }]
