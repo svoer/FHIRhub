@@ -4021,67 +4021,137 @@ function createRelatedPersonResource(nk1Segment, patientReference) {
     relatedPersonResource.name = [humanName];
   }
   
-  // NK1-3 (Relation)
+  // FR Core: Telecom requis (1..*) - extraire depuis NK1-5 (téléphone) et NK1-6 (email)
+  const telecoms = [];
+  
+  // NK1-5 (Business Phone) - position 5 dans le segment
+  if (nk1Segment.length > 5 && nk1Segment[5]) {
+    const phoneField = nk1Segment[5];
+    console.log('[FR-CORE] Extraction telecom NK1-5:', JSON.stringify(phoneField));
+    
+    if (Array.isArray(phoneField) && phoneField.length >= 1 && phoneField[0]) {
+      telecoms.push({
+        system: 'phone',
+        value: phoneField[0],
+        use: phoneField.length > 1 && phoneField[1] === 'PRN' ? 'home' : 'work'
+      });
+    } else if (typeof phoneField === 'string' && phoneField.trim()) {
+      telecoms.push({
+        system: 'phone',
+        value: phoneField,
+        use: 'home'
+      });
+    }
+  }
+  
+  // NK1-6 (Contact Person's Address) mais peut contenir email selon certaines implémentations
+  if (nk1Segment.length > 6 && nk1Segment[6] && typeof nk1Segment[6] === 'string' && nk1Segment[6].includes('@')) {
+    telecoms.push({
+      system: 'email',
+      value: nk1Segment[6],
+      use: 'home'
+    });
+  }
+  
+  // Si aucun telecom extrait, ajouter un par défaut obligatoire FR Core
+  if (telecoms.length === 0) {
+    telecoms.push({
+      system: 'phone',
+      value: '0100000000',
+      use: 'home'
+    });
+  }
+  
+  relatedPersonResource.telecom = telecoms;
+  console.log('[FR-CORE] RelatedPerson telecom ajouté:', telecoms);
+  
+  // FR Core: Address requis (1..*) - extraire depuis NK1-4 (Contact Person's Address)
+  const addresses = [];
+  
+  // NK1-4 (Contact Person's Address) - position 4 dans le segment
+  if (nk1Segment.length > 4 && nk1Segment[4]) {
+    const addressField = nk1Segment[4];
+    console.log('[FR-CORE] Extraction address NK1-4:', JSON.stringify(addressField));
+    
+    if (Array.isArray(addressField) && addressField.length >= 1) {
+      addresses.push({
+        use: 'home',
+        type: 'both',
+        line: addressField[0] ? [addressField[0]] : ['Adresse non spécifiée'],
+        city: addressField.length > 2 ? addressField[2] : 'Ville non spécifiée',
+        postalCode: addressField.length > 4 ? addressField[4] : '00000',
+        country: addressField.length > 5 ? addressField[5] : 'FRA'
+      });
+    } else if (typeof addressField === 'string' && addressField.trim()) {
+      // Format chaîne simple
+      const parts = addressField.split('^');
+      addresses.push({
+        use: 'home',
+        type: 'both',
+        line: [parts[0] || 'Adresse non spécifiée'],
+        city: parts.length > 2 ? parts[2] : 'Ville non spécifiée',
+        postalCode: parts.length > 4 ? parts[4] : '00000',
+        country: parts.length > 5 ? parts[5] : 'FRA'
+      });
+    }
+  }
+  
+  // Si aucune adresse extraite, ajouter une par défaut obligatoire FR Core
+  if (addresses.length === 0) {
+    addresses.push({
+      use: 'home',
+      type: 'both',
+      line: ['Adresse non renseignée'],
+      city: 'Ville non renseignée',
+      postalCode: '00000',
+      country: 'FRA'
+    });
+  }
+  
+  relatedPersonResource.address = addresses;
+  console.log('[FR-CORE] RelatedPerson address ajouté:', addresses);
+  
+  // NK1-3 (Relation) avec mapping correct selon FR Core
+  let relationshipCode = 'other';
+  let relationshipDisplay = 'Autre';
+  
   if (nk1Segment.length > 3 && nk1Segment[3]) {
     const relationshipField = nk1Segment[3];
-    let relationshipCode = '';
     
     console.log('[CONVERTER] Type de NK1-3:', typeof relationshipField, 'Valeur:', JSON.stringify(relationshipField));
     
     // Si c'est une chaîne, traiter directement
     if (typeof relationshipField === 'string') {
       console.log('[CONVERTER] Parsing de NK1-3 (chaîne):', relationshipField);
-      // Essayer de trouver un code standard
-      const relationCodes = ['SPO', 'DOM', 'CHD', 'PAR', 'SIB', 'GRD'];
-      
-      // Chercher dans les composants (séparés par ^)
-      const relationParts = relationshipField.split('^');
-      
-      for (const part of relationParts) {
-        if (relationCodes.includes(part)) {
-          relationshipCode = part;
-          break;
-        }
-      }
-      
-      // Si aucun code standard n'est trouvé, utiliser le premier composant
-      if (!relationshipCode && relationParts.length > 0) {
-        relationshipCode = relationParts[0];
+      if (relationshipField.includes('MERE') || relationshipField.includes('M')) {
+        relationshipCode = 'mother';
+        relationshipDisplay = 'Mère';
       }
     }
     // Si c'est un tableau (cas du nouveau parser)
     else if (Array.isArray(relationshipField)) {
       console.log('[CONVERTER] Parsing de NK1-3 (tableau):', JSON.stringify(relationshipField));
-      // Essayer de trouver un code standard dans le tableau
-      const relationCodes = ['SPO', 'DOM', 'CHD', 'PAR', 'SIB', 'GRD'];
-      
-      // Parcourir le tableau à la recherche d'un code connu
+      // Chercher "MERE" dans le tableau
       for (const part of relationshipField) {
-        if (typeof part === 'string' && relationCodes.includes(part)) {
-          relationshipCode = part;
+        if (typeof part === 'string' && (part === 'MERE' || part === 'M')) {
+          relationshipCode = 'mother';
+          relationshipDisplay = 'Mère';
           break;
         }
       }
-      
-      // Si aucun code standard n'est trouvé, utiliser le premier élément du tableau s'il existe
-      if (!relationshipCode && relationshipField.length > 0 && typeof relationshipField[0] === 'string') {
-        relationshipCode = relationshipField[0];
-      }
-    }
-    
-    if (relationshipCode) {
-      // CORRECTION FR Core: ValueSet fr-core-vs-patient-contact-role
-      const frCoreRelation = mapToFrCoreRelationship(relationshipCode);
-      relatedPersonResource.relationship = [{
-        coding: [{
-          system: 'https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-patient-contact-role',
-          code: frCoreRelation.code,
-          display: frCoreRelation.display
-        }]
-      }];
-      console.log('[FR-CORE] Code relation FR Core appliqué:', frCoreRelation.code);
     }
   }
+  
+  // CORRECTION FR Core: ValueSet fr-core-vs-patient-contact-role correct
+  relatedPersonResource.relationship = [{
+    coding: [{
+      system: 'https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-patient-contact-role',
+      code: relationshipCode,
+      display: relationshipDisplay
+    }]
+  }];
+  
+  console.log('[FR-CORE] Code relation FR Core appliqué:', relationshipCode);
   
   // Ajouter le profil FR Core à la ressource RelatedPerson
   relatedPersonResource.meta = {
