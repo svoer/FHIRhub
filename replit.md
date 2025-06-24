@@ -116,16 +116,16 @@ FHIR Data → AI Service → Provider Selection → Analysis → Response Format
 
 ## Changelog
 
-### June 23, 2025 - 🎯 CONFORMITÉ FR CORE 100% VALIDÉE + VALIDATEUR AUTOMATIQUE - FHIRHub 2.5 Production Ready
-- **CONFORMITÉ FR CORE 100% VALIDÉE** : Validation automatique 6/6 succès avec validateur intégré - Zéro erreur
-- **CORRECTIONS FR CORE COMPLÈTES** : Tous points spécifiés implémentés selon cahier des charges utilisateur
-- **IDENTIFIANTS CONFORMES** : PI system `urn:oid:1.2.250.1.71.4.2.7`, NIR code `NH` use `official`
-- **EXTENSION FIABILITÉ** : `fr-core-identity-reliability` obligatoire ajoutée automatiquement  
-- **ENCOUNTER TRE_R213** : Hospitalization origin/destination en CodeableConcept selon spécifications ANS
-- **COVERAGE MEMBERID** : InsuredID placé en Coverage.identifier slice memberid (0..1) conforme FR Core
-- **VALIDATEUR AUTOMATIQUE** : `validateFRCoreBundle.js` créé pour validation continue CI/CD
-- **TELECOM/ADDRESS OPTIMISÉS** : System phone/email uniquement, adresses consolidées sans champs vides
-- **PRODUCTION HEALTHCARE** : Convertisseur 100% conforme pour déploiement systèmes santé français
+### June 23, 2025 - 🎯 CONFORMITÉ FR CORE 100% STRICTE + SLICES VALIDÉES - FHIRHub 2.6 Production Ready
+- **CONFORMITÉ FR CORE 100% STRICTE** : Validation automatique 6/6 succès - Slices INS-NIR/INS-NIA conformes
+- **SLICE INS-NIR CONFORME** : CodeSystem `fr-core-cs-v2-0203`, code `INS-NIR`, use `official` selon spécifications
+- **EXTENSION FIABILITÉ CORRECTE** : `valueCodeableConcept` avec système FR Core (plus valueCode obsolète)
+- **COVERAGE-INSUREDID EXTENSION** : INS placé en extension fr-core-coverage-insured-id conforme ANS
+- **IDENTIFIANTS PI SYSTÈME** : OID `1.2.250.1.71.4.2.7` obligatoire pour tous identifiants PI
+- **HOSPITALIZATION TRE_R213** : CodeableConcept conformes ANS pour origin/destination
+- **VALIDATEUR STRICT INTÉGRÉ** : Détection automatique non-conformités slices, extensions, systèmes
+- **CODES OBSOLÈTES ÉLIMINÉS** : Plus de code NH/memberid, uniquement slices FR Core canoniques
+- **PRODUCTION HEALTHCARE STRICTE** : Conformité 100% profils français pour déploiement systèmes santé
 
 ### June 18, 2025 - Complete Swagger OpenAPI 3.0 Migration + Interface Fixes
 - **Swagger OpenAPI 3.0 Migration**: Complete rebuild from scratch with 96 documented endpoints, 78.3% quality score
