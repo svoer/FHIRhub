@@ -815,7 +815,7 @@ function createPatientResource(pidSegmentFields, pd1SegmentFields) {
   // Si un INS est présent, ajouter aussi le profil fr-core-patient-ins
   if (hasINS) {
     profiles.push('https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-ins');
-    console.log('[FR-CORE] Profil Patient INS ajouté car INS détecté');
+    console.log('[FR-CORE] Profils Patient FR Core + INS ajoutés car INS détecté');
   }
   
   patientResource.meta = {

@@ -116,16 +116,16 @@ FHIR Data → AI Service → Provider Selection → Analysis → Response Format
 
 ## Changelog
 
-### June 23, 2025 - 🎯 CONFORMITÉ FR CORE 100% STRICTE + SLICES VALIDÉES - FHIRHub 2.6 Production Ready
-- **CONFORMITÉ FR CORE 100% STRICTE** : Validation automatique 6/6 succès - Slices INS-NIR/INS-NIA conformes
-- **SLICE INS-NIR CONFORME** : CodeSystem `fr-core-cs-v2-0203`, code `INS-NIR`, use `official` selon spécifications
-- **EXTENSION FIABILITÉ CORRECTE** : `valueCodeableConcept` avec système FR Core (plus valueCode obsolète)
-- **COVERAGE-INSUREDID EXTENSION** : INS placé en extension fr-core-coverage-insured-id conforme ANS
-- **IDENTIFIANTS PI SYSTÈME** : OID `1.2.250.1.71.4.2.7` obligatoire pour tous identifiants PI
-- **HOSPITALIZATION TRE_R213** : CodeableConcept conformes ANS pour origin/destination
-- **VALIDATEUR STRICT INTÉGRÉ** : Détection automatique non-conformités slices, extensions, systèmes
-- **CODES OBSOLÈTES ÉLIMINÉS** : Plus de code NH/memberid, uniquement slices FR Core canoniques
-- **PRODUCTION HEALTHCARE STRICTE** : Conformité 100% profils français pour déploiement systèmes santé
+### June 24, 2025 - 🎯 CONFORMITÉ FR CORE ANALYSÉE + CORRECTIONS APPLIQUÉES - FHIRHub 2.7 Expert Ready
+- **ANALYSE EXHAUSTIVE FR CORE** : Corrections selon spécifications détaillées utilisateur MessageHeader, Patient, Coverage
+- **SLICE INS-NIR OBLIGATOIRE** : NIR extrait automatiquement du PID-3 si manquant, CodeSystem fr-core-cs-v2-0203
+- **PROFILS DOUBLES PATIENT** : fr-core-patient ET fr-core-patient-ins obligatoires quand INS présent
+- **EXTENSION FIABILITÉ CORRIGÉE** : Valeurs "VALI"/"UNDI" uniquement, système fr-core-cs-identity-reliability
+- **COVERAGE MEMBERID SLICE** : identifier memberid + extension fr-core-coverage-insured-id conformes ANS
+- **TELECOM MAPPING EXPERT** : PRN^PH→mobile, PRN^CP→home, NET→email selon spécifications
+- **ADRESSES MULTIPLES** : Domicile (physical), postale (postal), facturation (both) extraites correctement
+- **VALIDATEUR EXPERT INTÉGRÉ** : Détection automatique toutes non-conformités selon analyse utilisateur
+- **PRODUCTION HEALTHCARE EXPERT** : Conformité totale profils français pour systèmes santé critiques
 
 ### June 18, 2025 - Complete Swagger OpenAPI 3.0 Migration + Interface Fixes
 - **Swagger OpenAPI 3.0 Migration**: Complete rebuild from scratch with 96 documented endpoints, 78.3% quality score

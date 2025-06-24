@@ -230,7 +230,7 @@ class FRCoreValidator {
           const hasINSProfile = patient.meta.profile.includes('https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-ins');
           
           if (hasPatientProfile && hasINSProfile) {
-            this.addSuccess(`Patient #${index}: Profils fr-core-patient ET fr-core-patient-ins présents`);
+            console.log(`Patient #${index}: Profils fr-core-patient ET fr-core-patient-ins présents`);
           } else {
             this.addError(`Patient #${index}: Profils fr-core-patient ET fr-core-patient-ins obligatoires quand INS présent`);
             passed = false;
@@ -247,14 +247,13 @@ class FRCoreValidator {
         if (reliabilityExt && reliabilityExt.valueCodeableConcept) {
           const code = reliabilityExt.valueCodeableConcept.coding[0].code;
           if (code === 'VALI' || code === 'UNDI') {
-            this.addSuccess(`Patient #${index}: Extension fiabilité avec valeur correcte: ${code}`);
+            console.log(`Patient #${index}: Extension fiabilité avec valeur correcte: ${code}`);
           } else {
             this.addError(`Patient #${index}: Extension fiabilité valeur incorrecte "${code}", utiliser "VALI" ou "UNDI"`);
             passed = false;
           }
         }
       }
-    }
     }
 
     // Validation de l'extension fiabilité d'identité
