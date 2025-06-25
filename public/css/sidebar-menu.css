@@ -69,6 +69,58 @@
   margin-right: 20px;
 }
 
+/* Barre des favoris dans le header */
+.header-favorites {
+  display: flex;
+  align-items: center;
+  margin: 0 15px;
+  max-width: 400px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+}
+
+.top-favorites {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.top-favorite-item {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-favorite-item:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+
+.top-favorite-item i {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.top-favorite-item .title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* Spacer pour remplacer la barre de recherche */
 .logo-spacer {
   flex: 1;

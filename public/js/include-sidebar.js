@@ -264,8 +264,12 @@
       console.log('Événements de favoris configurés');
     }
     
-    // Fonction pour mettre à jour la liste des favoris dans le menu
+    // Fonction pour mettre à jour les favoris dans la barre du haut ET la liste du sidebar
     function updateFavoritesList(favorites) {
+      // Mettre à jour la barre du haut
+      updateTopFavorites(favorites);
+      
+      // Ancienne liste du sidebar (maintenue pour compatibilité)
       const favoritesList = document.getElementById('favorites-list');
       if (!favoritesList) return;
       
@@ -351,6 +355,49 @@
           }
         });
       });
+    }
+    
+    // Nouvelle fonction pour mettre à jour les favoris dans la barre du haut
+    function updateTopFavorites(favorites) {
+      const topContainer = document.getElementById('top-favorites-container');
+      if (!topContainer) return;
+      
+      if (!favorites || favorites.length === 0) {
+        topContainer.innerHTML = '';
+        return;
+      }
+      
+      // Récupérer la structure de navigation pour les étiquettes
+      const navMap = {
+        '/dashboard.html': { title: 'Dashboard', icon: 'fas fa-chart-line' },
+        '/convert.html': { title: 'Convertir', icon: 'fas fa-exchange-alt' },
+        '/direct-fhir.html': { title: 'FHIR Direct', icon: 'fas fa-fire' },
+        '/patient-viewer.html': { title: 'Patients', icon: 'fas fa-user-injured' },
+        '/fhir-settings.html': { title: 'Config FHIR', icon: 'fas fa-cog' },
+        '/applications.html': { title: 'Apps', icon: 'fas fa-th' },
+        '/api-keys.html': { title: 'API Keys', icon: 'fas fa-key' },
+        '/users.html': { title: 'Utilisateurs', icon: 'fas fa-users' },
+        '/terminologies.html': { title: 'Termino', icon: 'fas fa-book-medical' },
+        '/ai-providers.html': { title: 'IA Config', icon: 'fas fa-robot' },
+        '/documentation.html': { title: 'Docs', icon: 'fas fa-file-alt' },
+        '/api-docs/integrated': { title: 'API Docs', icon: 'fas fa-code' },
+        '/faq.html': { title: 'FAQ', icon: 'fas fa-question-circle' }
+      };
+      
+      // Créer les éléments favoris pour la barre du haut
+      const favoritesHTML = favorites.map(url => {
+        const navItem = navMap[url];
+        if (!navItem) return '';
+        
+        return `
+          <a href="${url}" class="top-favorite-item" title="${navItem.title}">
+            <i class="${navItem.icon}"></i>
+            <span class="title">${navItem.title}</span>
+          </a>
+        `;
+      }).filter(item => item !== '').join('');
+      
+      topContainer.innerHTML = favoritesHTML;
     }
     
     // Gestion de la déconnexion
