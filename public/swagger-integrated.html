@@ -150,54 +150,7 @@
             margin-bottom: 15px !important;
         }
 
-        /* Navigation rapide sticky */
-        .quick-nav {
-            position: fixed;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: white;
-            border: 1px solid #e1e5e8;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            padding: 15px;
-            max-width: 200px;
-            max-height: 400px;
-            overflow-y: auto;
-            z-index: 50;
-            transition: all 0.3s ease;
-        }
-
-        .quick-nav h4 {
-            margin: 0 0 10px 0;
-            font-size: 0.9rem;
-            color: var(--fhirhub-primary);
-            border-bottom: 1px solid #e1e5e8;
-            padding-bottom: 5px;
-        }
-
-        .quick-nav ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .quick-nav li {
-            margin-bottom: 5px;
-        }
-
-        .quick-nav a {
-            color: #666;
-            text-decoration: none;
-            font-size: 0.8rem;
-            display: block;
-            padding: 3px 0;
-            transition: color 0.2s ease;
-        }
-
-        .quick-nav a:hover {
-            color: var(--fhirhub-primary);
-        }
+        /* Navigation supprimée pour simplification interface */
 
         /* Actions rapides */
         .api-actions {
@@ -237,10 +190,6 @@
         @media (max-width: 768px) {
             .main-content.with-sidebar {
                 margin-left: 0;
-            }
-
-            .quick-nav {
-                display: none;
             }
 
             .api-header {
@@ -338,13 +287,7 @@
         </div>
     </main>
 
-    <!-- Navigation rapide -->
-    <div class="quick-nav" id="quick-nav">
-        <h4><i class="fas fa-list"></i> Navigation</h4>
-        <ul id="nav-links">
-            <!-- Généré automatiquement par JavaScript -->
-        </ul>
-    </div>
+    <!-- Navigation supprimée pour simplification -->
 
     <!-- Scripts -->
     <script src="https://unpkg.com/swagger-ui-dist@4.19.1/swagger-ui-bundle.js"></script>
@@ -373,9 +316,6 @@
                 layout: "StandaloneLayout",
                 validatorUrl: null, // Désactiver la validation externe
                 onComplete: function() {
-                    // Générer la navigation rapide
-                    generateQuickNav();
-                    
                     // Personnaliser l'interface
                     customizeSwaggerUI();
                     
@@ -384,27 +324,7 @@
                 }
             });
 
-            // Fonctions utilitaires
-            function generateQuickNav() {
-                const navContainer = document.getElementById('nav-links');
-                const tags = document.querySelectorAll('.swagger-ui .opblock-tag');
-                
-                navContainer.innerHTML = '';
-                tags.forEach((tag, index) => {
-                    const tagName = tag.textContent.trim();
-                    const li = document.createElement('li');
-                    const a = document.createElement('a');
-                    a.href = `#operations-tag-${tagName.replace(/\s+/g, '_')}`;
-                    a.textContent = tagName;
-                    a.onclick = () => scrollToTag(tag);
-                    li.appendChild(a);
-                    navContainer.appendChild(li);
-                });
-            }
-
-            function scrollToTag(element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            // Navigation supprimée pour simplification
 
             function customizeSwaggerUI() {
                 // Masquer les éléments non désirés

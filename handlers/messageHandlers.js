@@ -23,10 +23,11 @@ function convertHL7ToFHIR(segments) {
     resourceType: 'Bundle',
     id: bundleId,
     meta: {
-      lastUpdated: new Date().toISOString(),
+      lastUpdated: formatDateTimeWithTimezone(new Date()),
       profile: ['http://hl7.org/fhir/StructureDefinition/Bundle']
     },
     type: 'message',
+    // CORRECTION R4: suppression Bundle.timestamp (n'existe pas en R4)
     entry: []
   };
   

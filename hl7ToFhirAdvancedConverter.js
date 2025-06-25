@@ -137,24 +137,36 @@ function convertHL7ToFHIR(hl7Message, options = {}) {
       }
     }
     
-    // Créer le Bundle FHIR
+    // Créer le Bundle FHIR R4 conforme
     const bundle = {
       resourceType: 'Bundle',
       id: bundleId,
+      meta: {
+        lastUpdated: formatDateTimeWithTimezone(new Date()),
+        profile: ['http://hl7.org/fhir/StructureDefinition/Bundle']
+      },
       type: bundleType,
-      timestamp: bundleTimestamp,
+      // CORRECTION R4: suppression Bundle.timestamp (propriété invalide en R4)
       entry: []
     };
     
     // MessageHeader obligatoire pour Bundle de type 'message'
     if (bundleType === 'message' && segments.MSH) {
       const messageHeaderResource = createMessageHeaderResource(segments.MSH[0]);
+      // CORRECTION R4: suppression entry.request pour Bundle type message
+      if (messageHeaderResource.request) {
+        delete messageHeaderResource.request;
+      }
       bundle.entry.push(messageHeaderResource);
     }
     
     // Patient (à partir du segment PID)
     if (segments.PID && segments.PID.length > 0) {
       const patientResource = createPatientResource(segments.PID[0], segments.PD1 ? segments.PD1[0] : null);
+      // CORRECTION R4: suppression entry.request pour Bundle type message
+      if (patientResource.request) {
+        delete patientResource.request;
+      }
       bundle.entry.push(patientResource);
       
       // Encounter (à partir des segments PV1 et PV2)

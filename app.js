@@ -33,6 +33,7 @@ const security = require('./middleware/security');
 
 // Importer le convertisseur principal 
 const { convertHL7ToFHIR } = require('./hl7ToFhirAdvancedConverter');
+const { fixFHIRBundle } = require('./fix-r4-frcore-bundle');
 
 /**
  * Configuration de l'application
