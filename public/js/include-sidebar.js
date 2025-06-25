@@ -199,11 +199,78 @@
       }
     }
     
+    // === GESTION PERSISTANTE DES FAVORIS ===
+    
+    // 1. Initialiser le système de favoris avec persistance
+    function initFavoritesSystem() {
+      console.log('[FAVORIS] Initialisation du système de favoris');
+      
+      // Récupérer les favoris persistants depuis localStorage
+      const storedFavorites = JSON.parse(localStorage.getItem('fhirhub-favorites') || '[]');
+      console.log('[FAVORIS] Favoris récupérés depuis localStorage:', storedFavorites);
+      
+      // Mettre à jour immédiatement la barre du haut
+      updateTopFavorites(storedFavorites);
+      
+      // Mettre à jour l'état des étoiles dans le sidebar
+      updateFavoriteButtonsState(storedFavorites);
+      
+      return storedFavorites;
+    }
+    
+    // 2. Mettre à jour l'état visuel des boutons étoiles
+    function updateFavoriteButtonsState(favorites) {
+      const favoriteButtons = document.querySelectorAll('.favorite-btn');
+      favoriteButtons.forEach(btn => {
+        const url = btn.getAttribute('data-url');
+        if (!url) return;
+        
+        if (favorites.includes(url)) {
+          btn.classList.add('active');
+          btn.innerHTML = '<i class="fas fa-star"></i>';
+          btn.setAttribute('title', 'Retirer des favoris');
+        } else {
+          btn.classList.remove('active');
+          btn.innerHTML = '<i class="far fa-star"></i>';
+          btn.setAttribute('title', 'Ajouter aux favoris');
+        }
+      });
+    }
+    
+    // 3. Fonction toggleFavorite robuste avec persistance
+    function toggleFavorite(url, button) {
+      console.log('[FAVORIS] Toggle favori pour URL:', url);
+      
+      // Récupérer les favoris actuels
+      let favorites = JSON.parse(localStorage.getItem('fhirhub-favorites') || '[]');
+      const index = favorites.indexOf(url);
+      
+      if (index === -1) {
+        // Ajouter aux favoris
+        favorites.push(url);
+        console.log('[FAVORIS] Ajout:', url);
+      } else {
+        // Retirer des favoris
+        favorites.splice(index, 1);
+        console.log('[FAVORIS] Suppression:', url);
+      }
+      
+      // Persister immédiatement
+      localStorage.setItem('fhirhub-favorites', JSON.stringify(favorites));
+      console.log('[FAVORIS] Favoris persistés:', favorites);
+      
+      // Mettre à jour toute l'interface
+      updateFavoriteButtonsState(favorites);
+      updateTopFavorites(favorites);
+      
+      return favorites;
+    }
+    
     // Gestion des favoris
     const favoriteButtons = document.querySelectorAll('.favorite-btn');
     if (favoriteButtons.length > 0) {
-      // Récupérer les favoris actuels depuis localStorage
-      let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+      // Initialiser le système de favoris
+      let favorites = initFavoritesSystem();
       
       // Mettre à jour l'apparence des boutons en fonction des favoris enregistrés
       favoriteButtons.forEach(btn => {
@@ -258,18 +325,15 @@
         });
       });
       
-      // Initialiser la liste des favoris
-      updateFavoritesList(favorites);
-      
-      console.log('Événements de favoris configurés');
+      console.log('[FAVORIS] Événements de favoris configurés');
     }
     
-    // Fonction pour mettre à jour les favoris dans la barre du haut ET la liste du sidebar
+    // Fonction pour mettre à jour les favoris (legacy, maintenue pour compatibilité)
     function updateFavoritesList(favorites) {
       // Mettre à jour la barre du haut
       updateTopFavorites(favorites);
       
-      // Ancienne liste du sidebar (maintenue pour compatibilité)
+      // Ancienne liste du sidebar (supprimée mais fonction maintenue)
       const favoritesList = document.getElementById('favorites-list');
       if (!favoritesList) return;
       
@@ -346,21 +410,20 @@
           // Mettre à jour l'affichage de la liste des favoris
           updateFavoritesList(favorites);
           
-          // Mettre à jour l'état du bouton correspondant dans le menu principal
-          const mainButton = document.querySelector(`.favorite-btn[data-url="${url}"]:not(.remove-favorite)`);
-          if (mainButton) {
-            mainButton.classList.remove('active');
-            mainButton.innerHTML = '<i class="far fa-star"></i>';
-            mainButton.setAttribute('title', 'Ajouter aux favoris');
-          }
+          // L'état des boutons est maintenant géré par toggleFavorite
         });
       });
     }
     
-    // Nouvelle fonction pour mettre à jour les favoris dans la barre du haut
+    // Fonction robuste pour mettre à jour les favoris dans la barre du haut
     function updateTopFavorites(favorites) {
       const topContainer = document.getElementById('top-favorites-container');
-      if (!topContainer) return;
+      if (!topContainer) {
+        console.warn('[FAVORIS] Container top-favorites-container non trouvé');
+        return;
+      }
+      
+      console.log('[FAVORIS] Mise à jour barre du haut avec:', favorites);
       
       if (!favorites || favorites.length === 0) {
         topContainer.innerHTML = '';
@@ -387,7 +450,10 @@
       // Créer les éléments favoris pour la barre du haut
       const favoritesHTML = favorites.map(url => {
         const navItem = navMap[url];
-        if (!navItem) return '';
+        if (!navItem) {
+          console.warn('[FAVORIS] Navigation item non trouvé pour URL:', url);
+          return '';
+        }
         
         return `
           <a href="${url}" class="top-favorite-item" title="${navItem.title}">
@@ -398,6 +464,7 @@
       }).filter(item => item !== '').join('');
       
       topContainer.innerHTML = favoritesHTML;
+      console.log('[FAVORIS] Barre du haut mise à jour avec', favorites.length, 'favoris');
     }
     
     // Gestion de la déconnexion

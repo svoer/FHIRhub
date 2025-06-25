@@ -500,8 +500,19 @@
     margin-left: 0;
   }
   
-  .global-search {
-    display: none;
+  .header-favorites {
+    max-width: 150px;
+    margin: 0 8px;
+  }
+  
+  .top-favorite-item {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    max-width: 80px;
+  }
+  
+  .top-favorite-item .title {
+    display: none; /* Masquer le texte sur mobile, garder seulement l'icône */
   }
   
   .user-name {
