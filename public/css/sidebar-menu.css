@@ -306,13 +306,26 @@
 }
 
 .nav-menu a i {
-  min-width: 24px;
-  margin-right: 10px;
-  font-size: 1.1rem;
-  text-align: center;
+  min-width: 20px;
+  margin-left: 0 !important;
+  margin-right: 12px;
+  font-size: 1rem;
+  text-align: left;
+  opacity: 0.8;
 }
 
 
+
+/* Supprimer tout espacement forcé */
+.sidebar-item,
+.menu-item,
+.sidebar-item i,
+.nav-menu li,
+.nav-menu li a,
+.nav-menu li a i {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
 
 /* Structure parent-enfant dans le lien */
 .nav-menu a > span {
@@ -322,7 +335,8 @@
 }
 
 .nav-menu a > span i {
-  margin-right: 10px;
+  margin-left: 0 !important;
+  margin-right: 12px;
 }
 
 /* Badge et compteurs */
