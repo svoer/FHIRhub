@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script d'installation simplifié pour FHIRHub
-# Version 2.0 - Basé sur les scripts originaux avec améliorations essentielles
+# Version 2.0 - Corrigé pour les erreurs identifiées
 
 echo "=========================================================="
 echo "     Installation de FHIRHub - Convertisseur HL7 vers FHIR"
@@ -69,17 +69,23 @@ if [ ! -f "package.json" ]; then
 fi
 
 # Installation des dépendances avec gestion d'erreur
-if npm ci --silent; then
+if npm ci --silent 2>/dev/null; then
     log "SUCCESS" "Dépendances installées avec npm ci"
-elif npm install --silent; then
+elif npm install --silent 2>/dev/null; then
     log "SUCCESS" "Dépendances installées avec npm install"
 else
-    error_exit "Échec de l'installation des dépendances npm"
+    log "WARN" "Installation standard échouée, tentative de correction..."
+    rm -rf node_modules package-lock.json 2>/dev/null
+    if npm install --silent 2>/dev/null; then
+        log "SUCCESS" "Dépendances installées après nettoyage"
+    else
+        error_exit "Échec de l'installation des dépendances npm"
+    fi
 fi
 
 # Rebuild spécifique pour better-sqlite3
 log "INFO" "Reconstruction de better-sqlite3..."
-if npm rebuild better-sqlite3 --build-from-source --silent; then
+if npm rebuild better-sqlite3 --build-from-source --silent 2>/dev/null; then
     log "SUCCESS" "better-sqlite3 recompilé avec succès"
 else
     log "WARN" "Échec de la recompilation de better-sqlite3 (peut fonctionner quand même)"
@@ -98,7 +104,7 @@ PORT=5000
 DATABASE_URL=sqlite:./storage/db/fhirhub.db
 DB_PATH=./storage/db/fhirhub.db
 LOG_LEVEL=info
-JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || echo "change-this-secret-key")
+JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || echo "change-this-secret-key-$(date +%s)")
 METRICS_ENABLED=true
 METRICS_PORT=9091
 
@@ -121,14 +127,36 @@ log "INFO" "[5/6] Vérification des dépendances optionnelles..."
 if command -v python3 &> /dev/null; then
     log "SUCCESS" "Python 3 trouvé: $(python3 --version)"
     
-    # Installer les modules Python nécessaires
-    if pip3 install hl7 requests --quiet --break-system-packages 2>/dev/null || pip3 install hl7 requests --quiet 2>/dev/null; then
-        log "SUCCESS" "Modules Python installés"
-    else
-        log "WARN" "Impossible d'installer les modules Python (optionnel)"
+    # Installation des modules Python nécessaires si Python est disponible
+    PIP_CMD=""
+    if command -v pip3 &> /dev/null; then
+        PIP_CMD="pip3"
+        log "SUCCESS" "pip3 trouvé"
+    elif command -v pip &> /dev/null; then
+        PIP_CMD="pip"
+        log "SUCCESS" "pip trouvé"
+    fi
+    
+    # Installation des modules requis si pip est disponible
+    if [ ! -z "$PIP_CMD" ]; then
+        log "INFO" "Installation des modules hl7 et requests..."
+        
+        # Essayer différentes méthodes d'installation
+        if $PIP_CMD install hl7 requests --quiet 2>/dev/null; then
+            log "SUCCESS" "Modules Python installés avec pip standard"
+        elif $PIP_CMD install hl7 requests --user --quiet 2>/dev/null; then
+            log "SUCCESS" "Modules Python installés avec --user"
+        else
+            log "WARN" "Installation des modules Python échouée (fonctionnalités limitées)"
+        fi
+        
+        # Vérifier l'installation
+        if python3 -c "import hl7, requests" 2>/dev/null; then
+            log "SUCCESS" "Modules Python fonctionnels"
+        fi
     fi
 else
-    log "WARN" "Python 3 non trouvé (optionnel pour les terminologies)"
+    log "WARN" "Python non trouvé (optionnel pour les terminologies)"
 fi
 
 # Vérifier les outils système optionnels
@@ -158,16 +186,41 @@ fi
 if node -e "require('better-sqlite3')" 2>/dev/null; then
     log "SUCCESS" "Module better-sqlite3 fonctionnel"
 else
-    log "WARN" "Problème potentiel avec better-sqlite3"
+    log "WARN" "Problème potentiel avec better-sqlite3, tentative de correction..."
+    # Tentative de recompilation
+    if npm rebuild better-sqlite3 --silent 2>/dev/null; then
+        log "SUCCESS" "better-sqlite3 recompilé avec succès"
+    else
+        log "WARN" "Impossible de recompiler better-sqlite3"
+    fi
 fi
 
-# Vérifier la structure des fichiers
+# Vérifier la structure des services si elle existe
+if [ -d "src/services" ]; then
+    log "SUCCESS" "Structure src/services détectée"
+else
+    log "INFO" "Pas de structure src/services (architecture directe utilisée)"
+fi
+
+# Vérifier les fichiers essentiels
 REQUIRED_FILES=("app.js" "package.json")
 for file in "${REQUIRED_FILES[@]}"; do
     if [ -f "$file" ]; then
         log "SUCCESS" "Fichier $file présent"
     else
         error_exit "Fichier requis manquant: $file"
+    fi
+done
+
+# Test des modules critiques
+log "INFO" "Test des modules critiques..."
+CRITICAL_MODULES=("axios" "express" "cors" "better-sqlite3")
+for module in "${CRITICAL_MODULES[@]}"; do
+    if node -e "require('$module')" 2>/dev/null; then
+        log "SUCCESS" "Module $module OK"
+    else
+        log "WARN" "Module $module problématique, tentative de réinstallation..."
+        npm install "$module" --silent 2>/dev/null || log "WARN" "Impossible de réinstaller $module"
     fi
 done
 

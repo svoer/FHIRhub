@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Script de démarrage simplifié pour FHIRHub
-# Version 2.0 - Basé sur les scripts originaux avec améliorations essentielles
+# Version 2.0 - Corrigé pour les erreurs identifiées
 
 # Couleurs pour les logs
 RED='\033[0;31m'
@@ -47,29 +47,68 @@ case "$COMMAND" in
         ;;
     "stop")
         log "INFO" "Arrêt de l'application..."
-        if pgrep -f "node.*app.js" > /dev/null; then
-            pkill -f "node.*app.js"
-            log "SUCCESS" "Application arrêtée"
-        else
-            log "WARN" "Aucun processus FHIRHub trouvé"
+        STOPPED=false
+        
+        # Chercher par PID file d'abord
+        if [ -f "./logs/fhirhub.pid" ]; then
+            PID=$(cat ./logs/fhirhub.pid 2>/dev/null)
+            if [ ! -z "$PID" ] && kill -0 $PID 2>/dev/null; then
+                kill $PID
+                sleep 2
+                if ! kill -0 $PID 2>/dev/null; then
+                    rm -f ./logs/fhirhub.pid
+                    STOPPED=true
+                    log "SUCCESS" "Application arrêtée (PID: $PID)"
+                fi
+            fi
+        fi
+        
+        # Fallback: chercher par nom de processus
+        if [ "$STOPPED" = false ]; then
+            if pgrep -f "node.*app.js" > /dev/null; then
+                pkill -f "node.*app.js"
+                sleep 2
+                log "SUCCESS" "Application arrêtée"
+            else
+                log "WARN" "Aucun processus FHIRHub trouvé"
+            fi
         fi
         exit 0
         ;;
     "restart")
         log "INFO" "Redémarrage de l'application..."
-        if pgrep -f "node.*app.js" > /dev/null; then
-            pkill -f "node.*app.js"
-            sleep 2
-        fi
+        $0 stop
+        sleep 2
         # Continue avec le démarrage
         ;;
     "status")
         log "INFO" "Vérification du statut..."
-        if pgrep -f "node.*app.js" > /dev/null; then
-            PID=$(pgrep -f "node.*app.js")
-            log "SUCCESS" "Application en cours d'exécution (PID: $PID)"
+        RUNNING=false
+        
+        # Vérifier via PID file
+        if [ -f "./logs/fhirhub.pid" ]; then
+            PID=$(cat ./logs/fhirhub.pid 2>/dev/null)
+            if [ ! -z "$PID" ] && kill -0 $PID 2>/dev/null; then
+                RUNNING=true
+                log "SUCCESS" "Application en cours d'exécution (PID: $PID)"
+            else
+                rm -f ./logs/fhirhub.pid
+            fi
+        fi
+        
+        # Fallback: chercher par nom de processus
+        if [ "$RUNNING" = false ]; then
+            if pgrep -f "node.*app.js" > /dev/null; then
+                PID=$(pgrep -f "node.*app.js")
+                RUNNING=true
+                log "SUCCESS" "Application en cours d'exécution (PID: $PID)"
+            fi
+        fi
+        
+        if [ "$RUNNING" = true ]; then
+            # Test de connectivité
             if command -v curl &> /dev/null; then
-                if curl -s http://localhost:$PORT/health > /dev/null 2>&1; then
+                if curl -s http://localhost:$PORT/ > /dev/null 2>&1; then
                     log "SUCCESS" "Application répond sur le port $PORT"
                 else
                     log "WARN" "Application ne répond pas sur le port $PORT"
@@ -120,6 +159,20 @@ fi
 
 if [ ! -d "node_modules" ]; then
     error_exit "node_modules non trouvé. Exécutez d'abord ./install-simple.sh"
+fi
+
+# Vérifier Node.js dans PATH ou utiliser le local
+NODE_CMD="node"
+NPM_CMD="npm"
+
+# Si Node.js local existe, l'utiliser
+if [ -f "./vendor/nodejs/bin/node" ]; then
+    export PATH="$(pwd)/vendor/nodejs/bin:$PATH"
+    NODE_CMD="./vendor/nodejs/bin/node"
+    NPM_CMD="./vendor/nodejs/bin/npm"
+    log "INFO" "Utilisation de Node.js local: $($NODE_CMD --version)"
+elif ! command -v node &> /dev/null; then
+    error_exit "Node.js non trouvé. Exécutez ./install-simple.sh ou installez Node.js"
 fi
 
 log "SUCCESS" "Structure du projet validée"
@@ -198,6 +251,16 @@ log "SUCCESS" "Port $PORT disponible"
 # [5/5] Démarrage de l'application
 log "INFO" "[5/5] Démarrage de l'application..."
 
+# Test des modules critiques avant démarrage
+log "INFO" "Vérification des modules critiques..."
+CRITICAL_MODULES=("axios" "express" "cors" "better-sqlite3")
+for module in "${CRITICAL_MODULES[@]}"; do
+    if ! $NODE_CMD -e "require('$module')" 2>/dev/null; then
+        log "WARN" "Module $module manquant, tentative de réinstallation..."
+        $NPM_CMD install "$module" --silent 2>/dev/null
+    fi
+done
+
 # Affichage des informations de démarrage
 echo
 echo -e "${BLUE}----------------------------------------------------${NC}"
@@ -213,7 +276,7 @@ mkdir -p "$(dirname "$LOG_FILE")"
 # Démarrage
 if [ "$DAEMON" = true ]; then
     log "INFO" "Démarrage en mode daemon..."
-    nohup node app.js > "$LOG_FILE" 2>&1 &
+    nohup $NODE_CMD app.js > "$LOG_FILE" 2>&1 &
     APP_PID=$!
     echo $APP_PID > ./logs/fhirhub.pid
     
@@ -224,6 +287,7 @@ if [ "$DAEMON" = true ]; then
         log "INFO" "Logs disponibles dans: $LOG_FILE"
     else
         log "ERROR" "Échec du démarrage en mode daemon"
+        log "INFO" "Vérifiez les logs: cat $LOG_FILE"
         exit 1
     fi
 else
@@ -234,14 +298,14 @@ else
     trap 'echo -e "\n${YELLOW}⚠️ Arrêt de l'\''application...${NC}"; exit 0' INT TERM
     
     # Démarrage en mode interactif
-    node app.js
+    $NODE_CMD app.js
 fi
 
 # Attendre un peu pour vérifier que l'application répond
 if [ "$DAEMON" = true ]; then
     sleep 5
     if command -v curl &> /dev/null; then
-        if curl -s http://localhost:$PORT/health > /dev/null 2>&1; then
+        if curl -s http://localhost:$PORT/ > /dev/null 2>&1; then
             log "SUCCESS" "Application opérationnelle sur http://localhost:$PORT"
         else
             log "WARN" "Application démarrée mais ne répond pas encore sur le port $PORT"
