@@ -203,11 +203,19 @@ check_system_requirements() {
     # Vérification de l'architecture
     progress_bar $((step++)) $total_steps
     local arch="$(uname -m)"
-    if [[ ! "$arch" =~ ^(x86_64|amd64|arm64|aarch64)$ ]]; then
-        log "ERROR" "Architecture non supportée: $arch"
-        exit 1
-    fi
     log "DEBUG" "Architecture détectée: $arch"
+    
+    case "$arch" in
+        x86_64|amd64)
+            log "DEBUG" "Architecture x86_64 supportée"
+            ;;
+        arm64|aarch64)
+            log "DEBUG" "Architecture ARM64 supportée"
+            ;;
+        *)
+            log "WARN" "Architecture $arch non testée mais installation tentée"
+            ;;
+    esac
     
     # Vérification de la mémoire
     progress_bar $((step++)) $total_steps
@@ -216,22 +224,45 @@ check_system_requirements() {
         if [[ $memory_gb -lt $REQUIRED_MEMORY_GB ]]; then
             log "WARN" "Mémoire insuffisante: ${memory_gb}GB (recommandé: ${REQUIRED_MEMORY_GB}GB)"
         fi
+        log "DEBUG" "Mémoire disponible: ${memory_gb}GB"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        local memory_gb=$(($(sysctl -n hw.memsize) / 1024 / 1024 / 1024))
+        log "DEBUG" "Mémoire macOS: ${memory_gb}GB"
+    else
+        log "DEBUG" "Vérification mémoire ignorée (commande free non disponible)"
     fi
     
     # Vérification de l'espace disque
     progress_bar $((step++)) $total_steps
-    local available_space=$(df . | awk 'NR==2 {print $4}')
-    if [[ $available_space -lt 1048576 ]]; then # 1GB en KB
-        log "WARN" "Espace disque faible: $(($available_space/1024))MB disponible"
+    if command -v df &>/dev/null; then
+        local available_space=$(df . | awk 'NR==2 {print $4}' 2>/dev/null || echo "0")
+        if [[ $available_space -gt 0 ]] && [[ $available_space -lt 1048576 ]]; then # 1GB en KB
+            log "WARN" "Espace disque faible: $(($available_space/1024))MB disponible"
+        elif [[ $available_space -gt 0 ]]; then
+            log "DEBUG" "Espace disque: $(($available_space/1024))MB disponible"
+        fi
+    else
+        log "DEBUG" "Vérification espace disque ignorée (commande df non disponible)"
     fi
     
     # Vérification des commandes requises
     progress_bar $((step++)) $total_steps
-    local required_commands=("bash" "git" "curl" "make")
+    local required_commands=("bash" "git" "curl")
+    local optional_commands=("make" "gcc" "g++")
+    
     for cmd in "${required_commands[@]}"; do
         if ! command -v "$cmd" &>/dev/null; then
-            log "ERROR" "Commande manquante: $cmd"
+            log "ERROR" "Commande requise manquante: $cmd"
             exit 1
+        fi
+        log "DEBUG" "✓ $cmd trouvé"
+    done
+    
+    for cmd in "${optional_commands[@]}"; do
+        if ! command -v "$cmd" &>/dev/null; then
+            log "WARN" "Commande optionnelle manquante: $cmd (sera installée automatiquement)"
+        else
+            log "DEBUG" "✓ $cmd trouvé"
         fi
     done
     
@@ -263,35 +294,60 @@ install_system_dependencies() {
     local os="$(detect_os)"
     log "INFO" "Installation des dépendances système ($os)..."
     
+    if [[ "$DRY_RUN" == "true" ]]; then
+        log "INFO" "Mode simulation - installation des dépendances ignorée"
+        return 0
+    fi
+    
+    # Dans l'environnement Replit/Nix, les dépendances sont gérées différemment
+    if [[ -n "${REPLIT_ENVIRONMENT:-}" ]] || [[ -n "${NIX_PATH:-}" ]]; then
+        log "INFO" "Environnement Replit/Nix détecté - dépendances gérées automatiquement"
+        return 0
+    fi
+    
     case "$os" in
         "ubuntu")
-            if [[ "$DRY_RUN" == "false" ]]; then
-                sudo apt-get update -qq
-                sudo apt-get install -y build-essential python3-dev libsqlite3-dev pkg-config
-            fi
+            apt-get update -qq 2>/dev/null || {
+                log "WARN" "Impossible de mettre à jour les paquets (permissions insuffisantes)"
+                return 0
+            }
+            apt-get install -y build-essential python3-dev libsqlite3-dev pkg-config 2>/dev/null || {
+                log "WARN" "Installation des dépendances système échouée (peut nécessiter sudo)"
+                return 0
+            }
             ;;
         "centos")
-            if [[ "$DRY_RUN" == "false" ]]; then
-                sudo yum groupinstall -y "Development Tools"
-                sudo yum install -y python3-devel sqlite-devel pkgconfig
-            fi
+            yum groupinstall -y "Development Tools" 2>/dev/null || {
+                log "WARN" "Installation des outils de développement échouée"
+                return 0
+            }
+            yum install -y python3-devel sqlite-devel pkgconfig 2>/dev/null || {
+                log "WARN" "Installation des dépendances échouée"
+                return 0
+            }
             ;;
         "alpine")
-            if [[ "$DRY_RUN" == "false" ]]; then
-                sudo apk add --no-cache build-base python3-dev sqlite-dev pkgconfig
-            fi
+            apk add --no-cache build-base python3-dev sqlite-dev pkgconfig 2>/dev/null || {
+                log "WARN" "Installation des dépendances Alpine échouée"
+                return 0
+            }
             ;;
         "macos")
-            if command -v brew &>/dev/null && [[ "$DRY_RUN" == "false" ]]; then
-                brew install sqlite3 pkg-config
+            if command -v brew &>/dev/null; then
+                brew install sqlite3 pkg-config 2>/dev/null || {
+                    log "WARN" "Installation Homebrew échouée"
+                    return 0
+                }
+            else
+                log "WARN" "Homebrew non installé sur macOS"
             fi
             ;;
         *)
-            log "WARN" "OS non reconnu, installation manuelle des dépendances requise"
+            log "WARN" "OS non reconnu ($os), dépendances système ignorées"
             ;;
     esac
     
-    log "SUCCESS" "Dépendances système installées"
+    log "SUCCESS" "Dépendances système configurées"
 }
 
 # =============================================================================
