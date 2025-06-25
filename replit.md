@@ -126,6 +126,10 @@ FHIR Data → AI Service → Provider Selection → Analysis → Response Format
 - **PROFILS DOUBLES APPLIQUÉS** : fr-core-patient + fr-core-patient-ins selon présence INS-NIR
 - **VALIDATION AUTOMATIQUE** : Script validate-r4-frcore.js avec vérification stricte toutes corrections
 - **ARCHITECTURE MODULAIRE** : Handlers conformes R4 + MessageHeader eventUri + références cohérentes
+- **SMART FAVORITES SYSTEM** : Hydratation intelligente des favoris basée sur le comportement utilisateur
+- **CONTEXTUAL SUGGESTIONS** : Suggestions automatiques de pages selon l'historique et les patterns de navigation
+- **USER BEHAVIOR ANALYTICS** : Suivi intelligent des habitudes utilisateur pour optimiser l'expérience
+- **ADAPTIVE UI** : Interface qui s'adapte dynamiquement aux préférences et workflows utilisateur
 
 ### June 18, 2025 - Complete Swagger OpenAPI 3.0 Migration + Interface Fixes
 - **Swagger OpenAPI 3.0 Migration**: Complete rebuild from scratch with 96 documented endpoints, 78.3% quality score

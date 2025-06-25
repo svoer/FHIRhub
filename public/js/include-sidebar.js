@@ -218,7 +218,7 @@
         
         // Réhydrater immédiatement l'interface complète
         setTimeout(() => {
-          renderTopFavorites(window.fhirHubFavorites);
+          window.renderTopFavorites(window.fhirHubFavorites);
           updateFavoriteButtonsState(window.fhirHubFavorites);
         }, 50);
         
@@ -252,7 +252,7 @@
     }
     
     // 3. Fonction toggleFavorite avec persistance immédiate
-    function toggleFavorite(url) {
+    window.toggleFavorite = function(url) {
       console.log('[FAVORIS] Toggle favori pour URL:', url);
       
       try {
@@ -279,14 +279,14 @@
         
         // Mettre à jour toute l'interface instantanément
         updateFavoriteButtonsState(favorites);
-        renderTopFavorites(favorites);
+        window.renderTopFavorites(favorites);
         
         return favorites;
       } catch (error) {
         console.error('[FAVORIS] Erreur lors du toggle:', error);
         return window.fhirHubFavorites;
       }
-    }
+    };
     
     // Gestion des favoris - CORRECTION DU TIMING
     setTimeout(() => {
@@ -361,7 +361,7 @@
     // Fonction pour mettre à jour les favoris (legacy, maintenue pour compatibilité)
     function updateFavoritesList(favorites) {
       // Mettre à jour la barre du haut
-      updateTopFavorites(favorites);
+      window.updateTopFavorites(favorites);
       
       // Ancienne liste du sidebar (supprimée mais fonction maintenue)
       const favoritesList = document.getElementById('favorites-list');
@@ -446,7 +446,7 @@
     }
     
     // Fonction de rendu optimisée pour la barre des favoris
-    function renderTopFavorites(favorites) {
+    window.renderTopFavorites = function(favorites) {
       const topContainer = document.getElementById('top-favorites-container');
       if (!topContainer) {
         console.warn('[FAVORIS] Container top-favorites-container non trouvé, retry...');
@@ -505,12 +505,12 @@
       topContainer.style.display = 'none';
       topContainer.offsetHeight; // Trigger reflow
       topContainer.style.display = '';
-    }
+    };
     
     // Fonction legacy maintenue pour compatibilité
-    function updateTopFavorites(favorites) {
-      renderTopFavorites(favorites);
-    }
+    window.updateTopFavorites = function(favorites) {
+      window.renderTopFavorites(favorites);
+    };
     
     // Gestion de la déconnexion
     const logoutBtn = document.getElementById('logoutBtn');
@@ -534,7 +534,7 @@
       const finalFavorites = JSON.parse(localStorage.getItem('fhirhub-favorites') || '[]');
       if (finalFavorites.length > 0) {
         window.fhirHubFavorites = finalFavorites;
-        renderTopFavorites(finalFavorites);
+        window.renderTopFavorites(finalFavorites);
         updateFavoriteButtonsState(finalFavorites);
         console.log('[FAVORIS] Synchronisation finale terminée avec', finalFavorites.length, 'favoris');
       }
