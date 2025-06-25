@@ -20,6 +20,10 @@ args = "FHIRHub"
 task = "workflow.run"
 args = "GitCommands"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "SwaggerGenerator"
+
 [[workflows.workflow]]
 name = "FHIRHub"
 author = "agent"
@@ -36,6 +40,14 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "bash -c \"sleep infinity\""
+
+[[workflows.workflow]]
+name = "SwaggerGenerator"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node scripts/swagger-generator.js"
 
 [deployment]
 run = ["sh", "-c", "cd backend && npm install express cors uuid hapi-fhir && cd ../frontend && npm install react react-dom && cd .. && node backend/server.js"]

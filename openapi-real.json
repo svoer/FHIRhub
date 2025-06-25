@@ -1,0 +1,577 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "FHIRHub API - Documentation Complète Synchronisée",
+    "version": "3.0.0",
+    "description": "API complète de conversion HL7 v2 → FHIR R4 avec conformité FR-Core. Documentation générée automatiquement à partir du code source réel.",
+    "contact": {
+      "name": "FHIRHub Support",
+      "email": "support@fhirhub.fr"
+    },
+    "license": {
+      "name": "Proprietary"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Serveur de développement"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Clé API pour authentification. Utiliser 'dev-key' en développement."
+      },
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Token JWT pour authentification utilisateur"
+      }
+    },
+    "schemas": {
+      "HL7Message": {
+        "type": "object",
+        "required": ["hl7Message"],
+        "properties": {
+          "hl7Message": {
+            "type": "string",
+            "description": "Message HL7 v2.5 au format texte",
+            "example": "MSH|^~\\&|MCK|1.2.250.1.211.10.200.1^ISO|ASIP-SANTE|1.2.250.1.213.1.4.8^ISO|20241220084502||ADT^A04^ADT_A01|20241220084502|P|2.5|||NE|NE|FR^France^ISO3166_1||8859/1\nPID|1||835726^^^MCK&1.2.250.1.211.10.200.1&ISO^PI||MARTIN^PIERRE^JEAN||19701201|M"
+          },
+          "encoding": {
+            "type": "string",
+            "default": "utf-8",
+            "description": "Encodage du message"
+          },
+          "applicationId": {
+            "type": "integer",
+            "description": "ID de l'application source"
+          }
+        }
+      },
+      "FHIRBundle": {
+        "type": "object",
+        "properties": {
+          "resourceType": { "type": "string", "example": "Bundle" },
+          "id": { "type": "string" },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "profile": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          },
+          "type": { "type": "string", "example": "message" },
+          "entry": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fullUrl": { "type": "string" },
+                "resource": { "type": "object" },
+                "request": {
+                  "type": "object",
+                  "properties": {
+                    "method": { "type": "string" },
+                    "url": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ConversionResult": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean" },
+          "bundle": { "$ref": "#/components/schemas/FHIRBundle" },
+          "processing_time": { "type": "number" },
+          "resource_count": { "type": "integer" },
+          "message_type": { "type": "string" },
+          "fr_core_compliant": { "type": "boolean" }
+        }
+      },
+      "ValidationResult": {
+        "type": "object",
+        "properties": {
+          "valid": { "type": "boolean" },
+          "errors": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "username": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "type": "string", "enum": ["admin", "user"] },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ApiKey": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "key_hash": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" },
+          "is_active": { "type": "boolean" }
+        }
+      },
+      "Application": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SystemStats": {
+        "type": "object",
+        "properties": {
+          "conversions": { "type": "integer" },
+          "uptime": { "type": "number" },
+          "memory": {
+            "type": "object",
+            "properties": {
+              "rss": { "type": "integer" },
+              "heapTotal": { "type": "integer" },
+              "heapUsed": { "type": "integer" }
+            }
+          },
+          "conversionStats": {
+            "type": "object",
+            "properties": {
+              "avgTime": { "type": "number" },
+              "minTime": { "type": "number" },
+              "maxTime": { "type": "number" }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/convert": {
+      "post": {
+        "tags": ["Conversion HL7 → FHIR"],
+        "summary": "Convertir message HL7 v2 en Bundle FHIR R4",
+        "description": "Conversion complète avec conformité FR-Core automatique selon architecture modulaire FHIRHub 3.0",
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HL7Message" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conversion réussie avec Bundle FR-Core conforme",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ConversionResult" }
+              }
+            }
+          },
+          "400": {
+            "description": "Message HL7 invalide",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "401": {
+            "description": "Clé API manquante ou invalide",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/convert/validate": {
+      "post": {
+        "tags": ["Validation FR-Core"],
+        "summary": "Valider Bundle FHIR contre profils FR-Core",
+        "description": "Validation automatique avec rapport de conformité détaillé",
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FHIRBundle" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Validation terminée",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ValidationResult" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stats": {
+      "get": {
+        "tags": ["Statistiques"],
+        "summary": "Statistiques système et conversions",
+        "description": "Métriques complètes de performance et utilisation",
+        "security": [{ "ApiKeyAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Statistiques récupérées",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SystemStats" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/version": {
+      "get": {
+        "tags": ["Système"],
+        "summary": "Version de l'application",
+        "description": "Informations de version FHIRHub",
+        "responses": {
+          "200": {
+            "description": "Version récupérée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": { "type": "string", "example": "3.0.0" },
+                    "environment": { "type": "string" },
+                    "architecture": { "type": "string", "example": "modulaire" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/system/health": {
+      "get": {
+        "tags": ["Système"],
+        "summary": "État de santé du système",
+        "description": "Vérification complète des composants",
+        "responses": {
+          "200": {
+            "description": "Système opérationnel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "healthy" },
+                    "database": { "type": "string", "example": "connected" },
+                    "fhir_server": { "type": "string" },
+                    "uptime": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Authentification"],
+        "summary": "Connexion utilisateur",
+        "description": "Authentification JWT pour accès interface",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connexion réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "token": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/User" }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identifiants invalides"
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": ["Gestion Utilisateurs"],
+        "summary": "Liste des utilisateurs",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Liste récupérée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/User" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Gestion Utilisateurs"],
+        "summary": "Créer utilisateur",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "email", "password"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "role": { "type": "string", "enum": ["admin", "user"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Utilisateur créé"
+          }
+        }
+      }
+    },
+    "/api/api-keys": {
+      "get": {
+        "tags": ["Gestion API Keys"],
+        "summary": "Liste des clés API",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Clés récupérées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ApiKey" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Gestion API Keys"],
+        "summary": "Créer clé API",
+        "security": [{ "BearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Clé créée"
+          }
+        }
+      }
+    },
+    "/api/applications": {
+      "get": {
+        "tags": ["Gestion Applications"],
+        "summary": "Liste des applications",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Applications récupérées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Application" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/terminology/french": {
+      "get": {
+        "tags": ["Terminologies Françaises"],
+        "summary": "Informations terminologies ANS/MOS",
+        "description": "Métadonnées des terminologies françaises intégrées",
+        "security": [{ "BearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Terminologies récupérées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "systemsCount": { "type": "integer" },
+                    "oidsCount": { "type": "integer" },
+                    "codeSystemsCount": { "type": "integer" },
+                    "valueSetsCount": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/analyze-patient": {
+      "post": {
+        "tags": ["Intelligence Artificielle"],
+        "summary": "Analyse IA d'un patient FHIR",
+        "description": "Analyse contextuelle avec support multi-providers (Mistral, OpenAI, Claude)",
+        "security": [{ "ApiKeyAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patient": { "type": "object" },
+                  "context": { "type": "string" },
+                  "provider": { "type": "string", "enum": ["mistral", "openai", "claude"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analyse terminée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "analysis": { "type": "string" },
+                    "provider_used": { "type": "string" },
+                    "processing_time": { "type": "number" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Conversion HL7 → FHIR",
+      "description": "Endpoints de conversion avec architecture modulaire FR-Core"
+    },
+    {
+      "name": "Validation FR-Core",
+      "description": "Validation automatique contre profils français"
+    },
+    {
+      "name": "Statistiques",
+      "description": "Métriques système et performance"
+    },
+    {
+      "name": "Système",
+      "description": "Informations système et santé"
+    },
+    {
+      "name": "Authentification",
+      "description": "Gestion authentification JWT"
+    },
+    {
+      "name": "Gestion Utilisateurs",
+      "description": "Administration des utilisateurs"
+    },
+    {
+      "name": "Gestion API Keys",
+      "description": "Administration des clés API"
+    },
+    {
+      "name": "Gestion Applications",
+      "description": "Administration des applications"
+    },
+    {
+      "name": "Terminologies Françaises",
+      "description": "Intégration ANS/MOS"
+    },
+    {
+      "name": "Intelligence Artificielle",
+      "description": "Analyse IA multi-providers"
+    }
+  ]
+}
