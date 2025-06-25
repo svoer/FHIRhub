@@ -86,7 +86,9 @@
  *         $ref: '#/components/responses/BadRequest'
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
- *
+ */
+
+/**
  * Routes pour la gestion des applications
  */
 const express = require('express');
@@ -636,7 +638,8 @@ router.get('/:id/conversions', authCombined, async (req, res) => {
         limit: result.pagination.limit,
         totalPages: result.pagination.totalPages,
         totalCount: result.pagination.total
-      }
+      },
+      pagination: result.pagination
     });
   } catch (error) {
     console.error('[APPLICATIONS ERROR]', error);

@@ -592,8 +592,8 @@
                 .then(data => {
                     console.log("Données des conversions complètes:", data);
                     
-                    if (data.success && data.data && Array.isArray(data.data)) {
-                        const conversions = data.data;
+                    if (data.success && data.data && (Array.isArray(data.data) || data.data.conversions)) {
+                        const conversions = Array.isArray(data.data) ? data.data : data.data.conversions;
                         console.log("Nombre de conversions trouvées:", conversions.length);
                         
                         if (conversions.length > 0) {
