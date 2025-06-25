@@ -618,26 +618,20 @@ router.get('/:id/conversions', authCombined, async (req, res) => {
     
     // Récupérer les conversions avec pagination
     const conversionLogService = require('../src/services/conversionLogService');
-    const conversions = await conversionLogService.getConversions(id, parseInt(limit), parseInt(page), include_null === 'true');
+    const result = conversionLogService.getConversionsForApplication(id, {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      include_null: include_null === 'true'
+    });
+    const conversions = result.data;
     
-    // Récupérer le nombre total de conversions pour la pagination
-    let totalCount;
-    if (include_null === 'true') {
-      totalCount = db.prepare('SELECT COUNT(*) as count FROM conversion_logs WHERE application_id = ? OR application_id IS NULL').get(id);
-    } else {
-      totalCount = db.prepare('SELECT COUNT(*) as count FROM conversion_logs WHERE application_id = ?').get(id);
-    }
-    const totalPages = Math.ceil(totalCount.count / parseInt(limit));
+    // Le nombre total est déjà inclus dans la réponse du service
+    const totalCount = result.pagination.total;
     
     res.json({
       success: true,
-      data: {
-        conversions,
-        page: parseInt(page),
-        limit: parseInt(limit),
-        totalPages,
-        totalCount: totalCount.count
-      }
+      data: conversions,
+      pagination: result.pagination
     });
   } catch (error) {
     console.error('[APPLICATIONS ERROR]', error);
@@ -696,9 +690,8 @@ router.get('/:id/conversions/:conversionId', authCombined, async (req, res) => {
       });
     }
     
-    // Récupérer les détails de la conversion
-    const conversionLogService = require('../src/services/conversionLogService');
-    const conversion = await conversionLogService.getConversionDetails(conversionId, id);
+    // Récupérer les détails de la conversion directement de la base de données
+    const conversion = db.prepare('SELECT * FROM conversion_logs WHERE id = ? AND application_id = ?').get(conversionId, id);
     
     if (!conversion) {
       return res.status(404).json({
