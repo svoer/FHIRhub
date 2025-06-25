@@ -528,16 +528,6 @@
     
     console.log('Configuration de l\'interactivité terminée');
     
-    // Force une dernière synchronisation des favoris après tout le chargement
-    setTimeout(() => {
-      console.log('[FAVORIS] Synchronisation finale...');
-      const finalFavorites = JSON.parse(localStorage.getItem('fhirhub-favorites') || '[]');
-      if (finalFavorites.length > 0) {
-        window.fhirHubFavorites = finalFavorites;
-        window.renderTopFavorites(finalFavorites);
-        updateFavoriteButtonsState(finalFavorites);
-        console.log('[FAVORIS] Synchronisation finale terminée avec', finalFavorites.length, 'favoris');
-      }
-    }, 300);
+    console.log('[FAVORIS] Système de favoris basique chargé');
   }
 })();
