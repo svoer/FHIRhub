@@ -38,6 +38,40 @@ const hl7Parser = require('./hl7Parser');
 console.log('[CONVERTER] Profils FR Core intégrés dans le convertisseur principal');
 
 /**
+ * Convertit une chaîne HL7 (YYYYMMDDHHmmss) en dateTime FHIR R4 avec fuseau.
+ * @param {string|Date} input - Date HL7 ou objet Date
+ * @param {string} [tz="+02:00"] - Fuseau horaire par défaut
+ * @returns {string} - Ex. "2025-06-25T04:25:13+02:00"
+ */
+function formatDateTimeWithTimezone(input, tz = '+02:00') {
+  if (!input) return null;
+  
+  let date;
+  if (input instanceof Date) {
+    date = input;
+  } else if (typeof input === 'string') {
+    // Format HL7: YYYYMMDDHHMMSS
+    const dateStr = input.toString().replace(/[^0-9]/g, '');
+    if (dateStr.length >= 8) {
+      const year = dateStr.substr(0,4);
+      const month = dateStr.substr(4,2);
+      const day = dateStr.substr(6,2);
+      const hour = dateStr.substr(8,2) || '00';
+      const minute = dateStr.substr(10,2) || '00';
+      const second = dateStr.substr(12,2) || '00';
+      date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+    } else {
+      date = new Date(input);
+    }
+  } else {
+    date = new Date();
+  }
+  
+  // Format ISO avec fuseau +02:00 (Europe/Paris)
+  return date.toISOString().replace('Z', tz);
+}
+
+/**
  * Extraction du NIR depuis le champ PID-3
  * @param {*} pidField - Champ PID-3 
  * @returns {string|null} NIR ou null
