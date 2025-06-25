@@ -309,8 +309,8 @@
 .nav-menu a i {
   width: 18px !important;
   min-width: 18px !important;
-  margin-left: 0 !important;
-  margin-right: 10px !important;
+  margin-left: 4px !important;
+  margin-right: 12px !important;
   font-size: 1rem;
   text-align: left !important;
   opacity: 0.85;
