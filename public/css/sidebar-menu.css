@@ -5,11 +5,11 @@
   --sidebar-width: 260px;
   --header-height: 60px;
   --sidebar-background: #fff;
-  --sidebar-text: #333;
-  --sidebar-hover: #f5f5f5;
-  --sidebar-active: linear-gradient(90deg, rgba(231, 76, 60, 0.08), rgba(243, 156, 18, 0.05));
+  --sidebar-text: #2c3e50;
+  --sidebar-hover: #f8f9fa;
+  --sidebar-active: linear-gradient(90deg, rgba(231, 76, 60, 0.1), rgba(243, 156, 18, 0.06));
   --sidebar-border: #e74c3c;
-  --sidebar-category: #666;
+  --sidebar-category: #7f8c8d;
   --primary-gradient: linear-gradient(135deg, #e74c3c, #f39c12);
   --shadow-soft: 0 2px 5px rgba(0, 0, 0, 0.08);
   --shadow-medium: 0 5px 10px rgba(0, 0, 0, 0.1);
