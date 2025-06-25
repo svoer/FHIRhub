@@ -1,0 +1,126 @@
+{
+  "resourceType": "Bundle",
+  "id": "3b39b3f2-79b2-4c3c-8bdf-b44f00899fb4",
+  "meta": {
+    "lastUpdated": "2025-06-25T09:18:45.235Z",
+    "profile": [
+      "http://hl7.org/fhir/StructureDefinition/Bundle"
+    ]
+  },
+  "type": "message",
+  "timestamp": "2025-06-25T09:18:45.235Z",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:1325702e-a7fa-4fe8-8778-add1c82130ae",
+      "resource": {
+        "resourceType": "MessageHeader",
+        "id": "1325702e-a7fa-4fe8-8778-add1c82130ae",
+        "meta": {
+          "profile": [
+            "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-message-header"
+          ]
+        },
+        "eventCoding": {
+          "system": "http://terminology.hl7.org/CodeSystem/v2-0003",
+          "code": "20241220084502"
+        },
+        "destination": [
+          {
+            "name": "1.2.250.1.213.1.4.8^ISO",
+            "endpoint": "urn:oid:20241220084502"
+          }
+        ],
+        "sender": {
+          "reference": "Organization/a0e4581b-017e-4506-ab2f-4f029909a2db",
+          "display": "1.2.250.1.211.10.200.1^ISO"
+        },
+        "timestamp": "2025-06-25T09:18:45.236Z",
+        "source": {
+          "name": "1.2.250.1.211.10.200.1^ISO",
+          "endpoint": "urn:oid:ASIP-SANTE"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "MessageHeader"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:41a0affc-c643-4ceb-b520-ac7e2b8f49c5",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "41a0affc-c643-4ceb-b520-ac7e2b8f49c5",
+        "meta": {
+          "profile": [
+            "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient"
+          ]
+        },
+        "identifier": [
+          {
+            "use": "usual",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "PI"
+                }
+              ]
+            },
+            "system": "urn:oid:1.2.250.1.71.4.2.7",
+            "value": "835726",
+            "assigner": {
+              "display": "MCK&1.2.250.1.211.10.200.1&ISO"
+            }
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "MARTIN",
+            "given": [
+              "PIERRE",
+              "JEAN"
+            ]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "1970-12-01",
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "0696430705^PRN^PH",
+            "use": "home"
+          }
+        ],
+        "address": [
+          {
+            "use": "home",
+            "line": [
+              "10 rue de la Santé"
+            ],
+            "city": "PARIS",
+            "postalCode": "75001",
+            "country": "FRA"
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-identity-reliability",
+            "valueCodeableConcept": {
+              "coding": [
+                {
+                  "system": "https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-identity-reliability",
+                  "code": "UNDI"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    }
+  ]
+}
