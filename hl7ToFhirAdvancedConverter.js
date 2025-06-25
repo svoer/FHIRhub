@@ -5193,7 +5193,8 @@ function createMessageHeaderResource(mshSegment) {
     meta: {
       profile: ['http://hl7.org/fhir/StructureDefinition/MessageHeader']
     },
-    eventCoding: eventCoding,
+    // CORRECTION R4: eventUri au lieu de eventCoding
+    eventUri: `http://hl7.org/fhir/message/event/${eventCoding.code}`,
     source: {
       name: sendingFacility,
       software: sendingApplication,

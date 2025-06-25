@@ -33,7 +33,6 @@ const security = require('./middleware/security');
 
 // Importer le convertisseur principal 
 const { convertHL7ToFHIR } = require('./hl7ToFhirAdvancedConverter');
-const { fixFHIRBundle } = require('./fix-r4-frcore-bundle');
 
 /**
  * Configuration de l'application
@@ -547,9 +546,19 @@ async function processHL7Conversion(hl7Message, req, res) {
   try {
     // Utiliser le convertisseur avec cache pour transformer HL7 en FHIR
     const startTime = Date.now();
-    const result = convertHL7ToFHIR(hl7Message);
+    let result = convertHL7ToFHIR(hl7Message);
     const conversionTime = Date.now() - startTime;
     const fromCache = result._meta && result._meta.fromCache;
+    
+    // CORRECTION R4: Suppression automatique entry.request et Bundle.timestamp
+    if (result && result.resourceType === 'Bundle') {
+      if (result.type === 'message' && result.entry) {
+        result.entry.forEach(entry => {
+          if (entry.request) delete entry.request;
+        });
+      }
+      if (result.timestamp) delete result.timestamp;
+    }
     
     // Mise à jour des métriques
     // // metrics.incrementConversionCount();
