@@ -234,14 +234,18 @@
     
 
     
-    // Gestion des favoris - CORRECTION DU TIMING
+    // Suppression définitive des favoris - Nettoyage complet
     setTimeout(() => {
-      const favoriteButtons = document.querySelectorAll('.favorite-btn');
-      console.log('[FAVORIS] Recherche des boutons favoris, trouvés:', favoriteButtons.length);
+      // Nettoyer toutes les références aux favoris
+      const favoriteButtons = document.querySelectorAll('.favorite-btn, .favorite-icon, .fa-star, .fa-star-o, .icon-star, .sidebar-favorite');
+      favoriteButtons.forEach(btn => btn.remove());
       
-      if (favoriteButtons.length > 0) {
-        // Initialiser le système de favoris avec délai pour s'assurer que le DOM est prêt
-        let favorites = initFavoritesSystem();
+      // Remplacer les fonctions favoris par des fonctions vides
+      window.renderTopFavorites = function() { return; };
+      window.toggleFavorite = function() { return; };
+      window.initFavoritesSystem = function() { return []; };
+      
+      console.log('[CLEANUP] Suppression définitive de', favoriteButtons.length, 'éléments favoris');
       
       // Mettre à jour l'apparence des boutons en fonction des favoris enregistrés
       favoriteButtons.forEach(btn => {

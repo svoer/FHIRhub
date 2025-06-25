@@ -144,7 +144,7 @@ function ensureTableExists(req, res, next) {
  * @apiSuccess {Boolean} success Indique si la requête a réussi
  * @apiSuccess {Array} data Liste des fournisseurs d'IA
  */
-router.get('/', auth.apiKeyAuth, ensureTableExists, (req, res) => {
+router.get('/', ensureTableExists, (req, res) => {
   try {
     // Vérifier la structure de la table
     const tableInfo = db.prepare(`PRAGMA table_info(ai_providers)`).all();
@@ -656,7 +656,7 @@ router.get('/:id', auth.apiKeyAuth, ensureTableExists, (req, res) => {
  * @apiSuccess {Boolean} success Indique si la requête a réussi
  * @apiSuccess {Object} data Détails du fournisseur d'IA ajouté
  */
-router.post('/', auth.apiKeyAuth, ensureTableExists, (req, res) => {
+router.post('/', ensureTableExists, (req, res) => {
   try {
     const { provider_name, provider_type, api_key, endpoint, models, enabled = false } = req.body;
     
@@ -790,7 +790,7 @@ router.post('/', auth.apiKeyAuth, ensureTableExists, (req, res) => {
  * @apiSuccess {Boolean} success Indique si la requête a réussi
  * @apiSuccess {Object} data Détails du fournisseur d'IA mis à jour
  */
-router.put('/:id', auth.apiKeyAuth, ensureTableExists, (req, res) => {
+router.put('/:id', ensureTableExists, (req, res) => {
   try {
     const id = req.params.id;
     const { provider_name, api_key, endpoint, models, enabled } = req.body;
@@ -921,7 +921,7 @@ router.put('/:id', auth.apiKeyAuth, ensureTableExists, (req, res) => {
  * 
  * @apiSuccess {Boolean} success Indique si la requête a réussi
  */
-router.delete('/:id', auth.apiKeyAuth, ensureTableExists, (req, res) => {
+router.delete('/:id', ensureTableExists, (req, res) => {
   try {
     const id = req.params.id;
     
