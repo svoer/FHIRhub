@@ -506,11 +506,7 @@
       topContainer.offsetHeight; // Trigger reflow
       topContainer.style.display = '';
     };
-    
-    // Fonction legacy maintenue pour compatibilité
-    window.updateTopFavorites = function(favorites) {
-      window.renderTopFavorites(favorites);
-    };
+
     
     // Gestion de la déconnexion
     const logoutBtn = document.getElementById('logoutBtn');
@@ -528,6 +524,6 @@
     
     console.log('Configuration de l\'interactivité terminée');
     
-    console.log('[FAVORIS] Système de favoris basique chargé');
+    console.log('[MENU] Menu latéral simplifié chargé');
   }
 })();
