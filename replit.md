@@ -116,15 +116,15 @@ FHIR Data → AI Service → Provider Selection → Analysis → Response Format
 
 ## Changelog
 
-### June 25, 2025 - 🚀 Scripts d'Installation et Démarrage Automatisés v2.0
-- **SCRIPTS SIMPLIFIÉS** : install-simple.sh et start-simple.sh inspirés des scripts originaux utilisateur
-- **APPROCHE DIRECTE** : Installation rapide et efficace sans complexité excessive
-- **COMPATIBILITÉ ÉTENDUE** : Fonctionne sur la plupart des environnements Linux/Unix
-- **INTERFACE CLAIRE** : Messages colorés et informatifs sans surcharge
-- **GESTION D'ERREURS ESSENTIELLE** : Validation des prérequis et gestion des échecs
-- **COMMANDES SIMPLES** : start/stop/restart/status avec options --daemon et --help
-- **CONFIGURATION AUTOMATIQUE** : Création .env et structure de dossiers
-- **BASÉ SUR L'EXISTANT** : Reprend la logique éprouvée des scripts utilisateur précédents
+### June 25, 2025 - 🚀 Scripts d'Installation et Démarrage Simplifiés v2.0 - CORRIGÉS
+- **SCRIPTS SIMPLIFIÉS** : install-simple.sh et start-simple.sh corrigés et fonctionnels
+- **GESTION MODULES** : Installation automatique des modules critiques (axios, express, cors, better-sqlite3)
+- **SCRIPT HAPI FHIR** : start-hapi-fhir.sh créé pour gérer le serveur FHIR local
+- **PERMISSIONS CORRIGÉES** : Tous les scripts maintenant exécutables et testés
+- **DÉTECTION ERREURS** : Vérification et installation automatique des dépendances manquantes
+- **COMMANDES FONCTIONNELLES** : start/stop/restart/status avec gestion PID améliorée
+- **COMPATIBILITÉ REPLIT** : Adaptation aux spécificités de l'environnement Replit
+- **INSTALLATION ROBUSTE** : Gestion des erreurs pip Python et modules Node.js critiques
 
 ### June 24, 2025 - 🎯 CONFORMITÉ R4 & FR-CORE STRICTE + CORRECTIONS COMPLÈTES - FHIRHub 3.0 Healthcare Certified
 - **CONFORMITÉ R4 TOTALE** : Bundle.timestamp supprimé, entry.request éliminé, eventUri MessageHeader

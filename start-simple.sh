@@ -254,12 +254,35 @@ log "INFO" "[5/5] Démarrage de l'application..."
 # Test des modules critiques avant démarrage
 log "INFO" "Vérification des modules critiques..."
 CRITICAL_MODULES=("axios" "express" "cors" "better-sqlite3")
+MISSING_MODULES=()
+
 for module in "${CRITICAL_MODULES[@]}"; do
     if ! $NODE_CMD -e "require('$module')" 2>/dev/null; then
-        log "WARN" "Module $module manquant, tentative de réinstallation..."
-        $NPM_CMD install "$module" --silent 2>/dev/null
+        MISSING_MODULES+=("$module")
     fi
 done
+
+if [ ${#MISSING_MODULES[@]} -gt 0 ]; then
+    log "WARN" "Modules manquants détectés: ${MISSING_MODULES[*]}"
+    log "INFO" "Installation des modules manquants..."
+    for module in "${MISSING_MODULES[@]}"; do
+        $NPM_CMD install "$module" --silent 2>/dev/null && log "SUCCESS" "$module installé" || log "WARN" "Échec $module"
+    done
+    
+    # Révérifier après installation
+    STILL_MISSING=()
+    for module in "${MISSING_MODULES[@]}"; do
+        if ! $NODE_CMD -e "require('$module')" 2>/dev/null; then
+            STILL_MISSING+=("$module")
+        fi
+    done
+    
+    if [ ${#STILL_MISSING[@]} -gt 0 ]; then
+        error_exit "Modules critiques toujours manquants: ${STILL_MISSING[*]}. Exécutez ./install-simple.sh"
+    fi
+fi
+
+log "SUCCESS" "Tous les modules critiques sont disponibles"
 
 # Affichage des informations de démarrage
 echo

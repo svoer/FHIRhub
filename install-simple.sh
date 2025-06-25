@@ -69,6 +69,16 @@ if [ ! -f "package.json" ]; then
 fi
 
 # Installation des dépendances avec gestion d'erreur
+log "INFO" "Installation des modules critiques d'abord..."
+CRITICAL_MODULES=("axios" "express" "cors" "better-sqlite3" "jsonwebtoken" "uuid")
+for module in "${CRITICAL_MODULES[@]}"; do
+    if ! node -e "require('$module')" 2>/dev/null; then
+        log "INFO" "Installation de $module..."
+        npm install "$module" --silent 2>/dev/null || log "WARN" "Échec installation de $module"
+    fi
+done
+
+# Installation complète des dépendances
 if npm ci --silent 2>/dev/null; then
     log "SUCCESS" "Dépendances installées avec npm ci"
 elif npm install --silent 2>/dev/null; then
