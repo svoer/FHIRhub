@@ -321,9 +321,14 @@ if [ ! -z "$PYTHON_CMD" ]; then
   # Installation des modules requis si pip est disponible
   if [ ! -z "$PIP_CMD" ]; then
     echo "   Installation des modules hl7 et requests..."
-    # Tentative d'installation avec la nouvelle approche pour Python 3.12+
-    # --break-system-packages est nécessaire pour Python 3.12+ 
-    $PIP_CMD install hl7 requests --quiet --break-system-packages || $PIP_CMD install hl7 requests --quiet || true
+    # Essayer différentes méthodes d'installation selon la version de Python
+    if $PIP_CMD install hl7 requests --quiet 2>/dev/null; then
+      echo "   ✅ Modules Python installés avec pip standard"
+    elif $PIP_CMD install hl7 requests --user --quiet 2>/dev/null; then
+      echo "   ✅ Modules Python installés avec --user"
+    else
+      echo "   ⚠️ Installation des modules Python échouée"
+    fi
     
     # Vérifier si l'installation a réussi
     if $PYTHON_CMD -c "import hl7" &> /dev/null && $PYTHON_CMD -c "import requests" &> /dev/null; then
@@ -435,28 +440,121 @@ echo "   Initialisation des schémas de tables..."
 
 # Créer un script temporaire pour initialiser la base de données
 cat > ./init-db.js << 'EOL'
-const dbService = require('./src/services/dbService');
-const schema = require('./src/db/schema');
+const Database = require('better-sqlite3');
+const path = require('path');
+const fs = require('fs');
 
 async function initializeDatabase() {
   console.log("[DB] Démarrage de l'initialisation de la base de données...");
   
   try {
-    // Initialiser le service de base de données
-    await dbService.initialize();
+    // Récupérer le chemin de la base de données depuis .env
+    const envPath = path.join(__dirname, '.env');
+    let dbPath = './storage/db/fhirhub.db';
     
-    // Vérifier si createTables existe (fonction existante dans certaines versions)
-    if (typeof dbService.createTables === 'function') {
-      // Utiliser la fonction createTables existante
-      console.log(`[DB] Utilisation de dbService.createTables()...`);
-      await dbService.createTables();
-    } else {
-      // Créer toutes les tables définies dans le schéma manuellement
-      for (const table of schema.ALL_SCHEMAS) {
-        console.log(`[DB] Création de la table ${table.tableName}...`);
-        await dbService.run(`CREATE TABLE IF NOT EXISTS ${table.tableName} (${table.columns})`);
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, 'utf8');
+      const dbPathMatch = envContent.match(/DB_PATH=(.+)/);
+      if (dbPathMatch) {
+        dbPath = dbPathMatch[1].trim();
       }
     }
+    
+    console.log(`[DB] Utilisation du chemin de base de données: ${dbPath}`);
+    
+    // S'assurer que le répertoire existe
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
+    
+    // Initialiser la base de données SQLite
+    const db = new Database(dbPath);
+    
+    // Créer les tables principales
+    console.log("[DB] Création des tables principales...");
+    
+    // Table conversion_logs
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS conversion_logs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        input_message TEXT NOT NULL,
+        output_message TEXT,
+        status TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        api_key_id INTEGER,
+        user_id INTEGER,
+        processing_time INTEGER DEFAULT 0,
+        resource_count INTEGER DEFAULT 0,
+        application_id INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+        FOREIGN KEY (application_id) REFERENCES applications(id) ON DELETE SET NULL
+      )
+    `);
+    
+    // Table users
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL,
+        email TEXT,
+        last_login TEXT,
+        preferences TEXT,
+        language TEXT DEFAULT 'fr',
+        updated_at TEXT,
+        created_at TEXT NOT NULL
+      )
+    `);
+    
+    // Table applications
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS applications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT,
+        cors_origins TEXT,
+        settings TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        created_by INTEGER,
+        FOREIGN KEY(created_by) REFERENCES users(id)
+      )
+    `);
+    
+    // Table api_keys
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        application_id INTEGER NOT NULL,
+        key TEXT UNIQUE NOT NULL,
+        hashed_key TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        description TEXT,
+        expires_at TEXT,
+        created_at TEXT NOT NULL,
+        last_used_at TEXT,
+        FOREIGN KEY(application_id) REFERENCES applications(id)
+      )
+    `);
+    
+    // Table ai_providers (si elle n'existe pas)
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS ai_providers (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        provider_type TEXT NOT NULL,
+        api_key TEXT,
+        api_url TEXT,
+        model_name TEXT,
+        is_active INTEGER DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      )
+    `);
+    
+    console.log("[DB] Tables créées avec succès");
     
     // Vérifier si l'utilisateur admin existe déjà
     const adminExists = await dbService.get(
