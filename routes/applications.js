@@ -546,7 +546,7 @@ router.get('/:id/stats', authCombined, async (req, res) => {
     
     // Récupérer les statistiques de conversion
     const conversionLogService = require('../src/services/conversionLogService');
-    const stats = await conversionLogService.getAppStats(id);
+    const stats = conversionLogService.getApplicationStats(id);
     
     res.json({
       success: true,

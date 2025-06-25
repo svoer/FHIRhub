@@ -170,13 +170,13 @@ function getApplicationStats(applicationId) {
         DATE(timestamp) as conversion_date,
         COUNT(*) as daily_count
       FROM conversion_logs 
-      WHERE application_id = ?
+      WHERE application_id = ? OR (application_id IS NULL AND ? IS NOT NULL)
       GROUP BY DATE(timestamp)
       ORDER BY conversion_date DESC
       LIMIT 30
     `;
     
-    const dailyStats = db.prepare(statsQuery).all(applicationId);
+    const dailyStats = db.prepare(statsQuery).all(applicationId, applicationId);
     
     // Statistiques globales
     const globalStatsQuery = `
@@ -189,10 +189,10 @@ function getApplicationStats(applicationId) {
         MIN(timestamp) as first_conversion,
         MAX(timestamp) as last_conversion
       FROM conversion_logs 
-      WHERE application_id = ?
+      WHERE application_id = ? OR (application_id IS NULL AND ? IS NOT NULL)
     `;
     
-    const globalStats = db.prepare(globalStatsQuery).get(applicationId);
+    const globalStats = db.prepare(globalStatsQuery).get(applicationId, applicationId);
     
     return {
       global: globalStats,
