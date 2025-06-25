@@ -630,8 +630,13 @@ router.get('/:id/conversions', authCombined, async (req, res) => {
     
     res.json({
       success: true,
-      data: conversions,
-      pagination: result.pagination
+      data: {
+        conversions: conversions,
+        page: result.pagination.page,
+        limit: result.pagination.limit,
+        totalPages: result.pagination.totalPages,
+        totalCount: result.pagination.total
+      }
     });
   } catch (error) {
     console.error('[APPLICATIONS ERROR]', error);

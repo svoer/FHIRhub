@@ -592,8 +592,8 @@
                 .then(data => {
                     console.log("Données des conversions complètes:", data);
                     
-                    if (data.success && data.data && data.data.conversions) {
-                        const conversions = data.data.conversions;
+                    if (data.success && data.data && Array.isArray(data.data)) {
+                        const conversions = data.data;
                         console.log("Nombre de conversions trouvées:", conversions.length);
                         
                         if (conversions.length > 0) {
@@ -726,8 +726,8 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        displayConversions(data.data.conversions);
-                        updatePagination(page, data.data.totalPages, appId);
+                        displayConversions(data.data.conversions || data.data);
+                        updatePagination(page, data.data.totalPages || data.pagination.totalPages, appId);
                     }
                 })
                 .catch(error => {
