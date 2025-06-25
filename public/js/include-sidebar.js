@@ -246,67 +246,9 @@
       window.initFavoritesSystem = function() { return []; };
       
       console.log('[CLEANUP] Suppression définitive de', favoriteButtons.length, 'éléments favoris');
-      
-      // Mettre à jour l'apparence des boutons en fonction des favoris enregistrés
-      favoriteButtons.forEach(btn => {
-        const url = btn.getAttribute('data-url');
-        if (!url) {
-          console.warn('Bouton favori sans attribut data-url trouvé');
-          return; // Ignorer les boutons sans URL
-        }
-        
-        if (favorites.includes(url)) {
-          btn.classList.add('active');
-          btn.innerHTML = '<i class="fas fa-star"></i>';
-          btn.setAttribute('title', 'Retirer des favoris');
-        }
-        
-        // Ajouter l'écouteur d'événement pour gérer les clics
-        btn.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          
-          const url = this.getAttribute('data-url');
-          if (!url) {
-            console.warn('Clic sur un bouton favori sans attribut data-url');
-            return; // Ne rien faire si pas d'URL
-          }
-          
-          // Récupérer les favoris actuels
-          let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
-          
-          // Vérifier si l'URL est déjà dans les favoris
-          const index = favorites.indexOf(url);
-          
-          if (index === -1) {
-            // Ajouter aux favoris
-            favorites.push(url);
-            this.classList.add('active');
-            this.innerHTML = '<i class="fas fa-star"></i>';
-            this.setAttribute('title', 'Retirer des favoris');
-          } else {
-            // Retirer des favoris
-            favorites.splice(index, 1);
-            this.classList.remove('active');
-            this.innerHTML = '<i class="far fa-star"></i>';
-            this.setAttribute('title', 'Ajouter aux favoris');
-          }
-          
-          // Enregistrer les favoris mis à jour
-          localStorage.setItem('favorites', JSON.stringify(favorites));
-          
-          // Mettre à jour l'affichage de la liste des favoris
-          updateFavoritesList(favorites);
-        });
-      });
-      
-        console.log('[FAVORIS] Événements de favoris configurés');
-      } else {
-        console.warn('[FAVORIS] Aucun bouton favori trouvé, initialisation basique');
-        // Initialiser quand même la barre des favoris
-        initFavoritesSystem();
-      }
-    }, 100); // Délai de 100ms pour s'assurer que le DOM est complètement chargé
+    }, 200); // Nettoyage rapide
+    
+    console.log('[MENU] Navigation simplifiée sans favoris - nettoyage complet effectué');
     
     // Fonction pour mettre à jour les favoris (legacy, maintenue pour compatibilité)
     function updateFavoritesList(favorites) {
