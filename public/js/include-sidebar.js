@@ -230,63 +230,9 @@
       }
     }
     
-    // 2. Mettre à jour l'état visuel des boutons étoiles
-    function updateFavoriteButtonsState(favorites) {
-      const favoriteButtons = document.querySelectorAll('.favorite-btn');
-      console.log('[FAVORIS] Mise à jour de', favoriteButtons.length, 'boutons étoiles');
-      
-      favoriteButtons.forEach(btn => {
-        const url = btn.getAttribute('data-url');
-        if (!url) return;
-        
-        if (favorites.includes(url)) {
-          btn.classList.add('active');
-          btn.innerHTML = '<i class="fas fa-star"></i>';
-          btn.setAttribute('title', 'Retirer des favoris');
-        } else {
-          btn.classList.remove('active');
-          btn.innerHTML = '<i class="far fa-star"></i>';
-          btn.setAttribute('title', 'Ajouter aux favoris');
-        }
-      });
-    }
+
     
-    // 3. Fonction toggleFavorite avec persistance immédiate
-    window.toggleFavorite = function(url) {
-      console.log('[FAVORIS] Toggle favori pour URL:', url);
-      
-      try {
-        // Récupérer l'état actuel
-        let favorites = [...window.fhirHubFavorites];
-        const index = favorites.indexOf(url);
-        
-        if (index === -1) {
-          // Ajouter aux favoris
-          favorites.push(url);
-          console.log('[FAVORIS] Ajout:', url);
-        } else {
-          // Retirer des favoris
-          favorites.splice(index, 1);
-          console.log('[FAVORIS] Suppression:', url);
-        }
-        
-        // Mettre à jour l'état global
-        window.fhirHubFavorites = favorites;
-        
-        // Persister immédiatement
-        localStorage.setItem('fhirhub-favorites', JSON.stringify(favorites));
-        console.log('[FAVORIS] Favoris persistés:', favorites);
-        
-        // Mettre à jour toute l'interface instantanément
-        updateFavoriteButtonsState(favorites);
-        window.renderTopFavorites(favorites);
-        
-        return favorites;
-      } catch (error) {
-        console.error('[FAVORIS] Erreur lors du toggle:', error);
-        return window.fhirHubFavorites;
-      }
-    };
+
     
     // Gestion des favoris - CORRECTION DU TIMING
     setTimeout(() => {
@@ -445,67 +391,7 @@
       });
     }
     
-    // Fonction de rendu optimisée pour la barre des favoris
-    window.renderTopFavorites = function(favorites) {
-      const topContainer = document.getElementById('top-favorites-container');
-      if (!topContainer) {
-        console.warn('[FAVORIS] Container top-favorites-container non trouvé, retry...');
-        // Retry après un délai
-        setTimeout(() => renderTopFavorites(favorites), 200);
-        return;
-      }
-      
-      console.log('[FAVORIS] Rendu barre du haut avec:', favorites);
-      
-      // Navigation map complète
-      const navMap = {
-        '/dashboard.html': { title: 'Dashboard', icon: 'fas fa-chart-line' },
-        '/convert.html': { title: 'Convertir', icon: 'fas fa-exchange-alt' },
-        '/direct-fhir.html': { title: 'FHIR Direct', icon: 'fas fa-fire' },
-        '/patient-viewer.html': { title: 'Patients', icon: 'fas fa-user-injured' },
-        '/fhir-settings.html': { title: 'Config FHIR', icon: 'fas fa-cog' },
-        '/applications.html': { title: 'Apps', icon: 'fas fa-th' },
-        '/api-keys.html': { title: 'API Keys', icon: 'fas fa-key' },
-        '/users.html': { title: 'Utilisateurs', icon: 'fas fa-users' },
-        '/terminologies.html': { title: 'Termino', icon: 'fas fa-book-medical' },
-        '/ai-providers.html': { title: 'IA Config', icon: 'fas fa-robot' },
-        '/documentation.html': { title: 'Docs', icon: 'fas fa-file-alt' },
-        '/api-docs/integrated': { title: 'API Docs', icon: 'fas fa-code' },
-        '/faq.html': { title: 'FAQ', icon: 'fas fa-question-circle' }
-      };
-      
-      if (!favorites || favorites.length === 0) {
-        topContainer.innerHTML = '<span class="favorites-empty">Aucun favori</span>';
-        console.log('[FAVORIS] Affichage état vide');
-        return;
-      }
-      
-      // Créer les éléments favoris avec gestion des erreurs
-      const validFavorites = favorites.filter(url => navMap[url]);
-      
-      if (validFavorites.length === 0) {
-        topContainer.innerHTML = '<span class="favorites-empty">Aucun favori valide</span>';
-        return;
-      }
-      
-      const favoritesHTML = validFavorites.map(url => {
-        const navItem = navMap[url];
-        return `
-          <a href="${url}" class="top-favorite-item" title="${navItem.title}">
-            <i class="${navItem.icon}"></i>
-            <span class="title">${navItem.title}</span>
-          </a>
-        `;
-      }).join('');
-      
-      topContainer.innerHTML = favoritesHTML;
-      console.log('[FAVORIS] Barre rendue avec', validFavorites.length, 'favoris valides');
-      
-      // Force le re-render visuel
-      topContainer.style.display = 'none';
-      topContainer.offsetHeight; // Trigger reflow
-      topContainer.style.display = '';
-    };
+
 
     
     // Gestion de la déconnexion

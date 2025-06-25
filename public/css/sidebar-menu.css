@@ -69,88 +69,7 @@
   margin-right: 20px;
 }
 
-/* Barre des favoris améliorée dans le header */
-.header-favorites {
-  display: flex;
-  align-items: center;
-  margin: 0 20px;
-  max-width: 500px;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
-}
 
-.header-favorites::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
-}
-
-.top-favorites {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  white-space: nowrap;
-  padding: 2px 0;
-  min-height: 36px;
-}
-
-.favorites-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.8rem;
-  font-weight: 500;
-  margin-right: 8px;
-  white-space: nowrap;
-}
-
-.top-favorite-item {
-  background: rgba(255, 255, 255, 0.18);
-  color: white;
-  text-decoration: none;
-  padding: 6px 14px;
-  border-radius: 18px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.25s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 40px;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.top-favorite-item:hover {
-  background: rgba(255, 255, 255, 0.28);
-  color: white;
-  text-decoration: none;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.top-favorite-item i {
-  font-size: 0.85rem;
-  opacity: 0.95;
-  flex-shrink: 0;
-}
-
-.top-favorite-item .title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  flex: 1;
-}
-
-/* État vide des favoris */
-.favorites-empty {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.8rem;
-  font-style: italic;
-  padding: 8px 12px;
-}
 
 /* Spacer pour remplacer la barre de recherche */
 .logo-spacer {
@@ -393,34 +312,7 @@
   text-align: center;
 }
 
-/* Style pour le bouton d'ajout aux favoris */
-.favorite-btn {
-  background: transparent;
-  border: none;
-  color: #aaa;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: 4px;
-  margin-left: 10px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  z-index: 5;
-  position: relative;
-}
 
-.favorite-btn:hover {
-  color: #f39c12;
-  background-color: rgba(0, 0, 0, 0.05);
-}
-
-.favorite-btn.active i {
-  color: #f39c12; /* Étoile jaune quand activée */
-  font-weight: 900; /* Étoile pleine (fa-star) au lieu de fa-star-o */
-}
 
 /* Structure parent-enfant dans le lien */
 .nav-menu a > span {
