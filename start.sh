@@ -162,20 +162,29 @@ countdown() {
 
 get_running_pid() {
     if [[ -f "$PID_FILE" ]]; then
-        local pid=$(cat "$PID_FILE")
-        if ps -p "$pid" > /dev/null 2>&1; then
+        local pid=$(cat "$PID_FILE" 2>/dev/null)
+        if [[ -n "$pid" ]] && ps -p "$pid" > /dev/null 2>&1; then
             echo "$pid"
             return 0
         else
-            rm -f "$PID_FILE"
+            rm -f "$PID_FILE" 2>/dev/null || true
         fi
     fi
     
-    # Recherche par nom de processus
-    local pid=$(pgrep -f "node.*app\.js\|node.*server\.js\|npm.*start" | head -n1)
+    # Recherche par nom de processus pour FHIRHub spécifiquement
+    local pid=$(pgrep -f "node.*app\.js.*fhir\|node.*server\.js.*fhir\|npm.*start.*fhir" 2>/dev/null | head -n1)
     if [[ -n "$pid" ]]; then
         echo "$pid"
         return 0
+    fi
+    
+    # Recherche plus large pour Node.js sur le port 5000
+    if command -v lsof &>/dev/null; then
+        local pid=$(lsof -ti:${PORT:-5000} 2>/dev/null | head -n1)
+        if [[ -n "$pid" ]]; then
+            echo "$pid"
+            return 0
+        fi
     fi
     
     return 1
