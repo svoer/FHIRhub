@@ -14,6 +14,7 @@
     
     <!-- Barre des favoris dans le header -->
     <div class="header-favorites">
+      <span class="favorites-label">Favoris :</span>
       <div id="top-favorites-container" class="top-favorites">
         <!-- Les favoris seront injectés ici dynamiquement -->
       </div>
@@ -71,11 +72,7 @@
     <li><a href="/api-docs/integrated" data-page="api-docs"><i class="fas fa-code"></i> API Documentation <button class="favorite-btn" data-url="/api-docs/integrated" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
     <li><a href="/faq.html" data-page="faq"><i class="fas fa-question-circle"></i> FAQ <button class="favorite-btn" data-url="/faq.html" title="Ajouter aux favoris"><i class="far fa-star"></i></button></a></li>
     
-    <li class="favorites-divider"><i class="fas fa-star"></i> Favoris</li>
-    <ul id="favorites-list" class="favorites-list">
-      <!-- Les favoris seront ajoutés ici dynamiquement -->
-      <li><p class="no-favorites">Aucun favori</p></li>
-    </ul>
+    <!-- Section favoris supprimée du sidebar - maintenant dans le header -->
     <li><a href="#" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
   </ul>
 </aside>
