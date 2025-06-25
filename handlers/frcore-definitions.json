@@ -1,0 +1,165 @@
+{
+  "profiles": {
+    "Patient": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient",
+      "slices": {
+        "identifier": {
+          "PI": {
+            "system": "urn:oid:1.2.250.1.71.4.2.7",
+            "type": "http://terminology.hl7.org/CodeSystem/v2-0203#PI"
+          },
+          "INS-NIR": {
+            "system": "urn:oid:1.2.250.1.213.1.4.8",
+            "type": "https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203#INS-NIR"
+          },
+          "INS-NIA": {
+            "system": "urn:oid:1.2.250.1.213.1.4.2",
+            "type": "https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203#INS-NIA"
+          }
+        }
+      }
+    },
+    "PatientINS": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-ins"
+    },
+    "Encounter": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter",
+      "slices": {
+        "identifier": {
+          "VN": {
+            "system": "urn:oid:1.2.250.1.71.4.2.7",
+            "type": "http://terminology.hl7.org/CodeSystem/v2-0203#VN"
+          }
+        }
+      }
+    },
+    "Practitioner": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner",
+      "slices": {
+        "identifier": {
+          "RPPS": {
+            "system": "urn:oid:1.2.250.1.71.4.2.1",
+            "type": "http://terminology.hl7.org/CodeSystem/v2-0203#RPPS"
+          },
+          "ADELI": {
+            "system": "urn:oid:1.2.250.1.71.4.2.1",
+            "type": "http://terminology.hl7.org/CodeSystem/v2-0203#ADELI"
+          }
+        }
+      }
+    },
+    "PractitionerRole": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner-role"
+    },
+    "RelatedPerson": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-related-person",
+      "slices": {
+        "identifier": {
+          "PI": {
+            "system": "urn:oid:1.2.250.1.71.4.2.7",
+            "type": "http://terminology.hl7.org/CodeSystem/v2-0203#PI"
+          }
+        }
+      }
+    },
+    "Coverage": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage"
+    },
+    "Location": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-location"
+    },
+    "Organization": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-organization"
+    },
+    "Appointment": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-appointment"
+    },
+    "MessageHeader": {
+      "canonical": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-message-header"
+    }
+  },
+  "extensions": {
+    "identityReliability": {
+      "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-identity-reliability",
+      "valueSet": "https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-identity-reliability"
+    },
+    "estimatedDischargeDate": {
+      "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter-estimated-discharge-date"
+    },
+    "modePriseEnCharge": {
+      "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-mode-prise-en-charge"
+    },
+    "healthEventType": {
+      "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter-healthevent-type"
+    },
+    "healthEventIdentifier": {
+      "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-encounter-healthevent-identifier"
+    },
+    "coverageInsuredId": {
+      "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage-insured-id"
+    },
+    "patientInsStatus": {
+      "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-ins-status"
+    },
+    "practitionerRoleProfession": {
+      "url": "https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner-role-profession"
+    }
+  },
+  "valueSets": {
+    "identityReliability": {
+      "url": "https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-identity-reliability",
+      "codes": {
+        "VALI": "Identité vérifiée",
+        "UNDI": "Identité non vérifiée"
+      }
+    },
+    "patientContactRole": {
+      "url": "https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-patient-contact-role",
+      "codes": {
+        "mother": "Mère",
+        "father": "Père",
+        "child": "Enfant",
+        "spouse": "Conjoint",
+        "other": "Autre"
+      }
+    },
+    "coverageType": {
+      "url": "https://hl7.fr/ig/fhir/core/ValueSet/fr-core-vs-coverage-type",
+      "codes": {
+        "AMO": "Assurance Maladie Obligatoire",
+        "AMC": "Assurance Maladie Complémentaire"
+      }
+    },
+    "lieuPriseEnCharge": {
+      "url": "https://mos.esante.gouv.fr/NOS/TRE_R213-LieuDePriseEnCharge/FHIR/TRE-R213-LieuDePriseEnCharge",
+      "codes": {
+        "01": "Établissement de santé",
+        "02": "Domicile",
+        "03": "Établissement médico-social"
+      }
+    }
+  },
+  "codeSystems": {
+    "frCoreV2": {
+      "url": "https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203",
+      "codes": {
+        "INS-NIR": "Identifiant National de Santé - National Identifier Registry",
+        "INS-NIA": "Identifiant National de Santé - National Identifier Attribute"
+      }
+    },
+    "identityReliability": {
+      "url": "https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-identity-reliability",
+      "codes": {
+        "VALI": "Identité vérifiée",
+        "UNDI": "Identité non vérifiée"
+      }
+    }
+  },
+  "oids": {
+    "insNir": "1.2.250.1.213.1.4.8",
+    "insNia": "1.2.250.1.213.1.4.2",
+    "patientInternalId": "1.2.250.1.71.4.2.7",
+    "rpps": "1.2.250.1.71.4.2.1",
+    "organizationId": "1.2.250.1.71.4.2.2"
+  }
+}

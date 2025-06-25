@@ -1,0 +1,83 @@
+name: FHIR FR-Core Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-fhir:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Create test fixtures
+      run: |
+        mkdir -p test/fixtures
+        curl -X POST http://localhost:5000/api/convert \
+          -H "Content-Type: application/json" \
+          -H "X-API-Key: dev-key" \
+          -d '{
+            "hl7Message": "MSH|^~\\&|MCK|1.2.250.1.211.10.200.1^ISO|ASIP-SANTE|1.2.250.1.213.1.4.8^ISO|20241220084502||ADT^A04^ADT_A01|20241220084502|P|2.5|||NE|NE|FR^France^ISO3166_1||8859/1\nEVN||20/12/2024@08:45:02||||\nPID|1||835726^^^MCK&1.2.250.1.211.10.200.1&ISO^PI~299079722903788^^^INS-NIR&1.2.250.1.213.1.4.8&ISO^INS||MARTIN^PIERRE^JEAN||19701201|M|||10 rue de la Santé^^PARIS^^75001^FRA||0696430705^PRN^PH~0696316514^PRN^CP~manyri.iris7@gmail.com^NET^internet|||||||||||||20/12/2024@08:45:02||||VALI\nPV1|1|I|3001^3001^^^^^3001|E||||||||||||||EH_11679035_1^DUPONT^JEAN|AMB|||||||||||||||||||||||20/12/2024@08:45:02||||||||\nNK1|1|MANYRI^FRANTZETTE||M^MERE^IHE^MERE^MERE^MCK|10 rue de Contact^^PARIS^^75002^FRA|0696999888^PRN^PH||\nIN1|1|AMO|1234567890123|ASSURANCE MALADIE|||||299079722903788||||||||||||||2025-12-31",
+            "encoding": "utf-8"
+          }' -o test/fixtures/adt-a04.json &
+        sleep 5
+        kill %1 || true
+    
+    - name: Start server for testing
+      run: |
+        npm start &
+        sleep 10
+        SERVER_PID=$!
+        echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+    
+    - name: Generate test bundles
+      run: |
+        # ADT^A04
+        curl -X POST http://localhost:5000/api/convert \
+          -H "Content-Type: application/json" \
+          -H "X-API-Key: dev-key" \
+          -d '{
+            "hl7Message": "MSH|^~\\&|MCK|1.2.250.1.211.10.200.1^ISO|ASIP-SANTE|1.2.250.1.213.1.4.8^ISO|20241220084502||ADT^A04^ADT_A01|20241220084502|P|2.5|||NE|NE|FR^France^ISO3166_1||8859/1\nEVN||20/12/2024@08:45:02||||\nPID|1||835726^^^MCK&1.2.250.1.211.10.200.1&ISO^PI~299079722903788^^^INS-NIR&1.2.250.1.213.1.4.8&ISO^INS||MARTIN^PIERRE^JEAN||19701201|M|||10 rue de la Santé^^PARIS^^75001^FRA||0696430705^PRN^PH~0696316514^PRN^CP~manyri.iris7@gmail.com^NET^internet|||||||||||||20/12/2024@08:45:02||||VALI\nPV1|1|I|3001^3001^^^^^3001|E||||||||||||||EH_11679035_1^DUPONT^JEAN|AMB|||||||||||||||||||||||20/12/2024@08:45:02||||||||\nNK1|1|MANYRI^FRANTZETTE||M^MERE^IHE^MERE^MERE^MCK|10 rue de Contact^^PARIS^^75002^FRA|0696999888^PRN^PH||\nIN1|1|AMO|1234567890123|ASSURANCE MALADIE|||||299079722903788||||||||||||||2025-12-31",
+            "encoding": "utf-8"
+          }' -o test/fixtures/adt-a04.json
+        
+        # SIU^S12
+        curl -X POST http://localhost:5000/api/convert \
+          -H "Content-Type: application/json" \
+          -H "X-API-Key: dev-key" \
+          -d '{
+            "hl7Message": "MSH|^~\\&|MCK|1.2.250.1.211.10.200.1^ISO|ASIP-SANTE|1.2.250.1.213.1.4.8^ISO|20241220084502||SIU^S12^SIU_S12|20241220084502|P|2.5|||NE|NE|FR^France^ISO3166_1||8859/1\nSCH|1||||||APPOINTMENT||||||||||||||||\nPID|1||835726^^^MCK&1.2.250.1.211.10.200.1&ISO^PI||MARTIN^PIERRE^JEAN||19701201|M|||10 rue de la Santé^^PARIS^^75001^FRA||0696430705^PRN^PH",
+            "encoding": "utf-8"
+          }' -o test/fixtures/siu-s12.json || true
+    
+    - name: Validate FHIR Bundles
+      run: npm run validate-batch test/fixtures
+    
+    - name: Stop server
+      if: always()
+      run: |
+        if [ ! -z "$SERVER_PID" ]; then
+          kill $SERVER_PID || true
+        fi
+    
+    - name: Upload validation results
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: fhir-validation-results
+        path: test/fixtures/
