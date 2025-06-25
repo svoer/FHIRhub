@@ -1006,7 +1006,7 @@ router.delete('/:id', ensureTableExists, (req, res) => {
  * @apiSuccess {Boolean} success Indique si la requête a réussi
  * @apiSuccess {Object} data Résultat du test
  */
-router.post('/:providerType/test-connection', auth.apiKeyAuth, async (req, res) => {
+router.post('/:providerType/test-connection', async (req, res) => {
   try {
     const providerType = req.params.providerType;
     const { api_key, endpoint } = req.body;
@@ -1057,7 +1057,7 @@ router.post('/:providerType/test-connection', auth.apiKeyAuth, async (req, res) 
   }
 });
 
-router.post('/:id/test', auth.apiKeyAuth, ensureTableExists, async (req, res) => {
+router.post('/:id/test', ensureTableExists, async (req, res) => {
   try {
     const id = req.params.id;
     
