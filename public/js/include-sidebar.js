@@ -217,8 +217,10 @@
         window.fhirHubFavorites = [...storedFavorites];
         
         // Réhydrater immédiatement l'interface complète
-        renderTopFavorites(window.fhirHubFavorites);
-        updateFavoriteButtonsState(window.fhirHubFavorites);
+        setTimeout(() => {
+          renderTopFavorites(window.fhirHubFavorites);
+          updateFavoriteButtonsState(window.fhirHubFavorites);
+        }, 50);
         
         return window.fhirHubFavorites;
       } catch (error) {
@@ -286,11 +288,14 @@
       }
     }
     
-    // Gestion des favoris
-    const favoriteButtons = document.querySelectorAll('.favorite-btn');
-    if (favoriteButtons.length > 0) {
-      // Initialiser le système de favoris
-      let favorites = initFavoritesSystem();
+    // Gestion des favoris - CORRECTION DU TIMING
+    setTimeout(() => {
+      const favoriteButtons = document.querySelectorAll('.favorite-btn');
+      console.log('[FAVORIS] Recherche des boutons favoris, trouvés:', favoriteButtons.length);
+      
+      if (favoriteButtons.length > 0) {
+        // Initialiser le système de favoris avec délai pour s'assurer que le DOM est prêt
+        let favorites = initFavoritesSystem();
       
       // Mettre à jour l'apparence des boutons en fonction des favoris enregistrés
       favoriteButtons.forEach(btn => {
@@ -345,8 +350,13 @@
         });
       });
       
-      console.log('[FAVORIS] Événements de favoris configurés');
-    }
+        console.log('[FAVORIS] Événements de favoris configurés');
+      } else {
+        console.warn('[FAVORIS] Aucun bouton favori trouvé, initialisation basique');
+        // Initialiser quand même la barre des favoris
+        initFavoritesSystem();
+      }
+    }, 100); // Délai de 100ms pour s'assurer que le DOM est complètement chargé
     
     // Fonction pour mettre à jour les favoris (legacy, maintenue pour compatibilité)
     function updateFavoritesList(favorites) {
@@ -439,7 +449,9 @@
     function renderTopFavorites(favorites) {
       const topContainer = document.getElementById('top-favorites-container');
       if (!topContainer) {
-        console.warn('[FAVORIS] Container top-favorites-container non trouvé');
+        console.warn('[FAVORIS] Container top-favorites-container non trouvé, retry...');
+        // Retry après un délai
+        setTimeout(() => renderTopFavorites(favorites), 200);
         return;
       }
       
@@ -464,6 +476,7 @@
       
       if (!favorites || favorites.length === 0) {
         topContainer.innerHTML = '<span class="favorites-empty">Aucun favori</span>';
+        console.log('[FAVORIS] Affichage état vide');
         return;
       }
       
@@ -487,6 +500,11 @@
       
       topContainer.innerHTML = favoritesHTML;
       console.log('[FAVORIS] Barre rendue avec', validFavorites.length, 'favoris valides');
+      
+      // Force le re-render visuel
+      topContainer.style.display = 'none';
+      topContainer.offsetHeight; // Trigger reflow
+      topContainer.style.display = '';
     }
     
     // Fonction legacy maintenue pour compatibilité
@@ -509,5 +527,17 @@
     }
     
     console.log('Configuration de l\'interactivité terminée');
+    
+    // Force une dernière synchronisation des favoris après tout le chargement
+    setTimeout(() => {
+      console.log('[FAVORIS] Synchronisation finale...');
+      const finalFavorites = JSON.parse(localStorage.getItem('fhirhub-favorites') || '[]');
+      if (finalFavorites.length > 0) {
+        window.fhirHubFavorites = finalFavorites;
+        renderTopFavorites(finalFavorites);
+        updateFavoriteButtonsState(finalFavorites);
+        console.log('[FAVORIS] Synchronisation finale terminée avec', finalFavorites.length, 'favoris');
+      }
+    }, 300);
   }
 })();
