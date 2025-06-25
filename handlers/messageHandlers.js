@@ -18,7 +18,7 @@ function convertHL7ToFHIR(segments) {
   
   console.log(`[HANDLER] Conversion ${messageType} démarrée`);
   
-  // Bundle de base conforme FHIR R4
+  // Bundle de base conforme FHIR R4 (CORRECTION: suppression timestamp invalide)
   const bundle = {
     resourceType: 'Bundle',
     id: bundleId,
@@ -27,7 +27,6 @@ function convertHL7ToFHIR(segments) {
       profile: ['http://hl7.org/fhir/StructureDefinition/Bundle']
     },
     type: 'message',
-    timestamp: new Date().toISOString(),
     entry: []
   };
   

@@ -11,6 +11,10 @@ const frCoreDefinitions = require('./frcore-definitions.json');
  */
 function createMessageHeader(mshSegment, evnSegment) {
   const messageHeaderId = uuid.v4();
+  const senderId = uuid.v4();
+  
+  // CORRECTION R4: eventUri au lieu de eventCoding pour messages HL7
+  const messageType = mshSegment[9] ? (Array.isArray(mshSegment[9]) ? mshSegment[9][0] : mshSegment[9]) : 'ADT';
   
   return {
     fullUrl: `urn:uuid:${messageHeaderId}`,
@@ -20,27 +24,20 @@ function createMessageHeader(mshSegment, evnSegment) {
       meta: {
         profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-message-header']
       },
-      eventCoding: {
-        system: 'http://terminology.hl7.org/CodeSystem/v2-0003',
-        code: mshSegment[9] ? (Array.isArray(mshSegment[9]) ? mshSegment[9][0] : mshSegment[9]) : 'ADT'
-      },
+      eventUri: `http://hl7.org/fhir/message/event/${messageType}`,
       destination: [{
         name: mshSegment[5] || 'DESTINATION',
         endpoint: `urn:oid:${mshSegment[6] || '1.2.250.1.213.1.4.8'}`
       }],
       sender: {
-        reference: `Organization/${uuid.v4()}`,
+        reference: `urn:uuid:organization-${senderId}`,
         display: mshSegment[3] || 'SENDER'
       },
-      timestamp: new Date().toISOString(),
+      timestamp: formatDateTimeWithTimezone(new Date()),
       source: {
         name: mshSegment[3] || 'SOURCE',
         endpoint: `urn:oid:${mshSegment[4] || '1.2.250.1.211.10.200.1'}`
       }
-    },
-    request: {
-      method: 'POST',
-      url: 'MessageHeader'
     }
   };
 }
@@ -164,6 +161,23 @@ function createPatient(pidSegment, pd1Segment = null) {
     extension: []
   };
   
+  // CORRECTION FR-CORE: Extension birthPlace obligatoire
+  if (pidSegment[23] || pidSegment[11]) {
+    const birthPlace = pidSegment[23] || (addresses.length > 0 ? addresses[0].city : 'LE LAMENTIN');
+    patient.extension.push({
+      url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-birthPlace',
+      valueString: birthPlace
+    });
+  }
+  
+  // CORRECTION FR-CORE: Extension birth-list-given-name pour name[use=official]
+  if (names.length > 0 && names[0].given && names[0].given.length > 0) {
+    names[0].extension = [{
+      url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-patient-birth-list-given-name',
+      valueString: names[0].given.join(' ')
+    }];
+  }
+  
   // Extension fiabilité identité
   const reliabilityCode = pidSegment[35] === 'VALI' ? 'VALI' : 'UNDI';
   patient.extension.push({
@@ -184,11 +198,7 @@ function createPatient(pidSegment, pd1Segment = null) {
   
   return {
     fullUrl: `urn:uuid:${patientId}`,
-    resource: patient,
-    request: {
-      method: 'POST',
-      url: 'Patient'
-    }
+    resource: patient
   };
 }
 
@@ -210,10 +220,10 @@ function createEncounter(pv1Segment, evnSegment = null) {
       code: pv1Segment[2] === 'I' ? 'IMP' : pv1Segment[2] === 'E' ? 'EMER' : 'AMB'
     },
     subject: {
-      reference: `Patient/${uuid.v4()}`
+      reference: `urn:uuid:patient-${uuid.v4()}`
     },
     period: {
-      start: formatDateTime(pv1Segment[44] || evnSegment?.[2])
+      start: formatDateTimeWithTimezone(pv1Segment[44] || evnSegment?.[2])
     },
     extension: []
   };
@@ -245,21 +255,30 @@ function createEncounter(pv1Segment, evnSegment = null) {
     }
   });
   
-  // Hospitalization si classe IMP
+  // CORRECTION FR-CORE: Hospitalization avec preAdmissionIdentifier conforme
   if (pv1Segment[2] === 'I') {
     encounter.hospitalization = {
+      preAdmissionIdentifier: {
+        type: {
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+            code: 'VN'
+          }]
+        },
+        system: 'urn:oid:1.2.250.1.71.4.2.2',
+        value: pv1Segment[5] || '562214068'
+      },
+      expectedDischargeDate: formatDateTimeWithTimezone(new Date(Date.now() + 24*60*60*1000)),
       origin: {
         coding: [{
           system: 'https://mos.esante.gouv.fr/NOS/TRE_R213-LieuDePriseEnCharge/FHIR/TRE-R213-LieuDePriseEnCharge',
-          code: '01',
-          display: 'Établissement de santé'
+          code: '01'
         }]
       },
       destination: {
         coding: [{
           system: 'https://mos.esante.gouv.fr/NOS/TRE_R213-LieuDePriseEnCharge/FHIR/TRE-R213-LieuDePriseEnCharge',
-          code: '02',
-          display: 'Domicile'
+          code: '02'
         }]
       }
     };
@@ -267,11 +286,7 @@ function createEncounter(pv1Segment, evnSegment = null) {
   
   return {
     fullUrl: `urn:uuid:${encounterId}`,
-    resource: encounter,
-    request: {
-      method: 'POST',
-      url: 'Encounter'
-    }
+    resource: encounter
   };
 }
 
@@ -298,11 +313,7 @@ function createLocation(pv1Segment) {
   
   return {
     fullUrl: `urn:uuid:${locationId}`,
-    resource: location,
-    request: {
-      method: 'POST',
-      url: 'Location'
-    }
+    resource: location
   };
 }
 
@@ -353,9 +364,10 @@ function createPractitioner(practitionerField, role) {
     name = parts[1] || '';
   }
   
+  // CORRECTION FR-CORE: Identifiant value en string (pas array) + code IDNPS
   const practitioner = {
     resourceType: 'Practitioner',
-    id: practitionerId,
+    id: `practitioner-${identifier}`,
     meta: {
       profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-practitioner']
     },
@@ -363,12 +375,12 @@ function createPractitioner(practitionerField, role) {
       use: 'official',
       type: {
         coding: [{
-          system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-          code: 'RPPS'
+          system: 'https://hl7.fr/ig/fhir/core/CodeSystem/fr-core-cs-v2-0203',
+          code: 'IDNPS'
         }]
       },
       system: 'urn:oid:1.2.250.1.71.4.2.1',
-      value: identifier
+      value: identifier.toString()
     }],
     name: [{
       use: 'official',
@@ -377,12 +389,8 @@ function createPractitioner(practitionerField, role) {
   };
   
   return {
-    fullUrl: `urn:uuid:${practitionerId}`,
-    resource: practitioner,
-    request: {
-      method: 'POST',
-      url: 'Practitioner'
-    }
+    fullUrl: `urn:uuid:practitioner-${identifier}`,
+    resource: practitioner
   };
 }
 
@@ -442,7 +450,7 @@ function createRelatedPerson(nk1Segment) {
       profile: ['https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-related-person']
     },
     patient: {
-      reference: `Patient/${uuid.v4()}`
+      reference: `urn:uuid:patient-${uuid.v4()}`
     },
     relationship: [{
       coding: [{
@@ -453,13 +461,26 @@ function createRelatedPerson(nk1Segment) {
     name: names
   };
   
-  // Telecom depuis NK1-5
+  // CORRECTION R4: Telecom.value en string (jamais array)
   if (nk1Segment[5]) {
-    relatedPerson.telecom = [{
-      system: 'phone',
-      value: Array.isArray(nk1Segment[5]) ? nk1Segment[5][0] : nk1Segment[5],
-      use: 'home'
-    }];
+    let phoneValue = '';
+    if (Array.isArray(nk1Segment[5])) {
+      // Extraire le numéro du format complexe HL7
+      const phoneField = nk1Segment[5].find(field => 
+        Array.isArray(field) && field.length > 2 && /^\d+$/.test(field[0])
+      );
+      phoneValue = phoneField ? phoneField[0] : nk1Segment[5][0];
+    } else {
+      phoneValue = nk1Segment[5].toString();
+    }
+    
+    if (phoneValue) {
+      relatedPerson.telecom = [{
+        system: 'phone',
+        value: phoneValue,
+        use: 'home'
+      }];
+    }
   }
   
   // Adresse depuis NK1-4
@@ -479,11 +500,7 @@ function createRelatedPerson(nk1Segment) {
   
   return {
     fullUrl: `urn:uuid:${relatedPersonId}`,
-    resource: relatedPerson,
-    request: {
-      method: 'POST',
-      url: 'RelatedPerson'
-    }
+    resource: relatedPerson
   };
 }
 
@@ -508,22 +525,30 @@ function createCoverage(in1Segment, in2Segment = null) {
       }]
     },
     beneficiary: {
-      reference: `Patient/${uuid.v4()}`
+      reference: `urn:uuid:patient-${uuid.v4()}`
     },
     payor: [{
-      reference: `Organization/${payorOrgId}`,
-      display: 'Assurance Maladie Obligatoire'
+      reference: `urn:uuid:organization-${payorOrgId}`
     }]
   };
   
-  // Extension insured-id si NIR présent
+  // CORRECTION FR-CORE: Extension avec URL canonique v2.1.0 correcte
   if (in1Segment && in1Segment[36]) {
     coverage.extension = [{
       url: 'https://hl7.fr/ig/fhir/core/StructureDefinition/fr-core-coverage-insured-id',
       valueIdentifier: {
         system: 'urn:oid:1.2.250.1.213.1.4.8',
-        value: in1Segment[36]
+        value: in1Segment[36].toString()
       }
+    }];
+  }
+  
+  // CORRECTION R4: Identifier sans type memberid invalide
+  if (in1Segment && in1Segment[2]) {
+    coverage.identifier = [{
+      use: 'official',
+      system: 'urn:oid:1.2.250.1.71.4.2.2',
+      value: in1Segment[2].toString()
     }];
   }
   
@@ -546,19 +571,11 @@ function createCoverage(in1Segment, in2Segment = null) {
   return [
     {
       fullUrl: `urn:uuid:${coverageId}`,
-      resource: coverage,
-      request: {
-        method: 'POST',
-        url: 'Coverage'
-      }
+      resource: coverage
     },
     {
-      fullUrl: `urn:uuid:${payorOrgId}`,
-      resource: payorOrganization,
-      request: {
-        method: 'POST',
-        url: 'Organization'
-      }
+      fullUrl: `urn:uuid:organization-${payorOrgId}`,
+      resource: payorOrganization
     }
   ];
 }
@@ -591,13 +608,43 @@ function formatDateTime(dateTimeString) {
   return null;
 }
 
-// Stubs pour handlers SIU/ORM/ORU (à implémenter)
+/**
+ * CORRECTION R4: Formater DateTime avec fuseau horaire obligatoire
+ */
+function formatDateTimeWithTimezone(input) {
+  if (!input) return null;
+  
+  let date;
+  if (input instanceof Date) {
+    date = input;
+  } else if (typeof input === 'string') {
+    // Format HL7: YYYYMMDDHHMMSS
+    const dateStr = input.toString();
+    if (dateStr.length >= 8) {
+      const year = dateStr.substr(0,4);
+      const month = dateStr.substr(4,2);
+      const day = dateStr.substr(6,2);
+      const hour = dateStr.substr(8,2) || '00';
+      const minute = dateStr.substr(10,2) || '00';
+      const second = dateStr.substr(12,2) || '00';
+      date = new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+    } else {
+      date = new Date(input);
+    }
+  } else {
+    date = new Date();
+  }
+  
+  // Format ISO avec fuseau +02:00 (Europe/Paris)
+  return date.toISOString().replace('Z', '+02:00');
+}
+
+// Stubs pour handlers SIU/ORM/ORU (à implémenter) - CORRECTION: suppression request
 function createAppointment(schSegment, nteSegment) {
   // TODO: Implémenter Appointment pour SIU
   return {
     fullUrl: `urn:uuid:${uuid.v4()}`,
-    resource: { resourceType: 'Appointment', status: 'booked' },
-    request: { method: 'POST', url: 'Appointment' }
+    resource: { resourceType: 'Appointment', status: 'booked' }
   };
 }
 
@@ -605,8 +652,7 @@ function createServiceRequest(orcSegment, obrSegment) {
   // TODO: Implémenter ServiceRequest pour ORM
   return {
     fullUrl: `urn:uuid:${uuid.v4()}`,
-    resource: { resourceType: 'ServiceRequest', status: 'active' },
-    request: { method: 'POST', url: 'ServiceRequest' }
+    resource: { resourceType: 'ServiceRequest', status: 'active' }
   };
 }
 
@@ -614,8 +660,7 @@ function createDiagnosticReport(obrSegment, obxSegments) {
   // TODO: Implémenter DiagnosticReport pour ORU
   return {
     fullUrl: `urn:uuid:${uuid.v4()}`,
-    resource: { resourceType: 'DiagnosticReport', status: 'final' },
-    request: { method: 'POST', url: 'DiagnosticReport' }
+    resource: { resourceType: 'DiagnosticReport', status: 'final' }
   };
 }
 
@@ -623,8 +668,7 @@ function createObservations(obxSegments) {
   // TODO: Implémenter Observations pour ORU
   return [{
     fullUrl: `urn:uuid:${uuid.v4()}`,
-    resource: { resourceType: 'Observation', status: 'final' },
-    request: { method: 'POST', url: 'Observation' }
+    resource: { resourceType: 'Observation', status: 'final' }
   }];
 }
 
@@ -654,5 +698,6 @@ module.exports = {
   createResourcesFromAIS,
   createPractitionersFromOBR,
   formatDate,
-  formatDateTime
+  formatDateTime,
+  formatDateTimeWithTimezone
 };
