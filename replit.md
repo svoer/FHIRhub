@@ -116,16 +116,16 @@ FHIR Data → AI Service → Provider Selection → Analysis → Response Format
 
 ## Changelog
 
-### June 24, 2025 - 🎯 CONFORMITÉ R4 & FR-CORE STRICTE + CORRECTIONS COMPLÈTES - FHIRHub 3.0 Healthcare Certified
-- **CONFORMITÉ R4 TOTALE** : Bundle.timestamp supprimé, entry.request éliminé, eventUri MessageHeader
-- **FUSEAUX HORAIRES OBLIGATOIRES** : formatDateTimeWithTimezone() +02:00 sur tous les dateTime
-- **EXTENSIONS FR-CORE COMPLÈTES** : birthPlace + birth-list-given-name Patient, preAdmissionIdentifier Encounter
-- **IDENTIFIANTS CORRIGÉS** : value en string (pas array), code IDNPS pour Practitioner, références urn:uuid uniformes
-- **TELECOM CONFORMES** : RelatedPerson.telecom.value en string, extraction correcte des formats HL7 complexes
-- **COVERAGE CANONICAL FIXÉ** : Extension fr-core-coverage-insured-id v2.1.0, identifier sans type memberid invalide
-- **PROFILS DOUBLES APPLIQUÉS** : fr-core-patient + fr-core-patient-ins selon présence INS-NIR
-- **VALIDATION AUTOMATIQUE** : Script validate-r4-frcore.js avec vérification stricte toutes corrections
-- **ARCHITECTURE MODULAIRE** : Handlers conformes R4 + MessageHeader eventUri + références cohérentes
+### June 24, 2025 - 🎨 INTERFACE SWAGGER UI INTÉGRÉE + NAVIGATION COHÉRENTE - FHIRHub 3.0 User Experience Ready
+- **INTERFACE SWAGGER INTÉGRÉE** : Navigation principale FHIRHub au-dessus de Swagger UI + design cohérent
+- **MENU LATÉRAL FONCTIONNEL** : Sidebar sticky avec navigation complète, scrollable sans chevauchement
+- **RESPONSIVE MOBILE-FIRST** : Hamburger menu fonctionnel + overlay + sidebar coulissante mobile
+- **CORRECTIONS CSS COMPLÈTES** : Suppression décalages, marges optimisées, largeurs fixes sans débordement
+- **STATUT IA CORRIGÉ** : Vérification /api/ai/providers/active avec timeout, gestion erreurs, retry automatique
+- **SWAGGER UI CUSTOMISÉ** : Couleurs FHIRHub, topbar supprimée, font cohérente, boutons styles
+- **NAVIGATION COHÉRENTE** : Logo, liens actifs, icônes alignées, transitions fluides desktop/mobile
+- **CHARGEMENT OPTIMISÉ** : AbortController timeout 3s, gestion erreurs claires, fallback approprié
+- **ARCHITECTURE SANS CHEVAUCHEMENT** : CSS variables, flexbox moderne, sticky positioning correct
 
 ### June 18, 2025 - Complete Swagger OpenAPI 3.0 Migration + Interface Fixes
 - **Swagger OpenAPI 3.0 Migration**: Complete rebuild from scratch with 96 documented endpoints, 78.3% quality score
