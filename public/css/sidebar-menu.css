@@ -260,7 +260,7 @@
 
 /* Catégories du menu */
 .nav-category {
-  padding: 15px 20px 5px;
+  padding: 15px 20px 5px 24px !important;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
