@@ -1,0 +1,2899 @@
+{
+  "timestamp": "2025-06-25T09:32:05.250Z",
+  "summary": {
+    "realEndpoints": 144,
+    "documentedEndpoints": 0,
+    "missingCount": 144,
+    "obsoleteCount": 0,
+    "accuracy": 0
+  },
+  "divergences": {
+    "missing": [
+      {
+        "endpoint": "GET /fhir",
+        "details": {
+          "method": "GET",
+          "path": "/fhir",
+          "file": "app.js",
+          "line": 154,
+          "source": "app.get('/fhir', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /fhir-browser-pro",
+        "details": {
+          "method": "GET",
+          "path": "/fhir-browser-pro",
+          "file": "app.js",
+          "line": 159,
+          "source": "app.get('/fhir-browser-pro', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /fhir-browser-v2",
+        "details": {
+          "method": "GET",
+          "path": "/fhir-browser-v2",
+          "file": "app.js",
+          "line": 164,
+          "source": "app.get('/fhir-browser-v2', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /api-documentation",
+        "details": {
+          "method": "GET",
+          "path": "/api-documentation",
+          "file": "app.js",
+          "line": 169,
+          "source": "app.get('/api-documentation', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /api-reference",
+        "details": {
+          "method": "GET",
+          "path": "/api-reference",
+          "file": "app.js",
+          "line": 173,
+          "source": "app.get('/api-reference', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /api-reference.html",
+        "details": {
+          "method": "GET",
+          "path": "/api-reference.html",
+          "file": "app.js",
+          "line": 177,
+          "source": "app.get('/api-reference.html', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /",
+        "details": {
+          "method": "GET",
+          "path": "/",
+          "file": "routes/users.js",
+          "line": 55,
+          "source": "router.get('/', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /api/convert",
+        "details": {
+          "method": "POST",
+          "path": "/api/convert",
+          "file": "app.js",
+          "line": 652,
+          "source": "app.post('/api/convert', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /api/convert/raw",
+        "details": {
+          "method": "POST",
+          "path": "/api/convert/raw",
+          "file": "app.js",
+          "line": 665,
+          "source": "app.post('/api/convert/raw', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /api/convert/fhir",
+        "details": {
+          "method": "POST",
+          "path": "/api/convert/fhir",
+          "file": "app.js",
+          "line": 765,
+          "source": "app.post('/api/convert/fhir', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /api/convert/mllp",
+        "details": {
+          "method": "POST",
+          "path": "/api/convert/mllp",
+          "file": "app.js",
+          "line": 781,
+          "source": "app.post('/api/convert/mllp', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /api/convert/validate",
+        "details": {
+          "method": "POST",
+          "path": "/api/convert/validate",
+          "file": "app.js",
+          "line": 847,
+          "source": "app.post('/api/convert/validate', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /api/reset-stats",
+        "details": {
+          "method": "POST",
+          "path": "/api/reset-stats",
+          "file": "app.js",
+          "line": 995,
+          "source": "app.post('/api/reset-stats', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /api/message-types",
+        "details": {
+          "method": "GET",
+          "path": "/api/message-types",
+          "file": "app.js",
+          "line": 1168,
+          "source": "app.get('/api/message-types', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /api/resource-distribution",
+        "details": {
+          "method": "GET",
+          "path": "/api/resource-distribution",
+          "file": "app.js",
+          "line": 1221,
+          "source": "app.get('/api/resource-distribution', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /api/stats",
+        "details": {
+          "method": "GET",
+          "path": "/api/stats",
+          "file": "app.js",
+          "line": 1379,
+          "source": "app.get('/api/stats', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /api/fhir/test-server",
+        "details": {
+          "method": "GET",
+          "path": "/api/fhir/test-server",
+          "file": "app.js",
+          "line": 1659,
+          "source": "app.get('/api/fhir/test-server', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /api/system/version",
+        "details": {
+          "method": "GET",
+          "path": "/api/system/version",
+          "file": "app.js",
+          "line": 1788,
+          "source": "app.get('/api/system/version', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /reset-environment",
+        "details": {
+          "method": "POST",
+          "path": "/reset-environment",
+          "file": "routes/adminRoutes.js",
+          "line": 31,
+          "source": "router.post('/reset-environment', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /system-logs",
+        "details": {
+          "method": "GET",
+          "path": "/system-logs",
+          "file": "routes/adminRoutes.js",
+          "line": 141,
+          "source": "router.get('/system-logs', authMiddleware.authenticated, adminOnly, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /analyze-patient",
+        "details": {
+          "method": "POST",
+          "path": "/analyze-patient",
+          "file": "routes/ai-fhir-analyze.new.js",
+          "line": 95,
+          "source": "router.post('/analyze-patient', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /chat",
+        "details": {
+          "method": "POST",
+          "path": "/chat",
+          "file": "routes/ai-fhir-analyze.new.js",
+          "line": 262,
+          "source": "router.post('/chat', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /test-knowledge",
+        "details": {
+          "method": "GET",
+          "path": "/test-knowledge",
+          "file": "routes/ai-fhir-analyze.js",
+          "line": 672,
+          "source": "router.get('/test-knowledge', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /test-chatbot-ai-provider",
+        "details": {
+          "method": "GET",
+          "path": "/test-chatbot-ai-provider",
+          "file": "routes/ai-fhir-analyze.js",
+          "line": 705,
+          "source": "router.get('/test-chatbot-ai-provider', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /search",
+        "details": {
+          "method": "POST",
+          "path": "/search",
+          "file": "routes/ai-knowledge-api.js",
+          "line": 62,
+          "source": "router.post('/search', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /search",
+        "details": {
+          "method": "GET",
+          "path": "/search",
+          "file": "routes/ai-knowledge-api.js",
+          "line": 91,
+          "source": "router.get('/search', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /faq",
+        "details": {
+          "method": "GET",
+          "path": "/faq",
+          "file": "routes/ai-knowledge-api.js",
+          "line": 135,
+          "source": "router.get('/faq', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /features",
+        "details": {
+          "method": "GET",
+          "path": "/features",
+          "file": "routes/ai-knowledge-api.js",
+          "line": 169,
+          "source": "router.get('/features', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /commands",
+        "details": {
+          "method": "GET",
+          "path": "/commands",
+          "file": "routes/ai-knowledge-api.js",
+          "line": 203,
+          "source": "router.get('/commands', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /full",
+        "details": {
+          "method": "GET",
+          "path": "/full",
+          "file": "routes/ai-knowledge-api.js",
+          "line": 237,
+          "source": "router.get('/full', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /file",
+        "details": {
+          "method": "GET",
+          "path": "/file",
+          "file": "routes/ai-knowledge-api.js",
+          "line": 270,
+          "source": "router.get('/file', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /update",
+        "details": {
+          "method": "POST",
+          "path": "/update",
+          "file": "routes/ai-knowledge-api.js",
+          "line": 327,
+          "source": "router.post('/update', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /test-format",
+        "details": {
+          "method": "GET",
+          "path": "/test-format",
+          "file": "routes/ai-knowledge-api.js",
+          "line": 349,
+          "source": "router.get('/test-format', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /active",
+        "details": {
+          "method": "GET",
+          "path": "/active",
+          "file": "routes/ai-providers.js",
+          "line": 214,
+          "source": "router.get('/active', ensureTableExists, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /models/list",
+        "details": {
+          "method": "GET",
+          "path": "/models/list",
+          "file": "routes/ai-providers.js",
+          "line": 296,
+          "source": "router.get('/models/list', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /status",
+        "details": {
+          "method": "GET",
+          "path": "/status",
+          "file": "routes/mistral-fhir.js",
+          "line": 39,
+          "source": "router.get('/status', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /types/supported",
+        "details": {
+          "method": "GET",
+          "path": "/types/supported",
+          "file": "routes/ai-providers.js",
+          "line": 524,
+          "source": "router.get('/types/supported', (req, res) => { // Temporairement public pour le test"
+        }
+      },
+      {
+        "endpoint": "GET /:id",
+        "details": {
+          "method": "GET",
+          "path": "/:id",
+          "file": "routes/users.js",
+          "line": 222,
+          "source": "router.get('/:id', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /",
+        "details": {
+          "method": "POST",
+          "path": "/",
+          "file": "routes/users.js",
+          "line": 328,
+          "source": "router.post('/', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "PUT /:id",
+        "details": {
+          "method": "PUT",
+          "path": "/:id",
+          "file": "routes/users.js",
+          "line": 469,
+          "source": "router.put('/:id', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "DELETE /:id",
+        "details": {
+          "method": "DELETE",
+          "path": "/:id",
+          "file": "routes/users.js",
+          "line": 642,
+          "source": "router.delete('/:id', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:providerType/test-connection",
+        "details": {
+          "method": "POST",
+          "path": "/:providerType/test-connection",
+          "file": "routes/ai-providers.js",
+          "line": 1009,
+          "source": "router.post('/:providerType/test-connection', auth.apiKeyAuth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:id/test",
+        "details": {
+          "method": "POST",
+          "path": "/:id/test",
+          "file": "routes/ai-providers.js",
+          "line": 1060,
+          "source": "router.post('/:id/test', auth.apiKeyAuth, ensureTableExists, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "PUT /:serverId",
+        "details": {
+          "method": "PUT",
+          "path": "/:serverId",
+          "file": "routes/api-fhir-servers.js",
+          "line": 175,
+          "source": "router.put('/:serverId', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "DELETE /:serverId",
+        "details": {
+          "method": "DELETE",
+          "path": "/:serverId",
+          "file": "routes/api-fhir-servers.js",
+          "line": 237,
+          "source": "router.delete('/:serverId', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/test",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/test",
+          "file": "routes/api-fhir-servers.js",
+          "line": 290,
+          "source": "router.get('/:serverId/test', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:serverId/local-default",
+        "details": {
+          "method": "POST",
+          "path": "/:serverId/local-default",
+          "file": "routes/api-fhir-servers.js",
+          "line": 367,
+          "source": "router.post('/:serverId/local-default', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "PUT /default/:serverId",
+        "details": {
+          "method": "PUT",
+          "path": "/default/:serverId",
+          "file": "routes/api-fhir-servers.js",
+          "line": 418,
+          "source": "router.put('/default/:serverId', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:id/revoke",
+        "details": {
+          "method": "POST",
+          "path": "/:id/revoke",
+          "file": "routes/api-keys.js",
+          "line": 244,
+          "source": "router.post('/:id/revoke', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:id/activate",
+        "details": {
+          "method": "POST",
+          "path": "/:id/activate",
+          "file": "routes/api-keys.js",
+          "line": 306,
+          "source": "router.post('/:id/activate', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:id/history",
+        "details": {
+          "method": "GET",
+          "path": "/:id/history",
+          "file": "routes/applicationViews.js",
+          "line": 56,
+          "source": "router.get('/:id/history', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:id/stats",
+        "details": {
+          "method": "GET",
+          "path": "/:id/stats",
+          "file": "routes/applications.js",
+          "line": 531,
+          "source": "router.get('/:id/stats', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:id/conversions",
+        "details": {
+          "method": "GET",
+          "path": "/:id/conversions",
+          "file": "routes/applications.js",
+          "line": 602,
+          "source": "router.get('/:id/conversions', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:id/conversions/:conversionId",
+        "details": {
+          "method": "GET",
+          "path": "/:id/conversions/:conversionId",
+          "file": "routes/applications.js",
+          "line": 683,
+          "source": "router.get('/:id/conversions/:conversionId', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /login",
+        "details": {
+          "method": "POST",
+          "path": "/login",
+          "file": "routes/auth.js",
+          "line": 47,
+          "source": "router.post('/login', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /verify",
+        "details": {
+          "method": "GET",
+          "path": "/verify",
+          "file": "routes/auth.js",
+          "line": 129,
+          "source": "router.get('/verify', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /stats",
+        "details": {
+          "method": "GET",
+          "path": "/stats",
+          "file": "routes/users.js",
+          "line": 128,
+          "source": "router.get('/stats', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /clear",
+        "details": {
+          "method": "POST",
+          "path": "/clear",
+          "file": "routes/cache.js",
+          "line": 161,
+          "source": "router.post('/clear', jwtAuth, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /hl7-to-fhir",
+        "details": {
+          "method": "POST",
+          "path": "/hl7-to-fhir",
+          "file": "routes/convert.js",
+          "line": 104,
+          "source": "router.post('/hl7-to-fhir', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /fhir-to-hl7",
+        "details": {
+          "method": "POST",
+          "path": "/fhir-to-hl7",
+          "file": "routes/convert.js",
+          "line": 208,
+          "source": "router.post('/fhir-to-hl7', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /key",
+        "details": {
+          "method": "GET",
+          "path": "/key",
+          "file": "routes/dev-api.js",
+          "line": 52,
+          "source": "router.get('/key', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /generate-temp-key",
+        "details": {
+          "method": "GET",
+          "path": "/generate-temp-key",
+          "file": "routes/dev-api.js",
+          "line": 173,
+          "source": "router.get('/generate-temp-key', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /all-in-one",
+        "details": {
+          "method": "GET",
+          "path": "/all-in-one",
+          "file": "routes/dev-api.js",
+          "line": 235,
+          "source": "router.get('/all-in-one', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /models",
+        "details": {
+          "method": "GET",
+          "path": "/models",
+          "file": "routes/mistral-fhir.js",
+          "line": 79,
+          "source": "router.get('/models', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:serverId/natural-query",
+        "details": {
+          "method": "POST",
+          "path": "/:serverId/natural-query",
+          "file": "routes/mistral-fhir.js",
+          "line": 166,
+          "source": "router.post('/:serverId/natural-query', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:serverId/summarize-patient",
+        "details": {
+          "method": "POST",
+          "path": "/:serverId/summarize-patient",
+          "file": "routes/mistral-fhir.js",
+          "line": 353,
+          "source": "router.post('/:serverId/summarize-patient', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:serverId/analyze-observation",
+        "details": {
+          "method": "POST",
+          "path": "/:serverId/analyze-observation",
+          "file": "routes/mistral-fhir.js",
+          "line": 598,
+          "source": "router.post('/:serverId/analyze-observation', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:serverId/analyze-trends",
+        "details": {
+          "method": "POST",
+          "path": "/:serverId/analyze-trends",
+          "file": "routes/mistral-fhir.js",
+          "line": 833,
+          "source": "router.post('/:serverId/analyze-trends', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /servers",
+        "details": {
+          "method": "GET",
+          "path": "/servers",
+          "file": "routes/fhir-servers.js",
+          "line": 146,
+          "source": "router.get('/servers', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /servers/:serverId/metadata",
+        "details": {
+          "method": "GET",
+          "path": "/servers/:serverId/metadata",
+          "file": "routes/fhir-servers.js",
+          "line": 630,
+          "source": "router.get('/servers/:serverId/metadata', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /servers/:serverId/resource-types",
+        "details": {
+          "method": "GET",
+          "path": "/servers/:serverId/resource-types",
+          "file": "routes/fhir-browser.js",
+          "line": 278,
+          "source": "router.get('/servers/:serverId/resource-types', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /servers/:serverId/count/:resourceType",
+        "details": {
+          "method": "GET",
+          "path": "/servers/:serverId/count/:resourceType",
+          "file": "routes/fhir-servers.js",
+          "line": 533,
+          "source": "router.get('/servers/:serverId/count/:resourceType', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /servers/:serverId/search/:resourceType",
+        "details": {
+          "method": "GET",
+          "path": "/servers/:serverId/search/:resourceType",
+          "file": "routes/fhir-servers.js",
+          "line": 449,
+          "source": "router.get('/servers/:serverId/search/:resourceType', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /servers/:serverId/resource/:resourceType/:id",
+        "details": {
+          "method": "GET",
+          "path": "/servers/:serverId/resource/:resourceType/:id",
+          "file": "routes/fhir-servers.js",
+          "line": 376,
+          "source": "router.get('/servers/:serverId/resource/:resourceType/:id', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /servers/:serverId/test",
+        "details": {
+          "method": "GET",
+          "path": "/servers/:serverId/test",
+          "file": "routes/fhir-servers.js",
+          "line": 695,
+          "source": "router.get('/servers/:serverId/test', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "DELETE /cache",
+        "details": {
+          "method": "DELETE",
+          "path": "/cache",
+          "file": "routes/fhir-browser.js",
+          "line": 591,
+          "source": "router.delete('/cache', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /servers",
+        "details": {
+          "method": "POST",
+          "path": "/servers",
+          "file": "routes/fhir-servers.js",
+          "line": 828,
+          "source": "router.post('/servers', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "PUT /servers/:id",
+        "details": {
+          "method": "PUT",
+          "path": "/servers/:id",
+          "file": "routes/fhir-config.js",
+          "line": 129,
+          "source": "router.put('/servers/:id', ensureConfigFile, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "DELETE /servers/:id",
+        "details": {
+          "method": "DELETE",
+          "path": "/servers/:id",
+          "file": "routes/fhir-config.js",
+          "line": 159,
+          "source": "router.delete('/servers/:id', ensureConfigFile, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /servers/default/:id",
+        "details": {
+          "method": "POST",
+          "path": "/servers/default/:id",
+          "file": "routes/fhir-config.js",
+          "line": 195,
+          "source": "router.post('/servers/default/:id', ensureConfigFile, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /servers/:id/toggle",
+        "details": {
+          "method": "POST",
+          "path": "/servers/:id/toggle",
+          "file": "routes/fhir-config.js",
+          "line": 221,
+          "source": "router.post('/servers/:id/toggle', ensureConfigFile, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:fhirServer/*",
+        "details": {
+          "method": "GET",
+          "path": "/:fhirServer/*",
+          "file": "routes/fhir-proxy.js",
+          "line": 16,
+          "source": "router.get('/:fhirServer/*', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:fhirServer/*",
+        "details": {
+          "method": "POST",
+          "path": "/:fhirServer/*",
+          "file": "routes/fhir-proxy.js",
+          "line": 77,
+          "source": "router.post('/:fhirServer/*', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients",
+          "file": "routes/patient-viewer.js",
+          "line": 109,
+          "source": "router.get('/:serverId/patients', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/by-condition",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/by-condition",
+          "file": "routes/fhir-search.js",
+          "line": 311,
+          "source": "router.get('/:serverId/patients/by-condition', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/by-observation",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/by-observation",
+          "file": "routes/fhir-search.js",
+          "line": 518,
+          "source": "router.get('/:serverId/patients/by-observation', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/recent",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/recent",
+          "file": "routes/fhir-search.js",
+          "line": 722,
+          "source": "router.get('/:serverId/patients/recent', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/meta-search",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/meta-search",
+          "file": "routes/fhir-search.js",
+          "line": 901,
+          "source": "router.get('/:serverId/meta-search', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /servers/:serverId",
+        "details": {
+          "method": "GET",
+          "path": "/servers/:serverId",
+          "file": "routes/fhir-servers.js",
+          "line": 190,
+          "source": "router.get('/servers/:serverId', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "PUT /servers/:serverId",
+        "details": {
+          "method": "PUT",
+          "path": "/servers/:serverId",
+          "file": "routes/fhir-servers.js",
+          "line": 1020,
+          "source": "router.put('/servers/:serverId', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "DELETE /servers/:serverId",
+        "details": {
+          "method": "DELETE",
+          "path": "/servers/:serverId",
+          "file": "routes/fhir-servers.js",
+          "line": 1188,
+          "source": "router.delete('/servers/:serverId', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "PUT /servers/default/:serverId",
+        "details": {
+          "method": "PUT",
+          "path": "/servers/default/:serverId",
+          "file": "routes/fhir-servers.js",
+          "line": 1265,
+          "source": "router.put('/servers/default/:serverId', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /servers/:serverId/check",
+        "details": {
+          "method": "GET",
+          "path": "/servers/:serverId/check",
+          "file": "routes/fhir-servers.js",
+          "line": 1344,
+          "source": "router.get('/servers/:serverId/check', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /servers/:serverId/local-default",
+        "details": {
+          "method": "POST",
+          "path": "/servers/:serverId/local-default",
+          "file": "routes/fhir-servers.js",
+          "line": 1438,
+          "source": "router.post('/servers/:serverId/local-default', authCombined, (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /metadata",
+        "details": {
+          "method": "GET",
+          "path": "/metadata",
+          "file": "routes/fhir.js",
+          "line": 174,
+          "source": "router.get('/metadata', authCombined, checkServerHealth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /resources",
+        "details": {
+          "method": "GET",
+          "path": "/resources",
+          "file": "routes/fhir.js",
+          "line": 226,
+          "source": "router.get('/resources', authCombined, checkServerHealth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /search/:resourceType",
+        "details": {
+          "method": "GET",
+          "path": "/search/:resourceType",
+          "file": "routes/fhir.js",
+          "line": 327,
+          "source": "router.get('/search/:resourceType', authCombined, checkServerHealth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /resource/:resourceType/:id",
+        "details": {
+          "method": "GET",
+          "path": "/resource/:resourceType/:id",
+          "file": "routes/fhir.js",
+          "line": 421,
+          "source": "router.get('/resource/:resourceType/:id', authCombined, checkServerHealth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /resource/:resourceType",
+        "details": {
+          "method": "POST",
+          "path": "/resource/:resourceType",
+          "file": "routes/fhir.js",
+          "line": 494,
+          "source": "router.post('/resource/:resourceType', authCombined, checkServerHealth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "PUT /resource/:resourceType/:id",
+        "details": {
+          "method": "PUT",
+          "path": "/resource/:resourceType/:id",
+          "file": "routes/fhir.js",
+          "line": 602,
+          "source": "router.put('/resource/:resourceType/:id', authCombined, checkServerHealth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "DELETE /resource/:resourceType/:id",
+        "details": {
+          "method": "DELETE",
+          "path": "/resource/:resourceType/:id",
+          "file": "routes/fhir.js",
+          "line": 712,
+          "source": "router.delete('/resource/:resourceType/:id', authCombined, checkServerHealth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /transaction",
+        "details": {
+          "method": "POST",
+          "path": "/transaction",
+          "file": "routes/fhir.js",
+          "line": 778,
+          "source": "router.post('/transaction', authCombined, checkServerHealth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /store-bundle",
+        "details": {
+          "method": "POST",
+          "path": "/store-bundle",
+          "file": "routes/fhir.js",
+          "line": 861,
+          "source": "router.post('/store-bundle', authCombined, checkServerHealth, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /patient-chat",
+        "details": {
+          "method": "POST",
+          "path": "/patient-chat",
+          "file": "routes/patient-chat.js",
+          "line": 5,
+          "source": "router.post('/patient-chat', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId",
+          "file": "routes/patient-viewer.js",
+          "line": 227,
+          "source": "router.get('/:serverId/patients/:patientId', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/conditions",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/conditions",
+          "file": "routes/patient-viewer.js",
+          "line": 309,
+          "source": "router.get('/:serverId/patients/:patientId/conditions', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/observations",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/observations",
+          "file": "routes/patient-viewer.js",
+          "line": 413,
+          "source": "router.get('/:serverId/patients/:patientId/observations', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/related-persons",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/related-persons",
+          "file": "routes/patient-viewer.js",
+          "line": 651,
+          "source": "router.get('/:serverId/patients/:patientId/related-persons', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/practitioners",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/practitioners",
+          "file": "routes/patient-viewer.js",
+          "line": 708,
+          "source": "router.get('/:serverId/patients/:patientId/practitioners', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/organizations",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/organizations",
+          "file": "routes/patient-viewer.js",
+          "line": 783,
+          "source": "router.get('/:serverId/patients/:patientId/organizations', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/coverage",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/coverage",
+          "file": "routes/patient-viewer.js",
+          "line": 860,
+          "source": "router.get('/:serverId/patients/:patientId/coverage', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/medications",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/medications",
+          "file": "routes/patient-viewer.js",
+          "line": 915,
+          "source": "router.get('/:serverId/patients/:patientId/medications', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/encounters",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/encounters",
+          "file": "routes/patient-viewer.js",
+          "line": 1026,
+          "source": "router.get('/:serverId/patients/:patientId/encounters', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/documents",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/documents",
+          "file": "routes/patient-viewer.js",
+          "line": 1132,
+          "source": "router.get('/:serverId/patients/:patientId/documents', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/summary",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/summary",
+          "file": "routes/patient-viewer.js",
+          "line": 1228,
+          "source": "router.get('/:serverId/patients/:patientId/summary', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /:serverId/patients/:patientId/bundle",
+        "details": {
+          "method": "GET",
+          "path": "/:serverId/patients/:patientId/bundle",
+          "file": "routes/patient-viewer.js",
+          "line": 1363,
+          "source": "router.get('/:serverId/patients/:patientId/bundle', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /integrated",
+        "details": {
+          "method": "GET",
+          "path": "/integrated",
+          "file": "routes/swagger-api.js",
+          "line": 20,
+          "source": "router.get('/integrated', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /json",
+        "details": {
+          "method": "GET",
+          "path": "/json",
+          "file": "routes/swagger-api.js",
+          "line": 27,
+          "source": "router.get('/json', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /yaml",
+        "details": {
+          "method": "GET",
+          "path": "/yaml",
+          "file": "routes/swagger-api.js",
+          "line": 36,
+          "source": "router.get('/yaml', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /postman",
+        "details": {
+          "method": "GET",
+          "path": "/postman",
+          "file": "routes/swagger-api.js",
+          "line": 54,
+          "source": "router.get('/postman', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /validate",
+        "details": {
+          "method": "GET",
+          "path": "/validate",
+          "file": "api/terminology_validation.js",
+          "line": 21,
+          "source": "router.get('/validate', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /health",
+        "details": {
+          "method": "GET",
+          "path": "/health",
+          "file": "routes/systemRoutes.js",
+          "line": 14,
+          "source": "router.get('/health', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /version",
+        "details": {
+          "method": "GET",
+          "path": "/version",
+          "file": "routes/systemRoutes.js",
+          "line": 66,
+          "source": "router.get('/version', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /info",
+        "details": {
+          "method": "GET",
+          "path": "/info",
+          "file": "routes/systemRoutes.js",
+          "line": 95,
+          "source": "router.get('/info', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /french",
+        "details": {
+          "method": "GET",
+          "path": "/french",
+          "file": "routes/terminology.js",
+          "line": 91,
+          "source": "router.get('/french', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /files",
+        "details": {
+          "method": "GET",
+          "path": "/files",
+          "file": "routes/terminology.js",
+          "line": 245,
+          "source": "router.get('/files', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /files/:filename",
+        "details": {
+          "method": "GET",
+          "path": "/files/:filename",
+          "file": "routes/terminology.js",
+          "line": 298,
+          "source": "router.get('/files/:filename', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /files/:filename/download",
+        "details": {
+          "method": "GET",
+          "path": "/files/:filename/download",
+          "file": "routes/terminology.js",
+          "line": 348,
+          "source": "router.get('/files/:filename/download', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /import",
+        "details": {
+          "method": "POST",
+          "path": "/import",
+          "file": "routes/terminology.js",
+          "line": 411,
+          "source": "router.post('/import', adminAuthMiddleware, upload.single('file'), async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /export",
+        "details": {
+          "method": "GET",
+          "path": "/export",
+          "file": "routes/terminology.js",
+          "line": 593,
+          "source": "router.get('/export', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "DELETE /files/:filename",
+        "details": {
+          "method": "DELETE",
+          "path": "/files/:filename",
+          "file": "routes/terminology.js",
+          "line": 659,
+          "source": "router.delete('/files/:filename', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "PUT /files/:filename/metadata",
+        "details": {
+          "method": "PUT",
+          "path": "/files/:filename/metadata",
+          "file": "routes/terminology.js",
+          "line": 736,
+          "source": "router.put('/files/:filename/metadata', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /analyze",
+        "details": {
+          "method": "POST",
+          "path": "/analyze",
+          "file": "routes/terminology.js",
+          "line": 1044,
+          "source": "router.post('/analyze', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /refresh",
+        "details": {
+          "method": "POST",
+          "path": "/refresh",
+          "file": "routes/terminology.js",
+          "line": 1298,
+          "source": "router.post('/refresh', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /check-duplicates",
+        "details": {
+          "method": "GET",
+          "path": "/check-duplicates",
+          "file": "routes/terminology.js",
+          "line": 1402,
+          "source": "router.get('/check-duplicates', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /remove-duplicates",
+        "details": {
+          "method": "POST",
+          "path": "/remove-duplicates",
+          "file": "routes/terminology.js",
+          "line": 1635,
+          "source": "router.post('/remove-duplicates', adminAuthMiddleware, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /:id/change-password",
+        "details": {
+          "method": "POST",
+          "path": "/:id/change-password",
+          "file": "routes/users.js",
+          "line": 754,
+          "source": "router.post('/:id/change-password', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "PUT /:id/preferences",
+        "details": {
+          "method": "PUT",
+          "path": "/:id/preferences",
+          "file": "routes/users.js",
+          "line": 877,
+          "source": "router.put('/:id/preferences', authCombined, async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /validate-bundle",
+        "details": {
+          "method": "POST",
+          "path": "/validate-bundle",
+          "file": "api/terminology_validation.js",
+          "line": 70,
+          "source": "router.post('/validate-bundle', express.json({ limit: '5mb' }), async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /configure",
+        "details": {
+          "method": "GET",
+          "path": "/configure",
+          "file": "api/terminology_validation.js",
+          "line": 208,
+          "source": "router.get('/configure', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "POST /configure",
+        "details": {
+          "method": "POST",
+          "path": "/configure",
+          "file": "api/terminology_validation.js",
+          "line": 235,
+          "source": "router.post('/configure', express.json(), (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /preload",
+        "details": {
+          "method": "GET",
+          "path": "/preload",
+          "file": "api/terminology_validation.js",
+          "line": 256,
+          "source": "router.get('/preload', async (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /oid/:oid",
+        "details": {
+          "method": "GET",
+          "path": "/oid/:oid",
+          "file": "api/terminology_validation.js",
+          "line": 283,
+          "source": "router.get('/oid/:oid', (req, res) => {"
+        }
+      },
+      {
+        "endpoint": "GET /systems",
+        "details": {
+          "method": "GET",
+          "path": "/systems",
+          "file": "api/terminology_validation.js",
+          "line": 320,
+          "source": "router.get('/systems', (req, res) => {"
+        }
+      }
+    ],
+    "obsolete": [],
+    "incorrect": []
+  },
+  "realEndpoints": [
+    [
+      "GET /fhir",
+      {
+        "method": "GET",
+        "path": "/fhir",
+        "file": "app.js",
+        "line": 154,
+        "source": "app.get('/fhir', (req, res) => {"
+      }
+    ],
+    [
+      "GET /fhir-browser-pro",
+      {
+        "method": "GET",
+        "path": "/fhir-browser-pro",
+        "file": "app.js",
+        "line": 159,
+        "source": "app.get('/fhir-browser-pro', (req, res) => {"
+      }
+    ],
+    [
+      "GET /fhir-browser-v2",
+      {
+        "method": "GET",
+        "path": "/fhir-browser-v2",
+        "file": "app.js",
+        "line": 164,
+        "source": "app.get('/fhir-browser-v2', (req, res) => {"
+      }
+    ],
+    [
+      "GET /api-documentation",
+      {
+        "method": "GET",
+        "path": "/api-documentation",
+        "file": "app.js",
+        "line": 169,
+        "source": "app.get('/api-documentation', (req, res) => {"
+      }
+    ],
+    [
+      "GET /api-reference",
+      {
+        "method": "GET",
+        "path": "/api-reference",
+        "file": "app.js",
+        "line": 173,
+        "source": "app.get('/api-reference', (req, res) => {"
+      }
+    ],
+    [
+      "GET /api-reference.html",
+      {
+        "method": "GET",
+        "path": "/api-reference.html",
+        "file": "app.js",
+        "line": 177,
+        "source": "app.get('/api-reference.html', (req, res) => {"
+      }
+    ],
+    [
+      "GET /",
+      {
+        "method": "GET",
+        "path": "/",
+        "file": "routes/users.js",
+        "line": 55,
+        "source": "router.get('/', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /api/convert",
+      {
+        "method": "POST",
+        "path": "/api/convert",
+        "file": "app.js",
+        "line": 652,
+        "source": "app.post('/api/convert', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "POST /api/convert/raw",
+      {
+        "method": "POST",
+        "path": "/api/convert/raw",
+        "file": "app.js",
+        "line": 665,
+        "source": "app.post('/api/convert/raw', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /api/convert/fhir",
+      {
+        "method": "POST",
+        "path": "/api/convert/fhir",
+        "file": "app.js",
+        "line": 765,
+        "source": "app.post('/api/convert/fhir', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "POST /api/convert/mllp",
+      {
+        "method": "POST",
+        "path": "/api/convert/mllp",
+        "file": "app.js",
+        "line": 781,
+        "source": "app.post('/api/convert/mllp', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "POST /api/convert/validate",
+      {
+        "method": "POST",
+        "path": "/api/convert/validate",
+        "file": "app.js",
+        "line": 847,
+        "source": "app.post('/api/convert/validate', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "POST /api/reset-stats",
+      {
+        "method": "POST",
+        "path": "/api/reset-stats",
+        "file": "app.js",
+        "line": 995,
+        "source": "app.post('/api/reset-stats', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /api/message-types",
+      {
+        "method": "GET",
+        "path": "/api/message-types",
+        "file": "app.js",
+        "line": 1168,
+        "source": "app.get('/api/message-types', (req, res) => {"
+      }
+    ],
+    [
+      "GET /api/resource-distribution",
+      {
+        "method": "GET",
+        "path": "/api/resource-distribution",
+        "file": "app.js",
+        "line": 1221,
+        "source": "app.get('/api/resource-distribution', (req, res) => {"
+      }
+    ],
+    [
+      "GET /api/stats",
+      {
+        "method": "GET",
+        "path": "/api/stats",
+        "file": "app.js",
+        "line": 1379,
+        "source": "app.get('/api/stats', (req, res) => {"
+      }
+    ],
+    [
+      "GET /api/fhir/test-server",
+      {
+        "method": "GET",
+        "path": "/api/fhir/test-server",
+        "file": "app.js",
+        "line": 1659,
+        "source": "app.get('/api/fhir/test-server', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /api/system/version",
+      {
+        "method": "GET",
+        "path": "/api/system/version",
+        "file": "app.js",
+        "line": 1788,
+        "source": "app.get('/api/system/version', (req, res) => {"
+      }
+    ],
+    [
+      "POST /reset-environment",
+      {
+        "method": "POST",
+        "path": "/reset-environment",
+        "file": "routes/adminRoutes.js",
+        "line": 31,
+        "source": "router.post('/reset-environment', (req, res) => {"
+      }
+    ],
+    [
+      "GET /system-logs",
+      {
+        "method": "GET",
+        "path": "/system-logs",
+        "file": "routes/adminRoutes.js",
+        "line": 141,
+        "source": "router.get('/system-logs', authMiddleware.authenticated, adminOnly, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /analyze-patient",
+      {
+        "method": "POST",
+        "path": "/analyze-patient",
+        "file": "routes/ai-fhir-analyze.new.js",
+        "line": 95,
+        "source": "router.post('/analyze-patient', async (req, res) => {"
+      }
+    ],
+    [
+      "POST /chat",
+      {
+        "method": "POST",
+        "path": "/chat",
+        "file": "routes/ai-fhir-analyze.new.js",
+        "line": 262,
+        "source": "router.post('/chat', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /test-knowledge",
+      {
+        "method": "GET",
+        "path": "/test-knowledge",
+        "file": "routes/ai-fhir-analyze.js",
+        "line": 672,
+        "source": "router.get('/test-knowledge', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /test-chatbot-ai-provider",
+      {
+        "method": "GET",
+        "path": "/test-chatbot-ai-provider",
+        "file": "routes/ai-fhir-analyze.js",
+        "line": 705,
+        "source": "router.get('/test-chatbot-ai-provider', async (req, res) => {"
+      }
+    ],
+    [
+      "POST /search",
+      {
+        "method": "POST",
+        "path": "/search",
+        "file": "routes/ai-knowledge-api.js",
+        "line": 62,
+        "source": "router.post('/search', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /search",
+      {
+        "method": "GET",
+        "path": "/search",
+        "file": "routes/ai-knowledge-api.js",
+        "line": 91,
+        "source": "router.get('/search', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /faq",
+      {
+        "method": "GET",
+        "path": "/faq",
+        "file": "routes/ai-knowledge-api.js",
+        "line": 135,
+        "source": "router.get('/faq', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /features",
+      {
+        "method": "GET",
+        "path": "/features",
+        "file": "routes/ai-knowledge-api.js",
+        "line": 169,
+        "source": "router.get('/features', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /commands",
+      {
+        "method": "GET",
+        "path": "/commands",
+        "file": "routes/ai-knowledge-api.js",
+        "line": 203,
+        "source": "router.get('/commands', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /full",
+      {
+        "method": "GET",
+        "path": "/full",
+        "file": "routes/ai-knowledge-api.js",
+        "line": 237,
+        "source": "router.get('/full', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /file",
+      {
+        "method": "GET",
+        "path": "/file",
+        "file": "routes/ai-knowledge-api.js",
+        "line": 270,
+        "source": "router.get('/file', async (req, res) => {"
+      }
+    ],
+    [
+      "POST /update",
+      {
+        "method": "POST",
+        "path": "/update",
+        "file": "routes/ai-knowledge-api.js",
+        "line": 327,
+        "source": "router.post('/update', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /test-format",
+      {
+        "method": "GET",
+        "path": "/test-format",
+        "file": "routes/ai-knowledge-api.js",
+        "line": 349,
+        "source": "router.get('/test-format', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /active",
+      {
+        "method": "GET",
+        "path": "/active",
+        "file": "routes/ai-providers.js",
+        "line": 214,
+        "source": "router.get('/active', ensureTableExists, (req, res) => {"
+      }
+    ],
+    [
+      "GET /models/list",
+      {
+        "method": "GET",
+        "path": "/models/list",
+        "file": "routes/ai-providers.js",
+        "line": 296,
+        "source": "router.get('/models/list', (req, res) => {"
+      }
+    ],
+    [
+      "GET /status",
+      {
+        "method": "GET",
+        "path": "/status",
+        "file": "routes/mistral-fhir.js",
+        "line": 39,
+        "source": "router.get('/status', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /types/supported",
+      {
+        "method": "GET",
+        "path": "/types/supported",
+        "file": "routes/ai-providers.js",
+        "line": 524,
+        "source": "router.get('/types/supported', (req, res) => { // Temporairement public pour le test"
+      }
+    ],
+    [
+      "GET /:id",
+      {
+        "method": "GET",
+        "path": "/:id",
+        "file": "routes/users.js",
+        "line": 222,
+        "source": "router.get('/:id', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /",
+      {
+        "method": "POST",
+        "path": "/",
+        "file": "routes/users.js",
+        "line": 328,
+        "source": "router.post('/', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "PUT /:id",
+      {
+        "method": "PUT",
+        "path": "/:id",
+        "file": "routes/users.js",
+        "line": 469,
+        "source": "router.put('/:id', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "DELETE /:id",
+      {
+        "method": "DELETE",
+        "path": "/:id",
+        "file": "routes/users.js",
+        "line": 642,
+        "source": "router.delete('/:id', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /:providerType/test-connection",
+      {
+        "method": "POST",
+        "path": "/:providerType/test-connection",
+        "file": "routes/ai-providers.js",
+        "line": 1009,
+        "source": "router.post('/:providerType/test-connection', auth.apiKeyAuth, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /:id/test",
+      {
+        "method": "POST",
+        "path": "/:id/test",
+        "file": "routes/ai-providers.js",
+        "line": 1060,
+        "source": "router.post('/:id/test', auth.apiKeyAuth, ensureTableExists, async (req, res) => {"
+      }
+    ],
+    [
+      "PUT /:serverId",
+      {
+        "method": "PUT",
+        "path": "/:serverId",
+        "file": "routes/api-fhir-servers.js",
+        "line": 175,
+        "source": "router.put('/:serverId', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "DELETE /:serverId",
+      {
+        "method": "DELETE",
+        "path": "/:serverId",
+        "file": "routes/api-fhir-servers.js",
+        "line": 237,
+        "source": "router.delete('/:serverId', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/test",
+      {
+        "method": "GET",
+        "path": "/:serverId/test",
+        "file": "routes/api-fhir-servers.js",
+        "line": 290,
+        "source": "router.get('/:serverId/test', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /:serverId/local-default",
+      {
+        "method": "POST",
+        "path": "/:serverId/local-default",
+        "file": "routes/api-fhir-servers.js",
+        "line": 367,
+        "source": "router.post('/:serverId/local-default', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "PUT /default/:serverId",
+      {
+        "method": "PUT",
+        "path": "/default/:serverId",
+        "file": "routes/api-fhir-servers.js",
+        "line": 418,
+        "source": "router.put('/default/:serverId', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "POST /:id/revoke",
+      {
+        "method": "POST",
+        "path": "/:id/revoke",
+        "file": "routes/api-keys.js",
+        "line": 244,
+        "source": "router.post('/:id/revoke', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "POST /:id/activate",
+      {
+        "method": "POST",
+        "path": "/:id/activate",
+        "file": "routes/api-keys.js",
+        "line": 306,
+        "source": "router.post('/:id/activate', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "GET /:id/history",
+      {
+        "method": "GET",
+        "path": "/:id/history",
+        "file": "routes/applicationViews.js",
+        "line": 56,
+        "source": "router.get('/:id/history', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:id/stats",
+      {
+        "method": "GET",
+        "path": "/:id/stats",
+        "file": "routes/applications.js",
+        "line": 531,
+        "source": "router.get('/:id/stats', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:id/conversions",
+      {
+        "method": "GET",
+        "path": "/:id/conversions",
+        "file": "routes/applications.js",
+        "line": 602,
+        "source": "router.get('/:id/conversions', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:id/conversions/:conversionId",
+      {
+        "method": "GET",
+        "path": "/:id/conversions/:conversionId",
+        "file": "routes/applications.js",
+        "line": 683,
+        "source": "router.get('/:id/conversions/:conversionId', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /login",
+      {
+        "method": "POST",
+        "path": "/login",
+        "file": "routes/auth.js",
+        "line": 47,
+        "source": "router.post('/login', (req, res) => {"
+      }
+    ],
+    [
+      "GET /verify",
+      {
+        "method": "GET",
+        "path": "/verify",
+        "file": "routes/auth.js",
+        "line": 129,
+        "source": "router.get('/verify', (req, res) => {"
+      }
+    ],
+    [
+      "GET /stats",
+      {
+        "method": "GET",
+        "path": "/stats",
+        "file": "routes/users.js",
+        "line": 128,
+        "source": "router.get('/stats', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /clear",
+      {
+        "method": "POST",
+        "path": "/clear",
+        "file": "routes/cache.js",
+        "line": 161,
+        "source": "router.post('/clear', jwtAuth, (req, res) => {"
+      }
+    ],
+    [
+      "POST /hl7-to-fhir",
+      {
+        "method": "POST",
+        "path": "/hl7-to-fhir",
+        "file": "routes/convert.js",
+        "line": 104,
+        "source": "router.post('/hl7-to-fhir', async (req, res) => {"
+      }
+    ],
+    [
+      "POST /fhir-to-hl7",
+      {
+        "method": "POST",
+        "path": "/fhir-to-hl7",
+        "file": "routes/convert.js",
+        "line": 208,
+        "source": "router.post('/fhir-to-hl7', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /key",
+      {
+        "method": "GET",
+        "path": "/key",
+        "file": "routes/dev-api.js",
+        "line": 52,
+        "source": "router.get('/key', (req, res) => {"
+      }
+    ],
+    [
+      "GET /generate-temp-key",
+      {
+        "method": "GET",
+        "path": "/generate-temp-key",
+        "file": "routes/dev-api.js",
+        "line": 173,
+        "source": "router.get('/generate-temp-key', (req, res) => {"
+      }
+    ],
+    [
+      "GET /all-in-one",
+      {
+        "method": "GET",
+        "path": "/all-in-one",
+        "file": "routes/dev-api.js",
+        "line": 235,
+        "source": "router.get('/all-in-one', (req, res) => {"
+      }
+    ],
+    [
+      "GET /models",
+      {
+        "method": "GET",
+        "path": "/models",
+        "file": "routes/mistral-fhir.js",
+        "line": 79,
+        "source": "router.get('/models', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /:serverId/natural-query",
+      {
+        "method": "POST",
+        "path": "/:serverId/natural-query",
+        "file": "routes/mistral-fhir.js",
+        "line": 166,
+        "source": "router.post('/:serverId/natural-query', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /:serverId/summarize-patient",
+      {
+        "method": "POST",
+        "path": "/:serverId/summarize-patient",
+        "file": "routes/mistral-fhir.js",
+        "line": 353,
+        "source": "router.post('/:serverId/summarize-patient', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /:serverId/analyze-observation",
+      {
+        "method": "POST",
+        "path": "/:serverId/analyze-observation",
+        "file": "routes/mistral-fhir.js",
+        "line": 598,
+        "source": "router.post('/:serverId/analyze-observation', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /:serverId/analyze-trends",
+      {
+        "method": "POST",
+        "path": "/:serverId/analyze-trends",
+        "file": "routes/mistral-fhir.js",
+        "line": 833,
+        "source": "router.post('/:serverId/analyze-trends', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /servers",
+      {
+        "method": "GET",
+        "path": "/servers",
+        "file": "routes/fhir-servers.js",
+        "line": 146,
+        "source": "router.get('/servers', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "GET /servers/:serverId/metadata",
+      {
+        "method": "GET",
+        "path": "/servers/:serverId/metadata",
+        "file": "routes/fhir-servers.js",
+        "line": 630,
+        "source": "router.get('/servers/:serverId/metadata', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /servers/:serverId/resource-types",
+      {
+        "method": "GET",
+        "path": "/servers/:serverId/resource-types",
+        "file": "routes/fhir-browser.js",
+        "line": 278,
+        "source": "router.get('/servers/:serverId/resource-types', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /servers/:serverId/count/:resourceType",
+      {
+        "method": "GET",
+        "path": "/servers/:serverId/count/:resourceType",
+        "file": "routes/fhir-servers.js",
+        "line": 533,
+        "source": "router.get('/servers/:serverId/count/:resourceType', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /servers/:serverId/search/:resourceType",
+      {
+        "method": "GET",
+        "path": "/servers/:serverId/search/:resourceType",
+        "file": "routes/fhir-servers.js",
+        "line": 449,
+        "source": "router.get('/servers/:serverId/search/:resourceType', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /servers/:serverId/resource/:resourceType/:id",
+      {
+        "method": "GET",
+        "path": "/servers/:serverId/resource/:resourceType/:id",
+        "file": "routes/fhir-servers.js",
+        "line": 376,
+        "source": "router.get('/servers/:serverId/resource/:resourceType/:id', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /servers/:serverId/test",
+      {
+        "method": "GET",
+        "path": "/servers/:serverId/test",
+        "file": "routes/fhir-servers.js",
+        "line": 695,
+        "source": "router.get('/servers/:serverId/test', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "DELETE /cache",
+      {
+        "method": "DELETE",
+        "path": "/cache",
+        "file": "routes/fhir-browser.js",
+        "line": 591,
+        "source": "router.delete('/cache', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "POST /servers",
+      {
+        "method": "POST",
+        "path": "/servers",
+        "file": "routes/fhir-servers.js",
+        "line": 828,
+        "source": "router.post('/servers', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "PUT /servers/:id",
+      {
+        "method": "PUT",
+        "path": "/servers/:id",
+        "file": "routes/fhir-config.js",
+        "line": 129,
+        "source": "router.put('/servers/:id', ensureConfigFile, (req, res) => {"
+      }
+    ],
+    [
+      "DELETE /servers/:id",
+      {
+        "method": "DELETE",
+        "path": "/servers/:id",
+        "file": "routes/fhir-config.js",
+        "line": 159,
+        "source": "router.delete('/servers/:id', ensureConfigFile, (req, res) => {"
+      }
+    ],
+    [
+      "POST /servers/default/:id",
+      {
+        "method": "POST",
+        "path": "/servers/default/:id",
+        "file": "routes/fhir-config.js",
+        "line": 195,
+        "source": "router.post('/servers/default/:id', ensureConfigFile, (req, res) => {"
+      }
+    ],
+    [
+      "POST /servers/:id/toggle",
+      {
+        "method": "POST",
+        "path": "/servers/:id/toggle",
+        "file": "routes/fhir-config.js",
+        "line": 221,
+        "source": "router.post('/servers/:id/toggle', ensureConfigFile, (req, res) => {"
+      }
+    ],
+    [
+      "GET /:fhirServer/*",
+      {
+        "method": "GET",
+        "path": "/:fhirServer/*",
+        "file": "routes/fhir-proxy.js",
+        "line": 16,
+        "source": "router.get('/:fhirServer/*', async (req, res) => {"
+      }
+    ],
+    [
+      "POST /:fhirServer/*",
+      {
+        "method": "POST",
+        "path": "/:fhirServer/*",
+        "file": "routes/fhir-proxy.js",
+        "line": 77,
+        "source": "router.post('/:fhirServer/*', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients",
+        "file": "routes/patient-viewer.js",
+        "line": 109,
+        "source": "router.get('/:serverId/patients', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/by-condition",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/by-condition",
+        "file": "routes/fhir-search.js",
+        "line": 311,
+        "source": "router.get('/:serverId/patients/by-condition', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/by-observation",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/by-observation",
+        "file": "routes/fhir-search.js",
+        "line": 518,
+        "source": "router.get('/:serverId/patients/by-observation', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/recent",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/recent",
+        "file": "routes/fhir-search.js",
+        "line": 722,
+        "source": "router.get('/:serverId/patients/recent', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/meta-search",
+      {
+        "method": "GET",
+        "path": "/:serverId/meta-search",
+        "file": "routes/fhir-search.js",
+        "line": 901,
+        "source": "router.get('/:serverId/meta-search', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /servers/:serverId",
+      {
+        "method": "GET",
+        "path": "/servers/:serverId",
+        "file": "routes/fhir-servers.js",
+        "line": 190,
+        "source": "router.get('/servers/:serverId', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "PUT /servers/:serverId",
+      {
+        "method": "PUT",
+        "path": "/servers/:serverId",
+        "file": "routes/fhir-servers.js",
+        "line": 1020,
+        "source": "router.put('/servers/:serverId', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "DELETE /servers/:serverId",
+      {
+        "method": "DELETE",
+        "path": "/servers/:serverId",
+        "file": "routes/fhir-servers.js",
+        "line": 1188,
+        "source": "router.delete('/servers/:serverId', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "PUT /servers/default/:serverId",
+      {
+        "method": "PUT",
+        "path": "/servers/default/:serverId",
+        "file": "routes/fhir-servers.js",
+        "line": 1265,
+        "source": "router.put('/servers/default/:serverId', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "GET /servers/:serverId/check",
+      {
+        "method": "GET",
+        "path": "/servers/:serverId/check",
+        "file": "routes/fhir-servers.js",
+        "line": 1344,
+        "source": "router.get('/servers/:serverId/check', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /servers/:serverId/local-default",
+      {
+        "method": "POST",
+        "path": "/servers/:serverId/local-default",
+        "file": "routes/fhir-servers.js",
+        "line": 1438,
+        "source": "router.post('/servers/:serverId/local-default', authCombined, (req, res) => {"
+      }
+    ],
+    [
+      "GET /metadata",
+      {
+        "method": "GET",
+        "path": "/metadata",
+        "file": "routes/fhir.js",
+        "line": 174,
+        "source": "router.get('/metadata', authCombined, checkServerHealth, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /resources",
+      {
+        "method": "GET",
+        "path": "/resources",
+        "file": "routes/fhir.js",
+        "line": 226,
+        "source": "router.get('/resources', authCombined, checkServerHealth, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /search/:resourceType",
+      {
+        "method": "GET",
+        "path": "/search/:resourceType",
+        "file": "routes/fhir.js",
+        "line": 327,
+        "source": "router.get('/search/:resourceType', authCombined, checkServerHealth, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /resource/:resourceType/:id",
+      {
+        "method": "GET",
+        "path": "/resource/:resourceType/:id",
+        "file": "routes/fhir.js",
+        "line": 421,
+        "source": "router.get('/resource/:resourceType/:id', authCombined, checkServerHealth, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /resource/:resourceType",
+      {
+        "method": "POST",
+        "path": "/resource/:resourceType",
+        "file": "routes/fhir.js",
+        "line": 494,
+        "source": "router.post('/resource/:resourceType', authCombined, checkServerHealth, async (req, res) => {"
+      }
+    ],
+    [
+      "PUT /resource/:resourceType/:id",
+      {
+        "method": "PUT",
+        "path": "/resource/:resourceType/:id",
+        "file": "routes/fhir.js",
+        "line": 602,
+        "source": "router.put('/resource/:resourceType/:id', authCombined, checkServerHealth, async (req, res) => {"
+      }
+    ],
+    [
+      "DELETE /resource/:resourceType/:id",
+      {
+        "method": "DELETE",
+        "path": "/resource/:resourceType/:id",
+        "file": "routes/fhir.js",
+        "line": 712,
+        "source": "router.delete('/resource/:resourceType/:id', authCombined, checkServerHealth, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /transaction",
+      {
+        "method": "POST",
+        "path": "/transaction",
+        "file": "routes/fhir.js",
+        "line": 778,
+        "source": "router.post('/transaction', authCombined, checkServerHealth, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /store-bundle",
+      {
+        "method": "POST",
+        "path": "/store-bundle",
+        "file": "routes/fhir.js",
+        "line": 861,
+        "source": "router.post('/store-bundle', authCombined, checkServerHealth, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /patient-chat",
+      {
+        "method": "POST",
+        "path": "/patient-chat",
+        "file": "routes/patient-chat.js",
+        "line": 5,
+        "source": "router.post('/patient-chat', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId",
+        "file": "routes/patient-viewer.js",
+        "line": 227,
+        "source": "router.get('/:serverId/patients/:patientId', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/conditions",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/conditions",
+        "file": "routes/patient-viewer.js",
+        "line": 309,
+        "source": "router.get('/:serverId/patients/:patientId/conditions', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/observations",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/observations",
+        "file": "routes/patient-viewer.js",
+        "line": 413,
+        "source": "router.get('/:serverId/patients/:patientId/observations', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/related-persons",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/related-persons",
+        "file": "routes/patient-viewer.js",
+        "line": 651,
+        "source": "router.get('/:serverId/patients/:patientId/related-persons', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/practitioners",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/practitioners",
+        "file": "routes/patient-viewer.js",
+        "line": 708,
+        "source": "router.get('/:serverId/patients/:patientId/practitioners', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/organizations",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/organizations",
+        "file": "routes/patient-viewer.js",
+        "line": 783,
+        "source": "router.get('/:serverId/patients/:patientId/organizations', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/coverage",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/coverage",
+        "file": "routes/patient-viewer.js",
+        "line": 860,
+        "source": "router.get('/:serverId/patients/:patientId/coverage', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/medications",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/medications",
+        "file": "routes/patient-viewer.js",
+        "line": 915,
+        "source": "router.get('/:serverId/patients/:patientId/medications', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/encounters",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/encounters",
+        "file": "routes/patient-viewer.js",
+        "line": 1026,
+        "source": "router.get('/:serverId/patients/:patientId/encounters', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/documents",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/documents",
+        "file": "routes/patient-viewer.js",
+        "line": 1132,
+        "source": "router.get('/:serverId/patients/:patientId/documents', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/summary",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/summary",
+        "file": "routes/patient-viewer.js",
+        "line": 1228,
+        "source": "router.get('/:serverId/patients/:patientId/summary', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /:serverId/patients/:patientId/bundle",
+      {
+        "method": "GET",
+        "path": "/:serverId/patients/:patientId/bundle",
+        "file": "routes/patient-viewer.js",
+        "line": 1363,
+        "source": "router.get('/:serverId/patients/:patientId/bundle', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /integrated",
+      {
+        "method": "GET",
+        "path": "/integrated",
+        "file": "routes/swagger-api.js",
+        "line": 20,
+        "source": "router.get('/integrated', (req, res) => {"
+      }
+    ],
+    [
+      "GET /json",
+      {
+        "method": "GET",
+        "path": "/json",
+        "file": "routes/swagger-api.js",
+        "line": 27,
+        "source": "router.get('/json', (req, res) => {"
+      }
+    ],
+    [
+      "GET /yaml",
+      {
+        "method": "GET",
+        "path": "/yaml",
+        "file": "routes/swagger-api.js",
+        "line": 36,
+        "source": "router.get('/yaml', (req, res) => {"
+      }
+    ],
+    [
+      "GET /postman",
+      {
+        "method": "GET",
+        "path": "/postman",
+        "file": "routes/swagger-api.js",
+        "line": 54,
+        "source": "router.get('/postman', (req, res) => {"
+      }
+    ],
+    [
+      "GET /validate",
+      {
+        "method": "GET",
+        "path": "/validate",
+        "file": "api/terminology_validation.js",
+        "line": 21,
+        "source": "router.get('/validate', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /health",
+      {
+        "method": "GET",
+        "path": "/health",
+        "file": "routes/systemRoutes.js",
+        "line": 14,
+        "source": "router.get('/health', (req, res) => {"
+      }
+    ],
+    [
+      "GET /version",
+      {
+        "method": "GET",
+        "path": "/version",
+        "file": "routes/systemRoutes.js",
+        "line": 66,
+        "source": "router.get('/version', (req, res) => {"
+      }
+    ],
+    [
+      "GET /info",
+      {
+        "method": "GET",
+        "path": "/info",
+        "file": "routes/systemRoutes.js",
+        "line": 95,
+        "source": "router.get('/info', (req, res) => {"
+      }
+    ],
+    [
+      "GET /french",
+      {
+        "method": "GET",
+        "path": "/french",
+        "file": "routes/terminology.js",
+        "line": 91,
+        "source": "router.get('/french', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /files",
+      {
+        "method": "GET",
+        "path": "/files",
+        "file": "routes/terminology.js",
+        "line": 245,
+        "source": "router.get('/files', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /files/:filename",
+      {
+        "method": "GET",
+        "path": "/files/:filename",
+        "file": "routes/terminology.js",
+        "line": 298,
+        "source": "router.get('/files/:filename', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /files/:filename/download",
+      {
+        "method": "GET",
+        "path": "/files/:filename/download",
+        "file": "routes/terminology.js",
+        "line": 348,
+        "source": "router.get('/files/:filename/download', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /import",
+      {
+        "method": "POST",
+        "path": "/import",
+        "file": "routes/terminology.js",
+        "line": 411,
+        "source": "router.post('/import', adminAuthMiddleware, upload.single('file'), async (req, res) => {"
+      }
+    ],
+    [
+      "GET /export",
+      {
+        "method": "GET",
+        "path": "/export",
+        "file": "routes/terminology.js",
+        "line": 593,
+        "source": "router.get('/export', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "DELETE /files/:filename",
+      {
+        "method": "DELETE",
+        "path": "/files/:filename",
+        "file": "routes/terminology.js",
+        "line": 659,
+        "source": "router.delete('/files/:filename', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "PUT /files/:filename/metadata",
+      {
+        "method": "PUT",
+        "path": "/files/:filename/metadata",
+        "file": "routes/terminology.js",
+        "line": 736,
+        "source": "router.put('/files/:filename/metadata', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /analyze",
+      {
+        "method": "POST",
+        "path": "/analyze",
+        "file": "routes/terminology.js",
+        "line": 1044,
+        "source": "router.post('/analyze', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /refresh",
+      {
+        "method": "POST",
+        "path": "/refresh",
+        "file": "routes/terminology.js",
+        "line": 1298,
+        "source": "router.post('/refresh', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "GET /check-duplicates",
+      {
+        "method": "GET",
+        "path": "/check-duplicates",
+        "file": "routes/terminology.js",
+        "line": 1402,
+        "source": "router.get('/check-duplicates', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /remove-duplicates",
+      {
+        "method": "POST",
+        "path": "/remove-duplicates",
+        "file": "routes/terminology.js",
+        "line": 1635,
+        "source": "router.post('/remove-duplicates', adminAuthMiddleware, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /:id/change-password",
+      {
+        "method": "POST",
+        "path": "/:id/change-password",
+        "file": "routes/users.js",
+        "line": 754,
+        "source": "router.post('/:id/change-password', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "PUT /:id/preferences",
+      {
+        "method": "PUT",
+        "path": "/:id/preferences",
+        "file": "routes/users.js",
+        "line": 877,
+        "source": "router.put('/:id/preferences', authCombined, async (req, res) => {"
+      }
+    ],
+    [
+      "POST /validate-bundle",
+      {
+        "method": "POST",
+        "path": "/validate-bundle",
+        "file": "api/terminology_validation.js",
+        "line": 70,
+        "source": "router.post('/validate-bundle', express.json({ limit: '5mb' }), async (req, res) => {"
+      }
+    ],
+    [
+      "GET /configure",
+      {
+        "method": "GET",
+        "path": "/configure",
+        "file": "api/terminology_validation.js",
+        "line": 208,
+        "source": "router.get('/configure', (req, res) => {"
+      }
+    ],
+    [
+      "POST /configure",
+      {
+        "method": "POST",
+        "path": "/configure",
+        "file": "api/terminology_validation.js",
+        "line": 235,
+        "source": "router.post('/configure', express.json(), (req, res) => {"
+      }
+    ],
+    [
+      "GET /preload",
+      {
+        "method": "GET",
+        "path": "/preload",
+        "file": "api/terminology_validation.js",
+        "line": 256,
+        "source": "router.get('/preload', async (req, res) => {"
+      }
+    ],
+    [
+      "GET /oid/:oid",
+      {
+        "method": "GET",
+        "path": "/oid/:oid",
+        "file": "api/terminology_validation.js",
+        "line": 283,
+        "source": "router.get('/oid/:oid', (req, res) => {"
+      }
+    ],
+    [
+      "GET /systems",
+      {
+        "method": "GET",
+        "path": "/systems",
+        "file": "api/terminology_validation.js",
+        "line": 320,
+        "source": "router.get('/systems', (req, res) => {"
+      }
+    ]
+  ],
+  "documentedEndpoints": []
+}
