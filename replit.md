@@ -116,6 +116,17 @@ FHIR Data → AI Service → Provider Selection → Analysis → Response Format
 
 ## Changelog
 
+### June 25, 2025 - 🚀 Scripts d'Installation et Démarrage Automatisés v2.1.0
+- **SCRIPTS PROFESSIONNELS** : install.sh et start.sh avec 1100+ lignes de code optimisé
+- **MULTI-PLATEFORME** : Support Ubuntu, CentOS, Alpine, macOS avec détection automatique
+- **INTERFACE AVANCÉE** : Couleurs, barres de progression, spinners, bannières ASCII
+- **SUPERVISION INTÉGRÉE** : Monitoring temps réel, health checks, gestion PID avancée
+- **GESTION D'ERREURS ROBUSTE** : Rollback automatique, validation stricte, logs structurés
+- **MODES MULTIPLES** : --verbose, --quiet, --dry-run, --daemon pour tous les cas d'usage
+- **DOCKER OPTIONNEL** : Détection et configuration automatique si docker-compose.yml présent
+- **DOCUMENTATION COMPLÈTE** : README-install.md avec troubleshooting et exemples
+- **ZÉRO INTERVENTION MANUELLE** : Installation complète en une commande sur environnement vierge
+
 ### June 24, 2025 - 🎯 CONFORMITÉ R4 & FR-CORE STRICTE + CORRECTIONS COMPLÈTES - FHIRHub 3.0 Healthcare Certified
 - **CONFORMITÉ R4 TOTALE** : Bundle.timestamp supprimé, entry.request éliminé, eventUri MessageHeader
 - **FUSEAUX HORAIRES OBLIGATOIRES** : formatDateTimeWithTimezone() +02:00 sur tous les dateTime
