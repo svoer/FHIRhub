@@ -284,7 +284,7 @@
 .nav-menu a {
   display: flex;
   align-items: center;
-  padding: 10px 20px;
+  padding: 12px 8px 12px 8px !important;
   color: var(--sidebar-text);
   text-decoration: none;
   font-weight: 500;
@@ -292,7 +292,8 @@
   position: relative;
   overflow: visible;
   border-left: 3px solid transparent;
-  justify-content: space-between; /* Permet de mettre l'icône étoile à droite */
+  margin: 2px 0 !important;
+  border-radius: 4px;
 }
 
 .nav-menu a:hover {
@@ -306,12 +307,14 @@
 }
 
 .nav-menu a i {
-  min-width: 20px;
+  width: 18px !important;
+  min-width: 18px !important;
   margin-left: 0 !important;
-  margin-right: 12px;
+  margin-right: 10px !important;
   font-size: 1rem;
-  text-align: left;
-  opacity: 0.8;
+  text-align: left !important;
+  opacity: 0.85;
+  flex-shrink: 0;
 }
 
 
